@@ -28,8 +28,8 @@ export function Header({ isLoggedIn = false }) {
             // Logged in navigation
             <>
               <Link
-                href="/"
-                className={`text-sm font-medium ${isActive("/") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}
+                href="/my-learning"
+                className={`text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}
               >
                 Home
               </Link>
