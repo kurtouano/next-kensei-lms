@@ -22,8 +22,6 @@ export const metadata = {
 
 export default async function RootLayout({ children }) {
   const conn = await mongoConnect();
-  console.log(conn);
-
   return (
     <html lang="en">
       <body className={`${notoSansJP.variable} ${poppins.variable} font-sans`}>

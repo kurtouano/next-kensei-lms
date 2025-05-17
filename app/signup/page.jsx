@@ -10,18 +10,29 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
 export default function SignUpPage() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    agreedToTerms: false,
+  })
+
   const [showPassword, setShowPassword] = useState(false)
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const handleOnChange = (e) => {
+    const { id, value, type, checked } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [id]: type === "checkbox" ? checked : value,
+    }))
+  }
 
   const handleSignUp = async (e) => {
     e.preventDefault()
 
-    if (!agreedToTerms) {
+    if (!formData.agreedToTerms) {
       setError("You must agree to the Terms of Service")
       return
     }
@@ -30,9 +41,24 @@ export default function SignUpPage() {
     setError("")
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      window.location.href = "/"
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.ok) {
+        setFormData({
+          name: "",
+          email: "",
+          password: "",
+          agreedToTerms: false,
+        })
+      }
+
+      // window.location.href = "/login"
     } catch (err) {
       setError("An error occurred. Please try again.")
     } finally {
@@ -89,8 +115,8 @@ export default function SignUpPage() {
                 <input
                   id="name"
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={formData.name}
+                  onChange={handleOnChange}
                   className="w-full rounded-md border border-[#dce4d7] bg-white py-2 pl-10 pr-3 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none focus:ring-1 focus:ring-[#4a7c59]"
                   placeholder="John Doe"
                   required
@@ -109,8 +135,8 @@ export default function SignUpPage() {
                 <input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={formData.email}
+                  onChange={handleOnChange}
                   className="w-full rounded-md border border-[#dce4d7] bg-white py-2 pl-10 pr-3 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none focus:ring-1 focus:ring-[#4a7c59]"
                   placeholder="you@example.com"
                   required
@@ -129,8 +155,8 @@ export default function SignUpPage() {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={formData.password}
+                  onChange={handleOnChange}
                   className="w-full rounded-md border border-[#dce4d7] bg-white py-2 pl-10 pr-10 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none focus:ring-1 focus:ring-[#4a7c59]"
                   placeholder="••••••••"
                   required
@@ -150,10 +176,10 @@ export default function SignUpPage() {
             <div className="flex items-start">
               <div className="flex h-5 items-center">
                 <input
-                  id="terms"
+                  id="agreedToTerms"
                   type="checkbox"
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  checked={formData.agreedToTerms}
+                  onChange={handleOnChange}
                   className="h-4 w-4 rounded border-[#dce4d7] text-[#4a7c59] focus:ring-[#4a7c59]"
                 />
               </div>
