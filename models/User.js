@@ -1,14 +1,13 @@
 import mongoose from "mongoose"
-import bcrypt from "bcryptjs"
 
 const UserSchema = new mongoose.Schema(
   {
-    username: {
+    name: {
       type: String,
-      required: [true, "Please provide a username"],
+      required: [true, "Please provide a name"],
       unique: true,
       trim: true,
-      minlength: [3, "Username must be at least 3 characters long"],
+      minlength: [8, "Username must be at least 8 characters long"],
       maxlength: [20, "Username cannot exceed 20 characters"],
     },
     email: {
@@ -106,22 +105,5 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Hash password before saving (only if password field is modified and provider is credentials)
-UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password") || this.provider !== "credentials") {
-    next()
-    return
-  }
-
-  const salt = await bcrypt.genSalt(10)
-  this.password = await bcrypt.hash(this.password, salt)
-})
-
-// Match password method
-UserSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password)
-}
-
 const User = mongoose.models.User || mongoose.model("User", UserSchema)
-
 export default User

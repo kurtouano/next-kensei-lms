@@ -11,10 +11,20 @@ import { Footer } from "@/components/footer"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const handleOnChange = (e) => {
+    const { id, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }))
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -22,14 +32,23 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // For demo purposes - in production, this would be a real auth check
-      if (email === "demo@example.com" && password === "password") {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+      const data = await res.json();
+      if (res.ok) {
+        setFormData({
+          email: "",
+          password: "",
+        })
+        // Redirect to home page or dashboard
         window.location.href = "/"
       } else {
-        setError("Invalid email or password")
+        setError(data.error || "An error occurred. Please try again.")
       }
     } catch (err) {
       setError("An error occurred. Please try again.")
@@ -82,8 +101,8 @@ export default function LoginPage() {
                 <input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={formData.email}
+                  onChange={handleOnChange}
                   className="w-full rounded-md border border-[#dce4d7] bg-white py-2 pl-10 pr-3 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none focus:ring-1 focus:ring-[#4a7c59]"
                   placeholder="you@example.com"
                   required
@@ -107,8 +126,8 @@ export default function LoginPage() {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={formData.password}
+                  onChange={handleOnChange}
                   className="w-full rounded-md border border-[#dce4d7] bg-white py-2 pl-10 pr-10 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none focus:ring-1 focus:ring-[#4a7c59]"
                   placeholder="••••••••"
                   required

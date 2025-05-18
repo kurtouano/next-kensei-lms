@@ -1,7 +1,6 @@
 import "@/app/globals.css"
 import { Noto_Sans_JP, Poppins } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
-import { mongoConnect } from "@/services/mongo"
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
@@ -21,7 +20,6 @@ export const metadata = {
 }
 
 export default async function RootLayout({ children }) {
-  const conn = await mongoConnect();
   return (
     <html lang="en">
       <body className={`${notoSansJP.variable} ${poppins.variable} font-sans`}>

@@ -29,7 +29,7 @@ export default function SignUpPage() {
     }))
   }
 
-  const handleSignUp = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!formData.agreedToTerms) {
@@ -49,6 +49,8 @@ export default function SignUpPage() {
         body: JSON.stringify(formData),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         setFormData({
           name: "",
@@ -56,9 +58,10 @@ export default function SignUpPage() {
           password: "",
           agreedToTerms: false,
         })
+      } else {
+        setError(data.error || "An error occurred. Please try again.")
       }
-
-      // window.location.href = "/login"
+      window.location.href = "/login"
     } catch (err) {
       setError("An error occurred. Please try again.")
     } finally {
@@ -103,7 +106,7 @@ export default function SignUpPage() {
 
           {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
-          <form onSubmit={handleSignUp} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="name" className="block text-sm font-medium text-[#2c3e2d]">
                 Full Name
