@@ -8,6 +8,8 @@ import { BonsaiIcon } from "@/components/bonsai-icon"
 import { GoogleIcon } from "@/components/google-icon"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -17,6 +19,7 @@ export default function LoginPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const router = useRouter();
 
   const handleOnChange = (e) => {
     const { id, value } = e.target
@@ -27,35 +30,34 @@ export default function LoginPage() {
   }
 
   const handleLogin = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      })
-      const data = await res.json();
+      const res = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
       if (res.ok) {
         setFormData({
           email: "",
           password: "",
-        })
-        // Redirect to home page or dashboard
-        window.location.href = "/"
+        });
+
+        console.log("Login successful", res);
+        router.replace("/my-learning"); // redirect to dashboard
       } else {
-        setError(data.error || "An error occurred. Please try again.")
+        setError(res.error || "An error occurred. Please try again.");
       }
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      setError("An error occurred. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)

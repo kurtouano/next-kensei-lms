@@ -160,7 +160,7 @@ export default function AboutPage() {
               </p>
               <div className="flex flex-col justify-center gap-4 sm:flex-row">
                 <Button
-                  className="border-2 border-white bg-transparent text-white hover:bg-white hover:text-[#4a7c59]"
+                  className="border-2 py-3 border-white bg-transparent text-white hover:bg-white hover:text-[#4a7c59]"
                   size="lg"
                   asChild
                 >
