@@ -16,8 +16,7 @@ const poppins = Poppins({
 
 export const metadata = {
   title: "日本語ガーデン | Japanese E-Learning Platform",
-  description: "Learn Japanese online with our Bonsai-themed e-learning platform",
-    generator: 'v0.dev'
+  description: "Learn Japanese online with our Bonsai-themed e-learning platform"
 }
 
 export default async function RootLayout({ children }) {

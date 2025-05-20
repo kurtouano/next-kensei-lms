@@ -5,10 +5,8 @@ const UserSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, "Please provide a name"],
-      unique: true,
       trim: true,
       minlength: [8, "Username must be at least 8 characters long"],
-      maxlength: [20, "Username cannot exceed 20 characters"],
     },
     email: {
       type: String,
@@ -43,7 +41,7 @@ const UserSchema = new mongoose.Schema(
     },
     profileImage: {
       type: String,
-      default: "/images/default-avatar.png",
+      default: null,
     },
     role: {
       type: String,

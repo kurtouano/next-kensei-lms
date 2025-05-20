@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    provider: "credentials",
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -38,6 +39,7 @@ export default function LoginPage() {
       const res = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
+        provider: formData.provider,
         redirect: false,
       });
 
@@ -64,9 +66,10 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      window.location.href = "/"
+      signIn("google", {
+        redirect: true,
+        callbackUrl: "/my-learning",
+      })
     } catch (err) {
       setError("An error occurred with Google login. Please try again.")
     } finally {

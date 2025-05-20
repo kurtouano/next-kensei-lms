@@ -8,18 +8,22 @@ import { BonsaiIcon } from "@/components/bonsai-icon"
 import { GoogleIcon } from "@/components/google-icon"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
+    provider: "credentials",
     agreedToTerms: false,
   })
 
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const router = useRouter()
 
   const handleOnChange = (e) => {
     const { id, value, type, checked } = e.target
@@ -58,10 +62,10 @@ export default function SignUpPage() {
           password: "",
           agreedToTerms: false,
         })
+        router.push("/login") // redirect to login page after successful signup
       } else {
         setError(data.error || "An error occurred. Please try again.")
       }
-      window.location.href = "/login"
     } catch (err) {
       setError("An error occurred. Please try again.")
     } finally {
@@ -70,20 +74,16 @@ export default function SignUpPage() {
   }
 
   const handleGoogleSignUp = async () => {
-    if (!agreedToTerms) {
-      setError("You must agree to the Terms of Service")
-      return
-    }
-
     setIsLoading(true)
     setError("")
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      window.location.href = "/"
+      signIn("google", {
+        redirect: true,
+        callbackUrl: "/my-learning",
+      })
     } catch (err) {
-      setError("An error occurred with Google sign up. Please try again.")
+      setError("An error occurred with Google login. Please try again.")
     } finally {
       setIsLoading(false)
     }

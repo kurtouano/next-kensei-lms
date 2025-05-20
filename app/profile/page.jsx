@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -8,15 +8,20 @@ import { BonsaiIcon } from "@/components/bonsai-icon"
 import { User, Settings, Award, BookOpen, Bell, ChevronRight, Check, Globe, Mail, Lock, Flag } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { signOut, useSession } from "next-auth/react"
+import axios from "axios"
+import { format } from "date-fns"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile")
+  const { data: session, status } = useSession();
+  const [userData, setUserData] = useState(null);
 
   // Mock user data
   const user = {
-    username: "SakuraBonsai",
+    username: session?.user?.name,
     country: "United States",
-    joinDate: "January 2023",
+    joinDate: userData?.joinDate,
     learningGoals: ["Pass JLPT N4", "Read manga in Japanese", "Travel to Japan"],
     languages: ["English (Native)", "Japanese (Beginner)"],
     bonsaiLevel: 3,
@@ -42,6 +47,18 @@ export default function ProfilePage() {
       decorations: ["Stone Lantern", "Moss"],
     },
   }
+
+  useEffect(() => {
+    if (session) {
+      axios.get("/api/profile").then(res => {
+        const created = new Date(res.data.user.createdAt);
+        setUserData({
+          username: res.data.user.name,
+          joinDate: format(created, "MMMM yyyy"), 
+        });
+      });
+    }
+  }, [session]);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
