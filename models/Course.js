@@ -2,18 +2,18 @@ import mongoose from "mongoose"
 
 const CourseSchema = new mongoose.Schema(
   {
+    slug: { // Shortened Link for SEO
+      type: String,
+      required: true,
+      unique: true,
+    },
     title: {
       type: String,
       required: [true, "Please provide a course title"],
       trim: true,
       maxlength: [100, "Course title cannot exceed 100 characters"],
     },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    description: {
+    fullDescription: {
       type: String,
       required: [true, "Please provide a course description"],
     },
@@ -24,24 +24,33 @@ const CourseSchema = new mongoose.Schema(
     },
     level: {
       type: String,
-      enum: ["beginner", "intermediate", "advanced"],
+      enum: ["beginner", "intermediate", "advanced"], // n5, n4-n3, n2-n1
       required: true,
     },
     category: {
       type: String,
       enum: ["speaking", "writing", "reading", "listening", "grammar", "vocabulary", "culture"],
       required: true,
+      default: "speaking",
     },
+    highlights: [ // Course Highlights List such as What you will learn
+      {
+        description: {
+          type: String,
+        }
+      }
+    ],
     thumbnail: {
       type: String,
       required: [true, "Please provide a thumbnail image"],
     },
-    coverImage: {
-      type: String,
-    },
     instructor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
+    },
+    instructorName: {
+      type: String,
       required: true,
     },
     price: {
@@ -52,10 +61,13 @@ const CourseSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    duration: {
-      type: Number, // in minutes
-      required: true,
-    },
+    itemsReward: [
+      {
+        item: {
+          type: String,
+        }
+      }
+    ],
     modules: [
       {
         title: {
@@ -65,14 +77,48 @@ const CourseSchema = new mongoose.Schema(
         description: {
           type: String,
         },
+        order: {
+          type: Number,
+          required: true,
+        },
         lessons: [
           {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Lesson",
           },
         ],
+        quiz: {
+          title: String,
+          questions: [
+            {
+              question: {
+                type: String,
+                required: true,
+              },
+              options: [
+                {
+                  text: {
+                    type: String,
+                    required: true,
+                  },
+                  isCorrect: {
+                    type: Boolean,
+                    required: true,
+                  },
+                },
+              ],
+              explanation: {
+                type: String,
+              },
+            },
+          ],
+        },
       },
     ],
+    totalModules: {
+      type: Number,
+      default: 0,
+    },
     totalLessons: {
       type: Number,
       default: 0,
@@ -114,14 +160,6 @@ const CourseSchema = new mongoose.Schema(
     isPublished: {
       type: Boolean,
       default: false,
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
     },
   },
   { timestamps: true },

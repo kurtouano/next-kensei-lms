@@ -1,28 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BonsaiIcon } from "@/components/bonsai-icon"
-import { User, Settings, Award, BookOpen, Bell, ChevronRight, Check, Globe, Mail, Lock, Flag } from "lucide-react"
+import { User, Settings, Award, BookOpen, Flag, Globe, Mail, Lock, LogOut, Check, ChevronRight } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { signOut, useSession } from "next-auth/react"
-import axios from "axios"
-import { format } from "date-fns"
+import { CertificateModal } from "@/components/certificate-modal"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile")
-  const { data: session, status } = useSession();
-  const [userData, setUserData] = useState(null);
+  const [certificateModalOpen, setCertificateModalOpen] = useState(false)
+  const [selectedCertificate, setSelectedCertificate] = useState(null)
 
   // Mock user data
   const user = {
-    username: session?.user?.name,
+    username: "SakuraBonsai",
+    email: "user@example.com",
     country: "United States",
-    joinDate: userData?.joinDate,
-    learningGoals: ["Pass JLPT N4", "Read manga in Japanese", "Travel to Japan"],
+    joinDate: "January 2023",
     languages: ["English (Native)", "Japanese (Beginner)"],
     bonsaiLevel: 3,
     bonsaiCredits: 450,
@@ -36,11 +34,6 @@ export default function ProfilePage() {
       { id: 1, title: "Japanese Basics", date: "March 2023", level: "Beginner" },
       { id: 2, title: "Hiragana Mastery", date: "April 2023", level: "Beginner" },
     ],
-    notifications: [
-      { id: 1, type: "course", message: "New course available: Japanese Cooking Terms", date: "2 days ago" },
-      { id: 2, type: "achievement", message: "You've earned the '7-Day Streak' badge!", date: "1 week ago" },
-      { id: 3, type: "system", message: "Your account has been verified", date: "2 weeks ago" },
-    ],
     bonsai: {
       tree: "Maple",
       pot: "Traditional Blue",
@@ -48,17 +41,22 @@ export default function ProfilePage() {
     },
   }
 
-  useEffect(() => {
-    if (session) {
-      axios.get("/api/profile").then(res => {
-        const created = new Date(res.data.user.createdAt);
-        setUserData({
-          username: res.data.user.name,
-          joinDate: format(created, "MMMM yyyy"), 
-        });
-      });
-    }
-  }, [session]);
+  const handleViewCertificate = (cert) => {
+    setSelectedCertificate({
+      userName: user.username,
+      courseTitle: cert.title,
+      completionDate: new Date(cert.date),
+      certificateId: `BONSAI-CERT-${cert.id}`,
+    })
+    setCertificateModalOpen(true)
+  }
+
+  const handleLogout = () => {
+    // In a real implementation, this would handle the logout process
+    alert("Logging out...")
+    // Redirect to home page after logout
+    window.location.href = "/"
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
@@ -99,7 +97,7 @@ export default function ProfilePage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-[#eef2eb]">
+            <TabsList className="grid w-full grid-cols-3 bg-[#eef2eb]">
               <TabsTrigger value="profile" className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white">
                 <User className="mr-2 h-4 w-4" />
                 Profile
@@ -111,13 +109,6 @@ export default function ProfilePage() {
                 <Award className="mr-2 h-4 w-4" />
                 Certifications
               </TabsTrigger>
-              <TabsTrigger
-                value="notifications"
-                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white"
-              >
-                <Bell className="mr-2 h-4 w-4" />
-                Notifications
-              </TabsTrigger>
               <TabsTrigger value="settings" className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white">
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
@@ -128,7 +119,7 @@ export default function ProfilePage() {
               <div className="grid gap-6 md:grid-cols-3">
                 {/* Profile Summary */}
                 <div className="md:col-span-2 space-y-6">
-                  {/* Learning Progress */}
+                  {/* Learning Progress - Moved to top */}
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Learning Progress</h2>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -151,20 +142,57 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Learning Goals */}
+                  {/* Account Settings */}
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Learning Goals</h2>
-                    <ul className="space-y-2">
-                      {user.learningGoals.map((goal, index) => (
-                        <li key={index} className="flex items-center">
-                          <div className="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-[#eef2eb]">
-                            <Check className="h-4 w-4 text-[#4a7c59]" />
-                          </div>
-                          <span className="text-[#2c3e2d]">{goal}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button className="mt-4 bg-[#4a7c59] text-white hover:bg-[#3a6147]">Edit Goals</Button>
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Account Settings</h2>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Username</label>
+                        <div className="flex">
+                          <input
+                            type="text"
+                            value={user.username}
+                            className="flex-1 rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none"
+                            readOnly
+                          />
+                          <Button variant="outline" size="sm" className="ml-2 border-[#4a7c59] text-[#4a7c59]">
+                            Edit
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Email</label>
+                        <div className="flex items-center rounded-md border border-[#dce4d7] bg-[#f8f7f4] px-3 py-2">
+                          <Mail className="mr-2 h-4 w-4 text-[#5c6d5e]" />
+                          <span className="text-[#5c6d5e]">{user.email}</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Password</label>
+                        <Button variant="outline" className="w-full border-[#4a7c59] text-[#4a7c59]">
+                          <Lock className="mr-2 h-4 w-4" />
+                          Change Password
+                        </Button>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Country</label>
+                        <div className="flex">
+                          <select className="flex-1 rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none">
+                            <option value="US">United States</option>
+                            <option value="JP">Japan</option>
+                            <option value="CA">Canada</option>
+                            <option value="UK">United Kingdom</option>
+                            <option value="AU">Australia</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button className="mt-6 w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]">Save Changes</Button>
                   </div>
 
                   {/* Languages */}
@@ -230,8 +258,13 @@ export default function ProfilePage() {
                           <h3 className="text-lg font-semibold text-[#2c3e2d]">{cert.title}</h3>
                         </div>
                         <div className="flex justify-between">
-                          <Button variant="outline" size="sm" className="border-[#4a7c59] text-[#4a7c59]">
-                            View Details
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-[#4a7c59] text-[#4a7c59]"
+                            onClick={() => handleViewCertificate(cert)}
+                          >
+                            View Certificate
                           </Button>
                           <Button variant="outline" size="sm" className="border-[#4a7c59] text-[#4a7c59]">
                             Share
@@ -255,111 +288,16 @@ export default function ProfilePage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="notifications" className="mt-0 border-0 p-0">
-              <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-[#2c3e2d]">Notifications</h2>
-                  <Button variant="outline" size="sm" className="border-[#4a7c59] text-[#4a7c59]">
-                    Mark All as Read
-                  </Button>
-                </div>
-
-                {user.notifications.length > 0 ? (
-                  <div className="divide-y divide-[#dce4d7]">
-                    {user.notifications.map((notification) => (
-                      <div key={notification.id} className="py-4">
-                        <div className="flex items-start">
-                          {notification.type === "course" ? (
-                            <BookOpen className="mr-3 mt-1 h-5 w-5 text-[#4a7c59]" />
-                          ) : notification.type === "achievement" ? (
-                            <Award className="mr-3 mt-1 h-5 w-5 text-[#4a7c59]" />
-                          ) : (
-                            <Bell className="mr-3 mt-1 h-5 w-5 text-[#4a7c59]" />
-                          )}
-                          <div className="flex-1">
-                            <p className="text-[#2c3e2d]">{notification.message}</p>
-                            <p className="text-xs text-[#5c6d5e]">{notification.date}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-[#dce4d7] bg-[#f8f7f4] p-8 text-center">
-                    <Bell className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e] opacity-50" />
-                    <h3 className="mb-2 text-lg font-medium text-[#2c3e2d]">No Notifications</h3>
-                    <p className="text-[#5c6d5e]">
-                      You're all caught up! We'll notify you about new courses and achievements.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
             <TabsContent value="settings" className="mt-0 border-0 p-0">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Account Settings */}
+              <div className="space-y-6">
                 <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Account Settings</h2>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Username</label>
-                      <div className="flex">
-                        <input
-                          type="text"
-                          value={user.username}
-                          className="flex-1 rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none"
-                          readOnly
-                        />
-                        <Button variant="outline" size="sm" className="ml-2 border-[#4a7c59] text-[#4a7c59]">
-                          Edit
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Email</label>
-                      <div className="flex items-center rounded-md border border-[#dce4d7] bg-[#f8f7f4] px-3 py-2">
-                        <Mail className="mr-2 h-4 w-4 text-[#5c6d5e]" />
-                        <span className="text-[#5c6d5e]">user@example.com</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Password</label>
-                      <Button variant="outline" className="w-full border-[#4a7c59] text-[#4a7c59]">
-                        <Lock className="mr-2 h-4 w-4" />
-                        Change Password
-                      </Button>
-                    </div>
-
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Country</label>
-                      <div className="flex">
-                        <select className="flex-1 rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none">
-                          <option value="US">United States</option>
-                          <option value="JP">Japan</option>
-                          <option value="CA">Canada</option>
-                          <option value="UK">United Kingdom</option>
-                          <option value="AU">Australia</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button className="mt-6 w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]">Save Changes</Button>
-                </div>
-
-                {/* Notification Settings */}
-                <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Notification Settings</h2>
+                  <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Privacy Settings</h2>
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium text-[#2c3e2d]">Email Notifications</h3>
-                        <p className="text-sm text-[#5c6d5e]">Receive updates via email</p>
+                        <h3 className="font-medium text-[#2c3e2d]">Public Profile</h3>
+                        <p className="text-sm text-[#5c6d5e]">Allow others to see your profile</p>
                       </div>
                       <label className="relative inline-flex cursor-pointer items-center">
                         <input type="checkbox" className="peer sr-only" defaultChecked />
@@ -369,19 +307,8 @@ export default function ProfilePage() {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium text-[#2c3e2d]">New Course Alerts</h3>
-                        <p className="text-sm text-[#5c6d5e]">Get notified about new courses</p>
-                      </div>
-                      <label className="relative inline-flex cursor-pointer items-center">
-                        <input type="checkbox" className="peer sr-only" defaultChecked />
-                        <div className="peer h-6 w-11 rounded-full bg-[#dce4d7] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#4a7c59] peer-checked:after:translate-x-full peer-focus:outline-  peer-checked:bg-[#4a7c59] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
-                      </label>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-[#2c3e2d]">Achievement Notifications</h3>
-                        <p className="text-sm text-[#5c6d5e]">Get notified about your achievements</p>
+                        <h3 className="font-medium text-[#2c3e2d]">Show Learning Progress</h3>
+                        <p className="text-sm text-[#5c6d5e]">Display your progress to other users</p>
                       </div>
                       <label className="relative inline-flex cursor-pointer items-center">
                         <input type="checkbox" className="peer sr-only" defaultChecked />
@@ -391,8 +318,8 @@ export default function ProfilePage() {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium text-[#2c3e2d]">Learning Reminders</h3>
-                        <p className="text-sm text-[#5c6d5e]">Daily reminders to continue learning</p>
+                        <h3 className="font-medium text-[#2c3e2d]">Share Certifications</h3>
+                        <p className="text-sm text-[#5c6d5e]">Allow others to see your certifications</p>
                       </div>
                       <label className="relative inline-flex cursor-pointer items-center">
                         <input type="checkbox" className="peer sr-only" defaultChecked />
@@ -403,6 +330,18 @@ export default function ProfilePage() {
 
                   <Button className="mt-6 w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]">Save Preferences</Button>
                 </div>
+
+                {/* Logout Button - Moved to Settings tab */}
+                <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
+                  <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Account</h2>
+                  <Button
+                    onClick={handleLogout}
+                    className="w-full bg-[#f8f7f4] text-[#4a7c59] border border-[#4a7c59] hover:bg-[#eef2eb]"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
@@ -411,6 +350,12 @@ export default function ProfilePage() {
 
       {/* Footer */}
       <Footer />
+      {/* Certificate Modal */}
+      <CertificateModal
+        isOpen={certificateModalOpen}
+        onClose={() => setCertificateModalOpen(false)}
+        certificateData={selectedCertificate}
+      />
     </div>
   )
 }

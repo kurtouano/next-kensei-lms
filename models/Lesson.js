@@ -1,25 +1,15 @@
-import mongoose from "mongoose"
-
 const LessonSchema = new mongoose.Schema(
   {
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     title: {
       type: String,
       required: [true, "Please provide a lesson title"],
       trim: true,
       maxlength: [100, "Lesson title cannot exceed 100 characters"],
-    },
-    slug: {
-      type: String,
-      required: true,
-    },
-    course: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Course",
-      required: true,
-    },
-    moduleIndex: {
-      type: Number,
-      required: true,
     },
     order: {
       type: Number,
@@ -34,10 +24,25 @@ const LessonSchema = new mongoose.Schema(
     },
     videoUrl: {
       type: String,
+      required: [true, "Please provide a video URL"],
+    },
+    thumbnail: {
+      type: String,
+      required: true,
     },
     duration: {
-      type: Number, // in minutes
+      type: Number, // in seconds
       default: 0,
+    },
+    moduleRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course.modules",
+      required: true,
+    },
+    courseRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course",
+      required: true,
     },
     resources: [
       {
@@ -54,53 +59,13 @@ const LessonSchema = new mongoose.Schema(
           type: String,
           required: true,
         },
+        fileSize: String,
       },
     ],
-    quiz: {
-      questions: [
-        {
-          question: {
-            type: String,
-            required: true,
-          },
-          options: [
-            {
-              text: {
-                type: String,
-                required: true,
-              },
-              isCorrect: {
-                type: Boolean,
-                required: true,
-              },
-            },
-          ],
-          explanation: {
-            type: String,
-          },
-        },
-      ],
-    },
     isPublished: {
       type: Boolean,
       default: false,
     },
-    creditReward: {
-      type: Number,
-      default: 10,
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
   },
   { timestamps: true },
 )
-
-const Lesson = mongoose.models.Lesson || mongoose.model("Lesson", LessonSchema)
-
-export default Lesson
