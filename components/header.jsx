@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { Menu, X, User } from "lucide-react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
-import { signOut, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,11 +13,6 @@ export function Header() {
   const { data: session, status } = useSession(); // useSession hook to get session data from LOGIN nextAuth
 
   const isActive = (path) => pathname === path
-
-    const handleLogout = async () => {
-    await signOut() // Call signOut to log out the user
-    router.push('/') // Redirect to home after logging out
-  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/90 backdrop-blur-sm">
@@ -50,14 +45,8 @@ export function Header() {
         <div className="hidden items-center gap-2 md:flex">
           {status == "authenticated" ? (
             <>
-              <img src={session?.user?.image} alt="User Avatar" className="h-8 w-8 rounded-full" />
               <span className="text-sm font-medium text-[#2c3e2d]">{session.user.name}</span>
-              <button
-                onClick={handleLogout}
-                className="rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]"
-              >
-                Log Out
-              </button>
+              <img src={session?.user?.image} alt="User Avatar" className="h-8 w-8 rounded-full" />
             </>
           ) : (
             <>

@@ -9,6 +9,7 @@ import { User, Settings, Award, BookOpen, Flag, Globe, Mail, Lock, LogOut, Check
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { CertificateModal } from "@/components/certificate-modal"
+import { useSession, signOut } from "next-auth/react"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile")
@@ -51,11 +52,9 @@ export default function ProfilePage() {
     setCertificateModalOpen(true)
   }
 
-  const handleLogout = () => {
-    // In a real implementation, this would handle the logout process
-    alert("Logging out...")
-    // Redirect to home page after logout
-    window.location.href = "/"
+    const handleLogout = async () => {
+    await signOut() // Call signOut to log out the user
+    router.push('/') // Redirect to home after logging out
   }
 
   return (
