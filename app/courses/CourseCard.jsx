@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 export function CourseCard({ course }) {
+
   return (
     <div className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm transition-all hover:shadow-md">
       <div className="aspect-video w-full overflow-hidden">
@@ -35,6 +36,7 @@ export function CourseCard({ course }) {
             Includes: {course.customItems.join(", ")}
           </div>
         </div>
+
 
         <div className="mb-4">
           <h4 className="mb-2 text-sm font-semibold text-[#2c3e2d]">Learning Highlights:</h4>
