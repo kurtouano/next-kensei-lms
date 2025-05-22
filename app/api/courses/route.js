@@ -1,15 +1,16 @@
-import { connectDb } from "@/lib/mongodb";
-import Course from "@/models/Course";
+import { NextResponse } from "next/server"
+import { connectDb } from "@/lib/mongodb"
+import Course from "@/models/Course"
 
 export async function GET() {
-  await connectDb();
+  await connectDb()
 
   try {
     const courses = await Course.find({ isPublished: true })
       .select(
         "slug title shortDescription price creditReward itemsReward modules totalModules totalLessons enrolledStudents averageRating tags level category thumbnail instructorName highlights"
       )
-      .lean();
+      .lean()
 
     const formattedCourses = courses.map((course) => ({
       id: course._id.toString(),
@@ -29,13 +30,17 @@ export async function GET() {
       thumbnail: course.thumbnail,
       highlights: course.highlights.map((h) => h.description),
       instructorName: course.instructorName,
-    }));
+    }))
 
-    return Response.json({ courses: formattedCourses });
+    // ✅ Recommended: use NextResponse
+    return NextResponse.json({ courses: formattedCourses })
   } catch (error) {
-    console.error("API error:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch courses" }), {
-      status: 500,
-    });
+    console.error("API error:", error)
+
+    // ✅ Return error using NextResponse
+    return NextResponse.json(
+      { error: "Failed to fetch courses" },
+      { status: 500 }
+    )
   }
 }

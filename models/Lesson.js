@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const LessonSchema = new mongoose.Schema(
   {
     slug: {
@@ -30,13 +32,9 @@ const LessonSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    duration: {
-      type: Number, // in seconds
-      default: 0,
-    },
     moduleRef: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Course.modules",
+      ref: "Module",
       required: true,
     },
     courseRef: {
@@ -69,3 +67,6 @@ const LessonSchema = new mongoose.Schema(
   },
   { timestamps: true },
 )
+
+const Lesson = mongoose.models.Lesson || mongoose.model("Lesson", LessonSchema)
+export default Lesson

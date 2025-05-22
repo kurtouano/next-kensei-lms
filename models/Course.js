@@ -68,51 +68,10 @@ const CourseSchema = new mongoose.Schema(
         }
       }
     ],
-    modules: [
+    modules: [ // Module Schema Ref
       {
-        title: {
-          type: String,
-          required: true,
-        },
-        description: {
-          type: String,
-        },
-        order: {
-          type: Number,
-          required: true,
-        },
-        lessons: [
-          {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Lesson",
-          },
-        ],
-        quiz: {
-          title: String,
-          questions: [
-            {
-              question: {
-                type: String,
-                required: true,
-              },
-              options: [
-                {
-                  text: {
-                    type: String,
-                    required: true,
-                  },
-                  isCorrect: {
-                    type: Boolean,
-                    required: true,
-                  },
-                },
-              ],
-              explanation: {
-                type: String,
-              },
-            },
-          ],
-        },
+       type: mongoose.Schema.Types.ObjectId,
+       ref: "Module",
       },
     ],
     totalModules: {
@@ -174,5 +133,4 @@ CourseSchema.pre("save", function (next) {
 })
 
 const Course = mongoose.models.Course || mongoose.model("Course", CourseSchema)
-
 export default Course

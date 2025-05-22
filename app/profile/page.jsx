@@ -328,21 +328,13 @@ export default function ProfilePage() {
                   </div>
 
                   <Button className="mt-6 w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]">Save Preferences</Button>
-                </div>
-
-                {/* Logout Button - Moved to Settings tab */}
-                <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Account</h2>
-                  <Button
-                    onClick={handleLogout}
-                    className="w-full bg-[#f8f7f4] text-[#4a7c59] border border-[#4a7c59] hover:bg-[#eef2eb]"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                  <Button onClick={handleLogout} className="w-full mt-5 bg-[#f8f7f4] text-[#4a7c59] border border-[#4a7c59] hover:bg-[#eef2eb]">
+                    <LogOut className="mr-2 h-4 w-4" />Logout
                   </Button>
                 </div>
               </div>
             </TabsContent>
+            
           </Tabs>
         </div>
       </main>
