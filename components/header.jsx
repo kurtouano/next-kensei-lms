@@ -45,8 +45,10 @@ export function Header() {
         <div className="hidden items-center gap-2 md:flex">
           {status == "authenticated" ? (
             <>
-              <span className="text-sm font-medium text-[#2c3e2d]">{session.user.name}</span>
+            <Link href="/profile" className="flex flex-row items-center gap-2">
               <img src={session?.user?.image} alt="User Avatar" className="h-8 w-8 rounded-full" />
+              <span className="text-sm font-medium text-[#2c3e2d]">{session.user.name}</span>
+            </Link>
             </>
           ) : (
             <>
