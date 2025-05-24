@@ -20,10 +20,6 @@ const LessonSchema = new mongoose.Schema(
     description: {
       type: String,
     },
-    content: {
-      type: String,
-      required: [true, "Please provide lesson content"],
-    },
     videoUrl: {
       type: String,
       required: [true, "Please provide a video URL"],

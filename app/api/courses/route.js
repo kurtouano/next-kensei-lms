@@ -8,12 +8,20 @@ export async function GET() {
 
   try {
     const courses = await Course.find({ isPublished: true })
-      .select(
-        "slug title shortDescription price creditReward itemsReward modules totalModules totalLessons enrolledStudents averageRating tags level category thumbnail instructorName highlights"
-      )
+      .populate({
+        path: "modules",
+        populate: {
+          path: "lessons",
+        }
+      })
       .lean()
 
-    const formattedCourses = courses.map((course) => {
+      const formattedCourses = courses.map((course) => {
+      const totalModules = course.modules.length;
+      const totalLessons = course.modules.reduce((acc, module) => {
+        return acc + (module.lessons?.length || 0);
+      }, 0);
+
       return {
         id: course._id.toString(),
         slug: course.slug,
@@ -22,15 +30,15 @@ export async function GET() {
         price: course.price,
         credits: course.creditReward,
         customItems: course.itemsReward.map((item) => item.item),
-        modules: course.totalModules,
-        lessons: course.totalLessons,
+        modules: totalModules,
+        lessons: totalLessons,
         level: course.level,
         category: course.category,
         thumbnail: course.thumbnail,
         highlights: course.highlights.map((h) => h.description),
         instructorName: course.instructorName,
       }
-    })
+    });
 
     return NextResponse.json({ courses: formattedCourses })
   } catch (error) {

@@ -74,14 +74,6 @@ const CourseSchema = new mongoose.Schema(
        ref: "Module",
       },
     ],
-    totalModules: {
-      type: Number,
-      default: 0,
-    },
-    totalLessons: {
-      type: Number,
-      default: 0,
-    },
     enrolledStudents: {
       type: Number,
       default: 0,
@@ -107,10 +99,6 @@ const CourseSchema = new mongoose.Schema(
         },
       },
     ],
-    averageRating: {
-      type: Number,
-      default: 0,
-    },
     tags: [
       {
         type: String,
