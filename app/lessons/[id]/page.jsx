@@ -51,6 +51,65 @@ export default function LessonPage() {
   const [currentModuleCompleted, setCurrentModuleCompleted] = useState(false)
   const [moduleQuizCompleted, setModuleQuizCompleted] = useState([])
 
+    // State for loading
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [lessonData, setLessonData] = useState(null)
+
+  useEffect(() => {
+    const fetchLessonData = async () => {
+      try {
+        const response = await fetch(`/api/lessons/${lessonId}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch lesson data')
+        }
+        const data = await response.json()
+        console.log("DATA DATA:", data);
+        setLessonData(data.lessons)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLessonData()
+  }, [lessonId])
+
+  // Handle video play/pause
+useEffect(() => {
+  if (!videoRef.current) return;
+
+  const video = videoRef.current;
+  
+  const handlePlay = () => setIsPlaying(true);
+  const handlePause = () => setIsPlaying(false);
+  
+  video.addEventListener('play', handlePlay);
+  video.addEventListener('pause', handlePause);
+  
+  return () => {
+    video.removeEventListener('play', handlePlay);
+    video.removeEventListener('pause', handlePause);
+  };
+}, []);
+
+// Handle video progress
+useEffect(() => {
+  if (!videoRef.current || !isPlaying) return;
+
+  const video = videoRef.current;
+  const updateProgress = () => {
+    if (video.duration) {
+      setVideoProgress((video.currentTime / video.duration) * 100);
+    }
+  };
+
+  video.addEventListener('timeupdate', updateProgress);
+  return () => video.removeEventListener('timeupdate', updateProgress);
+}, [isPlaying]);
+
+  
   // Mock lesson data
   const lesson = {
     id: lessonId,
@@ -78,7 +137,7 @@ export default function LessonPage() {
             type: "video",
             title: "Introduction to Japanese Writing Systems",
             duration: "10:25",
-            videoUrl: "https://example.com/videos/intro-writing-systems.mp4",
+            videoUrl: "https://d2mkrje6fcm11v.cloudfront.net/videos/🇯🇵 What is Hiragana, Katakana, Kanji.mp4",
             thumbnail: "/placeholder.svg?height=720&width=1280",
             description: "Learn about the three Japanese writing systems: Hiragana, Katakana, and Kanji.",
           },
@@ -94,7 +153,7 @@ export default function LessonPage() {
             type: "video",
             title: "How to Write Hiragana: Basic Strokes",
             duration: "15:10",
-            videoUrl: "https://example.com/videos/hiragana-strokes.mp4",
+            videoUrl: "https://d2mkrje6fcm11v.cloudfront.net/videos/How to ask questions in Japanese __ その, この, あの __ ある vs いる (JAPANESE LESSON .mp4",
             thumbnail: "/placeholder.svg?height=720&width=1280",
             description: "Learn the basic strokes and proper technique for writing Hiragana characters.",
           },
@@ -287,18 +346,20 @@ export default function LessonPage() {
 
   // Handle video selection
   const handleSelectItem = (itemId, moduleIndex) => {
-    // Check if the module is accessible
-    if (!isModuleAccessible(moduleIndex)) {
-      return
-    }
+    if (!isModuleAccessible(moduleIndex)) return;
 
+    setActiveVideoId(itemId);
+    setActiveModule(moduleIndex);
+    
+    // Reset video state when changing videos
     if (itemId !== activeVideoId) {
-      setActiveVideoId(itemId)
-      setActiveModule(moduleIndex)
-      setIsPlaying(true)
-      setVideoProgress(0)
+      setIsPlaying(false);
+      setVideoProgress(0);
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+      }
     }
-  }
+  };
 
   // Toggle item completion
   const toggleItemCompletion = (itemId, e) => {
@@ -605,52 +666,16 @@ export default function LessonPage() {
                     <div className="relative aspect-video bg-black">
                       {activeItem && activeItem.type === "video" ? (
                         <>
-                          <img
-                            src={activeItem.thumbnail || "/placeholder.svg"}
-                            alt={activeItem.title}
-                            className="h-full w-full object-cover"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <button
-                              className="flex h-16 w-16 items-center justify-center rounded-full bg-[#4a7c59]/80 text-white transition-transform hover:scale-110"
-                              onClick={() => setIsPlaying(!isPlaying)}
-                            >
-                              {isPlaying ? <Pause className="h-8 w-8" /> : <PlayCircle className="h-8 w-8" />}
-                            </button>
-                          </div>
+                          <video
+                            ref={videoRef}
+                            controls
+                            className="absolute inset-0 w-full h-full object-cover"
+                            src={activeItem.videoUrl}
+                            onClick={() => setIsPlaying(!isPlaying)}
+                          >
+                            Your browser does not support the video tag.
+                          </video>
 
-                          {/* Video Controls */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                            <div className="mb-2">
-                              <Progress
-                                value={videoProgress}
-                                className="h-1 bg-white/30"
-                                indicatorClassName="bg-[#4a7c59]"
-                              />
-                            </div>
-                            <div className="flex items-center justify-between text-white">
-                              <div className="flex items-center space-x-3">
-                                <button onClick={() => setIsPlaying(!isPlaying)}>
-                                  {isPlaying ? <Pause className="h-5 w-5" /> : <PlayCircle className="h-5 w-5" />}
-                                </button>
-                                <span className="text-sm">
-                                  {Math.floor((videoProgress / 100) * Number.parseInt(activeItem.duration)) || "0:00"} /{" "}
-                                  {activeItem.duration}
-                                </span>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <button>
-                                  <Volume2 className="h-5 w-5" />
-                                </button>
-                                <button>
-                                  <Settings className="h-5 w-5" />
-                                </button>
-                                <button>
-                                  <Maximize className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
                         </>
                       ) : (
                         <div className="flex h-full items-center justify-center bg-[#eef2eb] p-4 text-center text-[#4a7c59]">
@@ -907,8 +932,8 @@ export default function LessonPage() {
                                   !isAccessible
                                     ? "border-gray-300 text-gray-300"
                                     : completedItems.includes(item.id)
-                                      ? "border-[#4a7c59] bg-[#4a7c59] text-white"
-                                      : "border-[#dce4d7] hover:border-[#4a7c59]"
+                                      ? "bg-[#4a7c59] text-white"
+                                      : "border-[#dce4d7]"
                                 }`}
                                 onClick={(e) => isAccessible && toggleItemCompletion(item.id, e)}
                                 disabled={!isAccessible}

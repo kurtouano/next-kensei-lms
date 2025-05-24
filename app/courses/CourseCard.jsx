@@ -29,7 +29,7 @@ export function CourseCard({ course }) {
         <div className="mb-4 space-y-2 rounded-md bg-[#eef2eb] p-3">
           <div className="flex items-center text-sm font-medium text-[#2c3e2d]">
             <BookOpen className="mr-2 h-4 w-4 text-[#4a7c59]" />
-            {course.modules} modules • {course.quizzes} quizzes
+            {course.modules} modules • {course.lessons} lessons
           </div>
           <div className="flex items-center text-sm font-medium text-[#2c3e2d]">
             <Award className="mr-2 h-4 w-4 text-[#4a7c59]" />
