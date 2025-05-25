@@ -51,9 +51,12 @@ export function CourseCard({ course }) {
         </div>
 
         <div className="flex gap-2 align-bottom">
-          <Button className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]">
-            Subscribe
-          </Button>
+          <Link className="flex-1" href={`/payment?courseId=${course.id}&title=${encodeURIComponent(course.title)}&price=${course.price}&credits=${course.credits}&modules=${course.modules}`}>
+            <Button className="w-full rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]">
+              Subscribe
+            </Button>
+          </Link>
+
           <Link
             href={`/lessons/${course.id}`}
             className="flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb]"

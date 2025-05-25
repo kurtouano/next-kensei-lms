@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { connectDb } from "@/lib/mongodb"
 import Course from "@/models/Course"
 import Module from "@/models/Module"
+import Lesson from "@/models/Lesson"
 
 export async function GET() {
   await connectDb()
@@ -32,6 +33,7 @@ export async function GET() {
         customItems: course.itemsReward.map((item) => item.item),
         modules: totalModules,
         lessons: totalLessons,
+        // likes: totalLikes,
         level: course.level,
         category: course.category,
         thumbnail: course.thumbnail,

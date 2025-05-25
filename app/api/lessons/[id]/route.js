@@ -39,7 +39,6 @@ export async function GET(request, { params }) {
         year: 'numeric',
         month: 'long',
       }),
-      totalDuration: "2h 45m",
       totalLessons: course.totalLessons,
       level: course.level.charAt(0).toUpperCase() + course.level.slice(1),
       modules: course.modules.map((module, moduleIndex) => ({
@@ -49,7 +48,6 @@ export async function GET(request, { params }) {
           id: lesson._id.toString(),
           type: "video",
           title: lesson.title,
-          duration: "10:25",
           videoUrl: lesson.videoUrl,
           thumbnail: lesson.thumbnail,
           description: lesson.description,

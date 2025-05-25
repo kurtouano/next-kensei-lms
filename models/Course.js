@@ -90,6 +90,10 @@ const CourseSchema = new mongoose.Schema(
           max: 5,
           required: true,
         },
+        isLiked: {
+          type: Boolean,
+          default: false,
+        },
         review: {
           type: String,
         },
