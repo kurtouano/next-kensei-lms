@@ -3,10 +3,13 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Trash2, Save, Eye, ArrowLeft, ArrowRight } from "lucide-react"
+import { Plus, Trash2, Save, Eye, ArrowLeft, ArrowRight, Upload } from "lucide-react"
 
 export default function CreateCourse() {
   const [currentStep, setCurrentStep] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadingFiles, setUploadingFiles] = useState({})
+  
   const [courseData, setCourseData] = useState({
     slug: "",
     title: "",
@@ -16,8 +19,8 @@ export default function CreateCourse() {
     category: "",
     highlights: [{ description: "" }],
     thumbnail: "",
-    price: null,
-    creditReward: null,
+    price: 0,
+    creditReward: 0,
     itemsReward: [{ item: "" }],
     tags: [""],
     isPublished: false,
@@ -59,6 +62,44 @@ export default function CreateCourse() {
   ])
 
   const steps = ["Course Details", "Modules & Lessons", "Quizzes", "Review & Publish"]
+
+  // File upload utility function
+  const uploadToS3 = async (file, fileType = null) => {
+    try {
+      // Step 1: Get presigned URL
+      const res = await fetch('/api/s3-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: file.name,
+          type: file.type,
+          fileType: fileType
+        }),
+      })
+
+      if (!res.ok) throw new Error('Failed to get upload URL')
+      
+      const { uploadUrl, fileUrl } = await res.json()
+
+      // Step 2: Upload file to S3
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type,
+        },
+        body: file,
+      })
+
+      if (!uploadRes.ok) throw new Error('Failed to upload file')
+
+      return fileUrl
+    } catch (error) {
+      console.error('Upload error:', error)
+      throw error
+    }
+  }
 
   // Course Data Handlers
   const updateCourseData = (field, value) => {
@@ -249,6 +290,27 @@ export default function CreateCourse() {
     )
   }
 
+  // File upload handlers
+  const handleFileUpload = async (file, uploadKey) => {
+    setUploadingFiles(prev => ({ ...prev, [uploadKey]: true }))
+    
+    try {
+      let fileType = null
+      if (file.type.startsWith('image/')) fileType = 'images'
+      else if (file.type.startsWith('video/')) fileType = 'videos'
+      else if (file.type.startsWith('audio/')) fileType = 'audio'
+      else fileType = 'documents'
+
+      const url = await uploadToS3(file, fileType)
+      setUploadingFiles(prev => ({ ...prev, [uploadKey]: false }))
+      return url
+    } catch (error) {
+      setUploadingFiles(prev => ({ ...prev, [uploadKey]: false }))
+      alert('Upload failed: ' + error.message)
+      throw error
+    }
+  }
+
   // Quiz Handlers
   const addQuestion = (moduleIndex) => {
     setModules((prev) =>
@@ -322,15 +384,80 @@ export default function CreateCourse() {
   }
 
   const handleSubmit = async (isDraft = false) => {
-    const finalData = {
-      ...courseData,
-      modules,
-      isPublished: !isDraft,
+    // Basic validation
+    if (!courseData.title || !courseData.slug || !courseData.shortDescription || !courseData.fullDescription) {
+      alert('Please fill in all required course details')
+      setCurrentStep(0)
+      return
     }
 
-    console.log("Course Data to Submit:", finalData)
-    // Here you would send the data to your backend API
-    alert(isDraft ? "Course saved as draft!" : "Course published successfully!")
+    if (!courseData.thumbnail) {
+      alert('Please upload a course thumbnail')
+      setCurrentStep(0)
+      return
+    }
+
+    // Validate modules and lessons
+    for (const module of modules) {
+      if (!module.title) {
+        alert('Please fill in all module titles')
+        setCurrentStep(1)
+        return
+      }
+
+      for (const lesson of module.lessons) {
+        if (!lesson.title || !lesson.slug || !lesson.videoUrl || !lesson.thumbnail) {
+          alert('Please fill in all required lesson fields and upload both video and thumbnail')
+          setCurrentStep(1)
+          return
+        }
+      }
+    }
+
+    setIsSubmitting(true)
+    
+    try {
+      // Prepare final data
+      const finalData = {
+        ...courseData,
+        modules: modules.map(module => ({
+          ...module,
+          lessons: module.lessons.map(lesson => ({
+            ...lesson,
+            resources: lesson.resources.filter(r => r.url && r.title) // Only keep resources with both url and title
+          }))
+        })),
+        isPublished: !isDraft,
+        tags: courseData.tags.filter(tag => tag.trim() !== ''),
+        highlights: courseData.highlights.filter(h => h.description.trim() !== ''),
+        itemsReward: courseData.itemsReward.filter(item => item.item.trim() !== ''),
+      }
+
+      console.log("Final course data being submitted:", finalData)
+
+      // Submit to backend
+      const response = await fetch('/api/instructor/create-course', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(finalData),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert(isDraft ? 'Course saved as draft!' : 'Course published successfully!')
+        // Optionally redirect or reset form
+      } else {
+        throw new Error(result.error || 'Failed to save course')
+      }
+    } catch (error) {
+      console.error('Submit error:', error)
+      alert('Error saving course: ' + error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -451,7 +578,7 @@ export default function CreateCourse() {
                   className="w-full rounded-md border border-gray-300 p-2"
                   placeholder="29.99"
                   value={courseData.price}
-                  onChange={(e) => updateCourseData("price", Number.parseFloat(e.target.value))}
+                  onChange={(e) => updateCourseData("price", parseFloat(e.target.value) || 0)}
                 />
               </div>
             </div>
@@ -464,17 +591,37 @@ export default function CreateCourse() {
                   className="w-full rounded-md border border-gray-300 p-2"
                   placeholder="100"
                   value={courseData.creditReward}
-                  onChange={(e) => updateCourseData("creditReward", Number.parseInt(e.target.value) || 0)}
+                  onChange={(e) => updateCourseData("creditReward", parseInt(e.target.value) || 0)}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Thumbnail URL *</label>
-                <input
-                  className="w-full rounded-md border border-gray-300 p-2"
-                  placeholder="https://example.com/thumbnail.jpg"
-                  value={courseData.thumbnail}
-                  onChange={(e) => updateCourseData("thumbnail", e.target.value)}
-                />
+                <label className="text-sm font-medium">Thumbnail *</label>
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full rounded-md border border-gray-300 p-2"
+                    onChange={async (e) => {
+                      const file = e.target.files[0]
+                      if (file) {
+                        try {
+                          const url = await handleFileUpload(file, 'course-thumbnail')
+                          updateCourseData("thumbnail", url)
+                        } catch (err) {
+                          console.error('Thumbnail upload failed:', err)
+                        }
+                      }
+                    }}
+                  />
+                  {uploadingFiles['course-thumbnail'] && (
+                    <div className="flex items-center px-3">
+                      <Upload className="h-4 w-4 animate-spin" />
+                    </div>
+                  )}
+                </div>
+                {courseData.thumbnail && (
+                  <img src={courseData.thumbnail} alt="Thumbnail preview" className="mt-2 h-24 rounded object-cover" />
+                )}
               </div>
             </div>
 
@@ -624,23 +771,62 @@ export default function CreateCourse() {
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Video URL *</label>
-                          <input
-                            className="w-full rounded-md border border-gray-300 p-2"
-                            placeholder="https://youtube.com/watch?v=..."
-                            value={lesson.videoUrl}
-                            onChange={(e) => updateLesson(moduleIndex, lessonIndex, "videoUrl", e.target.value)}
-                          />
+                          <label className="text-sm font-medium">Video *</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="file"
+                              accept="video/*"
+                              className="w-full rounded-md border border-gray-300 p-2"
+                              onChange={async (e) => {
+                                const file = e.target.files[0]
+                                if (file) {
+                                  try {
+                                    const url = await handleFileUpload(file, `module-${moduleIndex}-lesson-${lessonIndex}-video`)
+                                    updateLesson(moduleIndex, lessonIndex, "videoUrl", url)
+                                  } catch (err) {
+                                    console.error('Video upload failed:', err)
+                                  }
+                                }
+                              }}
+                            />
+                            {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
+                              <div className="flex items-center px-3">
+                                <Upload className="h-4 w-4 animate-spin" />
+                              </div>
+                            )}
+                          </div>
+                          {lesson.videoUrl && (
+                            <video src={lesson.videoUrl} controls className="mt-2 w-full max-h-40 rounded" />
+                          )}
                         </div>
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Thumbnail URL *</label>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="w-full rounded-md border border-gray-300 p-2"
-                            value={lesson.thumbnail}
-                            onChange={(e) => updateLesson(moduleIndex, lessonIndex, "thumbnail", e.target.value)}
-                          />
+                          <label className="text-sm font-medium">Thumbnail *</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="w-full rounded-md border border-gray-300 p-2"
+                              onChange={async (e) => {
+                                const file = e.target.files[0]
+                                if (file) {
+                                  try {
+                                    const url = await handleFileUpload(file, `module-${moduleIndex}-lesson-${lessonIndex}-thumbnail`)
+                                    updateLesson(moduleIndex, lessonIndex, "thumbnail", url)
+                                  } catch (err) {
+                                    console.error('Thumbnail upload failed:', err)
+                                  }
+                                }
+                              }}
+                            />
+                            {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-thumbnail`] && (
+                              <div className="flex items-center px-3">
+                                <Upload className="h-4 w-4 animate-spin" />
+                              </div>
+                            )}
+                          </div>
+                          {lesson.thumbnail && (
+                            <img src={lesson.thumbnail} alt="Thumbnail preview" className="mt-2 h-24 rounded object-cover" />
+                          )}
                         </div>
                       </div>
 
@@ -869,13 +1055,34 @@ export default function CreateCourse() {
             </div>
 
             <div className="flex gap-4">
-              <Button onClick={() => handleSubmit(true)} variant="outline" className="flex-1">
-                <Save className="mr-2 h-4 w-4" />
-                Save as Draft
+              <Button 
+                onClick={() => handleSubmit(true)} 
+                variant="outline" 
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  "Saving..."
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save as Draft
+                  </>
+                )}
               </Button>
-              <Button onClick={() => handleSubmit(false)} className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147]">
-                <Eye className="mr-2 h-4 w-4" />
-                Publish Course
+              <Button 
+                onClick={() => handleSubmit(false)} 
+                className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147]"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  "Publishing..."
+                ) : (
+                  <>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Publish Course
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
