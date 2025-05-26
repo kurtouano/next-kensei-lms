@@ -67,7 +67,7 @@ export default function CreateCourse() {
   const uploadToS3 = async (file, fileType = null) => {
     try {
       // Step 1: Get presigned URL
-      const res = await fetch('/api/s3-upload', {
+      const res = await fetch('/api/instuctor/s3-upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
