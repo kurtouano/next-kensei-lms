@@ -65,7 +65,10 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold text-[#2c3e2d]">Instructor Dashboard</h1>
           <p className="text-[#4a7c59]">Manage your courses and view analytics</p>
         </div>
-        <Button className="bg-[#4a7c59] hover:bg-[#3a6147]">
+        <Button
+          className="bg-[#4a7c59] hover:bg-[#3a6147]"
+          onClick={() => (window.location.href = "/instructor/create-course")}
+        >
           <Plus className="mr-2 h-4 w-4" /> Create New Course
         </Button>
       </div>
@@ -320,7 +323,12 @@ export default function AdminDashboard() {
 
                 <div className="flex justify-end space-x-4">
                   <Button variant="outline">Save as Draft</Button>
-                  <Button className="bg-[#4a7c59] hover:bg-[#3a6147]">Publish Course</Button>
+                  <Button
+                    className="bg-[#4a7c59] hover:bg-[#3a6147]"
+                    onClick={() => (window.location.href = "/instructor/create-course")}
+                  >
+                    Go to Course Builder
+                  </Button>
                 </div>
               </form>
             </CardContent>
