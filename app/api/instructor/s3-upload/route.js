@@ -22,7 +22,18 @@ export async function POST(req) {
       folder = 'videos'
     } else if (type.startsWith('audio/')) {
       folder = 'audio'
-    } else if (type === 'application/pdf') {
+    } else if (
+      type === 'application/pdf' ||
+      type === 'application/msword' || // .doc
+      type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || // .docx
+      type === 'application/vnd.ms-powerpoint' || // .ppt
+      type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || // .pptx
+      type === 'application/vnd.ms-excel' || // .xls
+      type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || // .xlsx
+      type === 'application/zip' ||
+      type === 'application/x-zip-compressed' ||
+      type === 'application/octet-stream' // fallback for unknown binary files
+    ) {
       folder = 'documents'
     }
 
