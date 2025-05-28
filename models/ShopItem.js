@@ -11,7 +11,7 @@ const ShopItemSchema = new mongoose.Schema(
       enum: ["tree", "face", "pot", "decoration"],
       required: true,
     },
-    credits: {
+    creditsRequired: {
       type: Number,
       required: true,
     },

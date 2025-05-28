@@ -13,8 +13,9 @@ export async function GET() {
         path: "modules",
         populate: {
           path: "lessons",
-        }
+        },
       })
+      .populate("itemsReward")
       .lean()
 
       const formattedCourses = courses.map((course) => {
@@ -30,7 +31,7 @@ export async function GET() {
         description: course.shortDescription,
         price: course.price,
         credits: course.creditReward,
-        customItems: course.itemsReward.map((item) => item.item),
+        itemsReward: course.itemsReward.map(item => item.name),
         modules: totalModules,
         lessons: totalLessons,
         // likes: totalLikes,

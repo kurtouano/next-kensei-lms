@@ -33,7 +33,7 @@ export function CourseCard({ course }) {
           </div>
           <div className="flex items-center text-sm font-medium text-[#2c3e2d]">
             <Award className="mr-2 h-4 w-4 text-[#4a7c59]" />
-            Includes: {course.customItems.join(", ")}
+            Includes: {course.itemsReward.join(", ")}
           </div>
         </div>
 

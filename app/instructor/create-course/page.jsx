@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, Save, Eye, ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react"
@@ -9,6 +9,7 @@ export default function CreateCourse() {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState({})
+  const [shopItems, setShopItems] = useState([])
   
   const [courseData, setCourseData] = useState({
     slug: "",
@@ -58,6 +59,20 @@ export default function CreateCourse() {
   ])
 
   const steps = ["Course Details", "Modules & Lessons", "Quizzes", "Review & Publish"]
+
+  useEffect(() => {
+    const fetchShopItems = async () => {
+      try {
+        const response = await fetch('/api/bonsai/shop-items');
+        const data = await response.json();
+        setShopItems(data);
+      } catch (error) {
+        console.error('Error fetching shop items:', error);
+      }
+    };
+    
+    fetchShopItems();
+  }, []);
 
   // File upload utility function
   const uploadToS3 = async (file, fileType = null) => {
@@ -426,6 +441,8 @@ export default function CreateCourse() {
   }
 
   const handleSubmit = async (isDraft = false) => {
+
+    console.log("DATAS,", courseData, modules)
     // Basic validation
     if (!courseData.title || !courseData.slug || !courseData.shortDescription || !courseData.fullDescription) {
       alert('Please fill in all required course details')
@@ -472,7 +489,9 @@ export default function CreateCourse() {
         isPublished: !isDraft,
         tags: courseData.tags.filter(tag => tag.trim() !== ''),
         highlights: courseData.highlights.filter(h => h.description.trim() !== ''),
-        itemsReward: courseData.itemsReward.filter(item => item.item.trim() !== ''),
+        itemsReward: courseData.itemsReward
+          .filter(item => item.item && item.item.trim() !== '') // keep only valid ones
+          .map(item => item.item),  // get the string IDs only
       }
 
       console.log("Final course data being submitted:", finalData)
@@ -641,10 +660,11 @@ export default function CreateCourse() {
                     onChange={(e) => updateItemReward(index, e.target.value)}
                   >
                     <option value="">Select a reward item</option>
-                    {/* You would fetch these from your ShopItem collection */}
-                    <option value="item1">Item 1</option>
-                    <option value="item2">Item 2</option>
-                    <option value="item3">Item 3</option>
+                    {shopItems.map((item) => (
+                      <option key={item._id} value={item._id}>
+                        {item.name}
+                      </option>
+                    ))}
                   </select>
                   <Button
                     type="button"
