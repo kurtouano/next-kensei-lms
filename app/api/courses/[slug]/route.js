@@ -8,9 +8,9 @@ export async function GET(request, { params }) {
   await connectDb();
 
   try {
-    const { id } = await params;
+    const { slug } = await params;
 
-    const course = await Course.findById(id)
+    const course = await Course.findOne( {slug})
       .populate({
         path: 'modules',
         populate: {

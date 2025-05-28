@@ -58,7 +58,7 @@ export function CourseCard({ course }) {
           </Link>
 
           <Link
-            href={`/lessons/${course.id}`}
+            href={`/courses/${course.slug}`}
             className="flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb]"
           >
             Preview
