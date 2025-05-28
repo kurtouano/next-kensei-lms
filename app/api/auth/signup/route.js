@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDb } from "@/lib/mongodb";
 import User from "@/models/User.js";
+import Bonsai from "@/models/Bonsai.js";
 import bcryptjs from "bcryptjs";
 
 export async function POST(req) {
@@ -18,13 +19,17 @@ export async function POST(req) {
         hashedPassword = await bcryptjs.hash(password, 10);
     }
 
-    await User.create({ // Create new user in DB credentials/google
+    const createUser = await User.create({ // Create new user in DB credentials/google
       name,
       email,
       password: hashedPassword,
       provider,
       providerId,
     });
+
+    const bonsai = await Bonsai.create({ userRef: createUser._id });
+    createUser.bonsai = bonsai._id;
+    await createUser.save();
     return NextResponse.json({ message: "User is Registered" }, { status: 201 });
 
   } catch (error) {
