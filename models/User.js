@@ -1,4 +1,5 @@
 import mongoose from "mongoose"
+import { type } from "os"
 
 const UserSchema = new mongoose.Schema(
   {
@@ -24,20 +25,12 @@ const UserSchema = new mongoose.Schema(
     },
     provider: {
       type: String,
-      enum: ["credentials", "google", "facebook", "github"],
+      enum: ["credentials", "google"],
       default: "credentials",
     },
     providerId: {
       type: String,
       default: null,
-    },
-    firstName: {
-      type: String,
-      trim: true,
-    },
-    lastName: {
-      type: String,
-      trim: true,
     },
     profileImage: {
       type: String,
@@ -47,14 +40,6 @@ const UserSchema = new mongoose.Schema(
       type: String,
       enum: ["student", "instructor", "admin"],
       default: "student",
-    },
-    bio: {
-      type: String,
-      maxlength: [500, "Bio cannot exceed 500 characters"],
-    },
-    credits: {
-      type: Number,
-      default: 0,
     },
     subscription: {
       type: {
@@ -76,6 +61,14 @@ const UserSchema = new mongoose.Schema(
         },
       },
     },
+    credits: {
+      type: Number,
+      default: 0
+    },
+    bonsai: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Bonsai",
+    },
     enrolledCourses: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -88,10 +81,6 @@ const UserSchema = new mongoose.Schema(
         ref: "Course",
       },
     ],
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
     lastLogin: {
       type: Date,
     },

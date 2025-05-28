@@ -63,9 +63,8 @@ const CourseSchema = new mongoose.Schema(
     },
     itemsReward: [
       {
-        item: {
-          type: String,
-        }
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ShopItem", 
       }
     ],
     modules: [ // Module Schema Ref

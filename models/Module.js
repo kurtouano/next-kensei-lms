@@ -12,9 +12,6 @@ const ModuleSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    description: {
-      type: String,
-    },
     order: {
       type: Number,
       required: true,
@@ -45,9 +42,6 @@ const ModuleSchema = new mongoose.Schema(
               },
             },
           ],
-          explanation: {
-            type: String,
-          },
         },
       ],
     },

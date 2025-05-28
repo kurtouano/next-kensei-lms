@@ -2,11 +2,6 @@ import mongoose from "mongoose";
 
 const LessonSchema = new mongoose.Schema(
   {
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-    },
     title: {
       type: String,
       required: [true, "Please provide a lesson title"],
@@ -16,9 +11,6 @@ const LessonSchema = new mongoose.Schema(
     order: {
       type: Number,
       required: true,
-    },
-    description: {
-      type: String,
     },
     videoUrl: {
       type: String,
@@ -44,16 +36,10 @@ const LessonSchema = new mongoose.Schema(
           type: String,
           required: true,
         },
-        type: {
-          type: String,
-          enum: ["pdf", "audio", "link", "image", "document"],
-          required: true,
-        },
-        url: {
+        fileUrl: {
           type: String,
           required: true,
         },
-        fileSize: String,
       },
     ],
     isPublished: {
