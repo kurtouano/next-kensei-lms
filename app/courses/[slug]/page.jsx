@@ -417,18 +417,6 @@ function QuizSection({
             : "You need to score at least 70% to proceed."}
         </p>
 
-        {quizScore >= 70 && (
-          <div className="mb-8 rounded-lg bg-[#eef2eb] p-4">
-            <h3 className="mb-2 text-lg font-semibold text-[#2c3e2d]">Rewards Earned:</h3>
-            <div className="flex justify-center gap-4">
-              <div className="flex items-center rounded-full bg-white px-4 py-2">
-                <BonsaiIcon className="mr-2 h-5 w-5 text-[#4a7c59]" />
-                <span className="font-medium text-[#2c3e2d]">+50 Bonsai Credits</span>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="flex justify-center gap-4">
           {quizScore >= 70 ? (
             <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" onClick={onProceed}>

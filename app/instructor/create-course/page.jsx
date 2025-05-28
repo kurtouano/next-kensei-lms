@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Trash2, Save, Eye, ArrowLeft, ArrowRight, Upload } from "lucide-react"
+import { Plus, Trash2, Save, Eye, ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react"
 
 export default function CreateCourse() {
   const [currentStep, setCurrentStep] = useState(0)
@@ -21,7 +21,7 @@ export default function CreateCourse() {
     thumbnail: "",
     price: 0,
     creditReward: 0,
-    itemsReward: [{ item: "" }],
+    itemsReward: [""],
     tags: [""],
     isPublished: false,
   })
@@ -29,17 +29,14 @@ export default function CreateCourse() {
   const [modules, setModules] = useState([
     {
       title: "",
-      description: "",
       order: 1,
       lessons: [
         {
-          slug: "",
           title: "",
-          description: "",
           order: 1,
           videoUrl: "",
           thumbnail: "",
-          resources: [{ title: "", type: "pdf", url: "", fileSize: "" }],
+          resources: [{ title: "", videoUrl: ""}],
           isPublished: false,
         },
       ],
@@ -54,7 +51,6 @@ export default function CreateCourse() {
               { text: "", isCorrect: false },
               { text: "", isCorrect: true },
             ],
-            explanation: "",
           },
         ],
       },
@@ -67,7 +63,7 @@ export default function CreateCourse() {
   const uploadToS3 = async (file, fileType = null) => {
     try {
       // Step 1: Get presigned URL
-      const res = await fetch('/api/instuctor/s3-upload', {
+      const res = await fetch('/api/instructor/s3-upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,6 +101,38 @@ export default function CreateCourse() {
   const updateCourseData = (field, value) => {
     setCourseData((prev) => ({ ...prev, [field]: value }))
   }
+
+  function generateSlug(title) {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')    // remove special chars
+      .replace(/\s+/g, '-')        // replace spaces with hyphens
+      .replace(/-+/g, '-');        // collapse multiple hyphens
+  }
+
+  const addItemReward = () => {
+    setCourseData((prev) => ({
+      ...prev,
+      itemsReward: [...prev.itemsReward, { item: "" }],
+    }));
+  };
+
+  const updateItemReward = (index, value) => {
+    setCourseData((prev) => ({
+      ...prev,
+      itemsReward: prev.itemsReward.map((item, i) => 
+        i === index ? { ...item, item: value } : item
+      ),
+    }));
+  };
+
+  const removeItemReward = (index) => {
+    setCourseData((prev) => ({
+      ...prev,
+      itemsReward: prev.itemsReward.filter((_, i) => i !== index),
+    }));
+  };
 
   const addHighlight = () => {
     setCourseData((prev) => ({
@@ -154,17 +182,14 @@ export default function CreateCourse() {
       ...prev,
       {
         title: "",
-        description: "",
         order: prev.length + 1,
         lessons: [
           {
-            slug: "",
             title: "",
-            description: "",
             order: 1,
             videoUrl: "",
             thumbnail: "",
-            resources: [{ title: "", type: "pdf", url: "", fileSize: "" }],
+            resources: [{ title: "", videoUrl: ""}],
             isPublished: false,
           },
         ],
@@ -179,7 +204,6 @@ export default function CreateCourse() {
                 { text: "", isCorrect: false },
                 { text: "", isCorrect: true },
               ],
-              explanation: "",
             },
           ],
         },
@@ -205,13 +229,11 @@ export default function CreateCourse() {
               lessons: [
                 ...module.lessons,
                 {
-                  slug: "",
                   title: "",
-                  description: "",
                   order: module.lessons.length + 1,
                   videoUrl: "",
                   thumbnail: "",
-                  resources: [{ title: "", type: "pdf", url: "", fileSize: "" }],
+                  resources: [{ title: "", videoUrl: ""}],
                   isPublished: false,
                 },
               ],
@@ -258,7 +280,7 @@ export default function CreateCourse() {
                 j === lessonIndex
                   ? {
                       ...lesson,
-                      resources: [...lesson.resources, { title: "", type: "pdf", url: "", fileSize: "" }],
+                      resources: [...lesson.resources, { title: "", videoUrl: ""}],
                     }
                   : lesson,
               ),
@@ -289,6 +311,27 @@ export default function CreateCourse() {
       ),
     )
   }
+
+  const removeResource = (moduleIndex, lessonIndex, resourceIndex) => {
+    setModules((prev) =>
+      prev.map((module, i) =>
+        i === moduleIndex
+          ? {
+              ...module,
+              lessons: module.lessons.map((lesson, j) =>
+                j === lessonIndex
+                  ? {
+                      ...lesson,
+                      resources: lesson.resources.filter((_, k) => k !== resourceIndex),
+                    }
+                  : lesson,
+              ),
+            }
+          : module,
+      ),
+    );
+  };
+
 
   // File upload handlers
   const handleFileUpload = async (file, uploadKey) => {
@@ -330,7 +373,6 @@ export default function CreateCourse() {
                       { text: "", isCorrect: false },
                       { text: "", isCorrect: true },
                     ],
-                    explanation: "",
                   },
                 ],
               },
@@ -406,7 +448,7 @@ export default function CreateCourse() {
       }
 
       for (const lesson of module.lessons) {
-        if (!lesson.title || !lesson.slug || !lesson.videoUrl || !lesson.thumbnail) {
+        if (!lesson.title || !lesson.videoUrl || !lesson.thumbnail) {
           alert('Please fill in all required lesson fields and upload both video and thumbnail')
           setCurrentStep(1)
           return
@@ -424,7 +466,7 @@ export default function CreateCourse() {
           ...module,
           lessons: module.lessons.map(lesson => ({
             ...lesson,
-            resources: lesson.resources.filter(r => r.url && r.title) // Only keep resources with both url and title
+            resources: lesson.resources.filter(r => r.videoUrl && r.title) // Only keep resources with both url and title
           }))
         })),
         isPublished: !isDraft,
@@ -498,23 +540,18 @@ export default function CreateCourse() {
             <CardDescription>Basic information about your course</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-1">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Course Title *</label>
                 <input
                   className="w-full rounded-md border border-gray-300 p-2"
                   placeholder="e.g., Japanese for Beginners"
                   value={courseData.title}
-                  onChange={(e) => updateCourseData("title", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Course Slug *</label>
-                <input
-                  className="w-full rounded-md border border-gray-300 p-2"
-                  placeholder="e.g., japanese-for-beginners"
-                  value={courseData.slug}
-                  onChange={(e) => updateCourseData("slug", e.target.value)}
+                    onChange={(e) => {
+                      const title = e.target.value;
+                      updateCourseData("title", title);
+                      updateCourseData("slug", generateSlug(title));
+                    }}    
                 />
               </div>
             </div>
@@ -583,7 +620,7 @@ export default function CreateCourse() {
               </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Credit Reward</label>
                 <input
@@ -594,6 +631,36 @@ export default function CreateCourse() {
                   onChange={(e) => updateCourseData("creditReward", parseInt(e.target.value) || 0)}
                 />
               </div>
+              <div className="space-y-2">
+              <label className="text-sm font-medium">Item Rewards</label>
+              {courseData.itemsReward.map((reward, index) => (
+                <div key={index} className="flex gap-2">
+                  <select
+                    className="flex-1 rounded-md border border-gray-300 p-2"
+                    value={reward.item}
+                    onChange={(e) => updateItemReward(index, e.target.value)}
+                  >
+                    <option value="">Select a reward item</option>
+                    {/* You would fetch these from your ShopItem collection */}
+                    <option value="item1">Item 1</option>
+                    <option value="item2">Item 2</option>
+                    <option value="item3">Item 3</option>
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeItemReward(index)}
+                    disabled={courseData.itemsReward.length === 1}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={addItemReward}>
+                <Plus className="mr-2 h-4 w-4" /> Add Item Reward
+              </Button>
+            </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Thumbnail *</label>
                 <div className="flex gap-2">
@@ -615,12 +682,19 @@ export default function CreateCourse() {
                   />
                   {uploadingFiles['course-thumbnail'] && (
                     <div className="flex items-center px-3">
-                      <Upload className="h-4 w-4 animate-spin" />
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
                     </div>
                   )}
                 </div>
                 {courseData.thumbnail && (
-                  <img src={courseData.thumbnail} alt="Thumbnail preview" className="mt-2 h-24 rounded object-cover" />
+                  <a
+                    href={courseData.thumbnail}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline text-sm col-span-4"
+                  >
+                    View uploaded file
+                  </a>
                 )}
               </div>
             </div>
@@ -721,16 +795,6 @@ export default function CreateCourse() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Module Description</label>
-                  <textarea
-                    className="h-20 w-full rounded-md border border-gray-300 p-2"
-                    placeholder="Brief description of this module"
-                    value={module.description}
-                    onChange={(e) => updateModule(moduleIndex, "description", e.target.value)}
-                  />
-                </div>
-
                 {/* Lessons */}
                 <div className="space-y-4">
                   <h4 className="font-medium">Lessons</h4>
@@ -758,15 +822,6 @@ export default function CreateCourse() {
                             onChange={(e) => updateLesson(moduleIndex, lessonIndex, "title", e.target.value)}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Lesson Slug *</label>
-                          <input
-                            className="w-full rounded-md border border-gray-300 p-2"
-                            placeholder="e.g., learning-vowels"
-                            value={lesson.slug}
-                            onChange={(e) => updateLesson(moduleIndex, lessonIndex, "slug", e.target.value)}
-                          />
-                        </div>
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
@@ -791,12 +846,19 @@ export default function CreateCourse() {
                             />
                             {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
                               <div className="flex items-center px-3">
-                                <Upload className="h-4 w-4 animate-spin" />
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
                               </div>
                             )}
                           </div>
                           {lesson.videoUrl && (
-                            <video src={lesson.videoUrl} controls className="mt-2 w-full max-h-40 rounded" />
+                              <a
+                                href={lesson.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline text-sm col-span-4"
+                              >
+                                View uploaded file
+                              </a>
                           )}
                         </div>
                         <div className="space-y-2">
@@ -820,31 +882,29 @@ export default function CreateCourse() {
                             />
                             {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-thumbnail`] && (
                               <div className="flex items-center px-3">
-                                <Upload className="h-4 w-4 animate-spin" />
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
                               </div>
                             )}
                           </div>
                           {lesson.thumbnail && (
-                            <img src={lesson.thumbnail} alt="Thumbnail preview" className="mt-2 h-24 rounded object-cover" />
+                              <a
+                                href={lesson.thumbnail}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline text-sm col-span-4"
+                              >
+                                View uploaded file
+                              </a>
                           )}
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Lesson Description</label>
-                        <textarea
-                          className="h-20 w-full rounded-md border border-gray-300 p-2"
-                          placeholder="What will students learn in this lesson?"
-                          value={lesson.description}
-                          onChange={(e) => updateLesson(moduleIndex, lessonIndex, "description", e.target.value)}
-                        />
-                      </div>
-
                       {/* Resources */}
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Resources</label>
+                        <label className="text-sm font-medium items-center">Resources</label>
                         {lesson.resources.map((resource, resourceIndex) => (
-                          <div key={resourceIndex} className="grid gap-2 md:grid-cols-4 p-2 border rounded">
+                          <div key={resourceIndex} className="grid gap-4 md:grid-cols-2 p-2 border rounded items-center">
+                            {/* Resource Title */}
                             <input
                               className="rounded-md border border-gray-300 p-2"
                               placeholder="Resource title"
@@ -853,37 +913,58 @@ export default function CreateCourse() {
                                 updateResource(moduleIndex, lessonIndex, resourceIndex, "title", e.target.value)
                               }
                             />
-                            <select
-                              className="rounded-md border border-gray-300 p-2"
-                              value={resource.type}
-                              onChange={(e) =>
-                                updateResource(moduleIndex, lessonIndex, resourceIndex, "type", e.target.value)
-                              }
-                            >
-                              <option value="pdf">PDF</option>
-                              <option value="audio">Audio</option>
-                              <option value="link">Link</option>
-                              <option value="image">Image</option>
-                              <option value="document">Document</option>
-                            </select>
-                            <input
-                              className="rounded-md border border-gray-300 p-2"
-                              placeholder="Resource URL"
-                              value={resource.url}
-                              onChange={(e) =>
-                                updateResource(moduleIndex, lessonIndex, resourceIndex, "url", e.target.value)
-                              }
-                            />
-                            <input
-                              className="rounded-md border border-gray-300 p-2"
-                              placeholder="File size"
-                              value={resource.fileSize}
-                              onChange={(e) =>
-                                updateResource(moduleIndex, lessonIndex, resourceIndex, "fileSize", e.target.value)
-                              }
-                            />
+
+                            {/* File Upload */}
+                            <div className="flex row items-center gap-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
+                                className="rounded-md border border-gray-300 p-2 w-full"
+                                onChange={async (e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    try {
+                                      const url = await handleFileUpload(file, `module-${moduleIndex}-lesson-${lessonIndex}-resource-${resourceIndex}`);
+                                      updateResource(moduleIndex, lessonIndex, resourceIndex, "fileUrl", url);
+                                    } catch (err) {
+                                      console.error("Resource upload failed:", err);
+                                    }
+                                  }
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeResource(moduleIndex, lessonIndex, resourceIndex)}
+                                disabled={lesson.resources.length === 1}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            {/* Upload Spinner */}
+                            {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-resource-${resourceIndex}`] && (
+                              <div className="flex items-center px-3">
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                              </div>
+                            )}
+
+                            {/* Preview or link */}
+                            {resource.fileUrl && (
+                              <a
+                                href={resource.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline text-sm col-span-4"
+                              >
+                                View uploaded file
+                              </a>
+                            )}
                           </div>
                         ))}
+
+                        {/* Add resource button */}
                         <Button
                           type="button"
                           variant="outline"
@@ -893,6 +974,7 @@ export default function CreateCourse() {
                           <Plus className="mr-2 h-4 w-4" /> Add Resource
                         </Button>
                       </div>
+
                     </div>
                   ))}
                   <Button type="button" variant="outline" onClick={() => addLesson(moduleIndex)}>
@@ -983,16 +1065,6 @@ export default function CreateCourse() {
                           <span className="text-sm text-gray-500">{option.isCorrect ? "(Correct)" : ""}</span>
                         </div>
                       ))}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Explanation (Optional)</label>
-                      <textarea
-                        className="h-20 w-full rounded-md border border-gray-300 p-2"
-                        placeholder="Explain why this is the correct answer"
-                        value={question.explanation}
-                        onChange={(e) => updateQuestion(moduleIndex, questionIndex, "explanation", e.target.value)}
-                      />
                     </div>
                   </div>
                 ))}
