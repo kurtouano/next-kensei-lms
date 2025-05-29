@@ -1,5 +1,4 @@
 import mongoose from "mongoose"
-import { type } from "os"
 
 const UserSchema = new mongoose.Schema(
   {
@@ -75,11 +74,11 @@ const UserSchema = new mongoose.Schema(
         ref: "Course",
       },
     ],
-    completedCourses: [
+    progressRecords: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Course",
-      },
+        ref: "Progress",
+      }
     ],
     lastLogin: {
       type: Date,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, Save, Eye, ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react"
@@ -10,6 +10,7 @@ export default function CreateCourse() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState({})
   const [shopItems, setShopItems] = useState([])
+  const videoRef = useRef(null);
   
   const [courseData, setCourseData] = useState({
     slug: "",
@@ -36,8 +37,8 @@ export default function CreateCourse() {
           title: "",
           order: 1,
           videoUrl: "",
-          thumbnail: "",
-          resources: [{ title: "", videoUrl: ""}],
+          videoDuration: 0,
+          resources: [{ title: "", fileUrl: ""}],
           isPublished: false,
         },
       ],
@@ -203,8 +204,8 @@ export default function CreateCourse() {
             title: "",
             order: 1,
             videoUrl: "",
-            thumbnail: "",
-            resources: [{ title: "", videoUrl: ""}],
+            videoDuration: 0,
+            resources: [{ title: "", fileUrl: ""}],
             isPublished: false,
           },
         ],
@@ -247,8 +248,8 @@ export default function CreateCourse() {
                   title: "",
                   order: module.lessons.length + 1,
                   videoUrl: "",
-                  thumbnail: "",
-                  resources: [{ title: "", videoUrl: ""}],
+                  videoDuration: 0,
+                  resources: [{ title: "", fileUrl: ""}],
                   isPublished: false,
                 },
               ],
@@ -265,6 +266,7 @@ export default function CreateCourse() {
           ? {
               ...module,
               lessons: module.lessons.map((lesson, j) => (j === lessonIndex ? { ...lesson, [field]: value } : lesson)),
+              
             }
           : module,
       ),
@@ -295,7 +297,7 @@ export default function CreateCourse() {
                 j === lessonIndex
                   ? {
                       ...lesson,
-                      resources: [...lesson.resources, { title: "", videoUrl: ""}],
+                      resources: [...lesson.resources, { title: "", fileUrl: ""}],
                     }
                   : lesson,
               ),
@@ -465,8 +467,8 @@ export default function CreateCourse() {
       }
 
       for (const lesson of module.lessons) {
-        if (!lesson.title || !lesson.videoUrl || !lesson.thumbnail) {
-          alert('Please fill in all required lesson fields and upload both video and thumbnail')
+        if (!lesson.title || !lesson.videoUrl) {
+          alert('Please fill in all required lesson fields')
           setCurrentStep(1)
           return
         }
@@ -682,7 +684,7 @@ export default function CreateCourse() {
               </Button>
             </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Thumbnail *</label>
+                <label className="text-sm font-medium">Course Thumbnail *</label>
                 <div className="flex gap-2">
                   <input
                     type="file"
@@ -870,131 +872,102 @@ export default function CreateCourse() {
                               </div>
                             )}
                           </div>
+                          {/* Show Uploaded Video and Get Duration */}
                           {lesson.videoUrl && (
-                              <a
-                                href={lesson.videoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline text-sm col-span-4"
-                              >
-                                View uploaded file
-                              </a>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Thumbnail *</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="w-full rounded-md border border-gray-300 p-2"
-                              onChange={async (e) => {
-                                const file = e.target.files[0]
-                                if (file) {
-                                  try {
-                                    const url = await handleFileUpload(file, `module-${moduleIndex}-lesson-${lessonIndex}-thumbnail`)
-                                    updateLesson(moduleIndex, lessonIndex, "thumbnail", url)
-                                  } catch (err) {
-                                    console.error('Thumbnail upload failed:', err)
-                                  }
+                            <video
+                              ref={videoRef}
+                              className="w-full rounded-md mt-2"
+                              controls
+                              onLoadedMetadata={() => {
+                                const duration = videoRef.current?.duration;
+                                if (duration) {
+                                  updateLesson(moduleIndex, lessonIndex, "videoDuration", Math.round(duration));
                                 }
                               }}
-                            />
-                            {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-thumbnail`] && (
-                              <div className="flex items-center px-3">
-                                <LoaderCircle className="h-4 w-4 animate-spin" />
-                              </div>
-                            )}
-                          </div>
-                          {lesson.thumbnail && (
-                              <a
-                                href={lesson.thumbnail}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline text-sm col-span-4"
-                              >
-                                View uploaded file
-                              </a>
+                            >
+                              <source src={lesson.videoUrl} type="video/mp4" />
+                              Your browser does not support the video tag.
+                            </video>
                           )}
                         </div>
-                      </div>
 
-                      {/* Resources */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium items-center">Resources</label>
-                        {lesson.resources.map((resource, resourceIndex) => (
-                          <div key={resourceIndex} className="grid gap-4 md:grid-cols-2 p-2 border rounded items-center">
-                            {/* Resource Title */}
-                            <input
-                              className="rounded-md border border-gray-300 p-2"
-                              placeholder="Resource title"
-                              value={resource.title}
-                              onChange={(e) =>
-                                updateResource(moduleIndex, lessonIndex, resourceIndex, "title", e.target.value)
-                              }
-                            />
-
-                            {/* File Upload */}
-                            <div className="flex row items-center gap-2">
+                         {/* Resources Upload*/}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium items-center">Resources</label>
+                          {lesson.resources.map((resource, resourceIndex) => (
+                            <div key={resourceIndex} className="grid gap-4 md:grid-cols-2 p-2 border rounded items-center">
+                              {/* Resource Title */}
                               <input
-                                type="file"
-                                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
-                                className="rounded-md border border-gray-300 p-2 w-full"
-                                onChange={async (e) => {
-                                  const file = e.target.files[0];
-                                  if (file) {
-                                    try {
-                                      const url = await handleFileUpload(file, `module-${moduleIndex}-lesson-${lessonIndex}-resource-${resourceIndex}`);
-                                      updateResource(moduleIndex, lessonIndex, resourceIndex, "fileUrl", url);
-                                    } catch (err) {
-                                      console.error("Resource upload failed:", err);
-                                    }
-                                  }
-                                }}
+                                className="rounded-md border border-gray-300 p-2"
+                                placeholder="Resource title"
+                                value={resource.title}
+                                onChange={(e) =>
+                                  updateResource(moduleIndex, lessonIndex, resourceIndex, "title", e.target.value)
+                                }
                               />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeResource(moduleIndex, lessonIndex, resourceIndex)}
-                                disabled={lesson.resources.length === 1}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
 
-                            {/* Upload Spinner */}
-                            {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-resource-${resourceIndex}`] && (
-                              <div className="flex items-center px-3">
-                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                              {/* File Upload */}
+                              <div className="flex row items-center gap-2">
+                                <input
+                                  type="file"
+                                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
+                                  className="rounded-md border border-gray-300 p-2 w-full"
+                                  onChange={async (e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      try {
+                                        const url = await handleFileUpload(file, `module-${moduleIndex}-lesson-${lessonIndex}-resource-${resourceIndex}`);
+                                        updateResource(moduleIndex, lessonIndex, resourceIndex, "fileUrl", url);
+                                      } catch (err) {
+                                        console.error("Resource upload failed:", err);
+                                      }
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeResource(moduleIndex, lessonIndex, resourceIndex)}
+                                  disabled={lesson.resources.length === 1}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
-                            )}
 
-                            {/* Preview or link */}
-                            {resource.fileUrl && (
-                              <a
-                                href={resource.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline text-sm col-span-4"
-                              >
-                                View uploaded file
-                              </a>
-                            )}
-                          </div>
-                        ))}
+                              {/* Upload Spinner */}
+                              {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-resource-${resourceIndex}`] && (
+                                <div className="flex items-center px-3">
+                                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                                </div>
+                              )}
 
-                        {/* Add resource button */}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addResource(moduleIndex, lessonIndex)}
-                        >
-                          <Plus className="mr-2 h-4 w-4" /> Add Resource
-                        </Button>
+                              {/* Preview or link */}
+                              {resource.fileUrl && (
+                                <a
+                                  href={resource.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 underline text-sm col-span-4"
+                                >
+                                  View uploaded file
+                                </a>
+                              )}
+                            </div>
+                          ))}
+
+                          {/* Add resource button */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addResource(moduleIndex, lessonIndex)}
+                          >
+                            <Plus className="mr-2 h-4 w-4" /> Add Resource
+                          </Button>
+                        </div>
                       </div>
-
+                      
                     </div>
                   ))}
                   <Button type="button" variant="outline" onClick={() => addLesson(moduleIndex)}>
