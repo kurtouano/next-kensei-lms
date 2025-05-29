@@ -39,7 +39,6 @@ export async function GET(request, { params }) {
         year: 'numeric',
         month: 'long',
       }),
-      totalLessons: course.totalLessons,
       level: course.level.charAt(0).toUpperCase() + course.level.slice(1),
       modules: course.modules.map((module, moduleIndex) => ({
         id: module._id.toString(),
@@ -52,6 +51,7 @@ export async function GET(request, { params }) {
           thumbnail: lesson.thumbnail,
           description: lesson.description,
           order: lesson.order,
+          resources: lesson.resources || [],
         })),
         quiz: module.quiz && Array.isArray(module.quiz.questions)
           ? {
@@ -66,6 +66,8 @@ export async function GET(request, { params }) {
           : null,
       })),
     };
+
+    console.log("Complete Course Data:", JSON.stringify(formattedCourse, null, 2))
 
     return NextResponse.json({ lessons: formattedCourse });
   } catch (error) {

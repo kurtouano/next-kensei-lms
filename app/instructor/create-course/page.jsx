@@ -483,7 +483,7 @@ export default function CreateCourse() {
           ...module,
           lessons: module.lessons.map(lesson => ({
             ...lesson,
-            resources: lesson.resources.filter(r => r.videoUrl && r.title) // Only keep resources with both url and title
+            resources: lesson.resources.filter(r => r.fileUrl && r.title) // Only keep resources with both url and title
           }))
         })),
         isPublished: !isDraft,
