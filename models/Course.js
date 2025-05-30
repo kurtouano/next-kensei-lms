@@ -115,13 +115,5 @@ const CourseSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Calculate average rating before saving
-CourseSchema.pre("save", function (next) {
-  if (this.ratings.length > 0) {
-    this.averageRating = this.ratings.reduce((acc, item) => acc + item.rating, 0) / this.ratings.length
-  }
-  next()
-})
-
 const Course = mongoose.models.Course || mongoose.model("Course", CourseSchema)
 export default Course

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -28,6 +28,8 @@ import {
   Lock,
   Check,
   Circle,
+  Star,
+  User,
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -37,41 +39,65 @@ export default function LessonPage() {
   const lessonSlug = params.slug
   const videoRef = useRef(null)
 
+  // Core state
+  const [lessonData, setLessonData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  
+  // Navigation state
   const [activeModule, setActiveModule] = useState(0)
+  const [activeVideoId, setActiveVideoId] = useState(null)
   const [completedItems, setCompletedItems] = useState([])
+  const [moduleQuizCompleted, setModuleQuizCompleted] = useState([])
+  
+  // Quiz state
   const [quizStarted, setQuizStarted] = useState(false)
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [quizScore, setQuizScore] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState({})
-  const [activeVideoId, setActiveVideoId] = useState(null)
+  const [showModuleQuiz, setShowModuleQuiz] = useState(false)
+  
+  // Video state
   const [isPlaying, setIsPlaying] = useState(false)
   const [videoProgress, setVideoProgress] = useState(0)
+  
+  // UI state
   const [showFullDescription, setShowFullDescription] = useState(false)
-  const [showModuleQuiz, setShowModuleQuiz] = useState(false)
-  const [currentModuleCompleted, setCurrentModuleCompleted] = useState(false)
-  const [moduleQuizCompleted, setModuleQuizCompleted] = useState([])
+  
+  // Review state
+  const [reviews, setReviews] = useState([
+    {
+      id: 1,
+      user: { name: "Sarah Johnson", avatar: "/placeholder.svg" },
+      rating: 5,
+      comment: "Excellent course! The explanations are clear and the exercises are very helpful.",
+      createdAt: "2024-01-15"
+    },
+    {
+      id: 2,
+      user: { name: "Mike Chen", avatar: "/placeholder.svg" },
+      rating: 4,
+      comment: "Great content overall. Would love to see more practice examples.",
+      createdAt: "2024-01-10"
+    }
+  ])
+  const [newReview, setNewReview] = useState({ rating: 0, comment: "" })
+  const [showReviewForm, setShowReviewForm] = useState(false)
 
-  // State for loading
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [lessonData, setLessonData] = useState(null)
-
+  // Fetch lesson data
   useEffect(() => {
     const fetchLessonData = async () => {
       try {
         const response = await fetch(`/api/courses/${lessonSlug}`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch lesson data')
-        }
+        if (!response.ok) throw new Error('Failed to fetch lesson data')
+        
         const data = await response.json()
         setLessonData(data.lessons)
         
-        // Set initial active video after data loads
+        // Set initial active video
         if (data.lessons?.modules?.length > 0) {
           const firstVideo = data.lessons.modules[0].items.find(item => item.type === "video")
-          if (firstVideo) {
-            setActiveVideoId(firstVideo.id)
-          }
+          if (firstVideo) setActiveVideoId(firstVideo.id)
         }
       } catch (err) {
         setError(err.message)
@@ -83,130 +109,146 @@ export default function LessonPage() {
     fetchLessonData()
   }, [lessonSlug])
 
-  // Handle video play/pause
+  // Video event handlers
   useEffect(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current) return
 
-    const video = videoRef.current;
+    const video = videoRef.current
+    const handlePlay = () => setIsPlaying(true)
+    const handlePause = () => setIsPlaying(false)
     
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
-    
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
+    video.addEventListener('play', handlePlay)
+    video.addEventListener('pause', handlePause)
     
     return () => {
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-    };
-  }, []);
+      video.removeEventListener('play', handlePlay)
+      video.removeEventListener('pause', handlePause)
+    }
+  }, [])
 
-  // Handle video progress
+  // Video progress tracking
   useEffect(() => {
-    if (!videoRef.current || !isPlaying) return;
+    if (!videoRef.current || !isPlaying) return
 
-    const video = videoRef.current;
+    const video = videoRef.current
     const updateProgress = () => {
       if (video.duration) {
-        setVideoProgress((video.currentTime / video.duration) * 100);
+        setVideoProgress((video.currentTime / video.duration) * 100)
       }
-    };
+    }
 
-    video.addEventListener('timeupdate', updateProgress);
-    return () => video.removeEventListener('timeupdate', updateProgress);
-  }, [isPlaying]);
+    video.addEventListener('timeupdate', updateProgress)
+    return () => video.removeEventListener('timeupdate', updateProgress)
+  }, [isPlaying])
 
-  // Find the current active item from lessonData
-  const findActiveItem = () => {
-    if (!lessonData || !lessonData.modules) return null;
+  // Computed values
+  const activeItem = useMemo(() => {
+    if (!lessonData?.modules) return null
+    
+    // Check if it's a resource ID (format: resource-itemId-resourceIndex)
+    if (activeVideoId && activeVideoId.startsWith('resource-')) {
+      const [, itemId, resourceIndex] = activeVideoId.split('-')
+      
+      for (const module of lessonData.modules) {
+        const item = module.items?.find((item) => item.id === itemId)
+        if (item && item.resources && item.resources[parseInt(resourceIndex)]) {
+          return {
+            ...item,
+            type: "resource",
+            selectedResource: item.resources[parseInt(resourceIndex)],
+            resources: item.resources
+          }
+        }
+      }
+    }
     
     if (!activeVideoId) {
-      // Default to first video in active module
-      const firstVideo = lessonData.modules[activeModule]?.items?.find((item) => item.type === "video")
+      const firstVideo = lessonData.modules[activeModule]?.items?.find(item => item.type === "video")
       return firstVideo || lessonData.modules[activeModule]?.items?.[0]
     }
 
-    // Find the item across all modules
     for (const module of lessonData.modules) {
-      const item = module.items?.find((item) => item.id === activeVideoId)
+      const item = module.items?.find(item => item.id === activeVideoId)
       if (item) return item
     }
-
     return null
-  }
+  }, [lessonData, activeVideoId, activeModule])
 
-  const activeItem = findActiveItem()
+  const totalItems = useMemo(() => 
+    lessonData?.modules?.flatMap(m => m.items).length || 0, 
+    [lessonData]
+  )
 
-  // Handle video selection
-  const handleSelectItem = (itemId, moduleIndex) => {
-    if (!isModuleAccessible(moduleIndex)) return;
+  const overallProgress = useMemo(() => 
+    totalItems > 0 ? Math.round((completedItems.length / totalItems) * 100) : 0,
+    [completedItems.length, totalItems]
+  )
 
-    setActiveVideoId(itemId);
-    setActiveModule(moduleIndex);
+  const currentModuleCompleted = useMemo(() => {
+    if (!lessonData?.modules?.[activeModule]) return false
+    const moduleItems = lessonData.modules[activeModule].items
+    return moduleItems.every(item => completedItems.includes(item.id))
+  }, [lessonData, activeModule, completedItems])
+
+  // Helper functions
+  const isModuleComplete = useCallback((moduleIndex) => {
+    if (!lessonData?.modules?.[moduleIndex]) return false
+    return lessonData.modules[moduleIndex].items.every(item => completedItems.includes(item.id))
+  }, [lessonData, completedItems])
+
+  const isModuleAccessible = useCallback((moduleIndex) => {
+    if (moduleIndex === 0) return true
+    const prevModuleIndex = moduleIndex - 1
+    return isModuleComplete(prevModuleIndex) && moduleQuizCompleted.includes(prevModuleIndex)
+  }, [isModuleComplete, moduleQuizCompleted])
+
+  // Event handlers
+  const handleSelectItem = useCallback((itemId, moduleIndex) => {
+    if (!isModuleAccessible(moduleIndex)) return
+
+    setActiveVideoId(itemId)
+    setActiveModule(moduleIndex)
     
-    // Reset video state when changing videos
     if (itemId !== activeVideoId) {
-      setIsPlaying(false);
-      setVideoProgress(0);
+      setIsPlaying(false)
+      setVideoProgress(0)
       if (videoRef.current) {
-        videoRef.current.currentTime = 0;
+        videoRef.current.currentTime = 0
       }
     }
-  };
+  }, [activeVideoId, isModuleAccessible])
 
-  // Toggle item completion
-  const toggleItemCompletion = (itemId, e) => {
+  const toggleItemCompletion = useCallback((itemId, e) => {
     e.stopPropagation()
     setCompletedItems(prev => 
       prev.includes(itemId) 
         ? prev.filter(id => id !== itemId) 
         : [...prev, itemId]
     )
-  }
+  }, [])
 
-  // Check if all items in the current module are completed
-  useEffect(() => {
-    if (lessonData?.modules?.[activeModule]) {
-      const moduleItems = lessonData.modules[activeModule].items
-      const isComplete = moduleItems.every((item) => completedItems.includes(item.id))
-      setCurrentModuleCompleted(isComplete)
-    }
-  }, [completedItems, activeModule, lessonData])
-
-  const isModuleComplete = (moduleIndex) => {
-    if (!lessonData?.modules?.[moduleIndex]) return false;
-    return lessonData.modules[moduleIndex].items.every((item) => completedItems.includes(item.id))
-  }
-
-  const isModuleAccessible = (moduleIndex) => {
-    if (moduleIndex === 0) return true
-    const prevModuleIndex = moduleIndex - 1
-    return isModuleComplete(prevModuleIndex) && moduleQuizCompleted.includes(prevModuleIndex)
-  }
-
-  const handleModuleCompletion = () => {
-    if (!lessonData?.modules?.[activeModule]) return;
+  const handleModuleCompletion = useCallback(() => {
+    if (!lessonData?.modules?.[activeModule]) return
 
     const currentModuleItems = lessonData.modules[activeModule].items
     const newCompletedItems = [...new Set([...completedItems, ...currentModuleItems.map(item => item.id)])]
     
     setCompletedItems(newCompletedItems)
-    setCurrentModuleCompleted(true)
     setShowModuleQuiz(true)
     setQuizStarted(false)
     setQuizCompleted(false)
     setSelectedAnswers({})
-  }
+  }, [lessonData, activeModule, completedItems])
 
-  // Quiz functions remain similar but use lessonData
-  const startQuiz = () => setQuizStarted(true)
+  // Quiz handlers
+  const startQuiz = useCallback(() => setQuizStarted(true), [])
   
-  const selectAnswer = (questionId, answerIndex) => {
+  const selectAnswer = useCallback((questionId, answerIndex) => {
     setSelectedAnswers(prev => ({ ...prev, [questionId]: answerIndex }))
-  }
+  }, [])
 
-  const submitQuiz = () => {
-    if (!lessonData?.modules?.[activeModule]?.quiz) return;
+  const submitQuiz = useCallback(() => {
+    if (!lessonData?.modules?.[activeModule]?.quiz) return
 
     const questions = lessonData.modules[activeModule].quiz.questions
     const correctAnswers = questions.reduce((acc, question) => (
@@ -220,9 +262,9 @@ export default function LessonPage() {
     if (score >= 70) {
       setModuleQuizCompleted(prev => [...prev, activeModule])
     }
-  }
+  }, [lessonData, activeModule, selectedAnswers])
 
-  const proceedToNextModule = () => {
+  const proceedToNextModule = useCallback(() => {
     if (quizScore >= 70) {
       setShowModuleQuiz(false)
       setActiveModule(prev => prev + 1)
@@ -231,26 +273,42 @@ export default function LessonPage() {
       setSelectedAnswers({})
       setQuizScore(0)
 
-      // Find first video in next module
       if (lessonData?.modules?.[activeModule + 1]) {
         const firstVideo = lessonData.modules[activeModule + 1].items.find(item => item.type === "video")
         if (firstVideo) setActiveVideoId(firstVideo.id)
       }
     }
-  }
+  }, [quizScore, lessonData, activeModule])
 
-  const retryQuiz = () => {
+  const retryQuiz = useCallback(() => {
     setQuizStarted(true)
     setQuizCompleted(false)
     setSelectedAnswers({})
     setQuizScore(0)
-  }
+  }, [])
 
-  // Calculate total completed items
-  const totalItems = lessonData?.modules?.flatMap(m => m.items).length || 0
-  const totalCompleted = completedItems.length
-  const overallProgress = totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0
+  // Review handlers
+  const handleSubmitReview = useCallback(() => {
+    if (newReview.rating === 0 || newReview.comment.trim() === "") return
 
+    const review = {
+      id: reviews.length + 1,
+      user: { name: "Current User", avatar: "/placeholder.svg" },
+      rating: newReview.rating,
+      comment: newReview.comment.trim(),
+      createdAt: new Date().toISOString().split('T')[0]
+    }
+
+    setReviews(prev => [review, ...prev])
+    setNewReview({ rating: 0, comment: "" })
+    setShowReviewForm(false)
+  }, [newReview, reviews.length])
+
+  const handleRatingClick = useCallback((rating) => {
+    setNewReview(prev => ({ ...prev, rating }))
+  }, [])
+
+  // Loading and error states
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
@@ -305,15 +363,13 @@ export default function LessonPage() {
                   <div className="mb-4 overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm">
                     <div className="relative aspect-video bg-black">
                       {activeItem?.type === "video" ? (
-                        <>
-                          <video
-                            ref={videoRef}
-                            controls
-                            className="absolute inset-0 w-full h-full object-cover"
-                            src={activeItem.videoUrl}
-                            onClick={() => setIsPlaying(!isPlaying)}
-                          />
-                        </>
+                        <video
+                          ref={videoRef}
+                          controls
+                          className="absolute inset-0 w-full h-full object-cover"
+                          src={activeItem.videoUrl}
+                          onClick={() => setIsPlaying(!isPlaying)}
+                        />
                       ) : (
                         <MaterialView item={activeItem} />
                       )}
@@ -331,7 +387,16 @@ export default function LessonPage() {
                     progress={overallProgress}
                   />
 
-                  {activeItem && <CurrentLessonInfo item={activeItem} />}
+                  <ReviewSection
+                    reviews={reviews}
+                    newReview={newReview}
+                    showReviewForm={showReviewForm}
+                    onShowReviewForm={() => setShowReviewForm(true)}
+                    onHideReviewForm={() => setShowReviewForm(false)}
+                    onRatingClick={handleRatingClick}
+                    onCommentChange={(comment) => setNewReview(prev => ({ ...prev, comment }))}
+                    onSubmitReview={handleSubmitReview}
+                  />
                 </>
               )}
             </div>
@@ -368,7 +433,150 @@ export default function LessonPage() {
   )
 }
 
-// Helper components (extracted for readability)
+function ReviewSection({
+  reviews,
+  newReview,
+  showReviewForm,
+  onShowReviewForm,
+  onHideReviewForm,
+  onRatingClick,
+  onCommentChange,
+  onSubmitReview
+}) {
+  const averageRating = reviews.length > 0 
+    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+    : 0
+
+  const StarRating = ({ rating, interactive = false, onStarClick = null }) => {
+    return (
+      <div className="flex items-center">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-4 w-4 ${
+              star <= rating
+                ? "fill-yellow-400 text-yellow-400"
+                : "text-gray-300"
+            } ${interactive ? "cursor-pointer hover:text-yellow-400" : ""}`}
+            onClick={interactive && onStarClick ? () => onStarClick(star) : undefined}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border border-[#dce4d7] bg-white p-4 shadow-sm">
+      <div className="border-b border-[#dce4d7] pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h3 className="font-medium text-[#2c3e2d]">Reviews & Ratings</h3>
+            <div className="flex items-center gap-2">
+              <StarRating rating={Math.round(averageRating)} />
+              <span className="text-sm text-[#5c6d5e]">
+                {averageRating} ({reviews.length} reviews)
+              </span>
+            </div>
+          </div>
+          {!showReviewForm && (
+            <Button
+              variant="outline"
+              className="border-[#4a7c59] text-[#4a7c59]"
+              onClick={onShowReviewForm}
+            >
+              <Star className="mr-2 h-4 w-4" />
+              Write Review
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Review Form */}
+      {showReviewForm && (
+        <div className="border-b border-[#dce4d7] py-4">
+          <h4 className="mb-3 font-medium text-[#2c3e2d]">Write a Review</h4>
+          
+          <div className="mb-4">
+            <label className="mb-2 block text-sm font-medium text-[#2c3e2d]">
+              Rating
+            </label>
+            <StarRating 
+              rating={newReview.rating} 
+              interactive={true} 
+              onStarClick={onRatingClick}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="mb-2 block text-sm font-medium text-[#2c3e2d]">
+              Comment
+            </label>
+            <textarea
+              className="w-full rounded-md border border-[#dce4d7] p-3 text-sm focus:border-[#4a7c59] focus:outline-none focus:ring-1 focus:ring-[#4a7c59]"
+              rows="4"
+              placeholder="Share your thoughts about this course..."
+              value={newReview.comment}
+              onChange={(e) => onCommentChange(e.target.value)}
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              className="bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+              onClick={onSubmitReview}
+              disabled={newReview.rating === 0 || newReview.comment.trim() === ""}
+            >
+              Submit Review
+            </Button>
+            <Button
+              variant="outline"
+              className="border-[#4a7c59] text-[#4a7c59]"
+              onClick={onHideReviewForm}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Reviews List */}
+      <div className="space-y-4 pt-4">
+        {reviews.length === 0 ? (
+          <div className="text-center py-8">
+            <MessageSquare className="mx-auto mb-3 h-12 w-12 text-[#5c6d5e]" />
+            <p className="text-[#5c6d5e]">No reviews yet. Be the first to review this course!</p>
+          </div>
+        ) : (
+          reviews.map((review) => (
+            <div key={review.id} className="border-b border-[#dce4d7] pb-4 last:border-b-0">
+              <div className="flex items-start gap-3">
+                <img
+                  src={review.user.avatar}
+                  alt={review.user.name}
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <h5 className="font-medium text-[#2c3e2d]">{review.user.name}</h5>
+                      <div className="flex items-center gap-2">
+                        <StarRating rating={review.rating} />
+                        <span className="text-xs text-[#5c6d5e]">{review.createdAt}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-[#5c6d5e]">{review.comment}</p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ===== HELPER COMPONENTS =====
 
 function QuizSection({
   quiz,
@@ -494,6 +702,31 @@ function QuizSection({
 }
 
 function MaterialView({ item }) {
+  if (item?.type === "resource") {
+    return (
+      <div className="flex h-full items-center justify-center bg-[#eef2eb] p-8 text-center text-[#4a7c59]">
+        <div className="max-w-md">
+          <FileText className="mx-auto mb-2 h-12 w-12" />
+          <h3 className="text-lg font-semibold mb-3 text-[#2c3e2d]">{item.title}</h3>
+          <p className="text-[#5c6d5e] text-sm mb-6">
+            Download this resource to enhance your learning experience.
+          </p>
+          
+          <div className="space-y-3 text-sm">
+            {item.resources && item.resources.map((resource, index) => (
+              <a href={item.selectedResource?.fileUrl || item.selectedResource?.url}>
+                <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
+                </Button>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full items-center justify-center bg-[#eef2eb] p-4 text-center text-[#4a7c59]">
       <div>
@@ -606,63 +839,6 @@ function CourseInfo({ lesson, showFullDescription, onToggleDescription, progress
   )
 }
 
-function CurrentLessonInfo({ item }) {
-  return (
-    <div className="rounded-lg border border-[#dce4d7] bg-white p-4 shadow-sm">
-      <h2 className="text-xl font-semibold text-[#2c3e2d]">{item.title}</h2>
-      <p className="mt-2 text-[#5c6d5e]">
-        {item.description || "No description available for this item."}
-      </p>
-
-      {/* Resources Section */}
-      {item.resources?.length > 0 && (
-        <div className="mt-4">
-          <h3 className="mb-2 font-medium text-[#2c3e2d]">Lesson Resources</h3>
-          <div className="space-y-2">
-            {item.resources.map((resource, index) => (
-              <div key={index} className="rounded-md bg-[#eef2eb] p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <FileText className="mr-2 h-5 w-5 text-[#4a7c59]" />
-                    <span className="text-sm font-medium text-[#2c3e2d]">
-                      {resource.title}
-                    </span>
-                  </div>
-                  <a 
-                    href={resource.fileUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                  >
-                    <Button size="sm" className="bg-[#4a7c59] text-white hover:bg-[#3a6147]">
-                      <Download className="mr-1 h-4 w-4" />
-                      Download
-                    </Button>
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {item.type === "material" && (
-        <div className="mt-4 rounded-md bg-[#eef2eb] p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <FileText className="mr-2 h-5 w-5 text-[#4a7c59]" />
-              <span className="text-sm font-medium text-[#2c3e2d]">{item.title}</span>
-            </div>
-            <Button size="sm" className="bg-[#4a7c59] text-white hover:bg-[#3a6147]">
-              <Download className="mr-1 h-4 w-4" />
-              Download
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function CourseSidebar({
   modules,
   activeModule,
@@ -715,79 +891,114 @@ function CourseSidebar({
 
               <div className={`space-y-1 p-2 ${!isAccessible ? "pointer-events-none" : ""}`}>
                 {module.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`flex w-full items-center rounded-md p-2 text-left text-sm transition-colors ${
-                      !isAccessible
-                        ? "cursor-not-allowed bg-gray-100 text-gray-400"
-                        : activeVideoId === item.id
-                          ? "cursor-pointer bg-[#4a7c59] text-white"
-                          : completedItems.includes(item.id)
-                            ? "cursor-pointer bg-[#eef2eb] text-[#2c3e2d]"
-                            : "cursor-pointer text-[#5c6d5e] hover:bg-[#f8f7f4]"
-                    }`}
-                    onClick={() => onSelectItem(item.id, moduleIndex)}
-                  >
-                    <div className="mr-3 flex-shrink-0">
-                      {item.type === "video" ? (
-                        <PlayCircle
-                          className={`h-4 w-4 ${
-                            !isAccessible
-                              ? "text-gray-400"
-                              : activeVideoId === item.id
-                                ? "text-white"
-                                : "text-[#4a7c59]"
-                          }`}
-                        />
-                      ) : (
-                        <FileText
-                          className={`h-4 w-4 ${
-                            !isAccessible
-                              ? "text-gray-400"
-                              : activeVideoId === item.id
-                                ? "text-white"
-                                : "text-[#4a7c59]"
-                          }`}
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="truncate">{item.title}</span>
-                        <div className="ml-2 flex items-center">
-                          {item.type === "video" && (
-                            <span
-                              className={`text-xs ${
-                                !isAccessible
-                                  ? "text-gray-400"
-                                  : activeVideoId === item.id
-                                    ? "text-white/80"
-                                    : "text-[#5c6d5e]"
-                              }`}
-                            >
-                              {item.duration}
-                            </span>
-                          )}
+                  <div key={item.id} className="space-y-2">
+                    <div
+                      className={`flex w-full items-center rounded-md p-2 text-left text-sm transition-colors ${
+                        !isAccessible
+                          ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                          : activeVideoId === item.id
+                            ? "cursor-pointer bg-[#4a7c59] text-white"
+                            : completedItems.includes(item.id)
+                              ? "cursor-pointer bg-[#eef2eb] text-[#2c3e2d]"
+                              : "cursor-pointer text-[#5c6d5e] hover:bg-[#f8f7f4]"
+                      }`}
+                      onClick={() => onSelectItem(item.id, moduleIndex)}
+                    >
+                      <div className="mr-3 flex-shrink-0">
+                        {item.type === "video" ? (
+                          <PlayCircle
+                            className={`h-4 w-4 ${
+                              !isAccessible
+                                ? "text-gray-400"
+                                : activeVideoId === item.id
+                                  ? "text-white"
+                                  : "text-[#4a7c59]"
+                            }`}
+                          />
+                        ) : (
+                          <FileText
+                            className={`h-4 w-4 ${
+                              !isAccessible
+                                ? "text-gray-400"
+                                : activeVideoId === item.id
+                                  ? "text-white"
+                                  : "text-[#4a7c59]"
+                            }`}
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="truncate">{item.title}</span>
+                          <div className="ml-2 flex items-center">
+                            {item.type === "video" && (
+                              <span
+                                className={`text-xs ${
+                                  !isAccessible
+                                    ? "text-gray-400"
+                                    : activeVideoId === item.id
+                                      ? "text-white/80"
+                                      : "text-[#5c6d5e]"
+                                }`}
+                              >
+                                {item.duration}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <button
+                        className={`ml-2 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
+                          !isAccessible
+                            ? "border-gray-300 text-gray-300"
+                            : completedItems.includes(item.id)
+                              ? "bg-[#4a7c59] text-white"
+                              : "border-[#dce4d7]"
+                        }`}
+                        onClick={(e) => isAccessible && onToggleCompletion(item.id, e)}
+                        disabled={!isAccessible}
+                      >
+                        {completedItems.includes(item.id) ? (
+                          <Check className="h-3 w-3" />
+                        ) : (
+                          <Circle className="h-3 w-3 opacity-0" />
+                        )}
+                      </button>
                     </div>
-                    <button
-                      className={`ml-2 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
-                        !isAccessible
-                          ? "border-gray-300 text-gray-300"
-                          : completedItems.includes(item.id)
-                            ? "bg-[#4a7c59] text-white"
-                            : "border-[#dce4d7]"
-                      }`}
-                      onClick={(e) => isAccessible && onToggleCompletion(item.id, e)}
-                      disabled={!isAccessible}
-                    >
-                      {completedItems.includes(item.id) ? (
-                        <Check className="h-3 w-3" />
-                      ) : (
-                        <Circle className="h-3 w-3 opacity-0" />
-                      )}
-                    </button>
+
+                    {/* Resources Section - Now shows directly below each lesson */}
+                    {item.resources && item.resources.length > 0 && (
+                      <div className="space-y-1">
+                        {item.resources.map((resource, resourceIndex) => (
+                          <div
+                            key={resourceIndex}
+                            className={`flex items-center justify-between rounded-md p-2 text-sm cursor-pointer transition-colors ${
+                              !isAccessible
+                                ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                                : activeVideoId === `resource-${item.id}-${resourceIndex}`
+                                  ? "bg-[#4a7c59] text-white"
+                                  : "text-[#5c6d5e] hover:bg-[#f8f7f4]"
+                            }`}
+                            onClick={() => isAccessible && onSelectItem(`resource-${item.id}-${resourceIndex}`, moduleIndex)}
+                          >
+                            <div className="flex items-center flex-1 min-w-0">
+                              <div className="mr-3 flex-shrink-0">
+                                <FileText
+                                  className={`h-4 w-4 ${
+                                    !isAccessible
+                                      ? "text-gray-400"
+                                      : activeVideoId === `resource-${item.id}-${resourceIndex}`
+                                        ? "text-white"
+                                        : "text-[#4a7c59]"
+                                  }`}
+                                />
+                              </div>
+                              <span className="truncate">{resource.title}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

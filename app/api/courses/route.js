@@ -3,6 +3,7 @@ import { connectDb } from "@/lib/mongodb"
 import Course from "@/models/Course"
 import Module from "@/models/Module"
 import Lesson from "@/models/Lesson"
+import ShopItem from "@/models/ShopItem"
 
 export async function GET() {
   await connectDb()
