@@ -80,7 +80,28 @@ export const authOptions = {
         }
       }
       return true; 
-    }
+    },
+
+    async jwt({ token, user, account }) {
+      if (account?.provider === "google") {
+        await connectDb();
+        const dbUser = await User.findOne({ email: user.email });
+        console.log("DB User found:", dbUser);
+        
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.id = dbUser._id.toString();
+          console.log("Token updated:", token);
+        }
+      }
+      return token;
+    },
+
+    async session({ session, token }) {
+      session.user.role = token.role;
+      session.user.id = token.id;
+      return session;
+    },
   },
 
   session: {

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, Save, Eye, ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react"
+import { Header } from "@/components/header"
 
 export default function CreateCourse() {
   const [currentStep, setCurrentStep] = useState(0)
@@ -501,6 +502,8 @@ export default function CreateCourse() {
   ), [])
 
   return (
+  <>
+    <Header/>
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#2c3e2d]">Create New Course</h1>
@@ -1051,5 +1054,6 @@ export default function CreateCourse() {
         </Button>
       </div>
     </div>
+  </>
   )
 }

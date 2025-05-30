@@ -5,8 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { CourseCard } from "./CourseCard"
+import { useSession } from "next-auth/react" 
 
 export default function CoursesPage() {
+  const { data: session, status } = useSession()
+  const [userData, setUserData] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -20,7 +23,7 @@ export default function CoursesPage() {
     { id: "culture", name: "Culture & Traditions" },
   ]
 
-  useEffect(() => {
+  useEffect(() => { // Fetch Courses
     const fetchCourses = async () => {
       try {
         const response = await fetch('/api/courses')
@@ -34,6 +37,28 @@ export default function CoursesPage() {
     }
 
     fetchCourses()
+  }, [])
+
+  useEffect(() => { // Fetch User Details
+    const fetchUserDetails = async () => {
+      try {
+        const res = await fetch('/api/profile')
+        if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`)
+        }
+        const data = await res.json()
+        if (data.success) {
+        setUserData(data.user)
+        } else {
+          console.error('Failed to fetch user:', data.message)
+        }
+        setUserData(data.user)
+      } catch (error) {
+        console.error("Failed to fetch user details:", error)
+      }
+    }
+
+    fetchUserDetails();
   }, [])
 
   const filteredCourses =
@@ -64,7 +89,7 @@ export default function CoursesPage() {
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="mb-8">
-            <h1 className="mb-2 text-3xl font-bold text-[#2c3e2d]">Course Catalog</h1>
+              <h1 className="mb-2 text-3xl font-bold text-[#2c3e2d]">Course Catalog</h1>
             <p className="text-[#5c6d5e]">Browse our comprehensive selection of Japanese language courses</p>
           </div>
 

@@ -10,7 +10,8 @@ import { useSession } from "next-auth/react"
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { data: session, status } = useSession(); // useSession hook to get session data from LOGIN nextAuth
+  const { data: session, status } = useSession(); // useSession hook to get session data from LOGIN nextAuth\
+  console.log("Session Data:", session)
 
   const isActive = (path) => pathname === path
 
@@ -30,6 +31,9 @@ export function Header() {
               <Link href="/courses" className={`text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Courses</Link>
               <Link href="/profile" className={`text-sm font-medium ${isActive("/profile") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Profile</Link>
               <Link href="/bonsai" className={`text-sm font-medium ${isActive("/bonsai") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>My Bonsai</Link>
+              { session?.user?.role === "instructor" && (
+                <Link href="/instructor/dashboard" className={`text-sm font-medium ${isActive("/admin") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Instructor</Link>
+              )}
             </>
           ) : (
             <>
