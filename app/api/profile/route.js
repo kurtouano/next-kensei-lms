@@ -27,8 +27,7 @@ export async function GET() {
             user: {
                 name: user.name,
                 email: user.email,
-                createdAt: user.createdAt, // pass this
-                // ... add any additional fields you want
+                createdAt: user.createdAt, 
             },
         });
 

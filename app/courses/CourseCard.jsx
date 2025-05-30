@@ -1,9 +1,40 @@
+"use client"
+
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BookOpen, Award, Check } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 export function CourseCard({ course }) {
+
+    const handleSubscribe = async (e) => {
+      e.preventDefault();
+      
+      try {
+        // Call your checkout session API
+        const response = await fetch('/api/courses/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            courseId: course.id,
+            title: course.title,
+            description: course.description,
+            price: course.price,
+            thumbnail: course.thumbnail,
+          }),
+        });
+
+        const { url } = await response.json();
+        
+        if (url) {
+          window.location.assign(url);
+        }
+      } catch (error) {
+        console.error('Error creating checkout session:', error);
+      }
+  };
 
   return (
     <div className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm transition-all hover:shadow-md">
@@ -50,14 +81,12 @@ export function CourseCard({ course }) {
           </ul>
         </div>
 
-        <div className="flex gap-2 align-bottom">
-          <Link className="flex-1" href={`/payment?courseId=${course.id}&title=${encodeURIComponent(course.title)}&price=${course.price}&credits=${course.credits}&modules=${course.modules}`}>
-            <Button className="w-full rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]">
-              Subscribe
-            </Button>
-          </Link>
+        <div className="flex gap-2">
+          <Button onClick={handleSubscribe} className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]">
+            Enroll Now
+          </Button>
 
-          <Link
+          <Link 
             href={`/courses/${course.slug}`}
             className="flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb]"
           >
