@@ -799,14 +799,19 @@ function CourseInfo({ lesson, showFullDescription, onToggleDescription, progress
       </div>
 
       <div className="mt-4 flex items-center">
-        <img
-          src={lesson.instructor.avatar || "/placeholder.svg"}
-          alt={lesson.instructor.name}
-          className="mr-3 h-10 w-10 rounded-full object-cover"
-        />
+        {lesson.instructorImg ? (
+          <img
+            src={lesson.instructorImg}
+            alt="Instructor"
+            className="mr-3 h-10 w-10 rounded-full object-cover"
+          />
+        ) : (
+          <div className="mr-3 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+            <User size={20} className="text-[#2c3e2d]" />
+          </div>
+        )}
         <div>
-          <h3 className="font-medium text-[#2c3e2d]">{lesson.instructor.name}</h3>
-          <p className="text-sm text-[#5c6d5e]">{lesson.instructor.title}</p>
+          <h3 className="font-medium text-[#2c3e2d]">{lesson.instructor}</h3>
         </div>
       </div>
 

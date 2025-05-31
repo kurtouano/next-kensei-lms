@@ -11,7 +11,6 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession(); // useSession hook to get session data from LOGIN nextAuth\
-  console.log("Session Data:", session)
 
   const isActive = (path) => pathname === path
 

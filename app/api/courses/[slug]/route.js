@@ -1,6 +1,7 @@
 import { connectDb } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Course from "@/models/Course";
+import User from "@/models/User";
 import Module from "@/models/Module";
 import Lesson from "@/models/Lesson";
 
@@ -18,6 +19,10 @@ export async function GET(request, { params }) {
           model: 'Lesson', // or adapt this to populate quiz correctly
         },
       })
+      .populate({
+        path: 'instructor',
+        select: "name icon"
+      })
       .lean();
 
     if (!course) {
@@ -30,11 +35,8 @@ export async function GET(request, { params }) {
       description: course.shortDescription,
       fullDescription: course.fullDescription,
       progress: 0,
-      instructor: {
-        name: course.instructorName,
-        avatar: "/placeholder.svg",
-        title: "Japanese Language Instructor",
-      },
+      instructor: course.instructor?.name || "Japanese Instructor",
+      instructorImg: course.instructor?.icon || null,
       lastUpdated: new Date(course.updatedAt).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',

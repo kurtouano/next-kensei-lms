@@ -12,9 +12,12 @@ import { CertificateModal } from "@/components/certificate-modal"
 import { useSession, signOut } from "next-auth/react"
 
 export default function ProfilePage() {
+  const { data: session, status } = useSession()
   const [activeTab, setActiveTab] = useState("profile")
   const [certificateModalOpen, setCertificateModalOpen] = useState(false)
   const [selectedCertificate, setSelectedCertificate] = useState(null)
+
+  {console.log("Session Data:", session)}
 
   // Mock user data
   const user = {

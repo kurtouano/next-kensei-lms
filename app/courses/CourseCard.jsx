@@ -12,7 +12,7 @@ export function CourseCard({ course }) {
       
       try {
         // Call your checkout session API
-        const response = await fetch('/api/courses/create-checkout-session', {
+        const response = await fetch('/api/courses/stripe/create-checkout-session', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
