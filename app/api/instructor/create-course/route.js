@@ -1,24 +1,50 @@
 import Course from '@/models/Course'
 import Module from '@/models/Module' 
 import Lesson from '@/models/Lesson'
+import User from '@/models/User'
 import { connectDb } from "@/lib/mongodb"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 export async function POST(req) {
   try {
     await connectDb();
-    
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return Response.json({ 
+        success: false, 
+        error: 'Authentication required' 
+      }, { status: 401 })
+    }
+
+    const user = await User.findById(session.user.id)
+    if (!user || (user.role !== 'instructor' && user.role !== 'admin')) {
+      return Response.json({ 
+        success: false, 
+        error: 'Only instructors can create courses' 
+      }, { status: 403 })
+    }
+
     const courseData = await req.json()
     const { modules: moduleData, ...courseInfo } = courseData
 
     // Create the course first
     const course = new Course({
       ...courseInfo,
-      instructor: courseInfo.instructor || '507f1f77bcf86cd799439011',
-      instructorName: courseInfo.instructorName || 'Default Instructor',
-      modules: []
+       instructor: session.user.id,
+       modules: []
     })
 
     const savedCourse = await course.save()
+
+    // Update User's publishedCourses
+    await User.findByIdAndUpdate(
+      session.user.id,
+      { 
+        $addToSet: { publishedCourses: savedCourse._id } // Use $addToSet to avoid duplicates
+      }
+    )
 
     // Create modules and lessons
     const moduleIds = []
