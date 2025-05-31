@@ -33,6 +33,30 @@ const BonsaiSchema = new mongoose.Schema(
         default: "#6fb58a",
       },
     },
+    pot: {
+      type: {
+        type: String,
+        enum: ["clay", "ceramic", "plastic", "stone"],
+        default: "clay",
+      },
+      size: {
+        type: String,
+        enum: ["small", "medium", "large"],
+        default: "medium",
+      },
+    },
+    decoration: {
+      type: {
+        type: String,
+        enum: ["stone", "figurine", "lantern", "waterfall"],
+        default: "stone",
+      },
+      style: {
+        type: String,
+        enum: ["traditional", "modern", "rustic"],
+        default: "traditional",
+      },
+    },
     inventory: [
       {
         itemId: {

@@ -49,10 +49,6 @@ const CourseSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    instructorName: {
-      type: String,
-      required: true,
-    },
     price: {
       type: Number,
       default: 0,

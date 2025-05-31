@@ -31,14 +31,17 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    profileImage: {
-      type: String,
-      default: null,
-    },
     role: {
       type: String,
       enum: ["student", "instructor", "admin"],
       default: "student",
+    },
+    icon: {
+      type: String,
+    },
+    country: {
+      type: String,
+      default: "Bonsai Garden Resident",
     },
     subscription: {
       type: {
@@ -68,6 +71,23 @@ const UserSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Bonsai",
     },
+    publishedCourses: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Course",
+        }
+      ],
+      validate: { // Allow published courses only for instructors and admins
+        validator: function(courses) {
+          if (courses.length > 0 && this.role === "student") {
+            return false
+          }
+          return true
+        },
+        message: "Only instructors and admins can have published courses"
+      }
+    },
     enrolledCourses: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -90,6 +110,12 @@ const UserSchema = new mongoose.Schema(
   },
   { timestamps: true },
 )
+
+// Single field indexes
+UserSchema.index({ provider: 1 })              // Fast login provider checks
+UserSchema.index({ role: 1 })                  // Fast role-based queries
+UserSchema.index({ lastLogin: -1 })            // Recent login queries (newest first)
+UserSchema.index({ credits: -1 })              // Credit-based queries (highest first)
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema)
 export default User
