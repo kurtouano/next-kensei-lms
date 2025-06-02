@@ -1,7 +1,10 @@
+// Updated LessonPage Component with Real Review System and Randomized Quiz
+
 "use client"
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useParams } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { BonsaiIcon } from "@/components/bonsai-icon"
@@ -30,6 +33,9 @@ import {
   Circle,
   Star,
   User,
+  Trash2,
+  Edit,
+  Heart
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -37,6 +43,7 @@ import { Footer } from "@/components/footer"
 export default function LessonPage() {
   const params = useParams()
   const lessonSlug = params.slug
+  const { data: session } = useSession()
   const videoRef = useRef(null)
 
   // Core state
@@ -56,6 +63,7 @@ export default function LessonPage() {
   const [quizScore, setQuizScore] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState({})
   const [showModuleQuiz, setShowModuleQuiz] = useState(false)
+  const [randomizedQuiz, setRandomizedQuiz] = useState(null)
   
   // Video state
   const [isPlaying, setIsPlaying] = useState(false)
@@ -65,24 +73,60 @@ export default function LessonPage() {
   const [showFullDescription, setShowFullDescription] = useState(false)
   
   // Review state
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      user: { name: "Sarah Johnson", avatar: "/placeholder.svg" },
-      rating: 5,
-      comment: "Excellent course! The explanations are clear and the exercises are very helpful.",
-      createdAt: "2024-01-15"
-    },
-    {
-      id: 2,
-      user: { name: "Mike Chen", avatar: "/placeholder.svg" },
-      rating: 4,
-      comment: "Great content overall. Would love to see more practice examples.",
-      createdAt: "2024-01-10"
-    }
-  ])
+  const [reviews, setReviews] = useState([])
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [averageRating, setAverageRating] = useState(0)
+  const [totalReviews, setTotalReviews] = useState(0)
   const [newReview, setNewReview] = useState({ rating: 0, comment: "" })
   const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [userHasReviewed, setUserHasReviewed] = useState(false)
+  const [userReview, setUserReview] = useState(null)
+
+  // Function to shuffle array
+  const shuffleArray = (array) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
+  // Randomize quiz options when quiz starts or retries
+  useEffect(() => {
+    if (lessonData?.modules?.[activeModule]?.quiz && (quizStarted && !quizCompleted)) {
+      const quiz = lessonData.modules[activeModule].quiz;
+      
+      const randomized = {
+        ...quiz,
+        questions: quiz.questions.map((question) => {
+          // Create array of options with their original indices
+          const optionsWithIndex = question.options.map((option, index) => ({
+            text: option,
+            originalIndex: index
+          }));
+
+          // Shuffle the options
+          const shuffledOptions = shuffleArray(optionsWithIndex);
+
+          // Find the new position of the correct answer
+          const newCorrectAnswer = shuffledOptions.findIndex(
+            option => option.originalIndex === question.correctAnswer
+          );
+
+          return {
+            ...question,
+            options: shuffledOptions.map(option => option.text),
+            correctAnswer: newCorrectAnswer,
+            originalCorrectAnswer: question.correctAnswer // Keep track of original for debugging
+          };
+        })
+      };
+
+      setRandomizedQuiz(randomized);
+    }
+  }, [lessonData, activeModule, quizStarted, quizCompleted]);
 
   // Fetch lesson data
   useEffect(() => {
@@ -108,6 +152,46 @@ export default function LessonPage() {
 
     fetchLessonData()
   }, [lessonSlug])
+
+  // Fetch reviews
+  const fetchReviews = useCallback(async () => {
+    setReviewsLoading(true)
+    try {
+      const response = await fetch(`/api/courses/${lessonSlug}/reviews`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setReviews(data.reviews)
+        setAverageRating(data.averageRating)
+        setTotalReviews(data.totalReviews)
+        
+        // Check if current user has already reviewed
+        if (session?.user) {
+          const existingReview = data.reviews.find(review => 
+            review.user.email === session.user.email
+          )
+          if (existingReview) {
+            setUserHasReviewed(true)
+            setUserReview(existingReview)
+            setNewReview({
+              rating: existingReview.rating,
+              comment: existingReview.comment
+            })
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error)
+    } finally {
+      setReviewsLoading(false)
+    }
+  }, [lessonSlug, session?.user])
+
+  useEffect(() => {
+    if (lessonData) {
+      fetchReviews()
+    }
+  }, [lessonData, fetchReviews])
 
   // Video event handlers
   useEffect(() => {
@@ -238,6 +322,7 @@ export default function LessonPage() {
     setQuizStarted(false)
     setQuizCompleted(false)
     setSelectedAnswers({})
+    setRandomizedQuiz(null) // Reset randomized quiz
   }, [lessonData, activeModule, completedItems])
 
   // Quiz handlers
@@ -248,9 +333,10 @@ export default function LessonPage() {
   }, [])
 
   const submitQuiz = useCallback(() => {
-    if (!lessonData?.modules?.[activeModule]?.quiz) return
+    const currentQuiz = randomizedQuiz || lessonData?.modules?.[activeModule]?.quiz;
+    if (!currentQuiz) return
 
-    const questions = lessonData.modules[activeModule].quiz.questions
+    const questions = currentQuiz.questions
     const correctAnswers = questions.reduce((acc, question) => (
       selectedAnswers[question.id] === question.correctAnswer ? acc + 1 : acc
     ), 0)
@@ -262,7 +348,7 @@ export default function LessonPage() {
     if (score >= 70) {
       setModuleQuizCompleted(prev => [...prev, activeModule])
     }
-  }, [lessonData, activeModule, selectedAnswers])
+  }, [randomizedQuiz, lessonData, activeModule, selectedAnswers])
 
   const proceedToNextModule = useCallback(() => {
     if (quizScore >= 70) {
@@ -272,6 +358,7 @@ export default function LessonPage() {
       setQuizCompleted(false)
       setSelectedAnswers({})
       setQuizScore(0)
+      setRandomizedQuiz(null) // Reset randomized quiz
 
       if (lessonData?.modules?.[activeModule + 1]) {
         const firstVideo = lessonData.modules[activeModule + 1].items.find(item => item.type === "video")
@@ -285,28 +372,107 @@ export default function LessonPage() {
     setQuizCompleted(false)
     setSelectedAnswers({})
     setQuizScore(0)
+    setRandomizedQuiz(null) // Reset randomized quiz to trigger new randomization
   }, [])
 
   // Review handlers
-  const handleSubmitReview = useCallback(() => {
-    if (newReview.rating === 0 || newReview.comment.trim() === "") return
-
-    const review = {
-      id: reviews.length + 1,
-      user: { name: "Current User", avatar: "/placeholder.svg" },
-      rating: newReview.rating,
-      comment: newReview.comment.trim(),
-      createdAt: new Date().toISOString().split('T')[0]
+  const handleSubmitReview = useCallback(async () => {
+    if (!session?.user) {
+      alert("Please login to submit a review")
+      return
     }
 
-    setReviews(prev => [review, ...prev])
-    setNewReview({ rating: 0, comment: "" })
-    setShowReviewForm(false)
-  }, [newReview, reviews.length])
+    if (newReview.rating === 0 || newReview.comment.trim() === "") {
+      alert("Please provide both rating and comment")
+      return
+    }
+
+    setReviewSubmitting(true)
+    
+    try {
+      const response = await fetch(`/api/courses/${lessonSlug}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rating: newReview.rating,
+          comment: newReview.comment.trim()
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Refresh reviews
+        await fetchReviews()
+        setShowReviewForm(false)
+        
+        if (userHasReviewed) {
+          alert("Review updated successfully!")
+        } else {
+          alert("Review submitted successfully!")
+          setNewReview({ rating: 0, comment: "" })
+        }
+      } else {
+        alert(data.error || "Failed to submit review")
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error)
+      alert("Failed to submit review")
+    } finally {
+      setReviewSubmitting(false)
+    }
+  }, [newReview, session, lessonSlug, fetchReviews, userHasReviewed])
+
+  const handleDeleteReview = useCallback(async () => {
+    if (!session?.user || !userHasReviewed) return
+
+    if (!confirm("Are you sure you want to delete your review?")) return
+
+    try {
+      const response = await fetch(`/api/courses/${lessonSlug}/reviews`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        await fetchReviews()
+        setUserHasReviewed(false)
+        setUserReview(null)
+        setNewReview({ rating: 0, comment: "" })
+        setShowReviewForm(false)
+        alert("Review deleted successfully!")
+      } else {
+        alert(data.error || "Failed to delete review")
+      }
+    } catch (error) {
+      console.error("Error deleting review:", error)
+      alert("Failed to delete review")
+    }
+  }, [session, userHasReviewed, lessonSlug, fetchReviews])
 
   const handleRatingClick = useCallback((rating) => {
     setNewReview(prev => ({ ...prev, rating }))
   }, [])
+
+  const handleEditReview = useCallback(() => {
+    setShowReviewForm(true)
+  }, [])
+
+  const handleCancelReview = useCallback(() => {
+    setShowReviewForm(false)
+    if (userHasReviewed && userReview) {
+      // Reset to original values
+      setNewReview({
+        rating: userReview.rating,
+        comment: userReview.comment
+      })
+    } else {
+      setNewReview({ rating: 0, comment: "" })
+    }
+  }, [userHasReviewed, userReview])
 
   // Loading and error states
   if (loading) {
@@ -344,7 +510,7 @@ export default function LessonPage() {
             <div className="w-full lg:w-2/3 lg:pr-4">
               {showModuleQuiz ? (
                 <QuizSection 
-                  quiz={lessonData.modules[activeModule]?.quiz}
+                  quiz={randomizedQuiz || lessonData.modules[activeModule]?.quiz}
                   quizStarted={quizStarted}
                   quizCompleted={quizCompleted}
                   quizScore={quizScore}
@@ -389,13 +555,22 @@ export default function LessonPage() {
 
                   <ReviewSection
                     reviews={reviews}
+                    reviewsLoading={reviewsLoading}
+                    averageRating={averageRating}
+                    totalReviews={totalReviews}
                     newReview={newReview}
                     showReviewForm={showReviewForm}
+                    reviewSubmitting={reviewSubmitting}
+                    userHasReviewed={userHasReviewed}
+                    userReview={userReview}
+                    isLoggedIn={!!session?.user}
                     onShowReviewForm={() => setShowReviewForm(true)}
-                    onHideReviewForm={() => setShowReviewForm(false)}
+                    onCancelReview={handleCancelReview}
                     onRatingClick={handleRatingClick}
                     onCommentChange={(comment) => setNewReview(prev => ({ ...prev, comment }))}
                     onSubmitReview={handleSubmitReview}
+                    onEditReview={handleEditReview}
+                    onDeleteReview={handleDeleteReview}
                   />
                 </>
               )}
@@ -433,31 +608,37 @@ export default function LessonPage() {
   )
 }
 
+// Updated ReviewSection Component
 function ReviewSection({
   reviews,
+  reviewsLoading,
+  averageRating,
+  totalReviews,
   newReview,
   showReviewForm,
+  reviewSubmitting,
+  userHasReviewed,
+  userReview,
+  isLoggedIn,
   onShowReviewForm,
-  onHideReviewForm,
+  onCancelReview,
   onRatingClick,
   onCommentChange,
-  onSubmitReview
+  onSubmitReview,
+  onEditReview,
+  onDeleteReview
 }) {
-  const averageRating = reviews.length > 0 
-    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
-    : 0
-
-  const StarRating = ({ rating, interactive = false, onStarClick = null }) => {
+  const StarRating = ({ rating, interactive = false, onStarClick = null, size = "h-4 w-4" }) => {
     return (
       <div className="flex items-center">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-4 w-4 ${
+            className={`${size} ${
               star <= rating
                 ? "fill-yellow-400 text-yellow-400"
                 : "text-gray-300"
-            } ${interactive ? "cursor-pointer hover:text-yellow-400" : ""}`}
+            } ${interactive ? "cursor-pointer hover:text-yellow-400 transition-colors" : ""}`}
             onClick={interactive && onStarClick ? () => onStarClick(star) : undefined}
           />
         ))}
@@ -474,64 +655,103 @@ function ReviewSection({
             <div className="flex items-center gap-2">
               <StarRating rating={Math.round(averageRating)} />
               <span className="text-sm text-[#5c6d5e]">
-                {averageRating} ({reviews.length} reviews)
+                {averageRating} ({totalReviews} reviews)
               </span>
             </div>
           </div>
-          {!showReviewForm && (
-            <Button
-              variant="outline"
-              className="border-[#4a7c59] text-[#4a7c59]"
-              onClick={onShowReviewForm}
-            >
-              <Star className="mr-2 h-4 w-4" />
-              Write Review
-            </Button>
+          
+          {isLoggedIn && !showReviewForm && (
+            <div className="flex gap-2">
+              {userHasReviewed ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-[#4a7c59] text-[#4a7c59]"
+                    onClick={onEditReview}
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Review
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-red-500 text-red-500 hover:bg-red-50"
+                    onClick={onDeleteReview}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="border-[#4a7c59] text-[#4a7c59]"
+                  onClick={onShowReviewForm}
+                >
+                  <Star className="mr-2 h-4 w-4" />
+                  Write Review
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
 
       {/* Review Form */}
-      {showReviewForm && (
+      {showReviewForm && isLoggedIn && (
         <div className="border-b border-[#dce4d7] py-4">
-          <h4 className="mb-3 font-medium text-[#2c3e2d]">Write a Review</h4>
+          <h4 className="mb-3 font-medium text-[#2c3e2d]">
+            {userHasReviewed ? "Edit Your Review" : "Write a Review"}
+          </h4>
           
           <div className="mb-4">
             <label className="mb-2 block text-sm font-medium text-[#2c3e2d]">
-              Rating
+              Rating *
             </label>
             <StarRating 
               rating={newReview.rating} 
               interactive={true} 
               onStarClick={onRatingClick}
+              size="h-6 w-6"
             />
+            {newReview.rating > 0 && (
+              <p className="mt-1 text-sm text-[#5c6d5e]">
+                {newReview.rating} out of 5 stars
+              </p>
+            )}
           </div>
 
           <div className="mb-4">
             <label className="mb-2 block text-sm font-medium text-[#2c3e2d]">
-              Comment
+              Comment *
             </label>
             <textarea
-              className="w-full rounded-md border border-[#dce4d7] p-3 text-sm focus:border-[#4a7c59] focus:outline-none focus:ring-1 focus:ring-[#4a7c59]"
+              className="w-full rounded-md border border-[#dce4d7] p-3 text-sm focus:border-[#4a7c59] focus:outline-none focus:ring-1 focus:ring-[#4a7c59] resize-none"
               rows="4"
               placeholder="Share your thoughts about this course..."
               value={newReview.comment}
               onChange={(e) => onCommentChange(e.target.value)}
+              disabled={reviewSubmitting}
             />
+            <p className="mt-1 text-xs text-[#5c6d5e]">
+              {newReview.comment.length}/500 characters
+            </p>
           </div>
 
           <div className="flex gap-3">
             <Button
               className="bg-[#4a7c59] text-white hover:bg-[#3a6147]"
               onClick={onSubmitReview}
-              disabled={newReview.rating === 0 || newReview.comment.trim() === ""}
+              disabled={newReview.rating === 0 || newReview.comment.trim() === "" || reviewSubmitting}
             >
-              Submit Review
+              {reviewSubmitting ? "Submitting..." : userHasReviewed ? "Update Review" : "Submit Review"}
             </Button>
             <Button
               variant="outline"
               className="border-[#4a7c59] text-[#4a7c59]"
-              onClick={onHideReviewForm}
+              onClick={onCancelReview}
+              disabled={reviewSubmitting}
             >
               Cancel
             </Button>
@@ -539,9 +759,28 @@ function ReviewSection({
         </div>
       )}
 
+      {/* Login Prompt */}
+      {!isLoggedIn && (
+        <div className="border-b border-[#dce4d7] py-4 text-center">
+          <p className="text-[#5c6d5e] mb-3">Please login to write a review</p>
+          <Button
+            variant="outline"
+            className="border-[#4a7c59] text-[#4a7c59]"
+            onClick={() => window.location.href = "/login"}
+          >
+            Login to Review
+          </Button>
+        </div>
+      )}
+
       {/* Reviews List */}
       <div className="space-y-4 pt-4">
-        {reviews.length === 0 ? (
+        {reviewsLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4a7c59] mx-auto mb-3"></div>
+            <p className="text-[#5c6d5e]">Loading reviews...</p>
+          </div>
+        ) : reviews.length === 0 ? (
           <div className="text-center py-8">
             <MessageSquare className="mx-auto mb-3 h-12 w-12 text-[#5c6d5e]" />
             <p className="text-[#5c6d5e]">No reviews yet. Be the first to review this course!</p>
@@ -550,11 +789,26 @@ function ReviewSection({
           reviews.map((review) => (
             <div key={review.id} className="border-b border-[#dce4d7] pb-4 last:border-b-0">
               <div className="flex items-start gap-3">
-                <img
-                  src={review.user.avatar}
-                  alt={review.user.name}
-                  className="h-10 w-10 rounded-full object-cover"
-                />
+                {review.user.avatar ? (
+                  <img
+                    src={review.user.avatar}
+                    alt={review.user.name}
+                    className="h-10 w-10 rounded-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                      e.target.nextSibling.style.display = 'flex'
+                    }}
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <User size={20} className="text-[#2c3e2d]" />
+                  </div>
+                )}
+                {review.user.avatar && (
+                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center" style={{display: 'none'}}>
+                    <User size={20} className="text-[#2c3e2d]" />
+                  </div>
+                )}
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <div>
@@ -564,6 +818,11 @@ function ReviewSection({
                         <span className="text-xs text-[#5c6d5e]">{review.createdAt}</span>
                       </div>
                     </div>
+                    {review.isLiked && (
+                      <div className="flex items-center text-red-500">
+                        <Heart className="h-4 w-4 fill-current" />
+                      </div>
+                    )}
                   </div>
                   <p className="text-sm text-[#5c6d5e]">{review.comment}</p>
                 </div>
@@ -576,8 +835,7 @@ function ReviewSection({
   )
 }
 
-// ===== HELPER COMPONENTS =====
-
+// QuizSection Component with Randomized Options
 function QuizSection({
   quiz,
   quizStarted,
@@ -596,7 +854,7 @@ function QuizSection({
     return (
       <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
         <BookOpen className="mx-auto mb-4 h-16 w-16 text-[#4a7c59]" />
-        <h2 className="mb-2 text-2xl font-bold text-[#2c3e2d]">{quiz.title}</h2>
+        <h2 className="mb-2 text-2xl font-bold text-[#2c3e2d]">{quiz?.title}</h2>
         <p className="mb-6 text-[#5c6d5e]">
           Complete this quiz with a score of 70% or higher to proceed.
         </p>
@@ -638,6 +896,14 @@ function QuizSection({
         </div>
       </div>
     )
+  }
+
+  if (!quiz) {
+    return (
+      <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
+        <p>Loading quiz...</p>
+      </div>
+    );
   }
 
   return (
@@ -714,10 +980,10 @@ function MaterialView({ item }) {
           
           <div className="space-y-3 text-sm">
             {item.resources && item.resources.map((resource, index) => (
-              <a href={item.selectedResource?.fileUrl || item.selectedResource?.url}>
+              <a key={index} href={item.selectedResource?.fileUrl || item.selectedResource?.url}>
                 <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]">
                   <Download className="mr-2 h-4 w-4" />
-                  Download
+                  Download {resource.title}
                 </Button>
               </a>
             ))}
@@ -806,8 +1072,8 @@ function CourseInfo({ lesson, showFullDescription, onToggleDescription, progress
             className="mr-3 h-10 w-10 rounded-full object-cover"
           />
         ) : (
-          <div className="mr-3 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-            <User size={20} className="text-[#2c3e2d]" />
+          <div className="mr-3 h-10 w-10 rounded-full bg-[#4a7c59] flex items-center justify-center">
+            <User size={20} className="text-white" />
           </div>
         )}
         <div>
@@ -971,7 +1237,7 @@ function CourseSidebar({
                       </button>
                     </div>
 
-                    {/* Resources Section - Now shows directly below each lesson */}
+                    {/* Resources Section */}
                     {item.resources && item.resources.length > 0 && (
                       <div className="space-y-1">
                         {item.resources.map((resource, resourceIndex) => (
