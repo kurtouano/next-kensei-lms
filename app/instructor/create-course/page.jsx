@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Trash2, Save, Eye, ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react"
+import { Plus, Trash2, Save, Eye, ArrowLeft, ArrowRight, LoaderCircle, AlertCircle } from "lucide-react"
 import { Header } from "@/components/header"
 
 export default function CreateCourse() {
@@ -11,6 +11,8 @@ export default function CreateCourse() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState({})
   const [shopItems, setShopItems] = useState([])
+  const [validationErrors, setValidationErrors] = useState({})
+  const [showValidation, setShowValidation] = useState(false)
   const videoRef = useRef(null)
   
   // Course data with better default structure
@@ -57,6 +59,13 @@ export default function CreateCourse() {
 
   const steps = useMemo(() => ["Course Details", "Modules & Lessons", "Quizzes", "Review & Publish"], [])
 
+  // Constants for limits
+  const LIMITS = {
+    highlights: 4,
+    tags: 5,
+    itemsReward: 3
+  }
+
   // Load shop items on mount
   useEffect(() => {
     const fetchShopItems = async () => {
@@ -72,6 +81,88 @@ export default function CreateCourse() {
     }
     fetchShopItems()
   }, [])
+
+  // Validation functions
+  const validateStep = useCallback((step) => {
+    const errors = {}
+    
+    if (step === 0) {
+      // Course Details validation
+      if (!courseData.title.trim()) errors.title = "Course title is required"
+      if (!courseData.shortDescription.trim()) errors.shortDescription = "Short description is required"
+      if (!courseData.fullDescription.trim()) errors.fullDescription = "Full description is required"
+      if (!courseData.level) errors.level = "Level is required"
+      if (!courseData.category) errors.category = "Category is required"
+      if (!courseData.thumbnail) errors.thumbnail = "Course thumbnail is required"
+      if (courseData.price <= 0) errors.price = "Price must be greater than 0"
+      
+      // Check highlights
+      const validHighlights = courseData.highlights.filter(h => h.description.trim())
+      if (validHighlights.length === 0) errors.highlights = "At least one highlight is required"
+      
+      // Check tags
+      const validTags = courseData.tags.filter(tag => tag.trim())
+      if (validTags.length === 0) errors.tags = "At least one tag is required"
+    }
+    
+    if (step === 1) {
+      // Modules & Lessons validation
+      modules.forEach((module, moduleIndex) => {
+        if (!module.title.trim()) {
+          errors[`module_${moduleIndex}_title`] = `Module ${moduleIndex + 1} title is required`
+        }
+        
+        module.lessons.forEach((lesson, lessonIndex) => {
+          if (!lesson.title.trim()) {
+            errors[`module_${moduleIndex}_lesson_${lessonIndex}_title`] = 
+              `Module ${moduleIndex + 1}, Lesson ${lessonIndex + 1} title is required`
+          }
+          if (!lesson.videoUrl) {
+            errors[`module_${moduleIndex}_lesson_${lessonIndex}_video`] = 
+              `Module ${moduleIndex + 1}, Lesson ${lessonIndex + 1} video is required`
+          }
+        })
+      })
+    }
+    
+    if (step === 2) {
+      // Quiz validation
+      modules.forEach((module, moduleIndex) => {
+        if (!module.quiz.title.trim()) {
+          errors[`quiz_${moduleIndex}_title`] = `Quiz title for Module ${moduleIndex + 1} is required`
+        }
+        
+        module.quiz.questions.forEach((question, questionIndex) => {
+          if (!question.question.trim()) {
+            errors[`quiz_${moduleIndex}_question_${questionIndex}`] = 
+              `Question ${questionIndex + 1} in Module ${moduleIndex + 1} is required`
+          }
+          
+          const hasValidOptions = question.options.some(opt => opt.text.trim())
+          if (!hasValidOptions) {
+            errors[`quiz_${moduleIndex}_question_${questionIndex}_options`] = 
+              `Question ${questionIndex + 1} in Module ${moduleIndex + 1} needs at least one option`
+          }
+          
+          const hasCorrectAnswer = question.options.some(opt => opt.isCorrect && opt.text.trim())
+          if (!hasCorrectAnswer) {
+            errors[`quiz_${moduleIndex}_question_${questionIndex}_correct`] = 
+              `Question ${questionIndex + 1} in Module ${moduleIndex + 1} needs a correct answer`
+          }
+        })
+      })
+    }
+    
+    return errors
+  }, [courseData, modules])
+
+  // Update validation errors when moving between steps
+  useEffect(() => {
+    if (showValidation) {
+      const errors = validateStep(currentStep)
+      setValidationErrors(errors)
+    }
+  }, [currentStep, validateStep, showValidation])
 
   // Utility functions
   const generateSlug = useCallback((title) => {
@@ -133,13 +224,25 @@ export default function CreateCourse() {
   // Course data handlers
   const updateCourseData = useCallback((field, value) => {
     setCourseData(prev => ({ ...prev, [field]: value }))
-  }, [])
+    // Clear validation error when user fixes the field (only if validation is shown)
+    if (showValidation && validationErrors[field]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field]
+        return newErrors
+      })
+    }
+  }, [validationErrors, showValidation])
 
   const updateCourseArray = useCallback((field, index, value, action = 'update') => {
     setCourseData(prev => {
       const array = [...prev[field]]
       switch (action) {
         case 'add':
+          if (array.length >= LIMITS[field]) {
+            alert(`Maximum ${LIMITS[field]} ${field} allowed`)
+            return prev
+          }
           return { ...prev, [field]: [...array, value] }
         case 'remove':
           return { ...prev, [field]: array.filter((_, i) => i !== index) }
@@ -237,7 +340,17 @@ export default function CreateCourse() {
         )
       } : module
     ))
-  }, [updateModules])
+    
+    // Clear validation error
+    const errorKey = `module_${moduleIndex}_lesson_${lessonIndex}_${field}`
+    if (showValidation && validationErrors[errorKey]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[errorKey]
+        return newErrors
+      })
+    }
+  }, [updateModules, validationErrors, showValidation])
 
   const removeLesson = useCallback((moduleIndex, lessonIndex) => {
     updateModules(prev => prev.map((module, i) => 
@@ -336,36 +449,35 @@ export default function CreateCourse() {
 
   // Form validation
   const validateForm = useCallback(() => {
-    if (!courseData.title || !courseData.slug || !courseData.shortDescription || !courseData.fullDescription) {
-      alert('Please fill in all required course details')
-      setCurrentStep(0)
-      return false
+    const allErrors = {}
+    
+    // Validate all steps
+    for (let step = 0; step < steps.length - 1; step++) {
+      const stepErrors = validateStep(step)
+      Object.assign(allErrors, stepErrors)
     }
-
-    if (!courseData.thumbnail) {
-      alert('Please upload a course thumbnail')
-      setCurrentStep(0)
-      return false
-    }
-
-    for (const module of modules) {
-      if (!module.title) {
-        alert('Please fill in all module titles')
-        setCurrentStep(1)
-        return false
-      }
-
-      for (const lesson of module.lessons) {
-        if (!lesson.title || !lesson.videoUrl) {
-          alert('Please fill in all required lesson fields')
-          setCurrentStep(1)
-          return false
+    
+    setShowValidation(true) // Show validation when submitting
+    setValidationErrors(allErrors)
+    
+    if (Object.keys(allErrors).length > 0) {
+      // Find the first step with errors
+      let firstErrorStep = 0
+      for (let step = 0; step < steps.length - 1; step++) {
+        const stepErrors = validateStep(step)
+        if (Object.keys(stepErrors).length > 0) {
+          firstErrorStep = step
+          break
         }
       }
+      
+      alert(`Please fix the validation errors in step ${firstErrorStep + 1}: ${steps[firstErrorStep]}`)
+      setCurrentStep(firstErrorStep)
+      return false
     }
 
     return true
-  }, [courseData, modules])
+  }, [steps, validateStep])
 
   // Submit handler
   const handleSubmit = useCallback(async (isDraft = false) => {
@@ -444,15 +556,30 @@ export default function CreateCourse() {
     }
   }, [handleFileUpload, updateResource])
 
+  // Helper to render validation errors (only if validation is shown)
+  const renderValidationError = useCallback((errorKey) => {
+    if (showValidation && validationErrors[errorKey]) {
+      return (
+        <div className="flex items-center mt-1 text-red-600 text-sm">
+          <AlertCircle className="h-4 w-4 mr-1" />
+          {validationErrors[errorKey]}
+        </div>
+      )
+    }
+    return null
+  }, [validationErrors, showValidation])
+
   // Render helpers
-  const renderFileUploadInput = useCallback((accept, onChange, uploadKey, currentValue, label) => (
+  const renderFileUploadInput = useCallback((accept, onChange, uploadKey, currentValue, label, required = false, errorKey = null) => (
     <div className="space-y-2">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-sm font-medium">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
       <div className="flex gap-2">
         <input
           type="file"
           accept={accept}
-          className="w-full rounded-md border border-gray-300 p-2"
+          className={`w-full rounded-md border p-2 ${showValidation && errorKey && validationErrors[errorKey] ? 'border-red-500' : 'border-gray-300'}`}
           onChange={onChange}
         />
         {uploadingFiles[uploadKey] && (
@@ -461,6 +588,7 @@ export default function CreateCourse() {
           </div>
         )}
       </div>
+      {errorKey && renderValidationError(errorKey)}
       {currentValue && (
         <a
           href={currentValue}
@@ -472,14 +600,14 @@ export default function CreateCourse() {
         </a>
       )}
     </div>
-  ), [uploadingFiles])
+  ), [uploadingFiles, validationErrors, renderValidationError])
 
-  const renderArrayInput = useCallback((items, updateFn, removeFn, addFn, placeholder, btnName, fieldKey = null) => (
+  const renderArrayInput = useCallback((items, updateFn, removeFn, addFn, placeholder, btnName, fieldKey = null, limit = null, errorKey = null) => (
     <div className="space-y-2">
       {items.map((item, index) => (
         <div key={index} className="flex gap-2">
           <input
-            className="flex-1 rounded-md border border-gray-300 p-2"
+            className={`flex-1 rounded-md border p-2 ${showValidation && errorKey && validationErrors[errorKey] ? 'border-red-500' : 'border-gray-300'}`}
             placeholder={placeholder}
             value={fieldKey ? item[fieldKey] : item}
             onChange={(e) => updateFn(index, e.target.value)}
@@ -495,11 +623,29 @@ export default function CreateCourse() {
           </Button>
         </div>
       ))}
-      <Button type="button" variant="outline" onClick={addFn}>
-        <Plus className="mr-2 h-4 w-4" /> {btnName}
-      </Button>
+      {errorKey && renderValidationError(errorKey)}
+      <div className="flex items-center gap-2">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={addFn}
+          disabled={limit && items.length >= limit}
+        >
+          <Plus className="mr-2 h-4 w-4" /> {btnName}
+        </Button>
+        {limit && (
+          <span className="text-sm text-gray-500">
+            ({items.length}/{limit})
+          </span>
+        )}
+      </div>
     </div>
-  ), [])
+  ), [validationErrors, renderValidationError])
+
+  // Check if current step can proceed (removed validation check)
+  const canProceedToNextStep = useMemo(() => {
+    return true // Always allow proceeding to next step
+  }, [])
 
   return (
   <>
@@ -516,11 +662,15 @@ export default function CreateCourse() {
           {steps.map((step, index) => (
             <div key={index} className="flex items-center">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium relative ${
                   index <= currentStep ? "bg-[#4a7c59] text-white" : "bg-gray-200 text-gray-600"
                 }`}
               >
                 {index + 1}
+                {/* Show error indicator only when validation is active */}
+                {showValidation && index < steps.length - 1 && Object.keys(validateStep(index)).length > 0 && (
+                  <AlertCircle className="absolute -top-1 -right-1 h-4 w-4 text-red-500 bg-white rounded-full" />
+                )}
               </div>
               <span className={`ml-2 text-sm ${index <= currentStep ? "text-[#4a7c59] font-medium" : "text-gray-500"}`}>
                 {step}
@@ -533,6 +683,23 @@ export default function CreateCourse() {
         </div>
       </div>
 
+      {/* Error Summary - only show when validation is active */}
+      {showValidation && Object.keys(validationErrors).length > 0 && (
+        <Card className="mb-6 border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center mb-2">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+              <h4 className="font-medium text-red-800">Please fix the following issues:</h4>
+            </div>
+            <ul className="text-sm text-red-700 space-y-1">
+              {Object.values(validationErrors).map((error, index) => (
+                <li key={index}>• {error}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Step Content */}
       {currentStep === 0 && (
         <Card>
@@ -542,9 +709,11 @@ export default function CreateCourse() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Course Title *</label>
+              <label className="text-sm font-medium">
+                Course Title <span className="text-red-500">*</span>
+              </label>
               <input
-                className="w-full rounded-md border border-gray-300 p-2"
+                className={`w-full rounded-md border p-2 ${showValidation && validationErrors.title ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="e.g., Japanese for Beginners"
                 value={courseData.title}
                 onChange={(e) => {
@@ -553,34 +722,43 @@ export default function CreateCourse() {
                   updateCourseData("slug", generateSlug(title))
                 }}    
               />
+              {renderValidationError('title')}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Short Description *</label>
+              <label className="text-sm font-medium">
+                Short Description <span className="text-red-500">*</span>
+              </label>
               <input
-                className="w-full rounded-md border border-gray-300 p-2"
+                className={`w-full rounded-md border p-2 ${showValidation && validationErrors.shortDescription ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Brief description (max 200 characters)"
                 maxLength={200}
                 value={courseData.shortDescription}
                 onChange={(e) => updateCourseData("shortDescription", e.target.value)}
               />
+              {renderValidationError('shortDescription')}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Full Description *</label>
+              <label className="text-sm font-medium">
+                Full Description <span className="text-red-500">*</span>
+              </label>
               <textarea
-                className="h-32 w-full rounded-md border border-gray-300 p-2"
+                className={`h-32 w-full rounded-md border p-2 ${showValidation && validationErrors.fullDescription ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Detailed course description"
                 value={courseData.fullDescription}
                 onChange={(e) => updateCourseData("fullDescription", e.target.value)}
               />
+              {renderValidationError('fullDescription')}
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Level *</label>
+                <label className="text-sm font-medium">
+                  Level <span className="text-red-500">*</span>
+                </label>
                 <select
-                  className="w-full rounded-md border border-gray-300 p-2"
+                  className={`w-full rounded-md border p-2 ${showValidation && validationErrors.level ? 'border-red-500' : 'border-gray-300'}`}
                   value={courseData.level}
                   onChange={(e) => updateCourseData("level", e.target.value)}
                 >
@@ -589,11 +767,14 @@ export default function CreateCourse() {
                   <option value="intermediate">Intermediate (N4-N3)</option>
                   <option value="advanced">Advanced (N2-N1)</option>
                 </select>
+                {renderValidationError('level')}
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Category *</label>
+                <label className="text-sm font-medium">
+                  Category <span className="text-red-500">*</span>
+                </label>
                 <select
-                  className="w-full rounded-md border border-gray-300 p-2"
+                  className={`w-full rounded-md border p-2 ${showValidation && validationErrors.category ? 'border-red-500' : 'border-gray-300'}`}
                   value={courseData.category}
                   onChange={(e) => updateCourseData("category", e.target.value)}
                 >
@@ -606,16 +787,20 @@ export default function CreateCourse() {
                   <option value="vocabulary">Vocabulary</option>
                   <option value="culture">Culture</option>
                 </select>
+                {renderValidationError('category')}
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Price ($)</label>
+                <label className="text-sm font-medium">
+                  Price ($) <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
-                  className="w-full rounded-md border border-gray-300 p-2"
+                  className={`w-full rounded-md border p-2 ${showValidation && validationErrors.price ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="29.99"
                   value={courseData.price}
                   onChange={(e) => updateCourseData("price", parseFloat(e.target.value) || 0)}
                 />
+                {renderValidationError('price')}
               </div>
             </div>
 
@@ -632,7 +817,7 @@ export default function CreateCourse() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Item Rewards</label>
+                <label className="text-sm font-medium">Item Rewards (Max {LIMITS.itemsReward})</label>
                 {courseData.itemsReward.map((reward, index) => (
                   <div key={index} className="flex gap-2">
                     <select
@@ -658,9 +843,19 @@ export default function CreateCourse() {
                     </Button>
                   </div>
                 ))}
-                <Button type="button" variant="outline" onClick={addItemReward}>
-                  <Plus className="mr-2 h-4 w-4" /> Add Item Reward
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={addItemReward}
+                    disabled={courseData.itemsReward.length >= LIMITS.itemsReward}
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Add Item Reward
+                  </Button>
+                  <span className="text-sm text-gray-500">
+                    ({courseData.itemsReward.length}/{LIMITS.itemsReward})
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -672,13 +867,17 @@ export default function CreateCourse() {
                   },
                   'course-thumbnail',
                   courseData.thumbnail,
-                  "Course Thumbnail *"
+                  "Course Thumbnail",
+                  true,
+                  'thumbnail'
                 )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Course Highlights</label>
+              <label className="text-sm font-medium">
+                Course Highlights <span className="text-red-500">*</span> (Max {LIMITS.highlights})
+              </label>
               {renderArrayInput(
                 courseData.highlights,
                 updateHighlight,
@@ -686,19 +885,26 @@ export default function CreateCourse() {
                 addHighlight,
                 "What students will learn",
                 "Add Highlight",
-                "description"
+                "description",
+                LIMITS.highlights,
+                "highlights"
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Tags</label>
+              <label className="text-sm font-medium">
+                Tags <span className="text-red-500">*</span> (Max {LIMITS.tags})
+              </label>
               {renderArrayInput(
                 courseData.tags,
                 updateTag,
                 removeTag,
                 addTag,
                 "e.g., beginner, conversation",
-                "Add Tags",
+                "Add Tag",
+                null,
+                LIMITS.tags,
+                "tags"
               )}
             </div>
           </CardContent>
@@ -711,7 +917,15 @@ export default function CreateCourse() {
             <Card key={moduleIndex}>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Module {moduleIndex + 1}</CardTitle>
+                  <div>
+                    <CardTitle>Module {moduleIndex + 1}</CardTitle>
+                    {showValidation && validationErrors[`module_${moduleIndex}_title`] && (
+                      <div className="flex items-center mt-1 text-red-600 text-sm">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        Module title is required
+                      </div>
+                    )}
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
@@ -725,9 +939,11 @@ export default function CreateCourse() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Module Title *</label>
+                    <label className="text-sm font-medium">
+                      Module Title <span className="text-red-500">*</span>
+                    </label>
                     <input
-                      className="w-full rounded-md border border-gray-300 p-2"
+                      className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`module_${moduleIndex}_title`] ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="e.g., Introduction to Hiragana"
                       value={module.title}
                       onChange={(e) => updateModule(moduleIndex, "title", e.target.value)}
@@ -750,7 +966,16 @@ export default function CreateCourse() {
                   {module.lessons.map((lesson, lessonIndex) => (
                     <div key={lessonIndex} className="border rounded-lg p-4 space-y-4">
                       <div className="flex justify-between items-center">
-                        <h5 className="font-medium">Lesson {lessonIndex + 1}</h5>
+                        <div>
+                          <h5 className="font-medium">Lesson {lessonIndex + 1}</h5>
+                          {(showValidation && (validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_title`] || 
+                            validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_video`])) && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="h-4 w-4 mr-1" />
+                              Missing required fields
+                            </div>
+                          )}
+                        </div>
                         <Button
                           variant="outline"
                           size="sm"
@@ -762,23 +987,28 @@ export default function CreateCourse() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Lesson Title *</label>
+                        <label className="text-sm font-medium">
+                          Lesson Title <span className="text-red-500">*</span>
+                        </label>
                         <input
-                          className="w-full rounded-md border border-gray-300 p-2"
+                          className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_title`] ? 'border-red-500' : 'border-gray-300'}`}
                           placeholder="e.g., Learning A, I, U, E, O"
                           value={lesson.title}
                           onChange={(e) => updateLesson(moduleIndex, lessonIndex, "title", e.target.value)}
                         />
+                        {renderValidationError(`module_${moduleIndex}_lesson_${lessonIndex}_title`)}
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Video *</label>
+                          <label className="text-sm font-medium">
+                            Video <span className="text-red-500">*</span>
+                          </label>
                           <div className="flex gap-2">
                             <input
                               type="file"
                               accept="video/*"
-                              className="w-full rounded-md border border-gray-300 p-2"
+                              className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_video`] ? 'border-red-500' : 'border-gray-300'}`}
                               onChange={async (e) => {
                                 const file = e.target.files[0]
                                 if (file) await handleLessonVideoUpload(file, moduleIndex, lessonIndex)
@@ -790,6 +1020,7 @@ export default function CreateCourse() {
                               </div>
                             )}
                           </div>
+                          {renderValidationError(`module_${moduleIndex}_lesson_${lessonIndex}_video`)}
                           {lesson.videoUrl && (
                             <video
                               ref={videoRef}
@@ -889,13 +1120,23 @@ export default function CreateCourse() {
           {modules.map((module, moduleIndex) => (
             <Card key={moduleIndex}>
               <CardHeader>
-                <CardTitle>Quiz for Module {moduleIndex + 1}: {module.title}</CardTitle>
+                <div>
+                  <CardTitle>Quiz for Module {moduleIndex + 1}: {module.title}</CardTitle>
+                  {showValidation && validationErrors[`quiz_${moduleIndex}_title`] && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Quiz title is required
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Quiz Title</label>
+                  <label className="text-sm font-medium">
+                    Quiz Title <span className="text-red-500">*</span>
+                  </label>
                   <input
-                    className="w-full rounded-md border border-gray-300 p-2"
+                    className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`quiz_${moduleIndex}_title`] ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="e.g., Hiragana Basics Quiz"
                     value={module.quiz.title}
                     onChange={(e) => updateModule(moduleIndex, "quiz", { ...module.quiz, title: e.target.value })}
@@ -905,7 +1146,17 @@ export default function CreateCourse() {
                 {module.quiz.questions.map((question, questionIndex) => (
                   <div key={questionIndex} className="border rounded-lg p-4 space-y-4">
                     <div className="flex justify-between items-center">
-                      <h5 className="font-medium">Question {questionIndex + 1}</h5>
+                      <div>
+                        <h5 className="font-medium">Question {questionIndex + 1}</h5>
+                        {(showValidation && (validationErrors[`quiz_${moduleIndex}_question_${questionIndex}`] ||
+                          validationErrors[`quiz_${moduleIndex}_question_${questionIndex}_options`] ||
+                          validationErrors[`quiz_${moduleIndex}_question_${questionIndex}_correct`])) && (
+                          <div className="flex items-center mt-1 text-red-600 text-sm">
+                            <AlertCircle className="h-4 w-4 mr-1" />
+                            Please complete this question
+                          </div>
+                        )}
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -920,17 +1171,22 @@ export default function CreateCourse() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Question *</label>
+                      <label className="text-sm font-medium">
+                        Question <span className="text-red-500">*</span>
+                      </label>
                       <input
-                        className="w-full rounded-md border border-gray-300 p-2"
+                        className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`quiz_${moduleIndex}_question_${questionIndex}`] ? 'border-red-500' : 'border-gray-300'}`}
                         placeholder="Enter your question"
                         value={question.question}
                         onChange={(e) => updateQuestion(moduleIndex, questionIndex, "question", e.target.value)}
                       />
+                      {renderValidationError(`quiz_${moduleIndex}_question_${questionIndex}`)}
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Options</label>
+                      <label className="text-sm font-medium">
+                        Options <span className="text-red-500">*</span>
+                      </label>
                       {question.options.map((option, optionIndex) => (
                         <div key={optionIndex} className="flex gap-2 items-center">
                           <input
@@ -956,6 +1212,8 @@ export default function CreateCourse() {
                           <span className="text-sm text-gray-500">{option.isCorrect ? "(Correct)" : ""}</span>
                         </div>
                       ))}
+                      {renderValidationError(`quiz_${moduleIndex}_question_${questionIndex}_options`)}
+                      {renderValidationError(`quiz_${moduleIndex}_question_${questionIndex}_correct`)}
                     </div>
                   </div>
                 ))}
@@ -986,6 +1244,8 @@ export default function CreateCourse() {
                   <p><strong>Price:</strong> ${courseData.price}</p>
                   <p><strong>Modules:</strong> {modules.length}</p>
                   <p><strong>Total Lessons:</strong> {totalLessons}</p>
+                  <p><strong>Highlights:</strong> {courseData.highlights.filter(h => h.description.trim()).length}</p>
+                  <p><strong>Tags:</strong> {courseData.tags.filter(t => t.trim()).length}</p>
                 </div>
               </div>
               <div>
@@ -1046,7 +1306,7 @@ export default function CreateCourse() {
         </Button>
         <Button
           onClick={() => setCurrentStep(prev => Math.min(steps.length - 1, prev + 1))}
-          disabled={currentStep === steps.length - 1}
+          disabled={currentStep === steps.length - 1 || !canProceedToNextStep}
           className="bg-[#4a7c59] hover:bg-[#3a6147]"
         >
           Next
