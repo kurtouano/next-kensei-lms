@@ -1,4 +1,4 @@
-import { stripe } from '@/lib/stripe'
+import { stripe } from "@/lib/stripe/stripe"
 import { NextResponse } from 'next/server'
 
 export async function GET(request) {

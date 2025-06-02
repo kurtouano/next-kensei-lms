@@ -28,7 +28,7 @@ function PaymentSuccessContent() {
 
       try {
         // Fetch session data from your API
-        const response = await fetch(`/api/courses/stripe/session?session_id=${sessionId}&courseId=${courseId}`)
+        const response = await fetch(`/api/courses/stripe/enroll-success?session_id=${sessionId}&courseId=${courseId}`)
         const data = await response.json()
         
         if (data.success) {
