@@ -11,12 +11,12 @@ export async function GET(request, { params }) {
   try {
     const { slug } = await params;
 
-    const course = await Course.findOne( {slug})
+    const course = await Course.findOne({ slug })
       .populate({
         path: 'modules',
         populate: {
           path: 'lessons quiz',
-          model: 'Lesson', // or adapt this to populate quiz correctly
+          model: 'Lesson',
         },
       })
       .populate({
@@ -68,8 +68,6 @@ export async function GET(request, { params }) {
           : null,
       })),
     };
-
-    console.log("Complete Course Data:", JSON.stringify(formattedCourse, null, 2))
 
     return NextResponse.json({ lessons: formattedCourse });
   } catch (error) {
