@@ -4,9 +4,10 @@ import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
 import { CheckCircle } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 
-export default function PaymentSuccessPage() {
+// Create a separate component that uses useSearchParams
+function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [orderData, setOrderData] = useState({
@@ -55,8 +56,6 @@ export default function PaymentSuccessPage() {
   }
 
   return (
-    <>
-    <Header></Header>
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full mx-auto text-center">
         {/* Success Icon */}
@@ -122,7 +121,44 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
     </div>
-    <Footer></Footer>
+  )
+}
+
+// Loading fallback component
+function PaymentSuccessLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full mx-auto text-center">
+        <div className="mb-6">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto animate-pulse">
+            <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+          </div>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-300 rounded w-3/4 mx-auto"></div>
+          <div className="h-4 bg-gray-300 rounded w-full mx-auto"></div>
+          <div className="bg-gray-50 rounded-xl p-6">
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-300 rounded"></div>
+              <div className="h-4 bg-gray-300 rounded"></div>
+            </div>
+          </div>
+          <div className="h-12 bg-gray-300 rounded"></div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main component that wraps everything in Suspense
+export default function PaymentSuccessPage() {
+  return (
+    <>
+      <Header />
+      <Suspense fallback={<PaymentSuccessLoading />}>
+        <PaymentSuccessContent />
+      </Suspense>
+      <Footer />
     </>
   )
 }
