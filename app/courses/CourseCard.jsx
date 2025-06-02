@@ -154,7 +154,7 @@ export function CourseCard({ course }) {
 
         <div className="flex gap-2">
           <Button onClick={handleSubscribe} className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]">
-            Enroll Now
+            Buy Course
           </Button>
 
           <Link 

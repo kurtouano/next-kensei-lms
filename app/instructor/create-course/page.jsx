@@ -1264,7 +1264,7 @@ export default function CreateCourse() {
             </div>
 
             <div className="flex gap-4">
-              <Button 
+              {/* <Button 
                 onClick={() => handleSubmit(true)} 
                 variant="outline" 
                 className="flex-1"
@@ -1276,7 +1276,7 @@ export default function CreateCourse() {
                     Save as Draft
                   </>
                 )}
-              </Button>
+              </Button> */}
               <Button 
                 onClick={() => handleSubmit(false)} 
                 className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147]"

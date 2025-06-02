@@ -980,7 +980,10 @@ function MaterialView({ item }) {
           
           <div className="space-y-3 text-sm">
             {item.resources && item.resources.map((resource, index) => (
-              <a key={index} href={item.selectedResource?.fileUrl || item.selectedResource?.url}>
+              <a key={index} href={item.selectedResource?.fileUrl || item.selectedResource?.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]">
                   <Download className="mr-2 h-4 w-4" />
                   Download {resource.title}
