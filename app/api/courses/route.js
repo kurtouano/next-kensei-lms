@@ -19,11 +19,18 @@ export async function GET() {
       .populate("itemsReward")
       .lean()
 
-      const formattedCourses = courses.map((course) => {
+    const formattedCourses = courses.map((course) => {
       const totalModules = course.modules.length;
       const totalLessons = course.modules.reduce((acc, module) => {
         return acc + (module.lessons?.length || 0);
       }, 0);
+
+      // Calculate rating statistics
+      const validRatings = course.ratings.filter(rating => rating.rating);
+      const averageRating = validRatings.length > 0 
+        ? validRatings.reduce((sum, rating) => sum + rating.rating, 0) / validRatings.length
+        : 0;
+      const totalReviews = validRatings.length;
 
       return {
         id: course._id.toString(),
@@ -31,16 +38,16 @@ export async function GET() {
         title: course.title,
         description: course.shortDescription,
         price: course.price,
-        credits: course.creditReward,
+        credits: course.creditReward, // Keep this - your frontend still uses it
         itemsReward: course.itemsReward.map(item => item.name),
         modules: totalModules,
         lessons: totalLessons,
-        // likes: totalLikes,
         level: course.level,
         category: course.category,
         thumbnail: course.thumbnail,
         highlights: course.highlights.map((h) => h.description),
-        instructorName: course.instructorName,
+        averageRating: averageRating,
+        totalReviews: totalReviews,
       }
     });
 
