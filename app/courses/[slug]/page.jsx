@@ -1166,6 +1166,42 @@ function CourseSidebar({
               <div className={`space-y-1 p-2 ${!isAccessible ? "pointer-events-none" : ""}`}>
                 {module.items.map((item) => (
                   <div key={item.id} className="space-y-2">
+                    
+                    {/* Resources Section */}
+                    {item.resources && item.resources.length > 0 && (
+                      <div className="space-y-1">
+                        {item.resources.map((resource, resourceIndex) => (
+                          <div
+                            key={resourceIndex}
+                            className={`flex items-center justify-between rounded-md p-2 text-sm cursor-pointer transition-colors ${
+                              !isAccessible
+                                ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                                : activeVideoId === `resource-${item.id}-${resourceIndex}`
+                                  ? "bg-[#4a7c59] text-white"
+                                  : "text-[#5c6d5e] hover:bg-[#f8f7f4]"
+                            }`}
+                            onClick={() => isAccessible && onSelectItem(`resource-${item.id}-${resourceIndex}`, moduleIndex)}
+                          >
+                            <div className="flex items-center flex-1 min-w-0">
+                              <div className="mr-3 flex-shrink-0">
+                                <FileText
+                                  className={`h-4 w-4 ${
+                                    !isAccessible
+                                      ? "text-gray-400"
+                                      : activeVideoId === `resource-${item.id}-${resourceIndex}`
+                                        ? "text-white"
+                                        : "text-[#4a7c59]"
+                                  }`}
+                                />
+                              </div>
+                              <span className="truncate">{resource.title}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* List of Lessons in Each Module*/}
                     <div
                       className={`flex w-full items-center rounded-md p-2 text-left text-sm transition-colors ${
                         !isAccessible
@@ -1239,40 +1275,6 @@ function CourseSidebar({
                         )}
                       </button>
                     </div>
-
-                    {/* Resources Section */}
-                    {item.resources && item.resources.length > 0 && (
-                      <div className="space-y-1">
-                        {item.resources.map((resource, resourceIndex) => (
-                          <div
-                            key={resourceIndex}
-                            className={`flex items-center justify-between rounded-md p-2 text-sm cursor-pointer transition-colors ${
-                              !isAccessible
-                                ? "cursor-not-allowed bg-gray-100 text-gray-400"
-                                : activeVideoId === `resource-${item.id}-${resourceIndex}`
-                                  ? "bg-[#4a7c59] text-white"
-                                  : "text-[#5c6d5e] hover:bg-[#f8f7f4]"
-                            }`}
-                            onClick={() => isAccessible && onSelectItem(`resource-${item.id}-${resourceIndex}`, moduleIndex)}
-                          >
-                            <div className="flex items-center flex-1 min-w-0">
-                              <div className="mr-3 flex-shrink-0">
-                                <FileText
-                                  className={`h-4 w-4 ${
-                                    !isAccessible
-                                      ? "text-gray-400"
-                                      : activeVideoId === `resource-${item.id}-${resourceIndex}`
-                                        ? "text-white"
-                                        : "text-[#4a7c59]"
-                                  }`}
-                                />
-                              </div>
-                              <span className="truncate">{resource.title}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
