@@ -1,16 +1,20 @@
 "use client"
 
+import { useState } from "react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
-import { BookOpen, Award, Check, Star } from "lucide-react"
+import { BookOpen, Award, Check, Star, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 export function CourseCard({ course }) {
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
     
     try {
+      setIsLoading(true)
+      
       // Call your checkout session API
       const response = await fetch('/api/courses/stripe/create-checkout-session', {
         method: 'POST',
@@ -20,7 +24,7 @@ export function CourseCard({ course }) {
         body: JSON.stringify({
           courseId: course.id,
           title: course.title,
-          description: course.description,
+          description: course.description || course.shortDescription,
           price: course.price,
           thumbnail: course.thumbnail,
         }),
@@ -29,14 +33,18 @@ export function CourseCard({ course }) {
       const { url } = await response.json();
       
       if (url) {
+        // Keep loading state while redirecting to Stripe
         window.location.assign(url);
+      } else {
+        setIsLoading(false)
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
+      setIsLoading(false)
     }
   };
 
-  // Helper function to render star rating
+  // Enhanced star rating component with half-star support
   const StarRating = ({ rating, totalReviews }) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -94,77 +102,156 @@ export function CourseCard({ course }) {
           {stars}
         </div>
         <span className="text-sm font-medium text-[#2c3e2d]">
-          {rating.toFixed(1)}
+          {rating > 0 ? rating.toFixed(1) : '0.0'}
         </span>
         <span className="text-sm text-[#5c6d5e]">
-          ({totalReviews})
+          ({totalReviews} review{totalReviews !== 1 ? 's' : ''})
         </span>
       </div>
     );
   };
 
+  // Get rating data - handle both old and new data structures
+  const averageRating = course.ratingStats?.averageRating || course.averageRating || 0;
+  const totalReviews = course.ratingStats?.totalRatings || course.totalReviews || 0;
+
+  // Get course metadata with fallbacks
+  const courseTitle = course.title || 'Untitled Course';
+  const courseDescription = course.shortDescription || course.description || 'No description available';
+  const coursePrice = course.price || 0;
+  const courseCredits = course.creditReward || course.credits || 0;
+  
+  // Calculate modules and lessons count - Updated to match your API response
+  const modulesCount = course.modules || course.modulesCount || 0;
+  const lessonsCount = course.lessons || course.lessonsCount || course.totalLessons || 0;
+
+  // Get highlights with fallback
+  const highlights = course.highlights || course.learningHighlights || [
+    'Interactive lessons',
+    'Cultural insights',
+    'Practical vocabulary'
+  ];
+
+  // Get items reward with fallback - Updated to handle your API format
+  const itemsReward = course.itemsReward?.length > 0 
+    ? course.itemsReward.slice(0, 2) // Your API already returns strings
+    : ['Certificate', 'Resources'];
+
   return (
-    <div className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm transition-all hover:shadow-md">
+    <div className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm transition-all hover:shadow-md flex flex-col h-full">
       <div className="aspect-video w-full overflow-hidden">
         <img
           src={course.thumbnail || "/placeholder.svg"}
-          alt={course.title}
+          alt={courseTitle}
           className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+          onError={(e) => {
+            e.target.src = "/placeholder.svg"
+          }}
         />
       </div>
-      <div className="p-5">
-        <h3 className="mb-2 text-xl font-semibold text-[#2c3e2d]">{course.title}</h3>
-        <p className="mb-3 text-sm text-[#5c6d5e]">{course.description}</p>
+      <div className="p-5 flex flex-col flex-grow">
+        <h3 className="mb-2 text-xl font-semibold text-[#2c3e2d] line-clamp-2 min-h-[3.5rem] flex">
+          <span>{courseTitle}</span>
+        </h3>
+        <p className="mb-3 text-sm text-[#5c6d5e] line-clamp-2">
+          {courseDescription}
+        </p>
 
         {/* Star Rating - Always show */}
         <div className="mb-3">
-          <StarRating rating={course.averageRating || 0} totalReviews={course.totalReviews || 0} />
+          <StarRating rating={averageRating} totalReviews={totalReviews} />
         </div>
 
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-lg font-bold text-[#2c3e2d]">${course.price}</div>
-          <div className="flex items-center text-sm text-[#5c6d5e]">
-            <BonsaiIcon className="mr-1 h-4 w-4 text-[#4a7c59]" />
-            {course.credits} credits
+          <div className="text-lg font-bold text-[#2c3e2d]">
+            {coursePrice === 0 ? 'Free' : `$ ${coursePrice}`}
           </div>
+          {courseCredits > 0 && (
+            <div className="flex items-center text-sm text-[#5c6d5e]">
+              <BonsaiIcon className="mr-1 h-4 w-4 text-[#4a7c59]" />
+              {courseCredits} credits
+            </div>
+          )}
         </div>
 
         <div className="mb-4 space-y-2 rounded-md bg-[#eef2eb] p-3">
           <div className="flex items-center text-sm font-medium text-[#2c3e2d]">
             <BookOpen className="mr-2 h-4 w-4 text-[#4a7c59]" />
-            {course.modules} modules • {course.lessons} lessons
+            {modulesCount} module{modulesCount !== 1 ? 's' : ''} • {lessonsCount} lesson{lessonsCount !== 1 ? 's' : ''}
           </div>
-          <div className="flex items-center text-sm font-medium text-[#2c3e2d]">
-            <Award className="mr-2 h-4 w-4 text-[#4a7c59]" />
-            Includes: {course.itemsReward.join(", ")}
-          </div>
+          {itemsReward.length > 0 && (
+            <div className="flex items-center text-sm font-medium text-[#2c3e2d]">
+              <Award className="mr-2 h-4 w-4 text-[#4a7c59]" />
+              Includes: {itemsReward.join(", ")}
+            </div>
+          )}
         </div>
 
-        <div className="mb-4">
+        <div className="mb-4 flex-grow">
           <h4 className="mb-2 text-sm font-semibold text-[#2c3e2d]">Learning Highlights:</h4>
           <ul className="space-y-1">
-            {course.highlights.map((highlight, index) => (
+            {highlights.slice(0, 3).map((highlight, index) => (
               <li key={index} className="flex items-start text-sm">
                 <Check className="mr-2 h-4 w-4 shrink-0 text-[#4a7c59]" />
-                <span className="text-[#5c6d5e]">{highlight}</span>
+                <span className="text-[#5c6d5e] line-clamp-1">{highlight}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="flex gap-2">
-          <Button onClick={handleSubscribe} className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]">
-            Buy Course
+        <div className="flex gap-2 mt-auto">
+          <Button 
+            onClick={handleSubscribe} 
+            className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={course.isPublished === false || isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {coursePrice === 0 ? 'Processing...' : 'Processing...'}
+              </>
+            ) : (
+              coursePrice === 0 ? 'Enroll Free' : 'Buy Course'
+            )}
           </Button>
 
           <Link 
             href={`/courses/${course.slug}`}
-            className="flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb]"
+            className={`flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb] ${
+              isLoading ? 'pointer-events-none opacity-50' : ''
+            }`}
           >
             Preview
           </Link>
         </div>
+
+        {/* Course Status Indicator */}
+        {course.isPublished === false && (
+          <div className="mt-2 text-center">
+            <span className="inline-block rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
+              Coming Soon
+            </span>
+          </div>
+        )}
+
       </div>
+
+      {/* Full Screen Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 shadow-2xl flex flex-col sm:flex-row items-center gap-4 max-w-sm w-full mx-4">
+            <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-[#4a7c59] flex-shrink-0" />
+            <div className="text-center sm:text-left">
+              <span className="text-sm sm:text-base font-medium text-[#2c3e2d] block">
+                Redirecting to checkout...
+              </span>
+              <span className="text-xs sm:text-sm text-[#5c6d5e] mt-1 block">
+                Please wait while we prepare your payment
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

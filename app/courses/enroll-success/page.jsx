@@ -2,7 +2,7 @@
 
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
-import { CheckCircle, BookOpen, ArrowRight, Mail } from 'lucide-react'
+import { CheckCircle, ArrowRight, Mail } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
 
