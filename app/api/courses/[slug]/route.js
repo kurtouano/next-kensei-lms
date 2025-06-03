@@ -1,3 +1,4 @@
+// app/api/courses/[slug]/route.js
 import { connectDb } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Course from "@/models/Course";
@@ -21,13 +22,39 @@ export async function GET(request, { params }) {
       })
       .populate({
         path: 'instructor',
-        select: "name icon"
+        select: "name image icon"
       })
       .lean();
 
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
+
+    // Calculate total duration and lessons
+    let totalLessons = 0;
+    let totalDurationMinutes = 0;
+
+    course.modules.forEach(module => {
+      if (module.lessons && Array.isArray(module.lessons)) {
+        totalLessons += module.lessons.length;
+        module.lessons.forEach(lesson => {
+          if (lesson.duration) {
+            // Assuming duration is stored in minutes or parse it if it's in "5:30" format
+            if (typeof lesson.duration === 'string' && lesson.duration.includes(':')) {
+              const [minutes, seconds] = lesson.duration.split(':').map(Number);
+              totalDurationMinutes += minutes + (seconds / 60);
+            } else if (typeof lesson.duration === 'number') {
+              totalDurationMinutes += lesson.duration;
+            }
+          }
+        });
+      }
+    });
+
+    // Format total duration
+    const hours = Math.floor(totalDurationMinutes / 60);
+    const minutes = Math.round(totalDurationMinutes % 60);
+    const totalDuration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
     const formattedCourse = {
       id: course._id.toString(),
@@ -36,12 +63,18 @@ export async function GET(request, { params }) {
       fullDescription: course.fullDescription,
       progress: 0,
       instructor: course.instructor?.name || "Japanese Instructor",
-      instructorImg: course.instructor?.icon || null,
+      instructorImg: course.instructor?.image || course.instructor?.icon || null,
       lastUpdated: new Date(course.updatedAt).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
       }),
       level: course.level.charAt(0).toUpperCase() + course.level.slice(1),
+      totalDuration,
+      totalLessons,
+      // Include rating stats from the course document
+      averageRating: course.ratingStats?.averageRating || 0,
+      totalRatings: course.ratingStats?.totalRatings || 0,
+      ratingDistribution: course.ratingStats?.distribution || { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
       modules: course.modules.map((module, moduleIndex) => ({
         id: module._id.toString(),
         title: module.title,
@@ -53,6 +86,7 @@ export async function GET(request, { params }) {
           thumbnail: lesson.thumbnail,
           description: lesson.description,
           order: lesson.order,
+          duration: lesson.duration || "5:00", // Default duration if not set
           resources: lesson.resources || [],
         })),
         quiz: module.quiz && Array.isArray(module.quiz.questions)
