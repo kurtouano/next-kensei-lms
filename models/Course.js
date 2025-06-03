@@ -33,7 +33,7 @@ const CourseSchema = new mongoose.Schema(
       required: true,
       default: "speaking",
     },
-    highlights: [ // Course Highlights List such as What you will learn
+    highlights: [ 
       {
         description: {
           type: String,
@@ -69,35 +69,59 @@ const CourseSchema = new mongoose.Schema(
        ref: "Module",
       },
     ],
+    revenue: {
+      total: {
+        type: Number,
+        default: 0,
+      },
+      monthly: [{
+        month: {
+          type: String,
+          required: true,
+        }, // "2025-06"
+        amount: {
+          type: Number,
+          required: true,
+          default: 0,
+        },
+        enrollments: {
+          type: Number,
+          required: true,
+          default: 0,
+        },
+      }],
+      lastUpdated: {
+        type: Date,
+        default: Date.now,
+      },
+    },
     enrolledStudents: {
       type: Number,
       default: 0,
     },
-    ratings: [
-      {
-        user: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-        rating: {
-          type: Number,
-          min: 1,
-          max: 5,
-          required: true,
-        },
-        isLiked: {
-          type: Boolean,
-          default: false,
-        },
-        review: {
-          type: String,
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
+    ratingStats: {
+      averageRating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5,
       },
-    ],
+      totalRatings: {
+        type: Number,
+        default: 0,
+      },
+      distribution: {
+        5: { type: Number, default: 0 },
+        4: { type: Number, default: 0 },
+        3: { type: Number, default: 0 },
+        2: { type: Number, default: 0 },
+        1: { type: Number, default: 0 },
+      },
+      lastUpdated: {
+        type: Date,
+        default: Date.now,
+      },
+    },
     tags: [
       {
         type: String,
@@ -110,6 +134,11 @@ const CourseSchema = new mongoose.Schema(
   },
   { timestamps: true },
 )
+
+CourseSchema.index({ category: 1, level: 1 });
+CourseSchema.index({ 'revenue.total': -1 });
+CourseSchema.index({ enrolledStudents: -1 });
+CourseSchema.index({ isPublished: 1 });
 
 const Course = mongoose.models.Course || mongoose.model("Course", CourseSchema)
 export default Course
