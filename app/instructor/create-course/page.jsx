@@ -602,25 +602,33 @@ export default function CreateCourse() {
     </div>
   ), [uploadingFiles, validationErrors, renderValidationError])
 
-  const renderArrayInput = useCallback((items, updateFn, removeFn, addFn, placeholder, btnName, fieldKey = null, limit = null, errorKey = null) => (
+  const renderArrayInput = useCallback((items, updateFn, removeFn, addFn, placeholder, btnName, fieldKey = null, limit = null, errorKey = null, maxLength = null) => (
     <div className="space-y-2">
       {items.map((item, index) => (
-        <div key={index} className="flex gap-2">
-          <input
-            className={`flex-1 rounded-md border p-2 ${showValidation && errorKey && validationErrors[errorKey] ? 'border-red-500' : 'border-gray-300'}`}
-            placeholder={placeholder}
-            value={fieldKey ? item[fieldKey] : item}
-            onChange={(e) => updateFn(index, e.target.value)}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => removeFn(index)}
-            disabled={items.length === 1}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+        <div key={index} className="space-y-1">
+          <div className="flex gap-2">
+            <input
+              className={`flex-1 rounded-md border p-2 ${showValidation && errorKey && validationErrors[errorKey] ? 'border-red-500' : 'border-gray-300'}`}
+              placeholder={placeholder}
+              value={fieldKey ? item[fieldKey] : item}
+              maxLength={maxLength}
+              onChange={(e) => updateFn(index, e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => removeFn(index)}
+              disabled={items.length === 1}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+          {maxLength && (
+            <div className="text-xs text-gray-500 text-right">
+              {(fieldKey ? item[fieldKey] : item).length}/{maxLength} characters
+            </div>
+          )}
         </div>
       ))}
       {errorKey && renderValidationError(errorKey)}
@@ -658,28 +666,96 @@ export default function CreateCourse() {
 
       {/* Progress Steps */}
       <div className="mb-8">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
-            <div key={index} className="flex items-center">
+        {/* Desktop Progress */}
+        <div className="hidden md:block">
+          <div className="relative">
+            {/* Progress Line Background */}
+            <div className="absolute top-4 left-4 right-4 h-0.5 bg-gray-200">
+              <div 
+                className="h-0.5 bg-[#4a7c59] transition-all duration-300"
+                style={{ 
+                  width: currentStep === 0 ? '0%' : `${(currentStep / (steps.length - 1)) * 100}%`
+                }}
+              />
+            </div>
+            
+            {/* Steps */}
+            <div className="flex items-center justify-between relative z-10">
+              {steps.map((step, index) => (
+                <div key={index} className="flex items-center bg-white px-2">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium relative ${
+                      index <= currentStep ? "bg-[#4a7c59] text-white" : "bg-gray-200 text-gray-600"
+                    }`}
+                  >
+                    {index + 1}
+                    {/* Show error indicator only when validation is active */}
+                    {showValidation && index < steps.length - 1 && Object.keys(validateStep(index)).length > 0 && (
+                      <AlertCircle className="absolute -top-1 -right-1 h-4 w-4 text-red-500 bg-white rounded-full" />
+                    )}
+                  </div>
+                  <span className={`ml-2 text-sm whitespace-nowrap ${index <= currentStep ? "text-[#4a7c59] font-medium" : "text-gray-500"}`}>
+                    {step}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Progress */}
+        <div className="md:hidden">
+          {/* Current Step Indicator */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium relative ${
-                  index <= currentStep ? "bg-[#4a7c59] text-white" : "bg-gray-200 text-gray-600"
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-medium relative ${
+                  "bg-[#4a7c59] text-white"
                 }`}
               >
-                {index + 1}
+                {currentStep + 1}
                 {/* Show error indicator only when validation is active */}
-                {showValidation && index < steps.length - 1 && Object.keys(validateStep(index)).length > 0 && (
-                  <AlertCircle className="absolute -top-1 -right-1 h-4 w-4 text-red-500 bg-white rounded-full" />
+                {showValidation && currentStep < steps.length - 1 && Object.keys(validateStep(currentStep)).length > 0 && (
+                  <AlertCircle className="absolute -top-1 -right-1 h-5 w-5 text-red-500 bg-white rounded-full" />
                 )}
               </div>
-              <span className={`ml-2 text-sm ${index <= currentStep ? "text-[#4a7c59] font-medium" : "text-gray-500"}`}>
-                {step}
-              </span>
-              {index < steps.length - 1 && (
-                <div className={`w-16 h-0.5 mx-4 ${index < currentStep ? "bg-[#4a7c59]" : "bg-gray-200"}`} />
-              )}
+              <div className="ml-3">
+                <div className="text-sm text-gray-500">Step {currentStep + 1} of {steps.length}</div>
+                <div className="font-medium text-[#4a7c59]">{steps[currentStep]}</div>
+              </div>
             </div>
-          ))}
+          </div>
+
+          {/* Step Dots and Progress */}
+          <div className="relative">
+            {/* Step Dots */}
+            <div className="flex justify-between relative z-10">
+              {steps.map((step, index) => (
+                <div key={index} className="flex flex-col items-center">
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      index <= currentStep ? "bg-[#4a7c59]" : "bg-gray-200"
+                    }`}
+                  />
+                  <span className={`text-xs mt-1 text-center max-w-[60px] leading-tight ${
+                    index <= currentStep ? "text-[#4a7c59] font-medium" : "text-gray-500"
+                  }`}>
+                    {step.split(' ')[0]}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
+            {/* Progress Line */}
+            <div className="absolute top-1.5 left-0 right-0 h-0.5 bg-gray-200 -translate-y-0.5">
+              <div 
+                className="h-0.5 bg-[#4a7c59] transition-all duration-300"
+                style={{ 
+                  width: currentStep === 0 ? '0%' : `${(currentStep / (steps.length - 1)) * 100}%`
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -715,6 +791,7 @@ export default function CreateCourse() {
               <input
                 className={`w-full rounded-md border p-2 ${showValidation && validationErrors.title ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="e.g., Japanese for Beginners"
+                maxLength={60}
                 value={courseData.title}
                 onChange={(e) => {
                   const title = e.target.value
@@ -722,6 +799,9 @@ export default function CreateCourse() {
                   updateCourseData("slug", generateSlug(title))
                 }}    
               />
+              <div className="text-xs text-gray-500 text-right">
+                {courseData.title.length}/60 characters
+              </div>
               {renderValidationError('title')}
             </div>
 
@@ -731,11 +811,14 @@ export default function CreateCourse() {
               </label>
               <input
                 className={`w-full rounded-md border p-2 ${showValidation && validationErrors.shortDescription ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Brief description (max 200 characters)"
-                maxLength={200}
+                placeholder="Brief description"
+                maxLength={100}
                 value={courseData.shortDescription}
                 onChange={(e) => updateCourseData("shortDescription", e.target.value)}
               />
+              <div className="text-xs text-gray-500 text-right">
+                {courseData.shortDescription.length}/100 characters
+              </div>
               {renderValidationError('shortDescription')}
             </div>
 
@@ -744,7 +827,7 @@ export default function CreateCourse() {
                 Full Description <span className="text-red-500">*</span>
               </label>
               <textarea
-                className={`h-32 w-full rounded-md border p-2 ${showValidation && validationErrors.fullDescription ? 'border-red-500' : 'border-gray-300'}`}
+                className={`h-32 w-full rounded-md border p-2 whitespace-pre-wrap ${showValidation && validationErrors.fullDescription ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Detailed course description"
                 value={courseData.fullDescription}
                 onChange={(e) => updateCourseData("fullDescription", e.target.value)}
@@ -887,7 +970,8 @@ export default function CreateCourse() {
                 "Add Highlight",
                 "description",
                 LIMITS.highlights,
-                "highlights"
+                "highlights",
+                50
               )}
             </div>
 
@@ -1264,19 +1348,6 @@ export default function CreateCourse() {
             </div>
 
             <div className="flex gap-4">
-              {/* <Button 
-                onClick={() => handleSubmit(true)} 
-                variant="outline" 
-                className="flex-1"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Saving..." : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save as Draft
-                  </>
-                )}
-              </Button> */}
               <Button 
                 onClick={() => handleSubmit(false)} 
                 className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147]"
