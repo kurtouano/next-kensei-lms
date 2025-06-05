@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
-import { BookOpen, Award, Check, Star, Loader2, PlayCircle } from "lucide-react"
+import { BookOpen, Award, Check, Star, PlayCircle } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useSession } from "next-auth/react"
@@ -139,6 +139,14 @@ export function CourseCard({ course }) {
     );
   };
 
+  // Simple Enrollment Checking Skeleton
+  const EnrollmentCheckingSkeleton = () => (
+    <div className="flex gap-2 mt-auto">
+      <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
+      <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
+    </div>
+  )
+
   // Get rating data - handle both old and new data structures
   const averageRating = course.ratingStats?.averageRating || course.averageRating || 0;
   const totalReviews = course.ratingStats?.totalRatings || course.totalReviews || 0;
@@ -232,53 +240,48 @@ export function CourseCard({ course }) {
         </div>
 
         {/* Conditional Button Rendering */}
-        <div className="flex gap-2 mt-auto">
-          {checkingEnrollment ? (
-            // Loading state while checking enrollment
-            <div className="flex-1 rounded-md bg-gray-100 px-4 py-2 text-center">
-              <Loader2 className="inline h-4 w-4 animate-spin text-gray-500 mr-2" />
-              <span className="text-sm text-gray-500">Checking...</span>
-            </div>
-          ) : isEnrolled ? (
-            // User is enrolled - show single "Continue Learning" button
+        {checkingEnrollment ? (
+          // Skeleton loading while checking enrollment
+          <EnrollmentCheckingSkeleton />
+        ) : isEnrolled ? (
+          // User is enrolled - show single "Continue Learning" button
+          <Button 
+            asChild
+            className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]"
+          >
+            <Link href={`/courses/${course.slug}`}>
+              <PlayCircle className="mr-2 h-4 w-4" />
+              Continue Learning
+            </Link>
+          </Button>
+        ) : (
+          // User is not enrolled - show purchase and preview buttons
+          <div className="flex gap-2 mt-auto">
             <Button 
-              asChild
-              className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]"
+              onClick={handleSubscribe} 
+              className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147] disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={course.isPublished === false || isLoading}
             >
-              <Link href={`/courses/${course.slug}`}>
-                <PlayCircle className="mr-2 h-4 w-4" />
-                Continue Learning
-              </Link>
+              {isLoading ? (
+                <span className="flex items-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  {coursePrice === 0 ? 'Processing...' : 'Processing...'}
+                </span>
+              ) : (
+                coursePrice === 0 ? 'Enroll Free' : 'Buy Course'
+              )}
             </Button>
-          ) : (
-            // User is not enrolled - show purchase and preview buttons
-            <>
-              <Button 
-                onClick={handleSubscribe} 
-                className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147] disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={course.isPublished === false || isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {coursePrice === 0 ? 'Processing...' : 'Processing...'}
-                  </>
-                ) : (
-                  coursePrice === 0 ? 'Enroll Free' : 'Buy Course'
-                )}
-              </Button>
 
-              <Link 
-                href={`/courses/${course.slug}`}
-                className={`flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb] ${
-                  isLoading ? 'pointer-events-none opacity-50' : ''
-                }`}
-              >
-                Preview
-              </Link>
-            </>
-          )}
-        </div>
+            <Link 
+              href={`/courses/${course.slug}`}
+              className={`flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb] ${
+                isLoading ? 'pointer-events-none opacity-50' : ''
+              }`}
+            >
+              Preview
+            </Link>
+          </div>
+        )}
 
         {/* Course Status Indicator */}
         {course.isPublished === false && (
@@ -291,18 +294,18 @@ export function CourseCard({ course }) {
 
       </div>
 
-      {/* Full Screen Loading Overlay */}
+      {/* Improved Loading Overlay with skeleton-style design */}
       {isLoading && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 shadow-2xl flex flex-col sm:flex-row items-center gap-4 max-w-sm w-full mx-4">
-            <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-[#4a7c59] flex-shrink-0" />
-            <div className="text-center sm:text-left">
-              <span className="text-sm sm:text-base font-medium text-[#2c3e2d] block">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 shadow-2xl flex flex-col sm:flex-row items-center gap-4 max-w-sm w-full mx-4 border border-gray-200">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 border-3 border-[#4a7c59] border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+            <div className="text-center sm:text-left space-y-1">
+              <div className="text-sm sm:text-base font-medium text-[#2c3e2d]">
                 Redirecting to checkout...
-              </span>
-              <span className="text-xs sm:text-sm text-[#5c6d5e] mt-1 block">
+              </div>
+              <div className="text-xs sm:text-sm text-[#5c6d5e]">
                 Please wait while we prepare your payment
-              </span>
+              </div>
             </div>
           </div>
         </div>

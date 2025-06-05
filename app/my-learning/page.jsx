@@ -1,3 +1,5 @@
+// Fixed MyLearning component with consistent card heights
+
 "use client"
 import Link from "next/link"
 import { Header } from "@/components/header"
@@ -49,7 +51,7 @@ export default function MyLearning() {
     }
   };
 
-  // Show loading state
+  // Skeleton Animate for Loading
   if (status === "loading" || loading) {
     return (
       <div className="flex min-h-screen flex-col bg-white">
@@ -70,7 +72,7 @@ export default function MyLearning() {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3].map((i) => (
                   <Card key={i} className="overflow-hidden border-gray-200 shadow-sm">
-                    <div className="aspect-video w-full bg-gray-200 animate-pulse"></div>
+                    <div className="aspect-video w-full h-full bg-gray-200 animate-pulse"></div>
                     <CardContent className="p-4">
                       <div className="animate-pulse space-y-3">
                         <div className="h-6 bg-gray-200 rounded"></div>
@@ -165,9 +167,9 @@ export default function MyLearning() {
                 {enrolledCourses.map((course) => (
                   <Card
                     key={course.id}
-                    className="overflow-hidden border-gray-200 shadow-sm transition-all hover:shadow-md"
+                    className="overflow-hidden border-gray-200 shadow-sm transition-all hover:shadow-md flex flex-col h-full"
                   >
-                    <div className="relative aspect-video w-full overflow-hidden bg-gray-100">
+                    <div className="relative aspect-video w-full overflow-hidden bg-gray-100 flex-shrink-0">
                       <img
                         src={course.image || "/placeholder.svg"}
                         alt={course.title}
@@ -178,47 +180,50 @@ export default function MyLearning() {
                       />
                     </div>
 
-                    <CardContent className="relative p-4">
-                      <h3 className="mb-1 text-lg font-medium text-gray-900 line-clamp-2">
-                        {course.title}
-                      </h3>
-                      <div className="absolute top-4 right-2 rounded-full bg-[#4a7c59] px-2 py-1 text-xs font-medium text-white">
-                        {course.level}
-                      </div>
-                      <p className="mb-3 text-sm text-gray-500">
-                        Instructor: {course.instructor}
-                      </p>
-
-                      <div className="mb-3">
-                        <div className="mb-1 flex items-center justify-between text-sm">
-                          <span className="text-gray-600">
-                            {course.completedLessons}/{course.totalLessons} lessons
-                          </span>
-                          <span className="font-medium text-[#4a7c59]">
-                            {course.progress}%
-                          </span>
-                        </div>
-                        <Progress 
-                          value={course.progress} 
-                          className="h-2 bg-gray-100" 
-                          indicatorClassName="bg-[#4a7c59]" 
-                        />
+                    <CardContent className="p-4 flex flex-col flex-grow">
+                      {/* Top content section - will expand to fill available space */}
+                      <div className="flex-grow">
+                        <h3 className="mb-1 text-lg font-medium text-gray-900 line-clamp-2">
+                          {course.title}
+                        </h3>
+                        <p className="mb-3 text-sm text-gray-500">
+                          Instructor: {course.instructor}
+                        </p>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Clock className="mr-1 h-4 w-4" />
-                          <span>Last: {course.lastLesson}</span>
+                      {/* Bottom section - always at the bottom */}
+                      <div className="flex-shrink-0">
+                        <div className="mb-3">
+                          <div className="mb-1 flex items-center justify-between text-sm">
+                            <span className="text-gray-600">
+                              {course.completedLessons}/{course.totalLessons} lessons
+                            </span>
+                            <span className="font-medium text-[#4a7c59]">
+                              {course.progress}%
+                            </span>
+                          </div>
+                          <Progress 
+                            value={course.progress} 
+                            className="h-2 bg-gray-100" 
+                            indicatorClassName="bg-[#4a7c59]" 
+                          />
                         </div>
-                        <Button 
-                          className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" 
-                          size="sm" 
-                          asChild
-                        >
-                          <Link href={`/courses/${course.slug}`}>
-                            Continue
-                          </Link>
-                        </Button>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Clock className="mr-1 h-4 w-4" />
+                            <span>Last: {course.lastLesson}</span>
+                          </div>
+                          <Button 
+                            className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" 
+                            size="sm" 
+                            asChild
+                          >
+                            <Link href={`/courses/${course.slug}`}>
+                              Continue
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

@@ -6,7 +6,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { CourseCard } from "./CourseCard"
 import { useSession } from "next-auth/react"
-import { AlertCircle, BookOpen, Loader2 } from "lucide-react"
+import { AlertCircle, BookOpen } from "lucide-react"
 
 export default function CoursesPage() {
   const { data: session, status } = useSession()
@@ -123,17 +123,81 @@ export default function CoursesPage() {
     return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
   })
 
+  // Simple Skeleton Loading Component
+  const CourseSkeleton = () => (
+    <div className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm">
+      {/* Image Skeleton */}
+      <div className="aspect-video w-full bg-gray-200 animate-pulse"></div>
+      
+      {/* Content Skeleton */}
+      <div className="p-5 space-y-4">
+        {/* Title */}
+        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+        
+        {/* Description lines */}
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+        </div>
+
+        {/* Info box */}
+        <div className="h-16 bg-gray-100 rounded-md animate-pulse"></div>
+
+        {/* Buttons */}
+        <div className="flex gap-2">
+          <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
+          <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  )
+
+  // Simple Category Tabs Skeleton
+  const CategorySkeleton = () => (
+    <div className="mb-8">
+      {/* Mobile skeleton */}
+      <div className="grid grid-cols-2 gap-2 w-full sm:hidden">
+        {[1, 2].map((i) => (
+          <div key={i} className="h-10 bg-gray-200 rounded animate-pulse"></div>
+        ))}
+      </div>
+      
+      {/* Desktop skeleton */}
+      <div className="hidden gap-3 sm:flex justify-center">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+        ))}
+      </div>
+    </div>
+  )
+
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
         <Header isLoggedIn={!!session?.user} />
         <main className="flex-1 py-8">
           <div className="container mx-auto px-4">
-            <div className="flex h-64 items-center justify-center">
-              <div className="text-center">
-                <Loader2 className="animate-spin h-12 w-12 text-[#4a7c59] mx-auto mb-4" />
-                <p className="text-[#5c6d5e]">Loading courses...</p>
-              </div>
+            {/* Simple Header Skeleton */}
+            <div className="mb-8 space-y-3">
+              <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+            </div>
+
+            {/* Category Tabs Skeleton */}
+            <CategorySkeleton />
+
+            {/* Simple Course Info Skeleton */}
+            <div className="mb-4 flex justify-between">
+              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+            </div>
+
+            {/* Course Grid Skeleton */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <CourseSkeleton key={i} />
+              ))}
             </div>
           </div>
         </main>
