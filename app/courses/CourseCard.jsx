@@ -1,13 +1,40 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
-import { BookOpen, Award, Check, Star, Loader2 } from "lucide-react"
+import { BookOpen, Award, Check, Star, Loader2, PlayCircle } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { useSession } from "next-auth/react"
 
 export function CourseCard({ course }) {
+  const { data: session } = useSession()
   const [isLoading, setIsLoading] = useState(false)
+  const [isEnrolled, setIsEnrolled] = useState(false)
+  const [checkingEnrollment, setCheckingEnrollment] = useState(false)
+
+  // Check if user is enrolled in this course
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      if (!session?.user) return
+      
+      try {
+        setCheckingEnrollment(true)
+        const response = await fetch(`/api/courses/enrollment?courseId=${course.id}`)
+        const data = await response.json()
+        
+        if (data.success) {
+          setIsEnrolled(data.isEnrolled)
+        }
+      } catch (error) {
+        console.error('Error checking enrollment:', error)
+      } finally {
+        setCheckingEnrollment(false)
+      }
+    }
+
+    checkEnrollment()
+  }, [session, course.id])
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -30,12 +57,13 @@ export function CourseCard({ course }) {
         }),
       });
 
-      const { url } = await response.json();
+      const data = await response.json();
       
-      if (url) {
+      if (data.url) {
         // Keep loading state while redirecting to Stripe
-        window.location.assign(url);
+        window.location.assign(data.url);
       } else {
+        console.error('No checkout URL received:', data)
         setIsLoading(false)
       }
     } catch (error) {
@@ -163,8 +191,12 @@ export function CourseCard({ course }) {
         </div>
 
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-lg font-bold text-[#2c3e2d]">
-            {coursePrice === 0 ? 'Free' : `$ ${coursePrice}`}
+          <div className="text-md font-bold text-[#2c3e2d]">
+            {isEnrolled ? (
+              <span className="text-[#4a7c59]">Enrolled</span>
+            ) : (
+              coursePrice === 0 ? 'Free' : `$ ${coursePrice}`
+            )}
           </div>
           {courseCredits > 0 && (
             <div className="flex items-center text-sm text-[#5c6d5e]">
@@ -199,30 +231,53 @@ export function CourseCard({ course }) {
           </ul>
         </div>
 
+        {/* Conditional Button Rendering */}
         <div className="flex gap-2 mt-auto">
-          <Button 
-            onClick={handleSubscribe} 
-            className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147] disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={course.isPublished === false || isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {coursePrice === 0 ? 'Processing...' : 'Processing...'}
-              </>
-            ) : (
-              coursePrice === 0 ? 'Enroll Free' : 'Buy Course'
-            )}
-          </Button>
+          {checkingEnrollment ? (
+            // Loading state while checking enrollment
+            <div className="flex-1 rounded-md bg-gray-100 px-4 py-2 text-center">
+              <Loader2 className="inline h-4 w-4 animate-spin text-gray-500 mr-2" />
+              <span className="text-sm text-gray-500">Checking...</span>
+            </div>
+          ) : isEnrolled ? (
+            // User is enrolled - show single "Continue Learning" button
+            <Button 
+              asChild
+              className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]"
+            >
+              <Link href={`/courses/${course.slug}`}>
+                <PlayCircle className="mr-2 h-4 w-4" />
+                Continue Learning
+              </Link>
+            </Button>
+          ) : (
+            // User is not enrolled - show purchase and preview buttons
+            <>
+              <Button 
+                onClick={handleSubscribe} 
+                className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147] disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={course.isPublished === false || isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {coursePrice === 0 ? 'Processing...' : 'Processing...'}
+                  </>
+                ) : (
+                  coursePrice === 0 ? 'Enroll Free' : 'Buy Course'
+                )}
+              </Button>
 
-          <Link 
-            href={`/courses/${course.slug}`}
-            className={`flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb] ${
-              isLoading ? 'pointer-events-none opacity-50' : ''
-            }`}
-          >
-            Preview
-          </Link>
+              <Link 
+                href={`/courses/${course.slug}`}
+                className={`flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb] ${
+                  isLoading ? 'pointer-events-none opacity-50' : ''
+                }`}
+              >
+                Preview
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Course Status Indicator */}

@@ -28,7 +28,7 @@ const ProgressSchema = new mongoose.Schema( // Individual Progress Record for a 
         quizScore: { type: Number, default: 0}
       }
     ],
-    courseProgress: { // Course Progress Percentage
+    courseProgress: { 
       type: Number, 
       default: 0,
     },
@@ -40,9 +40,21 @@ const ProgressSchema = new mongoose.Schema( // Individual Progress Record for a 
       type: Date,
       default: null,
     },
+    status: {
+      type: String,
+      enum: ["not_started", "in_progress", "completed"],
+      default: "not_started",
+    },
+    enrolledAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true },
 )
+
+// Add compound index for efficient queries
+ProgressSchema.index({ user: 1, course: 1 }, { unique: true })
 
 const Progress = mongoose.models.Progress || mongoose.model("Progress", ProgressSchema)
 
