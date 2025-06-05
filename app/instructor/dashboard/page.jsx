@@ -278,10 +278,10 @@ export default function AdminDashboard() {
                           <div>
                             <span className="text-muted-foreground">Rating:</span>
                             <div className="flex items-center">
-                              <span className="font-medium mr-1">{course.rating}</span>
-                              <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                              <span className="font-medium mr-1">{course.rating || '0.0'}</span>
+                              <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
                               <span className="text-xs text-muted-foreground ml-1">
-                                ({course.ratingCount})
+                                ({course.ratingCount || 0})
                               </span>
                             </div>
                           </div>
@@ -362,10 +362,10 @@ export default function AdminDashboard() {
                           <td className="py-4">{formatCurrency(course.revenue)}</td>
                           <td className="py-4">
                             <div className="flex items-center space-x-1">
-                              <span>{course.rating}</span>
-                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                              <span>{course.rating || '0'}</span>
+                              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
                               <span className="text-xs text-muted-foreground">
-                                ({course.ratingCount})
+                                ({course.ratingCount || 0})
                               </span>
                             </div>
                           </td>

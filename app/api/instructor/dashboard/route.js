@@ -23,7 +23,7 @@ export async function GET(req) {
         const getUser = await User.findById(session.user.id)
             .populate({
                 path: "publishedCourses",
-                select: "_id title shortDescription thumbnail price isPublished enrolledStudents ratings createdAt updatedAt level category modules",
+                select: "_id title shortDescription thumbnail price isPublished enrolledStudents ratingStats createdAt updatedAt level category modules",
                 populate: {
                     path: "modules",
                     select: "lessons",
@@ -65,44 +65,43 @@ export async function GET(req) {
 
         // ✅ Calculate detailed course statistics
         const coursesWithStats = getUser.publishedCourses.map(course => {
-            // Calculate average rating
-            const avgRating = course.ratings && course.ratings.length > 0 
-                ? (course.ratings.reduce((sum, rating) => sum + rating.rating, 0) / course.ratings.length).toFixed(1)
-                : 0;
+        // ✅ Use ratingStats instead of ratings array
+        const avgRating = course.ratingStats?.averageRating || 0;
+        const ratingCount = course.ratingStats?.totalRatings || 0;
 
-            // Calculate total revenue for this course
-            const revenue = (course.enrolledStudents || 0) * (course.price || 0);
+        // Calculate total revenue for this course
+        const revenue = (course.enrolledStudents || 0) * (course.price || 0);
 
-            // Calculate total lessons count
-            const totalLessons = course.modules?.reduce((total, module) => 
-                total + (module.lessons?.length || 0), 0) || 0;
+        // Calculate total lessons count
+        const totalLessons = course.modules?.reduce((total, module) => 
+            total + (module.lessons?.length || 0), 0) || 0;
 
-            // Calculate total duration
-            const totalDuration = course.modules?.reduce((total, module) => 
-                total + (module.lessons?.reduce((lessonTotal, lesson) => 
-                    lessonTotal + (lesson.videoDuration || 0), 0) || 0), 0) || 0;
+        // Calculate total duration
+        const totalDuration = course.modules?.reduce((total, module) => 
+            total + (module.lessons?.reduce((lessonTotal, lesson) => 
+                lessonTotal + (lesson.videoDuration || 0), 0) || 0), 0) || 0;
 
-            return {
-                id: course._id,
-                title: course.title,
-                description: course.shortDescription,
-                thumbnail: course.thumbnail,
-                price: course.price || 0,
-                students: course.enrolledStudents || 0,
-                revenue: revenue,
-                rating: parseFloat(avgRating),
-                ratingCount: course.ratings?.length || 0,
-                status: course.isPublished ? "Published" : "Draft",
-                published: course.createdAt,
-                lastUpdated: course.updatedAt,
-                level: course.level,
-                category: course.category,
-                modulesCount: course.modules?.length || 0,
-                lessonsCount: totalLessons,
-                totalDuration: Math.round(totalDuration / 60), // Convert to minutes
-                isPublished: course.isPublished
-            };
-        });
+        return {
+            id: course._id,
+            title: course.title,
+            description: course.shortDescription,
+            thumbnail: course.thumbnail,
+            price: course.price || 0,
+            students: course.enrolledStudents || 0,
+            revenue: revenue,
+            rating: Number(avgRating.toFixed(1)), 
+            ratingCount: ratingCount,             
+            status: course.isPublished ? "Published" : "Draft",
+            published: course.createdAt,
+            lastUpdated: course.updatedAt,
+            level: course.level,
+            category: course.category,
+            modulesCount: course.modules?.length || 0,
+            lessonsCount: totalLessons,
+            totalDuration: Math.round(totalDuration / 60),
+            isPublished: course.isPublished
+        };
+    });
 
         // ✅ Calculate overall statistics
         const stats = {
