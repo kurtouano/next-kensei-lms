@@ -1,4 +1,4 @@
-// Updated LessonPage Component with Real Review System and Randomized Quiz
+// Updated LessonPage Component with Real Review System, Randomized Quiz, and Progress Tracking
 
 "use client"
 
@@ -40,11 +40,141 @@ import {
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
+// Progress Hook
+function useProgress(slug) {
+  const { data: session } = useSession()
+  const [progress, setProgress] = useState({
+    completedLessons: [],
+    completedModules: [],
+    courseProgress: 0,
+    status: 'not_started',
+    isCompleted: false
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch initial progress
+  const fetchProgress = useCallback(async () => {
+    if (!session?.user || !slug) return
+    
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/courses/progress/${slug}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setProgress(data.progress)
+      } else {
+        setError(data.error)
+      }
+    } catch (err) {
+      setError('Failed to fetch progress')
+      console.error('Error fetching progress:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [session, slug])
+
+  // Update lesson completion
+  const updateLessonProgress = useCallback(async (lessonId, isCompleted, currentTime = 0) => {
+    if (!session?.user || !slug) return false
+    
+    try {
+      const response = await fetch(`/api/courses/progress/${slug}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lessonId,
+          isCompleted,
+          currentTime
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setProgress(prev => ({
+          ...prev,
+          completedLessons: data.progress.completedLessons,
+          courseProgress: data.progress.courseProgress,
+          status: data.progress.status
+        }))
+        return true
+      } else {
+        setError(data.error)
+        return false
+      }
+    } catch (err) {
+      setError('Failed to update lesson progress')
+      console.error('Error updating lesson progress:', err)
+      return false
+    }
+  }, [session, slug])
+
+  // Update module completion
+  const updateModuleProgress = useCallback(async (moduleId, quizScore) => {
+    if (!session?.user || !slug) return false
+    
+    try {
+      const response = await fetch(`/api/courses/progress/${slug}/module`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          moduleId,
+          quizScore
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setProgress(prev => ({
+          ...prev,
+          completedModules: data.completedModules
+        }))
+        return true
+      } else {
+        setError(data.error)
+        return false
+      }
+    } catch (err) {
+      setError('Failed to update module progress')
+      console.error('Error updating module progress:', err)
+      return false
+    }
+  }, [session, slug])
+
+  useEffect(() => {
+    fetchProgress()
+  }, [fetchProgress])
+
+  return {
+    progress,
+    loading,
+    error,
+    updateLessonProgress,
+    updateModuleProgress,
+    refetchProgress: fetchProgress
+  }
+}
+
 export default function LessonPage() {
   const params = useParams()
   const lessonSlug = params.slug
   const { data: session } = useSession()
   const videoRef = useRef(null)
+
+  // ADD: Use the progress hook
+  const { 
+    progress, 
+    loading: progressLoading, 
+    updateLessonProgress, 
+    updateModuleProgress 
+  } = useProgress(lessonSlug)
 
   // Core state
   const [lessonData, setLessonData] = useState(null)
@@ -82,6 +212,32 @@ export default function LessonPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [userHasReviewed, setUserHasReviewed] = useState(false)
   const [userReview, setUserReview] = useState(null)
+
+  // ADD: Update completedItems when progress loads from database
+  useEffect(() => {
+    if (progress.completedLessons.length > 0) {
+      setCompletedItems(progress.completedLessons)
+    }
+  }, [progress.completedLessons])
+
+  // ADD: Update moduleQuizCompleted when progress loads from database
+  useEffect(() => {
+    if (progress.completedModules.length > 0) {
+      const completedModuleIndices = []
+      
+      // Map completed module IDs to indices in your lessonData
+      progress.completedModules.forEach(completedModule => {
+        const moduleIndex = lessonData?.modules?.findIndex(
+          module => module.id === completedModule.moduleId
+        )
+        if (moduleIndex >= 0) {
+          completedModuleIndices.push(moduleIndex)
+        }
+      })
+      
+      setModuleQuizCompleted(completedModuleIndices)
+    }
+  }, [progress.completedModules, lessonData])
 
   // Function to shuffle array
   const shuffleArray = (array) => {
@@ -263,9 +419,10 @@ export default function LessonPage() {
     [lessonData]
   )
 
+  // UPDATED: Use progress from database instead of local state
   const overallProgress = useMemo(() => 
-    totalItems > 0 ? Math.round((completedItems.length / totalItems) * 100) : 0,
-    [completedItems.length, totalItems]
+    progress.courseProgress || 0,
+    [progress.courseProgress]
   )
 
   const currentModuleCompleted = useMemo(() => {
@@ -302,14 +459,33 @@ export default function LessonPage() {
     }
   }, [activeVideoId, isModuleAccessible])
 
-  const toggleItemCompletion = useCallback((itemId, e) => {
+  // UPDATED: Toggle completion with database sync
+  const toggleItemCompletion = useCallback(async (itemId, e) => {
     e.stopPropagation()
+    
+    const isCurrentlyCompleted = completedItems.includes(itemId)
+    const newCompletionState = !isCurrentlyCompleted
+    
+    // 1. Optimistic UI update
     setCompletedItems(prev => 
-      prev.includes(itemId) 
-        ? prev.filter(id => id !== itemId) 
-        : [...prev, itemId]
+      newCompletionState 
+        ? [...prev, itemId] 
+        : prev.filter(id => id !== itemId)
     )
-  }, [])
+    
+    // 2. Save to database
+    const success = await updateLessonProgress(itemId, newCompletionState)
+    
+    // 3. If database save failed, revert the UI change
+    if (!success) {
+      setCompletedItems(prev => 
+        isCurrentlyCompleted 
+          ? [...prev, itemId] 
+          : prev.filter(id => id !== itemId)
+      )
+      alert('Failed to update progress. Please try again.')
+    }
+  }, [completedItems, updateLessonProgress])
 
   const handleModuleCompletion = useCallback(() => {
     if (!lessonData?.modules?.[activeModule]) return
@@ -332,7 +508,8 @@ export default function LessonPage() {
     setSelectedAnswers(prev => ({ ...prev, [questionId]: answerIndex }))
   }, [])
 
-  const submitQuiz = useCallback(() => {
+  // UPDATED: Submit quiz with database sync
+  const submitQuiz = useCallback(async () => {
     const currentQuiz = randomizedQuiz || lessonData?.modules?.[activeModule]?.quiz;
     if (!currentQuiz) return
 
@@ -346,9 +523,17 @@ export default function LessonPage() {
     setQuizCompleted(true)
 
     if (score >= 70) {
-      setModuleQuizCompleted(prev => [...prev, activeModule])
+      // Save module completion to database
+      const moduleId = lessonData.modules[activeModule].id
+      const success = await updateModuleProgress(moduleId, score)
+      
+      if (success) {
+        setModuleQuizCompleted(prev => [...prev, activeModule])
+      } else {
+        alert('Failed to save quiz progress. Please try again.')
+      }
     }
-  }, [randomizedQuiz, lessonData, activeModule, selectedAnswers])
+  }, [randomizedQuiz, lessonData, activeModule, selectedAnswers, updateModuleProgress])
 
   const proceedToNextModule = useCallback(() => {
     if (quizScore >= 70) {
@@ -474,8 +659,8 @@ export default function LessonPage() {
     }
   }, [userHasReviewed, userReview])
 
-  // Loading and error states
-  if (loading) {
+  // UPDATED: Loading states include progress loading
+  if (loading || progressLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
         <Header isLoggedIn={true} />
@@ -608,7 +793,7 @@ export default function LessonPage() {
   )
 }
 
-// Updated ReviewSection Component
+// ReviewSection Component
 function ReviewSection({
   reviews,
   reviewsLoading,
