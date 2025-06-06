@@ -1,78 +1,32 @@
+// CoursesPage.jsx - Super clean with just one hook!
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
+import { BookOpen, AlertCircle } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { CourseCard } from "./CourseCard"
 import { useSession } from "next-auth/react"
-import { AlertCircle, BookOpen } from "lucide-react"
+import { CourseCard } from "./CourseCard"
+import { useCourses } from "./useCoursesHook"
 
 export default function CoursesPage() {
   const { data: session, status } = useSession()
-  const [userData, setUserData] = useState(null)
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [courses, setCourses] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  
+  // One hook handles all course logic
+  const {
+    courses,
+    loading,
+    error,
+    selectedCategory,
+    categories,
+    courseStats,
+    handleCategoryChange,
+    handleRetry
+  } = useCourses()
 
-  const categories = [
-    { id: "all", name: "All Courses" },
-    { id: "beginner", name: "Beginner (N5)" },
-    { id: "intermediate", name: "Elementary (N4)" },
-    { id: "advanced", name: "Intermediate (N3)" },
-    { id: "upper-intermediate", name: "Upper Intermediate (N2)" },
-    { id: "fluent", name: "Advanced (N1)" },
-  ]
-
-  useEffect(() => { // Fetch Courses
-    const fetchCourses = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        const response = await fetch('/api/courses', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-        
-        const data = await response.json()
-        console.log('Courses API Response:', data) // Debug log
-        
-        if (!response.ok) {
-          throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`)
-        }
-        
-        // Handle different response formats
-        let coursesArray = [];
-        if (data.success && Array.isArray(data.courses)) {
-          coursesArray = data.courses;
-        } else if (Array.isArray(data.courses)) {
-          coursesArray = data.courses;
-        } else if (Array.isArray(data)) {
-          coursesArray = data;
-        } else {
-          throw new Error('Invalid response format - expected courses array')
-        }
-        
-        setCourses(coursesArray)
-        console.log(`Loaded ${coursesArray.length} courses`) // Debug log
-        
-      } catch (error) {
-        console.error("Failed to fetch courses:", error)
-        setError(error.message)
-        setCourses([]) // Set empty array as fallback
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchCourses()
-  }, [])
-
-  useEffect(() => { // Fetch User Details
+  // Keep user profile logic as-is (simple enough)
+  useEffect(() => {
     const fetchUserDetails = async () => {
       if (status !== "authenticated") return
       
@@ -82,9 +36,7 @@ export default function CoursesPage() {
           throw new Error(`HTTP error! status: ${res.status}`)
         }
         const data = await res.json()
-        if (data.success) {
-          setUserData(data.user)
-        } else {
+        if (!data.success) {
           console.error('Failed to fetch user:', data.message)
         }
       } catch (error) {
@@ -97,72 +49,144 @@ export default function CoursesPage() {
     }
   }, [status])
 
-  // Filter courses based on selected category
-  const filteredCourses = selectedCategory === "all" 
-    ? courses.filter(course => course.isPublished !== false) // Show published courses
-    : courses.filter((course) => {
-        // Handle both level and category filtering
-        const matchesLevel = course.level === selectedCategory
-        const matchesCategory = course.category === selectedCategory
-        const isPublished = course.isPublished !== false
-        
-        return (matchesLevel || matchesCategory) && isPublished
-      })
+  if (loading) {
+    return (
+      <PageLayout session={session}>
+        <LoadingSkeleton />
+      </PageLayout>
+    )
+  }
 
-  // Sort courses by rating and then by creation date
-  const sortedCourses = filteredCourses.sort((a, b) => {
-    const aRating = a.ratingStats?.averageRating || a.averageRating || 0
-    const bRating = b.ratingStats?.averageRating || b.averageRating || 0
-    
-    // First sort by rating (highest first)
-    if (aRating !== bRating) {
-      return bRating - aRating
-    }
-    
-    // Then by creation date (newest first)
-    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-  })
+  if (error) {
+    return (
+      <PageLayout session={session}>
+        <ErrorDisplay error={error} onRetry={handleRetry} />
+      </PageLayout>
+    )
+  }
 
-  // Simple Skeleton Loading Component
-  const CourseSkeleton = () => (
-    <div className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm">
-      {/* Image Skeleton */}
-      <div className="aspect-video w-full bg-gray-200 animate-pulse"></div>
-      
-      {/* Content Skeleton */}
-      <div className="p-5 space-y-4">
-        {/* Title */}
-        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-        
-        {/* Description lines */}
-        <div className="space-y-2">
-          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+  return (
+    <PageLayout session={session}>
+      <div className="mb-8">
+        <h1 className="mb-2 text-3xl font-bold text-[#2c3e2d]">Course Catalog</h1>
+        <p className="text-[#5c6d5e]">
+          Browse our comprehensive selection of Japanese language courses
+        </p>
+        <div className="mt-2 text-sm text-[#5c6d5e]">
+          {courseStats.total} course{courseStats.total !== 1 ? 's' : ''} available
         </div>
+      </div>
 
-        {/* Info box */}
-        <div className="h-16 bg-gray-100 rounded-md animate-pulse"></div>
+      <Tabs defaultValue="all" className="mb-8">
+        <CategoryTabs 
+          categories={categories} 
+          onCategoryChange={handleCategoryChange}
+        />
 
-        {/* Buttons */}
-        <div className="flex gap-2">
-          <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
-          <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
+        <TabsContent value={selectedCategory} className="mt-0">
+          <CourseGrid 
+            courses={courses}
+            courseStats={courseStats}
+            selectedCategory={selectedCategory}
+            onShowAll={() => handleCategoryChange("all")}
+          />
+        </TabsContent>
+      </Tabs>
+    </PageLayout>
+  )
+}
+
+const PageLayout = memo(function PageLayout({ session, children }) {
+  return (
+    <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
+      <Header isLoggedIn={!!session?.user} />
+      <main className="flex-1 py-8">
+        <div className="container mx-auto px-4">
+          {children}
         </div>
+      </main>
+      <Footer />
+    </div>
+  )
+})
+
+const EmptyState = memo(function EmptyState({ selectedCategory, categoryName, onShowAll }) {
+  return (
+    <div className="text-center py-12">
+      <BookOpen className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e]" />
+      <h3 className="text-lg font-medium text-[#2c3e2d] mb-2">
+        No courses found
+      </h3>
+      <p className="text-[#5c6d5e]">
+        {selectedCategory === "all" 
+          ? "No courses are currently available." 
+          : `No courses found in the ${categoryName} category.`
+        }
+      </p>
+      {selectedCategory !== "all" && (
+        <button 
+          onClick={onShowAll}
+          className="mt-4 px-4 py-2 bg-[#4a7c59] text-white rounded-md hover:bg-[#3a6147]"
+        >
+          View All Courses
+        </button>
+      )}
+    </div>
+  )
+})
+
+const ErrorDisplay = memo(function ErrorDisplay({ error, onRetry }) {
+  return (
+    <div className="flex h-64 items-center justify-center">
+      <div className="text-center">
+        <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+        <p className="text-red-500 mb-2">Error loading courses</p>
+        <p className="text-[#5c6d5e]">{error}</p>
+        <button 
+          onClick={onRetry} 
+          className="mt-4 px-4 py-2 bg-[#4a7c59] text-white rounded-md hover:bg-[#3a6147]"
+        >
+          Try Again
+        </button>
       </div>
     </div>
   )
+})
 
-  // Simple Category Tabs Skeleton
-  const CategorySkeleton = () => (
+const LoadingSkeleton = memo(function LoadingSkeleton() {
+  return (
+    <>
+      <div className="mb-8 space-y-3">
+        <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
+        <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+      </div>
+
+      <CategorySkeleton />
+
+      <div className="mb-4 flex justify-between">
+        <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <CourseSkeleton key={i} />
+        ))}
+      </div>
+    </>
+  )
+})
+
+const CategorySkeleton = memo(function CategorySkeleton() {
+  return (
     <div className="mb-8">
-      {/* Mobile skeleton */}
       <div className="grid grid-cols-2 gap-2 w-full sm:hidden">
         {[1, 2].map((i) => (
           <div key={i} className="h-10 bg-gray-200 rounded animate-pulse"></div>
         ))}
       </div>
       
-      {/* Desktop skeleton */}
       <div className="hidden gap-3 sm:flex justify-center">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
@@ -170,171 +194,101 @@ export default function CoursesPage() {
       </div>
     </div>
   )
+})
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-        <Header isLoggedIn={!!session?.user} />
-        <main className="flex-1 py-8">
-          <div className="container mx-auto px-4">
-            {/* Simple Header Skeleton */}
-            <div className="mb-8 space-y-3">
-              <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
-            </div>
-
-            {/* Category Tabs Skeleton */}
-            <CategorySkeleton />
-
-            {/* Simple Course Info Skeleton */}
-            <div className="mb-4 flex justify-between">
-              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
-            </div>
-
-            {/* Course Grid Skeleton */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <CourseSkeleton key={i} />
-              ))}
-            </div>
-          </div>
-        </main>
-        <Footer />
+const CourseSkeleton = memo(function CourseSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm">
+      <div className="aspect-video w-full bg-gray-200 animate-pulse"></div>
+      <div className="p-5 space-y-4">
+        <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+        </div>
+        <div className="h-16 bg-gray-100 rounded-md animate-pulse"></div>
+        <div className="flex gap-2">
+          <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
+          <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
       </div>
-    )
-  }
+    </div>
+  )
+})
 
-  if (error) {
-    return (
-      <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-        <Header isLoggedIn={!!session?.user} />
-        <main className="flex-1 py-8">
-          <div className="container mx-auto px-4">
-            <div className="flex h-64 items-center justify-center">
-              <div className="text-center">
-                <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
-                <p className="text-red-500 mb-2">Error loading courses</p>
-                <p className="text-[#5c6d5e]">{error}</p>
-                <button 
-                  onClick={() => window.location.reload()} 
-                  className="mt-4 px-4 py-2 bg-[#4a7c59] text-white rounded-md hover:bg-[#3a6147]"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
+const CategoryTabs = memo(function CategoryTabs({ categories, onCategoryChange }) {
+  return (
+    <TabsList className="mb-6 w-full bg-transparent p-0 justify-around">
+      <div className="grid grid-cols-2 gap-2 w-full sm:hidden">
+        {categories.map((category) => (
+          <TabsTrigger
+            key={category.id}
+            value={category.id}
+            onClick={() => onCategoryChange(category.id)}
+            className="border border-[#dce4d7] bg-white data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white hover:bg-[#eef2eb] transition-colors text-xs px-2 py-2"
+          >
+            {category.name}
+          </TabsTrigger>
+        ))}
       </div>
+      
+      <div className="hidden gap-3 sm:flex sm:flex-wrap sm:justify-start">
+        {categories.map((category) => (
+          <TabsTrigger
+            key={category.id}
+            value={category.id}
+            onClick={() => onCategoryChange(category.id)}
+            className="border border-[#dce4d7] bg-white data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white hover:bg-[#eef2eb] transition-colors whitespace-nowrap"
+          >
+            {category.name}
+          </TabsTrigger>
+        ))}
+      </div>
+    </TabsList>
+  )
+})
+
+const CourseGrid = memo(function CourseGrid({ courses, courseStats, selectedCategory, onShowAll }) {
+  if (courses.length === 0) {
+    return (
+      <EmptyState 
+        selectedCategory={selectedCategory}
+        categoryName={courseStats.selectedCategoryName}
+        onShowAll={onShowAll}
+      />
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      <Header isLoggedIn={!!session?.user} />
+    <>
+      <CourseGridInfo courseStats={courseStats} selectedCategory={selectedCategory} />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {courses.map((course) => (
+          <CourseCard key={course._id || course.id} course={course} />
+        ))}
+      </div>
+    </>
+  )
+})
 
-      <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
-          <div className="mb-8">
-            <h1 className="mb-2 text-3xl font-bold text-[#2c3e2d]">Course Catalog</h1>
-            <p className="text-[#5c6d5e]">
-              Browse our comprehensive selection of Japanese language courses
-            </p>
-            <div className="mt-2 text-sm text-[#5c6d5e]">
-              {courses.length} course{courses.length !== 1 ? 's' : ''} available
-            </div>
-          </div>
-
-          <Tabs defaultValue="all" className="mb-8">
-            <TabsList className="mb-6 w-full bg-transparent p-0 justify-around">
-              {/* Mobile: Stack vertically */}
-              <div className="grid grid-cols-2 gap-2 w-full sm:hidden">
-                {categories.map((category) => (
-                  <TabsTrigger
-                    key={category.id}
-                    value={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className="border border-[#dce4d7] bg-white data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white hover:bg-[#eef2eb] transition-colors text-xs px-2 py-2"
-                  >
-                    {category.name}
-                  </TabsTrigger>
-                ))}
-              </div>
-              
-              {/* Desktop: Horizontal flex */}
-              <div className="hidden gap-3 sm:flex sm:flex-wrap sm:justify-start">
-                {categories.map((category) => (
-                  <TabsTrigger
-                    key={category.id}
-                    value={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
-                    className="border border-[#dce4d7] bg-white data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white hover:bg-[#eef2eb] transition-colors whitespace-nowrap"
-                  >
-                    {category.name}
-                  </TabsTrigger>
-                ))}
-              </div>
-            </TabsList>
-
-            <TabsContent value={selectedCategory} className="mt-0">
-              {sortedCourses.length === 0 ? (
-                <div className="text-center py-12">
-                  <BookOpen className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e]" />
-                  <h3 className="text-lg font-medium text-[#2c3e2d] mb-2">
-                    No courses found
-                  </h3>
-                  <p className="text-[#5c6d5e]">
-                    {selectedCategory === "all" 
-                      ? "No courses are currently available." 
-                      : `No courses found in the ${categories.find(c => c.id === selectedCategory)?.name} category.`
-                    }
-                  </p>
-                  {selectedCategory !== "all" && (
-                    <button 
-                      onClick={() => setSelectedCategory("all")}
-                      className="mt-4 px-4 py-2 bg-[#4a7c59] text-white rounded-md hover:bg-[#3a6147]"
-                    >
-                      View All Courses
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  {/* Fixed responsive course info section */}
-                  <div className="mb-4 space-y-2 mt-6 lg:mt-0">
-                    <div className="flex flex-row justify-between space-y-1 sm:space-y-0 sm:flex-row items-center">
-                      <div className="text-xs text-[#5c6d5e]">
-                        <span className="flex sm:inline">
-                          Showing {sortedCourses.length} course{sortedCourses.length !== 1 ? 's' : ''}
-                        </span>
-                        {selectedCategory !== "all" && (
-                          <span className="block sm:inline sm:ml-1">
-                            in {categories.find(c => c.id === selectedCategory)?.name}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-[#5c6d5e] sm:text-right">
-                        Sorted by rating and date
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {sortedCourses.map((course) => (
-                      <CourseCard key={course._id || course.id} course={course} />
-                    ))}
-                  </div>
-                </>
-              )}
-            </TabsContent>
-          </Tabs>
+const CourseGridInfo = memo(function CourseGridInfo({ courseStats, selectedCategory }) {
+  return (
+    <div className="mb-4 space-y-2 mt-6 lg:mt-0">
+      <div className="flex flex-row justify-between space-y-1 sm:space-y-0 sm:flex-row items-center">
+        <div className="text-xs text-[#5c6d5e]">
+          <span className="flex sm:inline">
+            Showing {courseStats.filtered} course{courseStats.filtered !== 1 ? 's' : ''}
+          </span>
+          {selectedCategory !== "all" && (
+            <span className="block sm:inline sm:ml-1">
+              in {courseStats.selectedCategoryName}
+            </span>
+          )}
         </div>
-      </main>
-
-      <Footer />
+        <div className="text-xs text-[#5c6d5e] sm:text-right">
+          Sorted by rating and date
+        </div>
+      </div>
     </div>
   )
-}
+})

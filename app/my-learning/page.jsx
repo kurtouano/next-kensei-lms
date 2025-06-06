@@ -7,7 +7,7 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BookOpen, Clock, Search, Loader2 } from "lucide-react"
-import { useMyLearning } from './useMyLearning'
+import { useMyLearning } from './useMyLearningHook'
 import { CourseCard } from './CourseCard'
 import { useMemo } from "react"
 
