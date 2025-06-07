@@ -65,9 +65,16 @@ export async function GET(request, { params }) {
           })),
         courseProgress: progress.courseProgress,
         status: progress.status,
-        isCompleted: progress.isCompleted
+        isCompleted: progress.isCompleted,
+        // ✅ ADD THIS - Include the full lessonProgress array!
+        lessonProgress: progress.lessonProgress.map(lp => ({
+          lesson: lp.lesson?.toString(),
+          currentTime: lp.currentTime || 0,
+          isCompleted: lp.isCompleted || false,
+          completedAt: lp.completedAt
+        }))
       }
-    })
+  })
   } catch (error) {
     console.error('Error fetching progress:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

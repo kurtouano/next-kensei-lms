@@ -20,14 +20,6 @@ const LessonSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Please provide the video duration"],
     },
-    currentTime: {
-      type: Number,
-      default: 0, // Default to 0 seconds
-    },
-    isCompleted: {
-      type: Boolean,
-      default: false,
-    },
     moduleRef: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Module",
