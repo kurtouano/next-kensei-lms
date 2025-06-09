@@ -119,6 +119,7 @@ export async function GET(request) {
     }
 
     // Return success response
+    
     return NextResponse.json({
       success: true,
       courseName: course.title,
