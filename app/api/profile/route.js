@@ -22,6 +22,7 @@ export async function GET() {
             return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
         }
 
+        // Return name email to frontend
         return NextResponse.json({
             success: true,
             user: {
