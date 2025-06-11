@@ -10,12 +10,12 @@ export async function GET(request) {
       const usedItems = await Course.distinct("itemsReward"); // Get all distinct items used in courses
       const shopItems = await ShopItem.find({_id: { $nin: usedItems },}); // Not in usedItems
 
-      if (!shopItems || shopItems.length === 0) {
+      if (!shopItems || shopItems.length === 0) { // No shop items found
         return NextResponse.json({ error: "No shop items found" }, { status: 404 });
       }
       console.log("Shop items fetched successfully:", shopItems);
 
-      return NextResponse.json(shopItems, { status: 200 });
+      return NextResponse.json(shopItems, { status: 200 }); // Send back to frontend
     } catch (error) {
       return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
