@@ -22,6 +22,11 @@ const CourseSchema = new mongoose.Schema(
       required: [true, "Please provide a short description"],
       maxlength: [200, "Short description cannot exceed 200 characters"],
     },
+    previewVideoUrl: {
+      type: String,
+      required: [true, "Please provide a preview video URL"],
+      trim: true,
+    },
     level: {
       type: String,
       enum: ["beginner", "intermediate", "advanced"], // n5, n4-n3, n2-n1
