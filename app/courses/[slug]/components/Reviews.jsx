@@ -77,6 +77,7 @@ export const ReviewSection = memo(function ReviewSection({
           isEnrolled={isEnrolled}
         />
 
+        {/* FIXED: Show form if user is logged in AND enrolled */}
         {showForm && isLoggedIn && isEnrolled && (
           <ReviewForm
             newReview={newReview}
@@ -87,6 +88,23 @@ export const ReviewSection = memo(function ReviewSection({
             onSubmitReview={onSubmitReview}
             onCancelReview={handleCancelForm}
           />
+        )}
+
+        {/* Show enrollment message if logged in but not enrolled */}
+        {isLoggedIn && !isEnrolled && (
+          <div className="border-b border-[#dce4d7] py-4">
+            <div className="flex items-center justify-center p-4 bg-[#eef2eb] rounded-md border border-[#4a7c59]">
+              <Lock className="h-5 w-5 text-[#4a7c59] mr-2" />
+              <div className="text-center">
+                <p className="text-sm font-medium text-[#2c3e2d] mb-1">
+                  Enroll to Leave a Review
+                </p>
+                <p className="text-xs text-[#5c6d5e]">
+                  You need to be enrolled in this course to write a review
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
         <ReviewsList reviews={reviews} loading={loading} />
@@ -127,7 +145,7 @@ const ReviewHeader = memo(function ReviewHeader({
           </div>
         </div>
         
-        {/* Only show review buttons if user is logged in, enrolled, and not currently showing form */}
+        {/* FIXED: Show review buttons if user is logged in, enrolled, and not showing form */}
         {isLoggedIn && isEnrolled && !showForm && (
           <div className="flex gap-2">
             {userHasReviewed ? (
@@ -252,6 +270,7 @@ const ReviewForm = memo(function ReviewForm({
           value={newReview.comment}
           onChange={onCommentChange}
           disabled={submitting}
+          maxLength={500}
         />
         <p className="mt-1 text-xs text-[#5c6d5e]">
           {newReview.comment.length}/500 characters

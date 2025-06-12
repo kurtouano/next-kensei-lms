@@ -26,7 +26,7 @@ export const CourseSidebar = memo(function CourseSidebar({
   onBackToModule,
   isEnrolled,
   previewVideoUrl,
-  courseData // Add courseData prop
+  courseData
 }) {
   const totalItems = useMemo(() => 
     modules.flatMap(m => m.items).length,
@@ -74,8 +74,8 @@ export const CourseSidebar = memo(function CourseSidebar({
         </div>
       )}
 
-      {/* Preview video section for non-enrolled users */}
-      {!isEnrolled && previewVideoUrl && (
+      {/* FIXED: Preview video section - ALWAYS show if preview exists */}
+      {previewVideoUrl && (
         <div className="border-b border-[#dce4d7] p-4">
           <div
             className={`flex w-full items-center rounded-md p-3 text-left text-sm transition-colors cursor-pointer ${
@@ -141,7 +141,6 @@ export const CourseSidebar = memo(function CourseSidebar({
               size="sm" 
               className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
               onClick={() => {
-                // Use the same checkout flow as the other components
                 fetch('/api/courses/stripe/create-checkout-session', {
                   method: 'POST',
                   headers: {

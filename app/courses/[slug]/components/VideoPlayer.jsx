@@ -146,16 +146,6 @@ export const VideoPlayer = memo(function VideoPlayer({
               preload="metadata"
             />
             
-            {/* Preview overlay for preview videos */}
-            {activeItem.isPreview && (
-              <div className="absolute top-4 left-4 z-10">
-                <div className="bg-[#e67e22] text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                  <Play className="h-3 w-3 mr-1" />
-                  Course Preview
-                </div>
-              </div>
-            )}
-            
             {/* Loading indicator */}
             {currentTime > 0 && !isVideoLoaded && isEnrolled && !activeItem.isPreview && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
@@ -177,8 +167,9 @@ export const VideoPlayer = memo(function VideoPlayer({
           <div className="flex justify-between items-center text-sm text-[#5c6d5e]">
             <div className="flex items-center">
               <span className="font-medium text-[#2c3e2d]">{activeItem.title}</span>
-              {activeItem.isPreview && (
-                <span className="ml-2 bg-[#e67e22] text-white px-2 py-0.5 rounded-full text-xs">
+              {/* FIXED: Only show preview badge for non-enrolled users */}
+              {activeItem.isPreview && !isEnrolled && (
+                <span className="ml-2 bg-[#4a7c59] text-white px-2 py-0.5 rounded-full text-xs">
                   Preview
                 </span>
               )}
@@ -203,9 +194,9 @@ export const VideoPlayer = memo(function VideoPlayer({
             </div>
           )}
 
-          {/* Preview notice */}
-          {activeItem.isPreview && (
-            <div className="mt-2 text-xs text-[#e67e22] font-medium">
+          {/* FIXED: Preview notice - only show for non-enrolled users */}
+          {activeItem.isPreview && !isEnrolled && (
+            <div className="mt-2 text-xs text-[#4a7c59] font-medium">
               This is a preview. Enroll to access all course content and features.
             </div>
           )}
