@@ -311,6 +311,7 @@ export default function LessonPage() {
                     onDeleteReview={deleteReview}
                     onUpdateReview={updateReview}
                     onToggleForm={toggleForm}
+                    isEnrolled={isEnrolled}
                   />
                 </>
               )}
