@@ -1,3 +1,4 @@
+//CourseCard.jsx
 import { memo, useCallback } from 'react';
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +10,9 @@ export const CourseCard = memo(function CourseCard({ course }) {
   const handleImageError = useCallback((e) => {
     e.target.src = "/placeholder.svg";
   }, []);
+
+  // Always go to course overview - smart redirect will happen there
+  const continueUrl = `/courses/${course.slug}`;
 
   return (
     <Card className="overflow-hidden border-gray-200 shadow-sm transition-all hover:shadow-md flex flex-col h-full">
@@ -58,7 +62,7 @@ export const CourseCard = memo(function CourseCard({ course }) {
               size="sm" 
               asChild
             >
-              <Link href={`/courses/${course.slug}`}>
+              <Link href={continueUrl}>
                 Continue
               </Link>
             </Button>
