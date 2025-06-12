@@ -62,7 +62,7 @@ export default function SignUpPage() {
           password: "",
           agreedToTerms: false,
         })
-        router.push("/login") // redirect to login page after successful signup
+        router.push("/auth/login") // redirect to login page after successful signup
       } else {
         setError(data.error || "An error occurred. Please try again.")
       }
