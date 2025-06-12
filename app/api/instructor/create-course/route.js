@@ -29,11 +29,34 @@ export async function POST(req) {
     const courseData = await req.json()
     const { modules: moduleData, ...courseInfo } = courseData
 
-    // Create the course first
+    // Validate required fields (including preview video)
+    if (!courseInfo.title || !courseInfo.shortDescription || !courseInfo.fullDescription || 
+        !courseInfo.level || !courseInfo.category || !courseInfo.thumbnail || 
+        !courseInfo.previewVideoUrl) {
+      return Response.json({ 
+        success: false, 
+        error: 'Missing required fields. Please ensure all required fields including preview video are provided.' 
+      }, { status: 400 })
+    }
+
+    // Create the course with all fields including previewVideoUrl
     const course = new Course({
-      ...courseInfo,
-       instructor: session.user.id,
-       modules: []
+      slug: courseInfo.slug,
+      title: courseInfo.title,
+      fullDescription: courseInfo.fullDescription,
+      shortDescription: courseInfo.shortDescription,
+      previewVideoUrl: courseInfo.previewVideoUrl, // Explicitly include preview video
+      level: courseInfo.level,
+      category: courseInfo.category,
+      highlights: courseInfo.highlights || [],
+      thumbnail: courseInfo.thumbnail,
+      instructor: session.user.id,
+      price: courseInfo.price || 0,
+      creditReward: courseInfo.creditReward || 0,
+      itemsReward: courseInfo.itemsReward || [],
+      tags: courseInfo.tags || [],
+      isPublished: courseInfo.isPublished || false,
+      modules: [] // Will be populated after module creation
     })
 
     const savedCourse = await course.save()
@@ -42,7 +65,7 @@ export async function POST(req) {
     await User.findByIdAndUpdate(
       session.user.id,
       { 
-        $addToSet: { publishedCourses: savedCourse._id } // Use $addToSet to avoid duplicates
+        $addToSet: { publishedCourses: savedCourse._id }
       }
     )
 
@@ -52,7 +75,7 @@ export async function POST(req) {
     for (const moduleInfo of moduleData) {
       const { lessons: lessonData, ...moduleDetails } = moduleInfo
 
-      // ✅ Create the module first (no lessons yet)
+      // Create the module first (no lessons yet)
       const module = new Module({
         ...moduleDetails,
         courseRef: savedCourse._id,
@@ -62,13 +85,13 @@ export async function POST(req) {
       const savedModule = await module.save()
       moduleIds.push(savedModule._id)
 
-      // ✅ Now create lessons with moduleRef set
+      // Now create lessons with moduleRef set
       const lessonIds = []
 
       for (const lessonInfo of lessonData) {
         const lesson = new Lesson({
           ...lessonInfo,
-          moduleRef: savedModule._id, // correctly set moduleRef
+          moduleRef: savedModule._id,
           courseRef: savedCourse._id
         })
 
@@ -76,7 +99,7 @@ export async function POST(req) {
         lessonIds.push(savedLesson._id)
       }
 
-      // ✅ Update module with its lessonIds
+      // Update module with its lessonIds
       savedModule.lessons = lessonIds
       await savedModule.save()
     }
@@ -88,11 +111,21 @@ export async function POST(req) {
     return Response.json({ 
       success: true, 
       course: savedCourse,
-      message: 'Course created successfully'
+      message: 'Course created successfully with preview video'
     })
     
   } catch (error) {
     console.error('Course creation error:', error)
+    
+    // Handle specific validation errors
+    if (error.name === 'ValidationError') {
+      const errorMessages = Object.values(error.errors).map(err => err.message)
+      return Response.json({ 
+        success: false, 
+        error: `Validation failed: ${errorMessages.join(', ')}` 
+      }, { status: 400 })
+    }
+
     return Response.json({ 
       success: false, 
       error: error.message || 'Failed to create course' 

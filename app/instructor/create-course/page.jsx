@@ -25,6 +25,7 @@ export default function CreateCourse() {
     category: "",
     highlights: [{ description: "" }],
     thumbnail: "",
+    previewVideoUrl: "", 
     price: 0,
     creditReward: 0,
     itemsReward: [""],
@@ -84,26 +85,27 @@ export default function CreateCourse() {
 
   // Validation functions
   const validateStep = useCallback((step) => {
-    const errors = {}
+  const errors = {}
+  
+  if (step === 0) {
+    // Course Details validation
+    if (!courseData.title.trim()) errors.title = "Course title is required"
+    if (!courseData.shortDescription.trim()) errors.shortDescription = "Short description is required"
+    if (!courseData.fullDescription.trim()) errors.fullDescription = "Full description is required"
+    if (!courseData.level) errors.level = "Level is required"
+    if (!courseData.category) errors.category = "Category is required"
+    if (!courseData.thumbnail) errors.thumbnail = "Course thumbnail is required"
+    if (!courseData.previewVideoUrl) errors.previewVideoUrl = "Preview video is required" // Add this line
+    if (courseData.price <= 0) errors.price = "Price must be greater than 0"
     
-    if (step === 0) {
-      // Course Details validation
-      if (!courseData.title.trim()) errors.title = "Course title is required"
-      if (!courseData.shortDescription.trim()) errors.shortDescription = "Short description is required"
-      if (!courseData.fullDescription.trim()) errors.fullDescription = "Full description is required"
-      if (!courseData.level) errors.level = "Level is required"
-      if (!courseData.category) errors.category = "Category is required"
-      if (!courseData.thumbnail) errors.thumbnail = "Course thumbnail is required"
-      if (courseData.price <= 0) errors.price = "Price must be greater than 0"
-      
-      // Check highlights
-      const validHighlights = courseData.highlights.filter(h => h.description.trim())
-      if (validHighlights.length === 0) errors.highlights = "At least one highlight is required"
-      
-      // Check tags
-      const validTags = courseData.tags.filter(tag => tag.trim())
-      if (validTags.length === 0) errors.tags = "At least one tag is required"
-    }
+    // Check highlights
+    const validHighlights = courseData.highlights.filter(h => h.description.trim())
+    if (validHighlights.length === 0) errors.highlights = "At least one highlight is required"
+    
+    // Check tags
+    const validTags = courseData.tags.filter(tag => tag.trim())
+    if (validTags.length === 0) errors.tags = "At least one tag is required"
+  }
     
     if (step === 1) {
       // Modules & Lessons validation
@@ -221,7 +223,7 @@ export default function CreateCourse() {
     }
   }, [uploadToS3])
 
-  // Course data handlers
+    // Course data handlers
   const updateCourseData = useCallback((field, value) => {
     setCourseData(prev => ({ ...prev, [field]: value }))
     // Clear validation error when user fixes the field (only if validation is shown)
@@ -233,6 +235,15 @@ export default function CreateCourse() {
       })
     }
   }, [validationErrors, showValidation])
+
+  const handlePreviewVideoUpload = useCallback(async (file) => {
+    try {
+      const url = await handleFileUpload(file, 'course-preview-video')
+      updateCourseData('previewVideoUrl', url)
+    } catch (err) {
+      console.error('Preview video upload failed:', err)
+    }
+  }, [handleFileUpload, updateCourseData])
 
   const updateCourseArray = useCallback((field, index, value, action = 'update') => {
     setCourseData(prev => {
@@ -887,75 +898,103 @@ export default function CreateCourse() {
               </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Credit Reward</label>
-                <input
-                  type="number"
-                  className="w-full rounded-md border border-gray-300 p-2"
-                  placeholder="100"
-                  value={courseData.creditReward}
-                  onChange={(e) => updateCourseData("creditReward", parseInt(e.target.value) || 0)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Item Rewards (Max {LIMITS.itemsReward})</label>
-                {courseData.itemsReward.map((reward, index) => (
-                  <div key={index} className="flex gap-2">
-                    <select
-                      className="flex-1 rounded-md border border-gray-300 p-2"
-                      value={reward}
-                      onChange={(e) => updateItemReward(index, e.target.value)}
+            {/* Credit and Item Rewards Section */}
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Credit Reward</label>
+                  <input
+                    type="number"
+                    className="w-full rounded-md border border-gray-300 p-2"
+                    placeholder="100"
+                    value={courseData.creditReward}
+                    onChange={(e) => updateCourseData("creditReward", parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Item Rewards (Max {LIMITS.itemsReward})</label>
+                  {courseData.itemsReward.map((reward, index) => (
+                    <div key={index} className="flex gap-2">
+                      <select
+                        className="flex-1 rounded-md border border-gray-300 p-2"
+                        value={reward}
+                        onChange={(e) => updateItemReward(index, e.target.value)}
+                      >
+                        <option value="">Select a reward item</option>
+                        {shopItems.map((item) => (
+                          <option key={item._id} value={item._id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeItemReward(index)}
+                        disabled={courseData.itemsReward.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={addItemReward}
+                      disabled={courseData.itemsReward.length >= LIMITS.itemsReward}
                     >
-                      <option value="">Select a reward item</option>
-                      {shopItems.map((item) => (
-                        <option key={item._id} value={item._id}>
-                          {item.name}
-                        </option>
-                      ))}
-                    </select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeItemReward(index)}
-                      disabled={courseData.itemsReward.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
+                      <Plus className="mr-2 h-4 w-4" /> Add Item Reward
                     </Button>
+                    <span className="text-sm text-gray-500">
+                      ({courseData.itemsReward.length}/{LIMITS.itemsReward})
+                    </span>
                   </div>
-                ))}
-                <div className="flex items-center gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={addItemReward}
-                    disabled={courseData.itemsReward.length >= LIMITS.itemsReward}
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Add Item Reward
-                  </Button>
-                  <span className="text-sm text-gray-500">
-                    ({courseData.itemsReward.length}/{LIMITS.itemsReward})
-                  </span>
                 </div>
               </div>
 
-              <div>
-                {renderFileUploadInput(
-                  "image/*",
-                  async (e) => {
-                    const file = e.target.files[0]
-                    if (file) await handleCourseFileUpload(file, 'thumbnail')
-                  },
-                  'course-thumbnail',
-                  courseData.thumbnail,
-                  "Course Thumbnail",
-                  true,
-                  'thumbnail'
-                )}
+              {/* File Upload Section - Thumbnail and Preview Video */}
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  {renderFileUploadInput(
+                    "image/*",
+                    async (e) => {
+                      const file = e.target.files[0]
+                      if (file) await handleCourseFileUpload(file, 'thumbnail')
+                    },
+                    'course-thumbnail',
+                    courseData.thumbnail,
+                    "Course Thumbnail",
+                    true,
+                    'thumbnail'
+                  )}
+                </div>
+
+                <div>
+                  {renderFileUploadInput(
+                    "video/*",
+                    async (e) => {
+                      const file = e.target.files[0]
+                      if (file) await handlePreviewVideoUpload(file)
+                    },
+                    'course-preview-video',
+                    courseData.previewVideoUrl,
+                    "Preview Video",
+                    true,
+                    'previewVideoUrl'
+                  )}
+                  {courseData.previewVideoUrl && (
+                    <video
+                      className="w-full rounded-md mt-2 max-h-48"
+                      controls
+                    >
+                      <source src={courseData.previewVideoUrl} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  )}
+                </div>
               </div>
-            </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">
