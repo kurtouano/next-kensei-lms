@@ -4,12 +4,12 @@ import { connectDb } from '@/lib/mongodb';
 import User from '@/models/User';
 import Course from '@/models/Course';
 import Progress from '@/models/Progress';
+import Lesson from '@/models/Lesson';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Adjust path as needed
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export async function GET() {
   try {
-    // Get the current user session
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
@@ -19,20 +19,18 @@ export async function GET() {
       );
     }
 
-    // Connect to MongoDB
     await connectDb();
 
-    // Find user with enrolled courses populated
+    // Find user with BOTH enrolledCourses AND progressRecords populated
     const user = await User.findOne({ email: session.user.email })
       .populate({
         path: 'enrolledCourses',
-        model: 'Course',
         populate: {
           path: 'instructor',
-          model: 'User',
           select: 'name'
         }
-      });
+      })
+      .populate('progressRecords'); // This was missing!
 
     if (!user) {
       return NextResponse.json(
@@ -41,50 +39,85 @@ export async function GET() {
       );
     }
 
-    // Get progress records for all enrolled courses
-    const progressRecords = await Progress.find({
-      user: user._id,
-      course: { $in: user.enrolledCourses.map(course => course._id) }
-    });
-
-    // Create a map for quick progress lookup
+    // Create progress map using the populated progressRecords
     const progressMap = {};
-    progressRecords.forEach(progress => {
+    user.progressRecords.forEach(progress => {
       progressMap[progress.course.toString()] = progress;
     });
 
-    // Transform the data for the frontend
-    const enrolledCourses = user.enrolledCourses.map(course => {
-      const progress = progressMap[course._id.toString()];
-      
-      // Calculate total lessons from modules
-      const totalLessons = course.modules?.length || 0;
-      const completedLessons = progress?.lessonProgress?.filter(lp => lp.isCompleted).length || 0;
-      const courseProgress = progress?.courseProgress || 0;
-      
-      // Get last lesson or default
-      let lastLesson = "Getting Started";
-      if (progress?.lessonProgress?.length > 0) {
-        const lastLessonProgress = progress.lessonProgress
-          .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0];
-        if (lastLessonProgress) {
-          lastLesson = "In Progress"; // You can populate lesson title if needed
+    // Build enrolled courses data
+    const enrolledCourses = await Promise.all(
+      user.enrolledCourses.map(async (course) => {
+        const progress = progressMap[course._id.toString()];
+        
+        // Get total lessons from database
+        const totalLessons = await Lesson.countDocuments({ 
+          courseRef: course._id,
+          isPublished: true
+        });
+        
+        // If no published lessons, try all lessons
+        const totalLessonsAll = totalLessons > 0 ? totalLessons : 
+          await Lesson.countDocuments({ courseRef: course._id });
+        
+        // Calculate completed lessons from progress
+        let completedLessons = 0;
+        if (progress?.lessonProgress && progress.lessonProgress.length > 0) {
+          completedLessons = progress.lessonProgress.filter(lp => 
+            lp.isCompleted === true
+          ).length;
         }
-      }
+        
+        console.log(`Course: ${course.title} - ${completedLessons}/${totalLessonsAll} lessons`);
+        
+        // Get last lesson info - just for display purposes
+        let lastLesson = "Getting Started";
+        
+        if (progress?.lessonProgress && progress.lessonProgress.length > 0) {
+          // Find what they should do next
+          const incompleteLessons = progress.lessonProgress.filter(lp => !lp.isCompleted);
+          
+          if (incompleteLessons.length > 0) {
+            // Show next lesson they need to complete
+            const nextIncompleteLesson = await Lesson.findById(incompleteLessons[0].lesson)
+              .select('title');
+            
+            if (nextIncompleteLesson) {
+              lastLesson = `Next: ${nextIncompleteLesson.title}`;
+            }
+          } else {
+            // All lessons completed - show the last completed lesson
+            const lastCompletedProgress = progress.lessonProgress
+              .filter(lp => lp.isCompleted)
+              .sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0))[0];
+            
+            if (lastCompletedProgress) {
+              const lastCompletedLesson = await Lesson.findById(lastCompletedProgress.lesson)
+                .select('title');
+              
+              if (lastCompletedLesson) {
+                lastLesson = `Completed: ${lastCompletedLesson.title}`;
+              } else {
+                lastLesson = "Course Completed";
+              }
+            }
+          }
+        }
 
-      return {
-        id: course._id.toString(),
-        title: course.title,
-        level: course.level.charAt(0).toUpperCase() + course.level.slice(1), // Capitalize first letter
-        progress: courseProgress,
-        lastLesson: lastLesson,
-        image: course.thumbnail,
-        totalLessons: totalLessons,
-        completedLessons: completedLessons,
-        instructor: course.instructor?.name || "Unknown Instructor",
-        slug: course.slug
-      };
-    });
+        return {
+          id: course._id.toString(),
+          title: course.title,
+          level: course.level.charAt(0).toUpperCase() + course.level.slice(1),
+          progress: progress?.courseProgress || 0,
+          lastLesson: lastLesson,
+          image: course.thumbnail,
+          totalLessons: totalLessonsAll,
+          completedLessons: completedLessons,
+          instructor: course.instructor?.name || "Unknown Instructor",
+          slug: course.slug
+        };
+      })
+    );
 
     return NextResponse.json({
       success: true,
