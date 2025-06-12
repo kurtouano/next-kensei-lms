@@ -61,6 +61,8 @@ export async function GET(request, { params }) {
       title: course.title,
       description: course.shortDescription,
       fullDescription: course.fullDescription,
+      // 🎥 Add preview video URL
+      previewVideoUrl: course.previewVideoUrl,
       progress: 0,
       instructor: course.instructor?.name || "Japanese Instructor",
       instructorImg: course.instructor?.image || course.instructor?.icon || null,
@@ -71,6 +73,10 @@ export async function GET(request, { params }) {
       level: course.level.charAt(0).toUpperCase() + course.level.slice(1),
       totalDuration,
       totalLessons,
+      // 💰 Add pricing info
+      price: course.price || 0,
+      creditReward: course.creditReward || 0,
+      enrolledStudents: course.enrolledStudents || 0,
       // Include rating stats from the course document
       averageRating: course.ratingStats?.averageRating || 0,
       totalRatings: course.ratingStats?.totalRatings || 0,

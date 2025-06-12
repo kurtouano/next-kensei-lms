@@ -414,3 +414,53 @@ export function useReviews(lessonSlug, session) {
     toggleForm
   }
 }
+
+// ============ ENROLLMENT CHECK HOOK ============
+export function useEnrollmentCheck(courseId) {
+  const { data: session } = useSession()
+  const [isEnrolled, setIsEnrolled] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const checkEnrollment = useCallback(async () => {
+    if (!courseId || !session?.user) {
+      setIsEnrolled(false)
+      return
+    }
+    
+    try {
+      setLoading(true)
+      // Use the same endpoint as CourseCard
+      const response = await fetch(`/api/courses/enrollment?courseId=${courseId}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setIsEnrolled(data.isEnrolled)
+      } else {
+        setError(data.error)
+        setIsEnrolled(false)
+      }
+    } catch (err) {
+      setError('Failed to check enrollment')
+      setIsEnrolled(false)
+      console.error('Error checking enrollment:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [courseId, session?.user])
+
+  useEffect(() => {
+    if (courseId && session?.user) {
+      checkEnrollment()
+    } else {
+      setIsEnrolled(false)
+    }
+  }, [checkEnrollment, courseId, session?.user])
+
+  return {
+    isEnrolled,
+    loading,
+    error,
+    checkEnrollment
+  }
+}

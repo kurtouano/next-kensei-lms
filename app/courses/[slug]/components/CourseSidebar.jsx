@@ -8,7 +8,8 @@ import {
   Lock, 
   Check, 
   Circle,
-  ChevronLeft 
+  ChevronLeft,
+  Play
 } from "lucide-react"
 
 export const CourseSidebar = memo(function CourseSidebar({
@@ -22,7 +23,10 @@ export const CourseSidebar = memo(function CourseSidebar({
   onSelectItem,
   onToggleCompletion,
   onTakeQuiz,
-  onBackToModule // New prop for going back to module from quiz
+  onBackToModule,
+  isEnrolled,
+  previewVideoUrl,
+  courseData // Add courseData prop
 }) {
   const totalItems = useMemo(() => 
     modules.flatMap(m => m.items).length,
@@ -30,6 +34,9 @@ export const CourseSidebar = memo(function CourseSidebar({
   )
 
   const isModuleAccessible = useCallback((moduleIndex) => {
+    // For non-enrolled users, only preview is accessible
+    if (!isEnrolled) return false
+    
     if (moduleIndex === 0) return true
     
     // Check if previous module is completed AND quiz is passed
@@ -39,14 +46,17 @@ export const CourseSidebar = memo(function CourseSidebar({
     const isPrevQuizPassed = moduleQuizCompleted.includes(prevModuleIndex)
     
     return isPrevModuleComplete && isPrevQuizPassed
-  }, [modules, completedItems, moduleQuizCompleted])
+  }, [modules, completedItems, moduleQuizCompleted, isEnrolled])
 
   return (
     <div className="sticky top-4 rounded-lg border border-[#dce4d7] bg-white shadow-sm">
       <div className="border-b border-[#dce4d7] bg-[#eef2eb] p-4">
         <h2 className="font-semibold text-[#2c3e2d]">Course Content</h2>
         <p className="text-sm text-[#5c6d5e]">
-          {completedItems.length} of {totalItems} lessons completed
+          {isEnrolled 
+            ? `${completedItems.length} of ${totalItems} lessons completed`
+            : `${totalItems} lessons available`
+          }
         </p>
       </div>
 
@@ -61,6 +71,38 @@ export const CourseSidebar = memo(function CourseSidebar({
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back to Module
           </Button>
+        </div>
+      )}
+
+      {/* Preview video section for non-enrolled users */}
+      {!isEnrolled && previewVideoUrl && (
+        <div className="border-b border-[#dce4d7] p-4">
+          <div
+            className={`flex w-full items-center rounded-md p-3 text-left text-sm transition-colors cursor-pointer ${
+              activeVideoId === "preview"
+                ? "bg-[#4a7c59] text-white"
+                : "bg-[#eef2eb] border border-[#4a7c59] hover:bg-[#f8f7f4]"
+            }`}
+            onClick={() => onSelectItem("preview", 0)}
+          >
+            <div className="mr-3 flex-shrink-0">
+              <Play
+                className={`h-4 w-4 ${
+                  activeVideoId === "preview" ? "text-white" : "text-[#4a7c59]"
+                }`}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <span className="truncate font-medium">Course Preview</span>
+                <span className={`text-xs ${
+                  activeVideoId === "preview" ? "text-white/80" : "text-[#4a7c59]"
+                }`}>
+                  FREE
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -79,9 +121,52 @@ export const CourseSidebar = memo(function CourseSidebar({
             onSelectItem={onSelectItem}
             onToggleCompletion={onToggleCompletion}
             onTakeQuiz={onTakeQuiz}
+            isEnrolled={isEnrolled}
           />
         ))}
       </div>
+
+      {/* Enrollment prompt in sidebar for non-enrolled users */}
+      {!isEnrolled && (
+        <div className="border-t border-[#dce4d7] p-4 bg-gradient-to-r from-[#eef2eb] to-white">
+          <div className="text-center">
+            <Lock className="mx-auto mb-2 h-6 w-6 text-[#4a7c59]" />
+            <p className="text-sm font-medium text-[#2c3e2d] mb-2">
+              Unlock {totalItems} Lessons
+            </p>
+            <p className="text-xs text-[#5c6d5e] mb-3">
+              Get full access to all content, quizzes, and resources
+            </p>
+            <Button 
+              size="sm" 
+              className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+              onClick={() => {
+                // Use the same checkout flow as the other components
+                fetch('/api/courses/stripe/create-checkout-session', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    courseId: courseData?.id,
+                    title: courseData?.title || 'Course Enrollment',
+                    description: courseData?.description || courseData?.fullDescription || 'Full course access',
+                    price: courseData?.price || 0,
+                    thumbnail: courseData?.thumbnail || '',
+                  }),
+                }).then(response => response.json())
+                .then(data => {
+                  if (data.url) {
+                    window.location.assign(data.url);
+                  }
+                }).catch(console.error);
+              }}
+            >
+              Enroll Now
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 })
@@ -97,7 +182,8 @@ const ModuleSection = memo(function ModuleSection({
   showModuleQuiz,
   onSelectItem,
   onToggleCompletion,
-  onTakeQuiz
+  onTakeQuiz,
+  isEnrolled
 }) {
   const isModuleComplete = useMemo(() =>
     module.items.every(item => completedItems.includes(item.id)),
@@ -109,38 +195,53 @@ const ModuleSection = memo(function ModuleSection({
     [module.items, completedItems]
   )
 
+  // For non-enrolled users, show all modules as locked
+  const moduleAccessible = isEnrolled ? isAccessible : false
+
   return (
-    <div className={`border-b border-[#dce4d7] last:border-b-0 ${!isAccessible ? "opacity-60" : ""}`}>
+    <div className={`border-b border-[#dce4d7] last:border-b-0 ${!moduleAccessible ? "opacity-60" : ""}`}>
       <div className={`flex items-center justify-between p-4 ${isActive ? "bg-[#eef2eb]" : ""}`}>
         <div className="flex items-center">
-          {!isAccessible && <Lock className="mr-2 h-4 w-4 text-[#5c6d5e]" />}
-          <h3 className={`font-medium ${isAccessible ? "text-[#2c3e2d]" : "text-[#5c6d5e]"}`}>
+          {!moduleAccessible && <Lock className="mr-2 h-4 w-4 text-[#5c6d5e]" />}
+          <h3 className={`font-medium ${moduleAccessible ? "text-[#2c3e2d]" : "text-[#5c6d5e]"}`}>
             {module.title}
           </h3>
         </div>
         <div className="flex items-center">
-          {isModuleComplete && (
+          {isModuleComplete && isEnrolled && (
             <CheckCircle2 className="mr-2 h-4 w-4 text-[#4a7c59]" />
           )}
           <span className="text-xs text-[#5c6d5e]">
-            {completedCount}/{module.items.length}
+            {isEnrolled ? `${completedCount}/${module.items.length}` : module.items.length}
           </span>
         </div>
       </div>
 
       {/* Module Access Warning */}
-      {!isAccessible && (
-        <div className="mx-4 mb-3 rounded-md bg-yellow-50 border border-yellow-200 p-3">
+      {!moduleAccessible && isEnrolled && (
+        <div className="mx-4 mb-3 rounded-md bg-[#eef2eb] border border-[#4a7c59] p-3">
           <div className="flex items-center">
-            <Lock className="mr-2 h-4 w-4 text-yellow-600" />
-            <span className="text-sm text-yellow-800">
+            <Lock className="mr-2 h-4 w-4 text-[#4a7c59]" />
+            <span className="text-sm text-[#5c6d5e]">
               Complete the previous module and pass its quiz (70%+) to unlock
             </span>
           </div>
         </div>
       )}
 
-      <div className={`space-y-1 p-2 ${!isAccessible ? "pointer-events-none" : ""}`}>
+      {/* Enrollment Required Warning for non-enrolled users */}
+      {!isEnrolled && (
+        <div className="mx-4 mb-3 rounded-md bg-[#eef2eb] border border-[#4a7c59] p-3">
+          <div className="flex items-center">
+            <Lock className="mr-2 h-4 w-4 text-[#4a7c59]" />
+            <span className="text-sm text-[#5c6d5e]">
+              Enroll to access all {module.items.length} lessons in this module
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className={`space-y-1 p-2 ${!moduleAccessible ? "pointer-events-none" : ""}`}>
         {module.items.map((item) => (
           <div key={item.id} className="space-y-2">
             
@@ -155,8 +256,9 @@ const ModuleSection = memo(function ModuleSection({
                     resourceIndex={resourceIndex}
                     moduleIndex={moduleIndex}
                     isActive={activeVideoId === `resource-${item.id}-${resourceIndex}`}
-                    isAccessible={isAccessible}
+                    isAccessible={moduleAccessible}
                     onSelectItem={onSelectItem}
+                    isEnrolled={isEnrolled}
                   />
                 ))}
               </div>
@@ -168,15 +270,16 @@ const ModuleSection = memo(function ModuleSection({
               moduleIndex={moduleIndex}
               isActive={activeVideoId === item.id}
               isCompleted={completedItems.includes(item.id)}
-              isAccessible={isAccessible}
+              isAccessible={moduleAccessible}
               onSelectItem={onSelectItem}
               onToggleCompletion={onToggleCompletion}
+              isEnrolled={isEnrolled}
             />
           </div>
         ))}
 
-        {/* Quiz Button - Only show when module is active, completed, and quiz not shown */}
-        {isActive && currentModuleCompleted && !showModuleQuiz && (
+        {/* Quiz Button - Only show when module is active, completed, and quiz not shown (enrolled users only) */}
+        {isEnrolled && isActive && currentModuleCompleted && !showModuleQuiz && (
           <div className="rounded-md bg-[#eef2eb] p-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -205,7 +308,8 @@ const LessonItem = memo(function LessonItem({
   isCompleted,
   isAccessible,
   onSelectItem,
-  onToggleCompletion
+  onToggleCompletion,
+  isEnrolled
 }) {
   const handleItemClick = useCallback(() => {
     if (isAccessible) {
@@ -214,10 +318,10 @@ const LessonItem = memo(function LessonItem({
   }, [isAccessible, onSelectItem, item.id, moduleIndex])
 
   const handleToggleClick = useCallback((e) => {
-    if (isAccessible) {
+    if (isAccessible && isEnrolled) {
       onToggleCompletion(item.id, e)
     }
-  }, [isAccessible, onToggleCompletion, item.id])
+  }, [isAccessible, isEnrolled, onToggleCompletion, item.id])
 
   return (
     <div
@@ -226,7 +330,7 @@ const LessonItem = memo(function LessonItem({
           ? "cursor-not-allowed bg-gray-100 text-gray-400"
           : isActive
             ? "cursor-pointer bg-[#4a7c59] text-white"
-            : isCompleted
+            : isCompleted && isEnrolled
               ? "cursor-pointer bg-[#eef2eb] text-[#2c3e2d]"
               : "cursor-pointer text-[#5c6d5e] hover:bg-[#f8f7f4]"
       }`}
@@ -259,6 +363,9 @@ const LessonItem = memo(function LessonItem({
         <div className="flex items-center justify-between">
           <span className="truncate">{item.title}</span>
           <div className="ml-2 flex items-center">
+            {!isEnrolled && (
+              <Lock className="h-3 w-3 text-[#4a7c59] mr-1" />
+            )}
             {item.type === "video" && (
               <span
                 className={`text-xs ${
@@ -275,27 +382,31 @@ const LessonItem = memo(function LessonItem({
           </div>
         </div>
       </div>
-      <button
-        className={`ml-2 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
-          !isAccessible
-            ? "border-gray-300 text-gray-300"
-            : isActive
-              ? isCompleted
-                ? "border-white bg-[#4a7c59] text-white"
-                : "border-white text-white"
-              : isCompleted
-                ? "border-[#4a7c59] bg-white text-[#4a7c59]"
-                : "border-[#dce4d7] hover:border-[#4a7c59]"
-        }`}
-        onClick={handleToggleClick}
-        disabled={!isAccessible}
-      >
-        {isCompleted ? (
-          <Check className="h-3 w-3" />
-        ) : (
-          <Circle className="h-3 w-3 opacity-0" />
-        )}
-      </button>
+      
+      {/* Only show completion toggle for enrolled users */}
+      {isEnrolled && (
+        <button
+          className={`ml-2 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${
+            !isAccessible
+              ? "border-gray-300 text-gray-300"
+              : isActive
+                ? isCompleted
+                  ? "border-white bg-[#4a7c59] text-white"
+                  : "border-white text-white"
+                : isCompleted
+                  ? "border-[#4a7c59] bg-white text-[#4a7c59]"
+                  : "border-[#dce4d7] hover:border-[#4a7c59]"
+          }`}
+          onClick={handleToggleClick}
+          disabled={!isAccessible}
+        >
+          {isCompleted ? (
+            <Check className="h-3 w-3" />
+          ) : (
+            <Circle className="h-3 w-3 opacity-0" />
+          )}
+        </button>
+      )}
     </div>
   )
 })
@@ -307,7 +418,8 @@ const ResourceItem = memo(function ResourceItem({
   moduleIndex,
   isActive,
   isAccessible,
-  onSelectItem
+  onSelectItem,
+  isEnrolled
 }) {
   const handleResourceClick = useCallback(() => {
     if (isAccessible) {
@@ -338,7 +450,12 @@ const ResourceItem = memo(function ResourceItem({
             }`}
           />
         </div>
-        <span className="truncate">{resource.title}</span>
+        <div className="flex items-center flex-1 min-w-0">
+          <span className="truncate">{resource.title}</span>
+          {!isEnrolled && (
+            <Lock className="h-3 w-3 text-[#4a7c59] ml-2" />
+          )}
+        </div>
       </div>
     </div>
   )

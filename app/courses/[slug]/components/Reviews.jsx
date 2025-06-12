@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Star, Edit, Trash2, MessageSquare, User, Heart, AlertTriangle, X } from "lucide-react"
+import { Star, Edit, Trash2, MessageSquare, User, Heart, AlertTriangle, X, Lock } from "lucide-react"
 
 export const ReviewSection = memo(function ReviewSection({
   reviewsState,
@@ -8,7 +8,8 @@ export const ReviewSection = memo(function ReviewSection({
   onSubmitReview,
   onDeleteReview,
   onUpdateReview,
-  onToggleForm
+  onToggleForm,
+  isEnrolled = false // Add isEnrolled prop with default value
 }) {
   const {
     reviews,
@@ -73,9 +74,10 @@ export const ReviewSection = memo(function ReviewSection({
           onShowForm={handleShowForm}
           onEditReview={handleShowForm}
           onDeleteReview={handleDeleteClick}
+          isEnrolled={isEnrolled}
         />
 
-        {showForm && isLoggedIn && (
+        {showForm && isLoggedIn && isEnrolled && (
           <ReviewForm
             newReview={newReview}
             userHasReviewed={userHasReviewed}
@@ -85,10 +87,6 @@ export const ReviewSection = memo(function ReviewSection({
             onSubmitReview={onSubmitReview}
             onCancelReview={handleCancelForm}
           />
-        )}
-
-        {!isLoggedIn && (
-          <LoginPrompt />
         )}
 
         <ReviewsList reviews={reviews} loading={loading} />
@@ -113,7 +111,8 @@ const ReviewHeader = memo(function ReviewHeader({
   showForm,
   onShowForm,
   onEditReview,
-  onDeleteReview
+  onDeleteReview,
+  isEnrolled // Add isEnrolled prop
 }) {
   return (
     <div className="border-b border-[#dce4d7] pb-4">
@@ -128,7 +127,8 @@ const ReviewHeader = memo(function ReviewHeader({
           </div>
         </div>
         
-        {isLoggedIn && !showForm && (
+        {/* Only show review buttons if user is logged in, enrolled, and not currently showing form */}
+        {isLoggedIn && isEnrolled && !showForm && (
           <div className="flex gap-2">
             {userHasReviewed ? (
               <>
@@ -275,21 +275,6 @@ const ReviewForm = memo(function ReviewForm({
           Cancel
         </Button>
       </div>
-    </div>
-  )
-})
-
-const LoginPrompt = memo(function LoginPrompt() {
-  return (
-    <div className="border-b border-[#dce4d7] py-4 text-center">
-      <p className="text-[#5c6d5e] mb-3">Please login to write a review</p>
-      <Button
-        variant="outline"
-        className="border-[#4a7c59] text-[#4a7c59]"
-        onClick={() => window.location.href = "/login"}
-      >
-        Login to Review
-      </Button>
     </div>
   )
 })

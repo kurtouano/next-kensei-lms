@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, memo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { FileText, Download, User } from "lucide-react"
+import { FileText, Download, User, Lock, Play } from "lucide-react"
 
 export const VideoPlayer = memo(function VideoPlayer({ 
   activeItem, 
   currentTime = 0, 
-  onProgressUpdate 
+  onProgressUpdate,
+  isEnrolled = false
 }) {
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -31,8 +32,8 @@ export const VideoPlayer = memo(function VideoPlayer({
     const handleLoadedData = () => {
       setIsVideoLoaded(true)
       
-      // Set the video to the saved currentTime when it loads (only once)
-      if (currentTime > 0 && !hasSetInitialTimeRef.current) {
+      // Only set saved time for enrolled users and non-preview videos
+      if (currentTime > 0 && !hasSetInitialTimeRef.current && isEnrolled && !activeItem.isPreview) {
         video.currentTime = currentTime
         lastSavedTimeRef.current = currentTime
         hasSetInitialTimeRef.current = true
@@ -40,8 +41,8 @@ export const VideoPlayer = memo(function VideoPlayer({
     }
 
     const handleCanPlay = () => {
-      // Ensure we set the time again when video is ready to play (only once)
-      if (currentTime > 0 && !hasSetInitialTimeRef.current && Math.abs(video.currentTime - currentTime) > 1) {
+      // Ensure we set the time again when video is ready to play (only for enrolled users)
+      if (currentTime > 0 && !hasSetInitialTimeRef.current && isEnrolled && !activeItem.isPreview && Math.abs(video.currentTime - currentTime) > 1) {
         video.currentTime = currentTime
         hasSetInitialTimeRef.current = true
       }
@@ -58,7 +59,7 @@ export const VideoPlayer = memo(function VideoPlayer({
       video.removeEventListener('loadeddata', handleLoadedData)
       video.removeEventListener('canplay', handleCanPlay)
     }
-  }, [currentTime, activeItem?.type])
+  }, [currentTime, activeItem?.type, activeItem?.isPreview, isEnrolled])
 
   // Reset video loaded state when activeItem changes
   useEffect(() => {
@@ -68,9 +69,9 @@ export const VideoPlayer = memo(function VideoPlayer({
     hasSetInitialTimeRef.current = false
   }, [activeItem?.id])
 
-  // Progress tracking and saving
+  // Progress tracking and saving (only for enrolled users)
   useEffect(() => {
-    if (!videoRef.current || !isVideoLoaded || activeItem?.type !== "video") return
+    if (!videoRef.current || !isVideoLoaded || activeItem?.type !== "video" || !isEnrolled || activeItem?.isPreview) return
 
     const video = videoRef.current
     
@@ -96,11 +97,11 @@ export const VideoPlayer = memo(function VideoPlayer({
     return () => {
       video.removeEventListener('timeupdate', updateProgress)
     }
-  }, [isVideoLoaded, activeItem?.id, activeItem?.type, onProgressUpdate])
+  }, [isVideoLoaded, activeItem?.id, activeItem?.type, activeItem?.isPreview, onProgressUpdate, isEnrolled])
 
-  // Save progress when video is paused or seeked
+  // Save progress when video is paused or seeked (only for enrolled users)
   useEffect(() => {
-    if (!videoRef.current || activeItem?.type !== "video") return
+    if (!videoRef.current || activeItem?.type !== "video" || !isEnrolled || activeItem?.isPreview) return
 
     const video = videoRef.current
     
@@ -130,7 +131,7 @@ export const VideoPlayer = memo(function VideoPlayer({
         onProgressUpdate(activeItem.id, video.currentTime)
       }
     }
-  }, [activeItem?.id, activeItem?.type, onProgressUpdate])
+  }, [activeItem?.id, activeItem?.type, activeItem?.isPreview, onProgressUpdate, isEnrolled])
 
   return (
     <div className="mb-4 overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm">
@@ -145,8 +146,18 @@ export const VideoPlayer = memo(function VideoPlayer({
               preload="metadata"
             />
             
-            {/* Progress indicator overlay */}
-            {currentTime > 0 && !isVideoLoaded && (
+            {/* Preview overlay for preview videos */}
+            {activeItem.isPreview && (
+              <div className="absolute top-4 left-4 z-10">
+                <div className="bg-[#e67e22] text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                  <Play className="h-3 w-3 mr-1" />
+                  Course Preview
+                </div>
+              </div>
+            )}
+            
+            {/* Loading indicator */}
+            {currentTime > 0 && !isVideoLoaded && isEnrolled && !activeItem.isPreview && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
                 <div className="text-white text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
@@ -156,7 +167,7 @@ export const VideoPlayer = memo(function VideoPlayer({
             )}
           </>
         ) : (
-          <MaterialView item={activeItem} />
+          <MaterialView item={activeItem} isEnrolled={isEnrolled} />
         )}
       </div>
       
@@ -164,7 +175,17 @@ export const VideoPlayer = memo(function VideoPlayer({
       {activeItem?.type === "video" && (
         <div className="border-t border-[#dce4d7] p-3 bg-[#f8f7f4]">
           <div className="flex justify-between items-center text-sm text-[#5c6d5e]">
-            <span className="font-medium text-[#2c3e2d]">{activeItem.title}</span>
+            <div className="flex items-center">
+              <span className="font-medium text-[#2c3e2d]">{activeItem.title}</span>
+              {activeItem.isPreview && (
+                <span className="ml-2 bg-[#e67e22] text-white px-2 py-0.5 rounded-full text-xs">
+                  Preview
+                </span>
+              )}
+              {!isEnrolled && !activeItem.isPreview && (
+                <Lock className="ml-2 h-4 w-4 text-[#e67e22]" />
+              )}
+            </div>
             <div className="flex items-center gap-4">
               {activeItem.videoDuration && (
                 <span>Duration: {formatTime(activeItem.videoDuration)}</span>
@@ -172,13 +193,20 @@ export const VideoPlayer = memo(function VideoPlayer({
             </div>
           </div>
           
-          {/* Progress bar */}
-          {videoProgress > 0 && (
+          {/* Progress bar - only show for enrolled users on non-preview videos */}
+          {videoProgress > 0 && isEnrolled && !activeItem.isPreview && (
             <div className="mt-2 bg-[#dce4d7] rounded-full h-1">
               <div 
                 className="bg-[#4a7c59] h-1 rounded-full transition-all duration-300"
                 style={{ width: `${videoProgress}%` }}
               />
+            </div>
+          )}
+
+          {/* Preview notice */}
+          {activeItem.isPreview && (
+            <div className="mt-2 text-xs text-[#e67e22] font-medium">
+              This is a preview. Enroll to access all course content and features.
             </div>
           )}
         </div>
@@ -199,32 +227,44 @@ const formatTime = (seconds) => {
   return `${minutes}:${secs.toString().padStart(2, '0')}`
 }
 
-const MaterialView = memo(function MaterialView({ item }) {
+const MaterialView = memo(function MaterialView({ item, isEnrolled }) {
   if (item?.type === "resource") {
     return (
       <div className="flex h-full items-center justify-center bg-[#eef2eb] p-8 text-center text-[#4a7c59]">
         <div className="max-w-md">
-          <FileText className="mx-auto mb-2 h-12 w-12" />
-          <h3 className="text-lg font-semibold mb-3 text-[#2c3e2d]">{item.title}</h3>
-          <p className="text-[#5c6d5e] text-sm mb-6">
-            Download this resource to enhance your learning experience.
-          </p>
-          
-          <div className="space-y-3 text-sm">
-            {item.resources?.map((resource, index) => (
-              <a 
-                key={index} 
-                href={item.selectedResource?.fileUrl || item.selectedResource?.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download {resource.title}
-                </Button>
-              </a>
-            ))}
-          </div>
+          {!isEnrolled ? (
+            <>
+              <Lock className="mx-auto mb-2 h-12 w-12 text-[#e67e22]" />
+              <h3 className="text-lg font-semibold mb-3 text-[#2c3e2d]">Resource Locked</h3>
+              <p className="text-[#5c6d5e] text-sm mb-6">
+                Enroll in this course to access downloadable resources and materials.
+              </p>
+            </>
+          ) : (
+            <>
+              <FileText className="mx-auto mb-2 h-12 w-12" />
+              <h3 className="text-lg font-semibold mb-3 text-[#2c3e2d]">{item.title}</h3>
+              <p className="text-[#5c6d5e] text-sm mb-6">
+                Download this resource to enhance your learning experience.
+              </p>
+              
+              <div className="space-y-3 text-sm">
+                {item.resources?.map((resource, index) => (
+                  <a 
+                    key={index} 
+                    href={item.selectedResource?.fileUrl || item.selectedResource?.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]">
+                      <Download className="mr-2 h-4 w-4" />
+                      Download {resource.title}
+                    </Button>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     )
@@ -233,18 +273,30 @@ const MaterialView = memo(function MaterialView({ item }) {
   return (
     <div className="flex h-full items-center justify-center bg-[#eef2eb] p-4 text-center text-[#4a7c59]">
       <div>
-        <FileText className="mx-auto mb-2 h-12 w-12" />
-        <h3 className="text-lg font-medium">{item?.title || "Select a lesson"}</h3>
-        <p className="mt-2 text-sm text-[#5c6d5e]">
-          {item?.type === "material"
-            ? "Download this material to continue your learning"
-            : "Select a video from the list to start learning"}
-        </p>
-        {item?.type === "material" && (
-          <Button className="mt-4 bg-[#4a7c59] text-white hover:bg-[#3a6147]">
-            <Download className="mr-2 h-4 w-4" />
-            Download Material
-          </Button>
+        {!isEnrolled ? (
+          <>
+            <Lock className="mx-auto mb-2 h-12 w-12 text-[#e67e22]" />
+            <h3 className="text-lg font-medium text-[#2c3e2d]">Content Locked</h3>
+            <p className="mt-2 text-sm text-[#5c6d5e]">
+              Enroll in this course to access all lessons and materials
+            </p>
+          </>
+        ) : (
+          <>
+            <FileText className="mx-auto mb-2 h-12 w-12" />
+            <h3 className="text-lg font-medium">{item?.title || "Select a lesson"}</h3>
+            <p className="mt-2 text-sm text-[#5c6d5e]">
+              {item?.type === "material"
+                ? "Download this material to continue your learning"
+                : "Select a video from the list to start learning"}
+            </p>
+            {item?.type === "material" && (
+              <Button className="mt-4 bg-[#4a7c59] text-white hover:bg-[#3a6147]">
+                <Download className="mr-2 h-4 w-4" />
+                Download Material
+              </Button>
+            )}
+          </>
         )}
       </div>
     </div>

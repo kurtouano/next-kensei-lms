@@ -7,7 +7,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
 // Import custom hooks
-import { useProgress, useLessonData, useQuiz, useReviews } from "./hooks/useCoursePreviewHook"
+import { useProgress, useLessonData, useQuiz, useReviews, useEnrollmentCheck } from "./hooks/useCoursePreviewHook"
 
 // Import components
 import { VideoPlayer } from "./components/VideoPlayer"
@@ -16,6 +16,7 @@ import { ReviewSection } from "./components/Reviews"
 import { CourseSidebar } from "./components/CourseSidebar"
 import { CourseInfo } from "./components/CourseInfo"
 import { ModuleCompleteNotif } from "./components/ModuleCompleteNotif"
+import { EnrollmentPrompt } from "./components/EnrollmentPrompt"
 
 // ============ LOADING & ERROR LAYOUTS ============
 
@@ -58,6 +59,7 @@ export default function LessonPage() {
 
   // Core hooks
   const { lessonData, loading: lessonLoading, error: lessonError } = useLessonData(lessonSlug)
+  const { isEnrolled, loading: enrollmentLoading, checkEnrollment } = useEnrollmentCheck(lessonData?.id)
   const { progress, loading: progressLoading, updateLessonProgress, updateVideoProgress, updateModuleProgress, getLessonCurrentTime } = useProgress(lessonSlug)
   
   // Navigation state
@@ -74,6 +76,13 @@ export default function LessonPage() {
   const [showFullDescription, setShowFullDescription] = useState(false)
 
   // ============ EFFECTS ============
+
+  // Check enrollment when lesson data loads
+  useEffect(() => {
+    if (lessonData?.id && session?.user) {
+      checkEnrollment()
+    }
+  }, [lessonData?.id, session?.user, checkEnrollment])
 
   // Sync progress data with local state
   useEffect(() => {
@@ -94,13 +103,19 @@ export default function LessonPage() {
     }
   }, [progress.completedModules, lessonData])
 
-  // Set initial active video
+  // Set initial active video - show preview for non-enrolled users
   useEffect(() => {
-    if (lessonData?.modules?.length > 0 && !activeVideoId) {
-      const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
-      if (firstVideo) setActiveVideoId(firstVideo.id)
+    if (lessonData && !activeVideoId) {
+      if (!isEnrolled && lessonData.previewVideoUrl) {
+        // Show preview video for non-enrolled users
+        setActiveVideoId("preview")
+      } else if (isEnrolled && lessonData.modules?.length > 0) {
+        // Show first actual lesson for enrolled users
+        const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
+        if (firstVideo) setActiveVideoId(firstVideo.id)
+      }
     }
-  }, [lessonData, activeVideoId])
+  }, [lessonData, activeVideoId, isEnrolled])
 
   // Fetch reviews when lesson data loads
   useEffect(() => {
@@ -112,6 +127,19 @@ export default function LessonPage() {
   // ============ COMPUTED VALUES ============
 
   const activeItem = useMemo(() => {
+    if (!lessonData) return null
+    
+    // If showing preview video
+    if (activeVideoId === "preview") {
+      return {
+        id: "preview",
+        type: "video",
+        title: "Course Preview",
+        videoUrl: lessonData.previewVideoUrl,
+        isPreview: true
+      }
+    }
+    
     if (!lessonData?.modules) return null
     
     if (activeVideoId?.startsWith('resource-')) {
@@ -151,12 +179,20 @@ export default function LessonPage() {
   // ============ EVENT HANDLERS ============
 
   const handleSelectItem = useCallback((itemId, moduleIndex) => {
+    // Prevent non-enrolled users from accessing course content
+    if (!isEnrolled && itemId !== "preview") {
+      return
+    }
+    
     setActiveVideoId(itemId)
     setActiveModule(moduleIndex)
-  }, [])
+  }, [isEnrolled])
 
   const handleToggleCompletion = useCallback(async (itemId, e) => {
     e.stopPropagation()
+    
+    // Only allow enrolled users to mark completion
+    if (!isEnrolled) return
     
     const isCurrentlyCompleted = completedItems.includes(itemId)
     const newCompletionState = !isCurrentlyCompleted
@@ -180,7 +216,7 @@ export default function LessonPage() {
       )
       alert('Failed to update progress. Please try again.')
     }
-  }, [completedItems, updateLessonProgress])
+  }, [completedItems, updateLessonProgress, isEnrolled])
 
   const handleNextModule = useCallback(() => {
     if (quizState.score >= 70) {
@@ -204,7 +240,7 @@ export default function LessonPage() {
 
   // ============ LOADING STATES ============
 
-  if (lessonLoading || progressLoading) {
+  if (lessonLoading || progressLoading || enrollmentLoading) {
     return <LoadingLayout />
   }
 
@@ -225,26 +261,38 @@ export default function LessonPage() {
             {/* Main Content Area */}
             <div className="w-full lg:w-2/3 lg:pr-4">
               {quizState.showModuleQuiz ? (
-                <QuizSection 
-                  quiz={quizState.randomizedQuiz || currentQuiz}
-                  quizState={quizState}
-                  onStartQuiz={startQuiz}
-                  onSelectAnswer={selectAnswer}
-                  onSubmitQuiz={submitQuiz}
-                  onRetryQuiz={retryQuiz}
-                  onProceed={handleNextModule}
-                  onBack={handleBackToModule}
-                  isLastModule={activeModule === lessonData.modules.length - 1}
-                />
+                // Only show quiz if enrolled
+                isEnrolled ? (
+                  <QuizSection 
+                    quiz={quizState.randomizedQuiz || currentQuiz}
+                    quizState={quizState}
+                    onStartQuiz={startQuiz}
+                    onSelectAnswer={selectAnswer}
+                    onSubmitQuiz={submitQuiz}
+                    onRetryQuiz={retryQuiz}
+                    onProceed={handleNextModule}
+                    onBack={handleBackToModule}
+                    isLastModule={activeModule === lessonData.modules.length - 1}
+                  />
+                ) : (
+                  <EnrollmentPrompt course={lessonData} />
+                )
               ) : (
                 <>
                   <VideoPlayer 
                     activeItem={activeItem} 
-                    currentTime={getLessonCurrentTime(activeItem?.id)}
-                    onProgressUpdate={updateVideoProgress}
+                    currentTime={isEnrolled ? getLessonCurrentTime(activeItem?.id) : 0}
+                    onProgressUpdate={isEnrolled ? updateVideoProgress : null}
+                    isEnrolled={isEnrolled}
                   />
                   
-                  {currentModuleCompleted && !moduleQuizCompleted.includes(activeModule) && (
+                  {/* Show enrollment prompt for non-enrolled users */}
+                  {!isEnrolled && (
+                    <EnrollmentPrompt course={lessonData} />
+                  )}
+                  
+                  {/* Only show module completion notification for enrolled users */}
+                  {isEnrolled && currentModuleCompleted && !moduleQuizCompleted.includes(activeModule) && (
                     <ModuleCompleteNotif onTakeQuiz={showQuiz} />
                   )}
 
@@ -252,7 +300,8 @@ export default function LessonPage() {
                     lesson={lessonData}
                     showFullDescription={showFullDescription}
                     onToggleDescription={() => setShowFullDescription(!showFullDescription)}
-                    progress={progress.courseProgress || 0}
+                    progress={isEnrolled ? progress.courseProgress || 0 : 0}
+                    isEnrolled={isEnrolled}
                   />
 
                   <ReviewSection
@@ -281,6 +330,9 @@ export default function LessonPage() {
                 onToggleCompletion={handleToggleCompletion}
                 onTakeQuiz={showQuiz}
                 onBackToModule={handleBackToModule}
+                isEnrolled={isEnrolled}
+                previewVideoUrl={lessonData.previewVideoUrl}
+                courseData={lessonData} // Pass the full course data
               />
             </div>
           </div>
