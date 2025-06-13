@@ -74,33 +74,26 @@ export const CourseSidebar = memo(function CourseSidebar({
         </div>
       )}
 
-      {/* FIXED: Preview video section - ALWAYS show if preview exists */}
+      {/* FIXED: Preview video section - same styling as lessons */}
       {previewVideoUrl && (
-        <div className="border-b border-[#dce4d7] p-4">
+        <div className="border-b border-[#dce4d7] p-2">
           <div
-            className={`flex w-full items-center rounded-md p-3 text-left text-sm transition-colors cursor-pointer ${
+            className={`flex w-full items-center rounded-md p-2 text-left text-sm transition-colors cursor-pointer ${
               activeVideoId === "preview"
                 ? "bg-[#4a7c59] text-white"
-                : "bg-[#eef2eb] border border-[#4a7c59] hover:bg-[#f8f7f4]"
+                : "text-[#5c6d5e] hover:bg-[#f8f7f4]"
             }`}
             onClick={() => onSelectItem("preview", 0)}
           >
             <div className="mr-3 flex-shrink-0">
-              <Play
+              <PlayCircle
                 className={`h-4 w-4 ${
                   activeVideoId === "preview" ? "text-white" : "text-[#4a7c59]"
                 }`}
               />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="truncate font-medium">Course Preview</span>
-                <span className={`text-xs ${
-                  activeVideoId === "preview" ? "text-white/80" : "text-[#4a7c59]"
-                }`}>
-                  FREE
-                </span>
-              </div>
+              <span className="truncate">Course Preview</span>
             </div>
           </div>
         </div>
@@ -230,7 +223,7 @@ const ModuleSection = memo(function ModuleSection({
 
       {/* Enrollment Required Warning for non-enrolled users */}
       {!isEnrolled && (
-        <div className="mx-4 mb-3 rounded-md bg-[#eef2eb] border border-[#4a7c59] p-3">
+        <div className="mx-4 mt-2 rounded-md bg-[#eef2eb] border border-[#4a7c59] p-3">
           <div className="flex items-center">
             <Lock className="mr-2 h-4 w-4 text-[#4a7c59]" />
             <span className="text-sm text-[#5c6d5e]">
