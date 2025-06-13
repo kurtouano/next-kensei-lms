@@ -22,7 +22,6 @@ export default function CreateCourse() {
     fullDescription: "",
     shortDescription: "",
     level: "",
-    category: "",
     highlights: [{ description: "" }],
     thumbnail: "",
     previewVideoUrl: "", 
@@ -93,7 +92,6 @@ export default function CreateCourse() {
     if (!courseData.shortDescription.trim()) errors.shortDescription = "Short description is required"
     if (!courseData.fullDescription.trim()) errors.fullDescription = "Full description is required"
     if (!courseData.level) errors.level = "Level is required"
-    if (!courseData.category) errors.category = "Category is required"
     if (!courseData.thumbnail) errors.thumbnail = "Course thumbnail is required"
     if (!courseData.previewVideoUrl) errors.previewVideoUrl = "Preview video is required" // Add this line
     if (courseData.price <= 0) errors.price = "Price must be greater than 0"
@@ -846,10 +844,10 @@ export default function CreateCourse() {
               {renderValidationError('fullDescription')}
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Level <span className="text-red-500">*</span>
+                  JLPT Level <span className="text-red-500">*</span>
                 </label>
                 <select
                   className={`w-full rounded-md border p-2 ${showValidation && validationErrors.level ? 'border-red-500' : 'border-gray-300'}`}
@@ -858,34 +856,16 @@ export default function CreateCourse() {
                 >
                   <option value="">Select level</option>
                   <option value="beginner">Beginner (N5)</option>
-                  <option value="intermediate">Intermediate (N4-N3)</option>
-                  <option value="advanced">Advanced (N2-N1)</option>
+                  <option value="intermediate">Elementary (N4)</option>
+                  <option value="advanced">Intermediate (N3)</option>
+                  <option value="upper-intermediate">Upper Intermediate (N2)</option>
+                  <option value="fluent">Advanced (N1)</option>
                 </select>
                 {renderValidationError('level')}
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Category <span className="text-red-500">*</span>
-                </label>
-                <select
-                  className={`w-full rounded-md border p-2 ${showValidation && validationErrors.category ? 'border-red-500' : 'border-gray-300'}`}
-                  value={courseData.category}
-                  onChange={(e) => updateCourseData("category", e.target.value)}
-                >
-                  <option value="">Select category</option>
-                  <option value="speaking">Speaking</option>
-                  <option value="writing">Writing</option>
-                  <option value="reading">Reading</option>
-                  <option value="listening">Listening</option>
-                  <option value="grammar">Grammar</option>
-                  <option value="vocabulary">Vocabulary</option>
-                  <option value="culture">Culture</option>
-                </select>
-                {renderValidationError('category')}
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Price ($) <span className="text-red-500">*</span>
+                  Course Price ($) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -896,11 +876,7 @@ export default function CreateCourse() {
                 />
                 {renderValidationError('price')}
               </div>
-            </div>
-
-            {/* Credit and Item Rewards Section */}
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
+              <div className="space-y-2">
                   <label className="text-sm font-medium">Credit Reward</label>
                   <input
                     type="number"
@@ -910,7 +886,6 @@ export default function CreateCourse() {
                     onChange={(e) => updateCourseData("creditReward", parseInt(e.target.value) || 0)}
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Item Rewards (Max {LIMITS.itemsReward})</label>
                   {courseData.itemsReward.map((reward, index) => (
@@ -952,7 +927,7 @@ export default function CreateCourse() {
                     </span>
                   </div>
                 </div>
-              </div>
+            </div>
 
               {/* File Upload Section - Thumbnail and Preview Video */}
               <div className="grid gap-6 md:grid-cols-2">
@@ -1363,7 +1338,6 @@ export default function CreateCourse() {
                 <div className="space-y-1 text-sm">
                   <p><strong>Title:</strong> {courseData.title}</p>
                   <p><strong>Level:</strong> {courseData.level}</p>
-                  <p><strong>Category:</strong> {courseData.category}</p>
                   <p><strong>Price:</strong> ${courseData.price}</p>
                   <p><strong>Modules:</strong> {modules.length}</p>
                   <p><strong>Total Lessons:</strong> {totalLessons}</p>
