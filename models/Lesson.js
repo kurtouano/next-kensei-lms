@@ -42,10 +42,6 @@ const LessonSchema = new mongoose.Schema(
         },
       },
     ],
-    isPublished: {
-      type: Boolean,
-      default: false,
-    },
   },
   { timestamps: true },
 )
