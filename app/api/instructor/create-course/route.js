@@ -29,10 +29,9 @@ export async function POST(req) {
     const courseData = await req.json()
     const { modules: moduleData, ...courseInfo } = courseData
 
-    // Validate required fields (including preview video)
+    // ✅ Fixed validation - removed category requirement
     if (!courseInfo.title || !courseInfo.shortDescription || !courseInfo.fullDescription || 
-        !courseInfo.level || !courseInfo.category || !courseInfo.thumbnail || 
-        !courseInfo.previewVideoUrl) {
+        !courseInfo.level || !courseInfo.thumbnail || !courseInfo.previewVideoUrl) {
       return Response.json({ 
         success: false, 
         error: 'Missing required fields. Please ensure all required fields including preview video are provided.' 
@@ -45,9 +44,10 @@ export async function POST(req) {
       title: courseInfo.title,
       fullDescription: courseInfo.fullDescription,
       shortDescription: courseInfo.shortDescription,
-      previewVideoUrl: courseInfo.previewVideoUrl, // Explicitly include preview video
+      previewVideoUrl: courseInfo.previewVideoUrl,
       level: courseInfo.level,
-      category: courseInfo.category,
+      // ✅ Only include category if it exists in the data
+      ...(courseInfo.category && { category: courseInfo.category }),
       highlights: courseInfo.highlights || [],
       thumbnail: courseInfo.thumbnail,
       instructor: session.user.id,
