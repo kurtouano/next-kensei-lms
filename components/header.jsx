@@ -28,14 +28,18 @@ export function Header() {
             <>
               <Link href="/my-learning" className={`text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Home</Link>
               <Link href="/courses" className={`text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Courses</Link>
-              <Link href="/profile" className={`text-sm font-medium ${isActive("/profile") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Profile</Link>
+              <Link href="/blogs" className={`text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Blogs</Link>
               <Link href="/bonsai" className={`text-sm font-medium ${isActive("/bonsai") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>My Bonsai</Link>
-              { session?.user?.role === "instructor" && (
+              {(session?.user?.role === "instructor" || session?.user?.role === "admin") && (
                 <Link href="/instructor/dashboard" className={`text-sm font-medium ${isActive("/admin") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Instructor</Link>
+              )}
+              { session?.user?.role === "admin" && (
+                <Link href="/admin/blog" className={`text-sm font-medium ${isActive("/admin") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Admin</Link>
               )}
             </>
           ) : (
             <>
+              <Link href="/blogs" className={`text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Blogs</Link>
               <Link href="/courses" className={`text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Courses</Link>
               <Link href="/subscription" className={`text-sm font-medium ${isActive("/subscription") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Plans</Link>
               <Link href="/about" className={`text-sm font-medium ${isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>About</Link>
