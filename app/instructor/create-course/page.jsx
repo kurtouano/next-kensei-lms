@@ -27,7 +27,7 @@ export default function CreateCourse() {
   const { courseData, updateCourseData, updateCourseArray } = useCourseData()
   const { modules, moduleHandlers } = useModules()
   const { validationErrors, showValidation, setShowValidation, setValidationErrors, validateStep, validateCurrentStep, validateForm, renderValidationError } = useValidation(courseData, modules)
-  const { uploadingFiles, handleFileUpload } = useFileUpload()
+  const { uploadingFiles, uploadProgress, handleFileUpload } = useFileUpload()
   const { isSubmitting, handleSubmit } = useSubmission(courseData, modules, validateForm, setCurrentStep)
 
   // Constants
@@ -88,6 +88,7 @@ export default function CreateCourse() {
             updateCourseData={updateCourseData}
             updateCourseArray={updateCourseArray}
             uploadingFiles={uploadingFiles}
+            uploadProgress={uploadProgress}
             handleFileUpload={handleFileUpload}
             validationErrors={validationErrors}
             showValidation={showValidation}
@@ -100,6 +101,7 @@ export default function CreateCourse() {
             modules={modules}
             moduleHandlers={moduleHandlers}
             uploadingFiles={uploadingFiles}
+            uploadProgress={uploadProgress}
             handleFileUpload={handleFileUpload}
             validationErrors={validationErrors}
             showValidation={showValidation}

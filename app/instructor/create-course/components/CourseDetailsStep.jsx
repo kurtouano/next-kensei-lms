@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Plus, Trash2, LoaderCircle } from "lucide-react"
 
 // Reusable components
-import { FileUploadInput, ArrayInput } from "./"
+import FileUploadInput from "./FileUploadInput"
+import ArrayInput from "./ArrayInput"
 
 const CourseDetailsStep = memo(({ 
   courseData, 
   updateCourseData, 
   updateCourseArray, 
   uploadingFiles, 
+  uploadProgress,
   handleFileUpload,
   validationErrors,
   showValidation,
@@ -141,7 +143,7 @@ const CourseDetailsStep = memo(({
             <select
               className={`w-full rounded-md border p-2 ${showValidation && validationErrors.level ? 'border-red-500' : 'border-gray-300'}`}
               value={courseData.level}
-              onChange={(e) => updateCourseData("level", e.target.value)}
+              onChange={(e) => updateCourseData("level", e.target.value.trim())} // ✅ Add .trim()
             >
               <option value="">Select level</option>
               <option value="N5">Beginner (N5)</option>
@@ -239,6 +241,7 @@ const CourseDetailsStep = memo(({
             required={true}
             errorKey="thumbnail"
             uploadingFiles={uploadingFiles}
+            uploadProgress={uploadProgress}
             renderValidationError={renderValidationError}
             showValidation={showValidation}
             validationErrors={validationErrors}
@@ -258,6 +261,7 @@ const CourseDetailsStep = memo(({
               required={true}
               errorKey="previewVideoUrl"
               uploadingFiles={uploadingFiles}
+              uploadProgress={uploadProgress}
               renderValidationError={renderValidationError}
               showValidation={showValidation}
               validationErrors={validationErrors}

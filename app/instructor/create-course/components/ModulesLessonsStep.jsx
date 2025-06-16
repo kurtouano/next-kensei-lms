@@ -3,11 +3,13 @@ import { memo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, LoaderCircle, AlertCircle } from "lucide-react"
+import ProgressBar from "./ProgressBar"
 
 const ModulesLessonsStep = memo(({ 
   modules, 
   moduleHandlers, 
   uploadingFiles, 
+  uploadProgress,
   handleFileUpload,
   validationErrors,
   showValidation,
@@ -153,6 +155,7 @@ const ModulesLessonsStep = memo(({
                             const file = e.target.files[0]
                             if (file) await handleLessonVideoUpload(file, moduleIndex, lessonIndex)
                           }}
+                          disabled={uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`]}
                         />
                         {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
                           <div className="flex items-center px-3">
@@ -160,8 +163,19 @@ const ModulesLessonsStep = memo(({
                           </div>
                         )}
                       </div>
+                      
+                      {/* Video Upload Progress */}
+                      {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
+                        <div className="space-y-1">
+                          <ProgressBar progress={uploadProgress[`module-${moduleIndex}-lesson-${lessonIndex}-video`] || 0} />
+                          <div className="text-xs text-gray-500 text-center">
+                            Uploading video... {uploadProgress[`module-${moduleIndex}-lesson-${lessonIndex}-video`] || 0}%
+                          </div>
+                        </div>
+                      )}
+                      
                       {renderValidationError(`module_${moduleIndex}_lesson_${lessonIndex}_video`)}
-                      {lesson.videoUrl && (
+                      {lesson.videoUrl && !uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
                         <video
                           ref={videoRef}
                           className="w-full rounded-md mt-2"
