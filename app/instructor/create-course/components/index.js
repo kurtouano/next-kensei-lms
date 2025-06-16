@@ -1,0 +1,9 @@
+// components/index.js
+export { default as ProgressSteps } from './ProgressSteps'
+export { default as ErrorSummary } from './ErrorSummary'
+export { default as CourseDetailsStep } from './CourseDetailsStep'
+export { default as ModulesLessonsStep } from './ModulesLessonsStep'
+export { default as QuizzesStep } from './QuizzesStep'
+export { default as ReviewStep } from './ReviewStep'
+export { default as FileUploadInput } from './FileUploadInput'
+export { default as ArrayInput } from './ArrayInput'

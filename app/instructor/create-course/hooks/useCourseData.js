@@ -1,0 +1,86 @@
+// hooks/useCourseData.js
+import { useState, useCallback } from "react"
+
+// Default course data structure
+const initialCourseData = {
+  slug: "",
+  title: "",
+  fullDescription: "",
+  shortDescription: "",
+  level: "",
+  highlights: [{ description: "" }],
+  thumbnail: "",
+  previewVideoUrl: "", 
+  price: 0,
+  creditReward: 0,
+  itemsReward: [""],
+  tags: [""],
+  isPublished: false,
+}
+
+// Constants for limits
+const LIMITS = {
+  highlights: 4,
+  tags: 5,
+  itemsReward: 3
+}
+
+export const useCourseData = () => {
+  const [courseData, setCourseData] = useState(initialCourseData)
+
+  // Generate slug from title
+  const generateSlug = useCallback((title) => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+  }, [])
+
+  // Update single course data field
+  const updateCourseData = useCallback((field, value) => {
+    setCourseData(prev => {
+      const newData = { ...prev, [field]: value }
+      
+      // Auto-generate slug when title changes
+      if (field === 'title') {
+        newData.slug = generateSlug(value)
+      }
+      
+      return newData
+    })
+  }, [generateSlug])
+
+  // Update course array fields (highlights, tags, itemsReward)
+  const updateCourseArray = useCallback((field, index, value, action = 'update') => {
+    setCourseData(prev => {
+      const array = [...prev[field]]
+      
+      switch (action) {
+        case 'add':
+          if (array.length >= LIMITS[field]) {
+            alert(`Maximum ${LIMITS[field]} ${field} allowed`)
+            return prev
+          }
+          return { ...prev, [field]: [...array, value] }
+        
+        case 'remove':
+          return { ...prev, [field]: array.filter((_, i) => i !== index) }
+        
+        case 'update':
+        default:
+          array[index] = value
+          return { ...prev, [field]: array }
+      }
+    })
+  }, [])
+
+  return {
+    courseData,
+    updateCourseData,
+    updateCourseArray,
+    LIMITS,
+    generateSlug
+  }
+}

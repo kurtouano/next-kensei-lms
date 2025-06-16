@@ -10,11 +10,11 @@ export function useCourses() {
   // Categories
   const categories = useMemo(() => [
     { id: "all", name: "All Courses" },
-    { id: "beginner", name: "Beginner (N5)" },
-    { id: "intermediate", name: "Elementary (N4)" },
-    { id: "advanced", name: "Intermediate (N3)" },
-    { id: "upper-intermediate", name: "Upper Intermediate (N2)" },
-    { id: "fluent", name: "Advanced (N1)" },
+    { id: "N5", name: "Beginner (N5)" },
+    { id: "N4", name: "Elementary (N4)" },
+    { id: "N3", name: "Intermediate (N3)" },
+    { id: "N2", name: "Upper Intermediate (N2)" },
+    { id: "N1", name: "Advanced (N1)" },
   ], [])
 
   // Fetch courses

@@ -29,14 +29,8 @@ const CourseSchema = new mongoose.Schema(
     },
     level: {
       type: String,
-      enum: ["beginner", "intermediate", "advanced"], // n5, n4-n3, n2-n1
+      enum: ["N5", "N4", "N3", "N2", "N1"], 
       required: true,
-    },
-    category: {
-      type: String,
-      enum: ["speaking", "writing", "reading", "listening", "grammar", "vocabulary", "culture"],
-      required: true,
-      default: "speaking",
     },
     highlights: [ 
       {
