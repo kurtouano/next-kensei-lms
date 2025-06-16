@@ -189,7 +189,7 @@ const LearningHighlights = memo(function LearningHighlights({ highlights }) {
     <div className="mb-4 flex-grow">
       <h4 className="mb-2 text-sm font-semibold text-[#2c3e2d]">Learning Highlights:</h4>
       <ul className="space-y-1">
-        {highlights.slice(0, 3).map((highlight, index) => (
+        {highlights.slice(0, 4).map((highlight, index) => (
           <li key={index} className="flex items-start text-sm">
             <Check className="mr-2 h-4 w-4 shrink-0 text-[#4a7c59]" />
             <span className="text-[#5c6d5e] line-clamp-1">{highlight}</span>
