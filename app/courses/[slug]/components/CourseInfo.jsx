@@ -7,14 +7,16 @@ import {
   BookIcon, 
   ThumbsUp, 
   Share2, 
-  User 
+  User,
+  Calendar
 } from "lucide-react"
 
 export const CourseInfo = memo(function CourseInfo({ 
   lesson, 
   showFullDescription, 
   onToggleDescription, 
-  progress 
+  progress,
+  isEnrolled
 }) {
   // Check if description is long enough to need truncation
   const isDescriptionLong = lesson.fullDescription?.length > 200
@@ -23,24 +25,24 @@ export const CourseInfo = memo(function CourseInfo({
   return (
     <div className="mb-6 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm">
       {/* Course Title */}
-      <h1 className="text-xl font-bold text-[#2c3e2d] mb-6">
+      <h1 className="text-xl font-bold text-[#2c3e2d] mb-3">
         {lesson.title}
       </h1>
 
-      {/* Progress Section */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-[#5c6d5e]">Course Progress:</span>
-          <span className="text-sm font-medium text-[#2c3e2d]">{progress}%</span>
+      {/* Course Progress - Single Row Layout */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-[#2c3e2d] whitespace-nowrap">Course Progress:</span>
+          <Progress
+            value={progress}
+            className="flex-1 h-2 bg-[#dce4d7] [&>[data-progress]]:bg-[#4a7c59]"
+          />
+          <span className="text-sm font-medium text-[#2c3e2d] whitespace-nowrap">{progress}%</span>
         </div>
-        <Progress
-          value={progress}
-          className="h-2 bg-[#dce4d7] [&>[data-progress]]:bg-[#4a7c59]"
-        />
       </div>
 
-      {/* Course Stats */}
-      <div className="flex flex-wrap items-center gap-4 text-sm text-[#5c6d5e] mb-6">
+      {/* Course Stats - All in one row */}
+      <div className="flex flex-wrap items-center gap-4 text-sm text-[#5c6d5e] mb-3">
         <div className="flex items-center gap-1">
           <Clock className="h-4 w-4" />
           <span>{lesson.totalDuration}</span>
@@ -52,6 +54,10 @@ export const CourseInfo = memo(function CourseInfo({
         <div className="flex items-center gap-1">
           <Award className="h-4 w-4" />
           <span className="capitalize">{lesson.level}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Calendar className="h-4 w-4" />
+          <span>Last updated {lesson.lastUpdated}</span>
         </div>
       </div>
 
@@ -70,6 +76,7 @@ export const CourseInfo = memo(function CourseInfo({
         )}
         <div>
           <h3 className="font-medium text-[#2c3e2d]">{lesson.instructor}</h3>
+          <p className="text-sm text-[#5c6d5e]">Japanese Language Instructor</p>
         </div>
       </div>
 

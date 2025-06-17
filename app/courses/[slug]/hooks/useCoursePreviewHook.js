@@ -1,3 +1,4 @@
+// Complete enhanced useCoursePreviewHook.js with all improvements
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useSession } from "next-auth/react"
 
@@ -10,7 +11,7 @@ export function useProgress(slug) {
     courseProgress: 0,
     status: 'not_started',
     isCompleted: false,
-    lessonProgress: [] // Add lesson progress with currentTime
+    lessonProgress: []
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -68,7 +69,6 @@ export function useProgress(slug) {
     }
   }, [session, slug])
 
-  // New function specifically for updating video progress
   const updateVideoProgress = useCallback(async (lessonId, currentTime) => {
     if (!session?.user || !slug) return false
     
@@ -108,23 +108,25 @@ export function useProgress(slug) {
       const data = await response.json()
       
       if (data.success) {
-        setProgress(prev => ({
-          ...prev,
-          completedModules: data.completedModules
-        }))
-        return true
+        // Only update state if the database was actually updated
+        if (data.updated) {
+          setProgress(prev => ({
+            ...prev,
+            completedModules: data.completedModules
+          }))
+        }
+        return { success: true, updated: data.updated, message: data.message }
       } else {
         setError(data.error)
-        return false
+        return { success: false, error: data.error }
       }
     } catch (err) {
       setError('Failed to update module progress')
       console.error('Error updating module progress:', err)
-      return false
+      return { success: false, error: 'Network error' }
     }
   }, [session, slug])
 
-  // Helper function to get current time for a specific lesson
   const getLessonCurrentTime = useCallback((lessonId) => {
     const lessonProgress = progress.lessonProgress?.find(lp => lp.lesson === lessonId)
     return lessonProgress?.currentTime || 0
@@ -173,8 +175,8 @@ export function useLessonData(lessonSlug) {
   return { lessonData, loading, error }
 }
 
-// ============ QUIZ HOOK ============
-export function useQuiz(lessonData, activeModule, updateModuleProgress) {
+// ============ ENHANCED QUIZ HOOK ============
+export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQuizCompleted) {
   const [quizState, setQuizState] = useState({
     showModuleQuiz: false,
     started: false,
@@ -183,13 +185,32 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
     selectedAnswers: {},
     randomizedQuiz: null,
     totalPoints: 0,
-    earnedPoints: 0
+    earnedPoints: 0,
+    showReview: false,
+    existingScore: null
   })
 
   const currentQuiz = useMemo(() => 
     lessonData?.modules?.[activeModule]?.quiz,
     [lessonData, activeModule]
   )
+
+  // Get existing quiz score from progress data
+  const existingScore = useMemo(() => {
+    if (!lessonData?.modules?.[activeModule] || !moduleQuizCompleted) return null
+    
+    const moduleId = lessonData.modules[activeModule].id
+    const completedModule = moduleQuizCompleted.find(
+      cm => cm.moduleId === moduleId
+    )
+    
+    return completedModule?.quizScore || null
+  }, [lessonData, activeModule, moduleQuizCompleted])
+
+  // Update existing score in state when it changes
+  useEffect(() => {
+    setQuizState(prev => ({ ...prev, existingScore }))
+  }, [existingScore])
 
   // Shuffle array utility
   const shuffleArray = useCallback((array) => {
@@ -209,7 +230,6 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
         questions: currentQuiz.questions.map((question) => {
           switch (question.type) {
             case "multiple_choice":
-              // Randomize multiple choice options
               const optionsWithIndex = question.options.map((option, index) => ({
                 text: option.text || option,
                 originalIndex: index,
@@ -229,7 +249,6 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
               }
 
             case "matching":
-              // Shuffle matching pairs (right side only)
               const rightItems = question.pairs.map((pair, index) => ({
                 ...pair,
                 originalIndex: index
@@ -242,7 +261,6 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
               }
 
             case "fill_in_blanks":
-              // No randomization needed for fill in blanks
               return question
 
             default:
@@ -264,7 +282,8 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
       randomizedQuiz: null,
       score: 0,
       totalPoints: 0,
-      earnedPoints: 0
+      earnedPoints: 0,
+      showReview: false
     }))
   }, [])
 
@@ -288,7 +307,7 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
       totalPoints += questionPoints
       
       const userAnswer = answers[questionId]
-      if (!userAnswer) return // No answer provided
+      if (!userAnswer) return
 
       switch (question.type) {
         case "multiple_choice":
@@ -316,7 +335,6 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
               }
             })
             
-            // Award points proportionally
             earnedPoints += Math.round((correctBlanks / totalBlanks) * questionPoints)
           }
           break
@@ -326,24 +344,20 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
             let correctMatches = 0
             const totalPairs = question.pairs.length
             
-            // Check each user answer against correct pairs
             Object.entries(userAnswer).forEach(([leftIndex, selectedRight]) => {
               const leftIndexNum = parseInt(leftIndex)
               const correctRight = question.pairs[leftIndexNum]?.right
               
-              // Check if the selected answer matches the correct answer
               if (selectedRight === correctRight) {
                 correctMatches++
               }
             })
             
-            // Award points proportionally
             earnedPoints += Math.round((correctMatches / totalPairs) * questionPoints)
           }
           break
 
         default:
-          // Default to multiple choice behavior
           const defaultCorrectIndex = question.options?.findIndex(opt => opt.isCorrect)
           if (userAnswer === defaultCorrectIndex) {
             earnedPoints += questionPoints
@@ -367,14 +381,26 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
       score, 
       totalPoints, 
       earnedPoints, 
-      completed: true 
+      completed: true,
+      showReview: true
     }))
 
-    if (score >= 70) {
+    // Only update database if:
+    // 1. User passes (score >= 70) AND
+    // 2. Either no existing score OR new score is higher than existing score
+    const shouldUpdateDatabase = score >= 70 && (!existingScore || score > existingScore)
+    
+    if (shouldUpdateDatabase && lessonData?.modules?.[activeModule]) {
       const moduleId = lessonData.modules[activeModule].id
-      await updateModuleProgress(moduleId, score)
+      const result = await updateModuleProgress(moduleId, score)
+      
+      if (result?.success && result?.updated) {
+        console.log('✅ Quiz score saved to database:', score)
+      } else if (result?.success && !result?.updated) {
+        console.log('📊 Quiz completed but score not saved (not an improvement)')
+      }
     }
-  }, [quizState.randomizedQuiz, quizState.selectedAnswers, currentQuiz, lessonData, activeModule, updateModuleProgress, calculateScore])
+  }, [quizState.randomizedQuiz, quizState.selectedAnswers, currentQuiz, lessonData, activeModule, updateModuleProgress, calculateScore, existingScore])
 
   const retryQuiz = useCallback(() => {
     setQuizState(prev => ({
@@ -385,7 +411,8 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
       score: 0,
       totalPoints: 0,
       earnedPoints: 0,
-      randomizedQuiz: null
+      randomizedQuiz: null,
+      showReview: false
     }))
   }, [])
 
@@ -394,18 +421,24 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
   }, [])
 
   const hideQuiz = useCallback(() => {
-    setQuizState(prev => ({ ...prev, showModuleQuiz: false }))
+    setQuizState(prev => ({ ...prev, showModuleQuiz: false, showReview: false }))
+  }, [])
+
+  const toggleReview = useCallback(() => {
+    setQuizState(prev => ({ ...prev, showReview: !prev.showReview }))
   }, [])
 
   return {
     quizState,
     currentQuiz,
+    existingScore,
     startQuiz,
     selectAnswer,
     submitQuiz,
     retryQuiz,
     showQuiz,
-    hideQuiz
+    hideQuiz,
+    toggleReview
   }
 }
 
@@ -544,7 +577,6 @@ export function useEnrollmentCheck(courseId) {
     
     try {
       setLoading(true)
-      // Use the same endpoint as CourseCard
       const response = await fetch(`/api/courses/enrollment?courseId=${courseId}`)
       const data = await response.json()
       

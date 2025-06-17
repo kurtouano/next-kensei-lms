@@ -1,3 +1,4 @@
+// Updated app/api/courses/[slug]/progress/module-progress/route.js
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { connectDb } from '@/lib/mongodb'
@@ -5,7 +6,7 @@ import Progress from '@/models/Progress'
 import User from '@/models/User'
 import Course from '@/models/Course'
 
-// PUT - Update module completion and quiz score
+// PUT - Update module completion and quiz score with improved logic
 export async function PUT(request, { params }) {
   try {
     await connectDb()
@@ -18,6 +19,8 @@ export async function PUT(request, { params }) {
     const { slug } = await params
     const body = await request.json()
     const { moduleId, quizScore } = body
+
+    console.log('📝 Module progress update request:', { slug, moduleId, quizScore })
 
     // Validate input
     if (!moduleId || quizScore === undefined) {
@@ -38,7 +41,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // FIXED: Find course by slug and populate modules
+    // Find course by slug and populate modules
     const course = await Course.findOne({ slug }).populate('modules')
     if (!course) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 })
@@ -68,51 +71,84 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Module not found in course' }, { status: 404 })
     }
 
-    // Update module completion - FIXED: Add null checks
+    // Find existing module completion record
     const existingModuleIndex = progress.completedModules.findIndex(
       module => module.module && module.module.toString() === moduleId
     )
 
-    if (existingModuleIndex >= 0) {
-      // Update existing module
-      progress.completedModules[existingModuleIndex].quizScore = quizScore
-      progress.completedModules[existingModuleIndex].completedAt = new Date()
-    } else {
-      // Add new completed module
-      progress.completedModules.push({
-        module: moduleId,
-        completedAt: new Date(),
-        quizScore
-      })
-    }
+    let shouldUpdate = false
+    let wasUpdated = false
 
-    // Update overall progress status
-    if (progress.completedModules.length === course.modules.length) {
-      // Check if all modules passed (score >= 70)
-      const allModulesPassed = progress.completedModules.every(
-        module => module.quizScore >= 70
-      )
+    if (existingModuleIndex >= 0) {
+      // Module already completed - check if we should update
+      const existingScore = progress.completedModules[existingModuleIndex].quizScore
       
-      if (allModulesPassed) {
-        progress.status = 'completed'
-        progress.isCompleted = true
-        progress.completedAt = new Date()
+      console.log('📊 Existing module found:', { existingScore, newScore: quizScore })
+      
+      // Update only if new score is higher than existing score
+      if (quizScore > existingScore) {
+        progress.completedModules[existingModuleIndex].quizScore = quizScore
+        progress.completedModules[existingModuleIndex].completedAt = new Date()
+        shouldUpdate = true
+        wasUpdated = true
+        console.log('✅ Score improved - updating database')
+      } else {
+        console.log('📉 Score not improved - skipping database update')
+        shouldUpdate = false
       }
     } else {
-      progress.status = 'in_progress'
+      // New module completion - only add if score >= 70
+      if (quizScore >= 70) {
+        progress.completedModules.push({
+          module: moduleId,
+          completedAt: new Date(),
+          quizScore
+        })
+        shouldUpdate = true
+        wasUpdated = true
+        console.log('🎉 First time passing - adding to database')
+      } else {
+        console.log('❌ Score below 70 - not adding to database')
+        shouldUpdate = false
+      }
     }
 
-    await progress.save()
+    // Only save if we made changes
+    if (shouldUpdate) {
+      // Update overall progress status
+      const passedModules = progress.completedModules.filter(module => module.quizScore >= 70)
+      
+      if (passedModules.length === course.modules.length) {
+        // Check if all modules passed (score >= 70)
+        const allModulesPassed = progress.completedModules.every(
+          module => module.quizScore >= 70
+        )
+        
+        if (allModulesPassed) {
+          progress.status = 'completed'
+          progress.isCompleted = true
+          progress.completedAt = new Date()
+          console.log('🏆 Course completed!')
+        }
+      } else {
+        progress.status = 'in_progress'
+      }
 
-    // Add progress to user's records if not already there
-    if (!user.progressRecords.includes(progress._id)) {
-      await User.findByIdAndUpdate(user._id, {
-        $addToSet: { progressRecords: progress._id }
-      })
+      await progress.save()
+      console.log('💾 Progress saved to database')
+
+      // Add progress to user's records if not already there
+      if (!user.progressRecords.includes(progress._id)) {
+        await User.findByIdAndUpdate(user._id, {
+          $addToSet: { progressRecords: progress._id }
+        })
+      }
     }
 
     return NextResponse.json({
       success: true,
+      updated: wasUpdated,
+      message: wasUpdated ? 'Quiz score updated successfully' : 'Quiz completed but score not saved (not an improvement)',
       completedModules: progress.completedModules
         .filter(module => module.module)
         .map(module => ({

@@ -1,5 +1,5 @@
-// components/ModulesLessonsStep.jsx
-import { memo, useRef } from "react"
+// components/ModulesLessonsStep.jsx - Fixed video duration handling
+import { memo, useRef, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, LoaderCircle, AlertCircle } from "lucide-react"
@@ -15,7 +15,8 @@ const ModulesLessonsStep = memo(({
   showValidation,
   renderValidationError 
 }) => {
-  const videoRef = useRef(null)
+  // Create refs for each video
+  const videoRefs = useRef({})
 
   // Destructure handlers for cleaner code
   const {
@@ -30,15 +31,52 @@ const ModulesLessonsStep = memo(({
     removeResource
   } = moduleHandlers
 
-  // Handle lesson video upload
+  // Handle lesson video upload with duration capture
   const handleLessonVideoUpload = async (file, moduleIndex, lessonIndex) => {
     try {
       const url = await handleFileUpload(file, `module-${moduleIndex}-lesson-${lessonIndex}-video`)
       updateLesson(moduleIndex, lessonIndex, "videoUrl", url)
+      
+      // Also get duration from the uploaded video file
+      getDurationFromFile(file, moduleIndex, lessonIndex)
     } catch (err) {
       console.error('Video upload failed:', err)
     }
   }
+
+  // Get video duration from file before upload
+  const getDurationFromFile = useCallback((file, moduleIndex, lessonIndex) => {
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    
+    video.onloadedmetadata = () => {
+      const duration = Math.round(video.duration)
+      console.log(`📹 Video duration captured: ${duration} seconds for Module ${moduleIndex + 1}, Lesson ${lessonIndex + 1}`)
+      updateLesson(moduleIndex, lessonIndex, "videoDuration", duration)
+      
+      // Clean up
+      window.URL.revokeObjectURL(video.src)
+    }
+    
+    video.onerror = () => {
+      console.error('Failed to load video metadata')
+      window.URL.revokeObjectURL(video.src)
+    }
+    
+    video.src = URL.createObjectURL(file)
+  }, [updateLesson])
+
+  // Handle video metadata loaded from uploaded URL
+  const handleVideoMetadataLoaded = useCallback((moduleIndex, lessonIndex) => {
+    const videoKey = `${moduleIndex}-${lessonIndex}`
+    const video = videoRefs.current[videoKey]
+    
+    if (video && video.duration) {
+      const duration = Math.round(video.duration)
+      console.log(`📹 Video duration from URL: ${duration} seconds for Module ${moduleIndex + 1}, Lesson ${lessonIndex + 1}`)
+      updateLesson(moduleIndex, lessonIndex, "videoDuration", duration)
+    }
+  }, [updateLesson])
 
   // Handle resource upload
   const handleResourceUpload = async (file, moduleIndex, lessonIndex, resourceIndex) => {
@@ -103,167 +141,192 @@ const ModulesLessonsStep = memo(({
             {/* Lessons */}
             <div className="space-y-4">
               <h4 className="font-medium">Lessons</h4>
-              {module.lessons.map((lesson, lessonIndex) => (
-                <div key={lessonIndex} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h5 className="font-medium">Lesson {lessonIndex + 1}</h5>
-                      {(showValidation && (validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_title`] || 
-                        validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_video`])) && (
-                        <div className="flex items-center mt-1 text-red-600 text-sm">
-                          <AlertCircle className="h-4 w-4 mr-1" />
-                          Missing required fields
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeLesson(moduleIndex, lessonIndex)}
-                      disabled={module.lessons.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {/* Lesson Title */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">
-                      Lesson Title <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_title`] ? 'border-red-500' : 'border-gray-300'}`}
-                      placeholder="e.g., Learning A, I, U, E, O"
-                      value={lesson.title}
-                      onChange={(e) => updateLesson(moduleIndex, lessonIndex, "title", e.target.value)}
-                    />
-                    {renderValidationError(`module_${moduleIndex}_lesson_${lessonIndex}_title`)}
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {/* Video Upload */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Video <span className="text-red-500">*</span>
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="file"
-                          accept="video/*"
-                          className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_video`] ? 'border-red-500' : 'border-gray-300'}`}
-                          onChange={async (e) => {
-                            const file = e.target.files[0]
-                            if (file) await handleLessonVideoUpload(file, moduleIndex, lessonIndex)
-                          }}
-                          disabled={uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`]}
-                        />
-                        {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
-                          <div className="flex items-center px-3">
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
+              {module.lessons.map((lesson, lessonIndex) => {
+                const videoKey = `${moduleIndex}-${lessonIndex}`
+                
+                return (
+                  <div key={lessonIndex} className="border rounded-lg p-4 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h5 className="font-medium">Lesson {lessonIndex + 1}</h5>
+                        {/* Show video duration if available */}
+                        {lesson.videoDuration > 0 && (
+                          <p className="text-sm text-green-600">
+                            Duration: {Math.floor(lesson.videoDuration / 60)}:{(lesson.videoDuration % 60).toString().padStart(2, '0')}
+                          </p>
+                        )}
+                        {(showValidation && (validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_title`] || 
+                          validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_video`])) && (
+                          <div className="flex items-center mt-1 text-red-600 text-sm">
+                            <AlertCircle className="h-4 w-4 mr-1" />
+                            Missing required fields
                           </div>
                         )}
                       </div>
-                      
-                      {/* Video Upload Progress */}
-                      {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
-                        <div className="space-y-1">
-                          <ProgressBar progress={uploadProgress[`module-${moduleIndex}-lesson-${lessonIndex}-video`] || 0} />
-                          <div className="text-xs text-gray-500 text-center">
-                            Uploading video... {uploadProgress[`module-${moduleIndex}-lesson-${lessonIndex}-video`] || 0}%
-                          </div>
-                        </div>
-                      )}
-                      
-                      {renderValidationError(`module_${moduleIndex}_lesson_${lessonIndex}_video`)}
-                      {lesson.videoUrl && !uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
-                        <video
-                          ref={videoRef}
-                          className="w-full rounded-md mt-2"
-                          controls
-                          onLoadedMetadata={() => {
-                            const duration = videoRef.current?.duration
-                            if (duration) {
-                              updateLesson(moduleIndex, lessonIndex, "videoDuration", Math.round(duration))
-                            }
-                          }}
-                        >
-                          <source src={lesson.videoUrl} type="video/mp4" />
-                          Your browser does not support the video tag.
-                        </video>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeLesson(moduleIndex, lessonIndex)}
+                        disabled={module.lessons.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
 
-                    {/* Resources */}
+                    {/* Lesson Title */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Resources</label>
-                      {lesson.resources.map((resource, resourceIndex) => (
-                        <div key={resourceIndex} className="grid gap-4 md:grid-cols-2 p-2 border rounded items-center">
-                          <div className="space-y-1">
-                            <input
-                              className={`rounded-md border p-2 w-full ${
-                                showValidation && validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_resource_${resourceIndex}_title`] 
-                                  ? 'border-red-500' 
-                                  : 'border-gray-300'
-                              }`}
-                              placeholder="Resource title"
-                              value={resource.title}
-                              onChange={(e) => updateResource(moduleIndex, lessonIndex, resourceIndex, "title", e.target.value)}
-                            />
-                            {renderValidationError(`module_${moduleIndex}_lesson_${lessonIndex}_resource_${resourceIndex}_title`)}
-                          </div>
+                      <label className="text-sm font-medium">
+                        Lesson Title <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_title`] ? 'border-red-500' : 'border-gray-300'}`}
+                        placeholder="e.g., Learning A, I, U, E, O"
+                        value={lesson.title}
+                        onChange={(e) => updateLesson(moduleIndex, lessonIndex, "title", e.target.value)}
+                      />
+                      {renderValidationError(`module_${moduleIndex}_lesson_${lessonIndex}_title`)}
+                    </div>
 
-                          <div className="flex row items-center gap-2">
-                            <input
-                              type="file"
-                              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
-                              className="rounded-md border border-gray-300 p-2 w-full"
-                              onChange={async (e) => {
-                                const file = e.target.files[0]
-                                if (file) await handleResourceUpload(file, moduleIndex, lessonIndex, resourceIndex)
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeResource(moduleIndex, lessonIndex, resourceIndex)}
-                              disabled={lesson.resources.length === 1}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-
-                          {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-resource-${resourceIndex}`] && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {/* Video Upload */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          Video <span className="text-red-500">*</span>
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="file"
+                            accept="video/*"
+                            className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_video`] ? 'border-red-500' : 'border-gray-300'}`}
+                            onChange={async (e) => {
+                              const file = e.target.files[0]
+                              if (file) {
+                                // Get duration from file first, then upload
+                                await handleLessonVideoUpload(file, moduleIndex, lessonIndex)
+                              }
+                            }}
+                            disabled={uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`]}
+                          />
+                          {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
                             <div className="flex items-center px-3">
                               <LoaderCircle className="h-4 w-4 animate-spin" />
                             </div>
                           )}
-
-                          {resource.fileUrl && (
-                            <a
-                              href={resource.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 underline text-sm col-span-4"
-                            >
-                              View uploaded file
-                            </a>
-                          )}
                         </div>
-                      ))}
+                        
+                        {/* Video Upload Progress */}
+                        {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
+                          <div className="space-y-1">
+                            <ProgressBar progress={uploadProgress[`module-${moduleIndex}-lesson-${lessonIndex}-video`] || 0} />
+                            <div className="text-xs text-gray-500 text-center">
+                              Uploading video... {uploadProgress[`module-${moduleIndex}-lesson-${lessonIndex}-video`] || 0}%
+                            </div>
+                          </div>
+                        )}
+                        
+                        {renderValidationError(`module_${moduleIndex}_lesson_${lessonIndex}_video`)}
+                        
+                        {/* Video Preview */}
+                        {lesson.videoUrl && !uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-video`] && (
+                          <div className="mt-2">
+                            <video
+                              ref={(el) => {
+                                if (el) videoRefs.current[videoKey] = el
+                              }}
+                              className="w-full rounded-md"
+                              controls
+                              preload="metadata"
+                              onLoadedMetadata={() => handleVideoMetadataLoaded(moduleIndex, lessonIndex)}
+                              onError={(e) => {
+                                console.error('Video loading error:', e)
+                              }}
+                            >
+                              <source src={lesson.videoUrl} type="video/mp4" />
+                              Your browser does not support the video tag.
+                            </video>
+                            
+                            {/* Duration Debug Info */}
+                            {lesson.videoDuration === 0 && (
+                              <p className="text-xs text-amber-600 mt-1">
+                                ⚠️ Duration not set. Please refresh if video loads correctly.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addResource(moduleIndex, lessonIndex)}
-                      >
-                        <Plus className="mr-2 h-4 w-4" /> Add Resource
-                      </Button>
+                      {/* Resources */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Resources</label>
+                        {lesson.resources.map((resource, resourceIndex) => (
+                          <div key={resourceIndex} className="grid gap-4 md:grid-cols-2 p-2 border rounded items-center">
+                            <div className="space-y-1">
+                              <input
+                                className={`rounded-md border p-2 w-full ${
+                                  showValidation && validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_resource_${resourceIndex}_title`] 
+                                    ? 'border-red-500' 
+                                    : 'border-gray-300'
+                                }`}
+                                placeholder="Resource title"
+                                value={resource.title}
+                                onChange={(e) => updateResource(moduleIndex, lessonIndex, resourceIndex, "title", e.target.value)}
+                              />
+                              {renderValidationError(`module_${moduleIndex}_lesson_${lessonIndex}_resource_${resourceIndex}_title`)}
+                            </div>
+
+                            <div className="flex row items-center gap-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip"
+                                className="rounded-md border border-gray-300 p-2 w-full"
+                                onChange={async (e) => {
+                                  const file = e.target.files[0]
+                                  if (file) await handleResourceUpload(file, moduleIndex, lessonIndex, resourceIndex)
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeResource(moduleIndex, lessonIndex, resourceIndex)}
+                                disabled={lesson.resources.length === 1}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            {uploadingFiles[`module-${moduleIndex}-lesson-${lessonIndex}-resource-${resourceIndex}`] && (
+                              <div className="flex items-center px-3">
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                              </div>
+                            )}
+
+                            {resource.fileUrl && (
+                              <a
+                                href={resource.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline text-sm col-span-4"
+                              >
+                                View uploaded file
+                              </a>
+                            )}
+                          </div>
+                        ))}
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addResource(moduleIndex, lessonIndex)}
+                        >
+                          <Plus className="mr-2 h-4 w-4" /> Add Resource
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
               <Button type="button" variant="outline" onClick={() => addLesson(moduleIndex)}>
                 <Plus className="mr-2 h-4 w-4" /> Add Lesson
               </Button>

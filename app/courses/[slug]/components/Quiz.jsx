@@ -1,7 +1,7 @@
-// components/Quiz.jsx - Minimalist version matching your design
+// components/Quiz.jsx - Enhanced with answer review and improved retake logic
 import { memo, useCallback, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Award, AlertCircle, ChevronLeft, RotateCcw } from "lucide-react"
+import { BookOpen, Award, AlertCircle, ChevronLeft, RotateCcw, Eye, EyeOff, CheckCircle, XCircle } from "lucide-react"
 
 export const QuizSection = memo(function QuizSection({
   quiz,
@@ -12,9 +12,11 @@ export const QuizSection = memo(function QuizSection({
   onRetryQuiz,
   onProceed,
   onBack,
-  isLastModule
+  isLastModule,
+  existingScore = null // Add existing score prop
 }) {
-  const { started, completed, score, selectedAnswers } = quizState
+  const { started, completed, score, selectedAnswers, showReview } = quizState
+  const [showAnswerReview, setShowAnswerReview] = useState(false)
 
   const isAllAnswered = useMemo(() => {
     if (!quiz?.questions) return false
@@ -63,14 +65,28 @@ export const QuizSection = memo(function QuizSection({
     }).length
   }, [quiz?.questions, selectedAnswers])
 
+  const toggleAnswerReview = useCallback(() => {
+    setShowAnswerReview(prev => !prev)
+  }, [])
+
   if (!started) {
     return (
       <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
         <BookOpen className="mx-auto mb-4 h-16 w-16 text-[#4a7c59]" />
         <h2 className="mb-2 text-2xl font-bold text-[#2c3e2d]">{quiz?.title}</h2>
-        <p className="mb-6 text-[#5c6d5e]">
+        <p className="mb-4 text-[#5c6d5e]">
           Complete this quiz with a score of 70% or higher to proceed.
         </p>
+        {existingScore && existingScore >= 70 && (
+          <div className="mb-4 p-3 bg-[#eef2eb] rounded-lg border border-[#4a7c59]">
+            <p className="text-sm text-[#2c3e2d]">
+              Your current best score: <span className="font-bold text-[#4a7c59]">{existingScore}%</span>
+            </p>
+            <p className="text-xs text-[#5c6d5e] mt-1">
+              You can retake this quiz to improve your score. Only higher scores will be saved.
+            </p>
+          </div>
+        )}
         <div className="flex justify-center gap-4">
           <Button
             variant="outline"
@@ -81,7 +97,7 @@ export const QuizSection = memo(function QuizSection({
             Back to Module
           </Button>
           <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" onClick={onStartQuiz}>
-            Start Quiz
+            {existingScore && existingScore >= 70 ? "Retake Quiz" : "Start Quiz"}
           </Button>
         </div>
       </div>
@@ -90,6 +106,8 @@ export const QuizSection = memo(function QuizSection({
 
   if (completed) {
     const isPassed = score >= 70
+    const isImprovement = existingScore && score > existingScore
+    const canProceed = score >= 70 || (existingScore && existingScore >= 70)
     
     return (
       <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
@@ -104,11 +122,70 @@ export const QuizSection = memo(function QuizSection({
             {score}%
           </span>
         </div>
-        <p className="mb-6 text-[#5c6d5e]">
+        
+        {/* Score status messages */}
+        {isPassed && isImprovement && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-700 font-medium">🎉 New Best Score!</p>
+            <p className="text-sm text-green-600">
+              Improved from {existingScore}% to {score}%
+            </p>
+          </div>
+        )}
+        
+        {isPassed && existingScore && !isImprovement && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-700 font-medium">Good job!</p>
+            <p className="text-sm text-blue-600">
+              Your best score remains {Math.max(existingScore, score)}%
+            </p>
+          </div>
+        )}
+        
+        {!isPassed && existingScore && existingScore >= 70 && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-700 font-medium">You can still proceed</p>
+            <p className="text-sm text-yellow-600">
+              Your previous score of {existingScore}% allows you to continue
+            </p>
+          </div>
+        )}
+
+        <p className="mb-4 text-[#5c6d5e]">
           {isPassed
             ? "Congratulations! You've passed the quiz."
-            : "You need to score at least 70% to proceed. Don't worry, you can try again!"}
+            : canProceed
+              ? "You didn't improve your score this time, but you can still proceed."
+              : "You need to score at least 70% to proceed. Don't worry, you can try again!"}
         </p>
+
+        {/* Answer Review Section */}
+        <div className="mb-6">
+          <Button
+            variant="outline"
+            className="border-[#4a7c59] text-[#4a7c59] mb-4"
+            onClick={toggleAnswerReview}
+          >
+            {showAnswerReview ? (
+              <>
+                <EyeOff className="mr-2 h-4 w-4" />
+                Hide Answer Review
+              </>
+            ) : (
+              <>
+                <Eye className="mr-2 h-4 w-4" />
+                Review Answers
+              </>
+            )}
+          </Button>
+
+          {showAnswerReview && (
+            <AnswerReview 
+              quiz={quiz} 
+              selectedAnswers={selectedAnswers}
+            />
+          )}
+        </div>
 
         <div className="flex justify-center gap-4">
           <Button
@@ -120,7 +197,7 @@ export const QuizSection = memo(function QuizSection({
             Back to Module
           </Button>
           
-          {isPassed ? (
+          {canProceed ? (
             <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" onClick={onProceed}>
               {isLastModule ? "Complete Course" : "Next Module"}
             </Button>
@@ -128,6 +205,18 @@ export const QuizSection = memo(function QuizSection({
             <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" onClick={onRetryQuiz}>
               <RotateCcw className="mr-1 h-4 w-4" />
               Retry Quiz
+            </Button>
+          )}
+          
+          {/* Always show retry option */}
+          {canProceed && (
+            <Button 
+              variant="outline"
+              className="border-[#4a7c59] text-[#4a7c59]" 
+              onClick={onRetryQuiz}
+            >
+              <RotateCcw className="mr-1 h-4 w-4" />
+              Try Again
             </Button>
           )}
         </div>
@@ -198,6 +287,208 @@ export const QuizSection = memo(function QuizSection({
   )
 })
 
+// Answer Review Component
+const AnswerReview = memo(function AnswerReview({ quiz, selectedAnswers }) {
+  const getQuestionResult = useCallback((question) => {
+    const questionId = question._id || question.id
+    const userAnswer = selectedAnswers[questionId]
+    
+    switch (question.type) {
+      case "multiple_choice":
+        const correctIndex = question.correctAnswer !== undefined 
+          ? question.correctAnswer 
+          : question.options.findIndex(opt => opt.isCorrect)
+        
+        return {
+          isCorrect: userAnswer === correctIndex,
+          userAnswer: userAnswer !== undefined ? question.options[userAnswer] : "No answer",
+          correctAnswer: question.options[correctIndex],
+          correctIndex
+        }
+
+      case "fill_in_blanks":
+        if (!question.blanks || typeof userAnswer !== 'object') {
+          return { isCorrect: false, userAnswer: "No answer", correctAnswer: "Multiple blanks" }
+        }
+        
+        let correctBlanks = 0
+        const totalBlanks = question.blanks.length
+        const blankDetails = []
+        
+        question.blanks.forEach((blank, index) => {
+          const userBlankAnswer = userAnswer[index]?.toLowerCase().trim() || ""
+          const correctAnswer = blank.answer.toLowerCase().trim()
+          const alternatives = blank.alternatives?.map(alt => alt.toLowerCase().trim()) || []
+          
+          const isBlankCorrect = userBlankAnswer === correctAnswer || alternatives.includes(userBlankAnswer)
+          if (isBlankCorrect) correctBlanks++
+          
+          blankDetails.push({
+            blank: index + 1,
+            userAnswer: userAnswer[index] || "No answer",
+            correctAnswer: blank.answer,
+            isCorrect: isBlankCorrect,
+            alternatives: blank.alternatives || []
+          })
+        })
+        
+        return {
+          isCorrect: correctBlanks === totalBlanks,
+          partialCredit: correctBlanks > 0,
+          score: `${correctBlanks}/${totalBlanks}`,
+          details: blankDetails
+        }
+
+      case "matching":
+        if (!question.pairs || typeof userAnswer !== 'object') {
+          return { isCorrect: false, userAnswer: "No answer", correctAnswer: "Multiple pairs" }
+        }
+        
+        let correctMatches = 0
+        const totalPairs = question.pairs.length
+        const matchingDetails = []
+        
+        Object.entries(userAnswer).forEach(([leftIndex, selectedRight]) => {
+          const leftIndexNum = parseInt(leftIndex)
+          const correctRight = question.pairs[leftIndexNum]?.right
+          const isMatchCorrect = selectedRight === correctRight
+          
+          if (isMatchCorrect) correctMatches++
+          
+          matchingDetails.push({
+            left: question.pairs[leftIndexNum]?.left || "Unknown",
+            userAnswer: selectedRight || "No answer",
+            correctAnswer: correctRight || "Unknown",
+            isCorrect: isMatchCorrect
+          })
+        })
+        
+        return {
+          isCorrect: correctMatches === totalPairs,
+          partialCredit: correctMatches > 0,
+          score: `${correctMatches}/${totalPairs}`,
+          details: matchingDetails
+        }
+
+      default:
+        return { isCorrect: false, userAnswer: "Unknown", correctAnswer: "Unknown" }
+    }
+  }, [selectedAnswers])
+
+  return (
+    <div className="bg-[#f8f7f4] border border-[#dce4d7] rounded-lg p-4 text-left">
+      <h3 className="font-semibold text-[#2c3e2d] mb-4 text-center">Answer Review</h3>
+      <div className="space-y-4">
+        {quiz.questions.map((question, index) => {
+          const result = getQuestionResult(question)
+          
+          return (
+            <div
+              key={question.id}
+              className={`p-4 rounded-lg border-2 ${
+                result.isCorrect
+                  ? "border-green-300 bg-green-50"
+                  : result.partialCredit
+                    ? "border-yellow-300 bg-yellow-50"
+                    : "border-red-300 bg-red-50"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-1">
+                  {result.isCorrect ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : result.partialCredit ? (
+                    <div className="h-5 w-5 rounded-full bg-yellow-500 flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">?</span>
+                    </div>
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600" />
+                  )}
+                </div>
+                
+                <div className="flex-1">
+                  <div className="font-medium text-[#2c3e2d] mb-2">
+                    <span className="text-[#4a7c59] font-bold">{index + 1}.</span> {question.question}
+                  </div>
+                  
+                  {question.type === "multiple_choice" && (
+                    <div className="space-y-2 text-sm">
+                      <div className={`p-2 rounded ${
+                        result.userAnswer === result.correctAnswer 
+                          ? "bg-green-100 text-green-800" 
+                          : "bg-red-100 text-red-800"
+                      }`}>
+                        <span className="font-medium">Your answer:</span> {result.userAnswer}
+                      </div>
+                      {result.userAnswer !== result.correctAnswer && (
+                        <div className="p-2 rounded bg-green-100 text-green-800">
+                          <span className="font-medium">Correct answer:</span> {result.correctAnswer}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {question.type === "fill_in_blanks" && result.details && (
+                    <div className="space-y-2 text-sm">
+                      <div className="font-medium text-[#2c3e2d]">
+                        Score: {result.score} 
+                        {result.partialCredit && !result.isCorrect && " (Partial Credit)"}
+                      </div>
+                      {result.details.map((detail, i) => (
+                        <div key={i} className={`p-2 rounded ${
+                          detail.isCorrect ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        }`}>
+                          <span className="font-medium">Blank {detail.blank}:</span> {detail.userAnswer}
+                          {!detail.isCorrect && (
+                            <div className="mt-1">
+                              <span className="font-medium">Correct:</span> {detail.correctAnswer}
+                              {detail.alternatives.length > 0 && (
+                                <span className="text-xs"> (or: {detail.alternatives.join(", ")})</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {question.type === "matching" && result.details && (
+                    <div className="space-y-2 text-sm">
+                      <div className="font-medium text-[#2c3e2d]">
+                        Score: {result.score}
+                        {result.partialCredit && !result.isCorrect && " (Partial Credit)"}
+                      </div>
+                      {result.details.map((detail, i) => (
+                        <div key={i} className={`p-2 rounded ${
+                          detail.isCorrect ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        }`}>
+                          <div>
+                            <span className="font-medium">{detail.left}</span> → {detail.userAnswer}
+                          </div>
+                          {!detail.isCorrect && (
+                            <div className="mt-1 text-xs">
+                              <span className="font-medium">Should be:</span> {detail.correctAnswer}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  <div className="mt-2 text-xs text-[#5c6d5e]">
+                    Points: {question.points || 1}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+})
+
+// Existing QuizQuestion components...
 const QuizQuestion = memo(function QuizQuestion({ question, qIndex, selectedAnswer, onSelectAnswer }) {
   const questionId = question._id || question.id
   const questionType = question.type
@@ -358,6 +649,23 @@ const MatchingQuestion = memo(function MatchingQuestion({ question, questionId, 
     onSelectAnswer(questionId, newAnswer)
   }, [questionId, selectedAnswer, onSelectAnswer])
 
+  // Randomize the right-side options
+  const shuffledRightOptions = useMemo(() => {
+    if (!question.pairs || question.pairs.length === 0) return []
+    
+    // Extract all right-side values and shuffle them
+    const rightValues = question.pairs.map(pair => pair.right)
+    const shuffled = [...rightValues]
+    
+    // Fisher-Yates shuffle algorithm
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    
+    return shuffled
+  }, [question.pairs])
+
   if (!question.pairs || question.pairs.length === 0) {
     return (
       <div className="text-red-500 text-xs">
@@ -390,9 +698,9 @@ const MatchingQuestion = memo(function MatchingQuestion({ question, questionId, 
               className="w-full p-3 border border-[#dce4d7] rounded focus:ring-1 focus:ring-[#4a7c59] focus:border-[#4a7c59] bg-white text-center h-[48px] flex items-center justify-center"
             >
               <option value="">Select match...</option>
-              {question.pairs.map((p, pIndex) => (
-                <option key={pIndex} value={p.right}>
-                  {p.right}
+              {shuffledRightOptions.map((rightValue, optionIndex) => (
+                <option key={optionIndex} value={rightValue}>
+                  {rightValue}
                 </option>
               ))}
             </select>

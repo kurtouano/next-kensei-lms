@@ -1,3 +1,4 @@
+// Updated page.jsx - Key changes to quiz hook usage
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react"
@@ -68,8 +69,9 @@ export default function LessonPage() {
   const [completedItems, setCompletedItems] = useState([])
   const [moduleQuizCompleted, setModuleQuizCompleted] = useState([])
 
-  // Specialized hooks
-  const { quizState, currentQuiz, startQuiz, selectAnswer, submitQuiz, retryQuiz, showQuiz, hideQuiz } = useQuiz(lessonData, activeModule, updateModuleProgress)
+  // UPDATED: Pass moduleQuizCompleted to quiz hook
+  const { quizState, currentQuiz, existingScore, startQuiz, selectAnswer, submitQuiz, retryQuiz, showQuiz, hideQuiz } = useQuiz(lessonData, activeModule, updateModuleProgress, moduleQuizCompleted)
+  
   const { reviewsState, fetchReviews, submitReview, deleteReview, updateReview, toggleForm } = useReviews(lessonSlug, session)
 
   // UI state
@@ -93,13 +95,19 @@ export default function LessonPage() {
 
   useEffect(() => {
     if (progress.completedModules.length > 0 && lessonData?.modules) {
-      const completedModuleIndices = progress.completedModules
-        .map(completedModule => 
-          lessonData.modules.findIndex(module => module.id === completedModule.moduleId)
-        )
-        .filter(index => index >= 0)
+      const completedModuleData = progress.completedModules
+        .map(completedModule => {
+          const moduleIndex = lessonData.modules.findIndex(module => module.id === completedModule.moduleId)
+          return moduleIndex >= 0 ? {
+            moduleIndex,
+            moduleId: completedModule.moduleId,
+            quizScore: completedModule.quizScore,
+            completedAt: completedModule.completedAt
+          } : null
+        })
+        .filter(Boolean)
       
-      setModuleQuizCompleted(completedModuleIndices)
+      setModuleQuizCompleted(completedModuleData)
     }
   }, [progress.completedModules, lessonData])
 
@@ -176,6 +184,11 @@ export default function LessonPage() {
     return moduleItems.every(item => completedItems.includes(item.id))
   }, [lessonData, activeModule, completedItems])
 
+  // Check if current module quiz is completed
+  const currentModuleQuizCompleted = useMemo(() => {
+    return moduleQuizCompleted.some(completed => completed.moduleIndex === activeModule)
+  }, [moduleQuizCompleted, activeModule])
+
   // ============ EVENT HANDLERS ============
 
   const handleSelectItem = useCallback((itemId, moduleIndex) => {
@@ -219,11 +232,8 @@ export default function LessonPage() {
   }, [completedItems, updateLessonProgress, isEnrolled])
 
   const handleNextModule = useCallback(() => {
-    if (quizState.score >= 70) {
+    if (quizState.score >= 70 || existingScore >= 70) {
       hideQuiz()
-      
-      // Add current module to completed quizzes
-      setModuleQuizCompleted(prev => [...prev, activeModule])
       
       // Move to next module if available
       if (lessonData?.modules?.[activeModule + 1]) {
@@ -232,7 +242,7 @@ export default function LessonPage() {
         if (firstVideo) setActiveVideoId(firstVideo.id)
       }
     }
-  }, [quizState.score, lessonData, activeModule, hideQuiz])
+  }, [quizState.score, existingScore, lessonData, activeModule, hideQuiz])
 
   const handleBackToModule = useCallback(() => {
     hideQuiz()
@@ -273,6 +283,7 @@ export default function LessonPage() {
                     onProceed={handleNextModule}
                     onBack={handleBackToModule}
                     isLastModule={activeModule === lessonData.modules.length - 1}
+                    existingScore={existingScore} // Pass existing score
                   />
                 ) : (
                   <EnrollmentPrompt course={lessonData} />
@@ -292,7 +303,7 @@ export default function LessonPage() {
                   )}
                   
                   {/* Only show module completion notification for enrolled users */}
-                  {isEnrolled && currentModuleCompleted && !moduleQuizCompleted.includes(activeModule) && (
+                  {isEnrolled && currentModuleCompleted && !currentModuleQuizCompleted && (
                     <ModuleCompleteNotif onTakeQuiz={showQuiz} />
                   )}
 
@@ -324,7 +335,7 @@ export default function LessonPage() {
                 activeModule={activeModule}
                 activeVideoId={activeVideoId}
                 completedItems={completedItems}
-                moduleQuizCompleted={moduleQuizCompleted}
+                moduleQuizCompleted={moduleQuizCompleted.map(m => m.moduleIndex)} // Convert to indices for compatibility
                 currentModuleCompleted={currentModuleCompleted}
                 showModuleQuiz={quizState.showModuleQuiz}
                 onSelectItem={handleSelectItem}
@@ -333,7 +344,7 @@ export default function LessonPage() {
                 onBackToModule={handleBackToModule}
                 isEnrolled={isEnrolled}
                 previewVideoUrl={lessonData.previewVideoUrl}
-                courseData={lessonData} // Pass the full course data
+                courseData={lessonData}
               />
             </div>
           </div>
