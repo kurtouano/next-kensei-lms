@@ -238,19 +238,20 @@ export const QuizSection = memo(function QuizSection({
       
       {/* Progress Section */}
       <div className="mb-6 bg-[#eef2eb] rounded-lg py-3 px-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-[#5c6d5e]">Progress:</span>
-          <span className="text-sm font-medium text-[#2c3e2d]">
+        <div className="flex items-center gap-3 w-full">
+          <span className="text-sm text-[#5c6d5e] whitespace-nowrap">Progress:</span>
+          {/* Progress bar container */}
+          <div className="flex-1 bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-[#4a7c59] h-2 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${quiz.questions.length > 0 ? (getAnsweredCount / quiz.questions.length) * 100 : 0}%` 
+              }}
+            />
+          </div>
+          <span className="text-sm font-medium text-[#2c3e2d] whitespace-nowrap">
             {getAnsweredCount} of {quiz.questions.length} answered
           </span>
-        </div>
-        <div className="w-full bg-[#dce4d7] rounded-full h-2">
-          <div 
-            className="bg-[#4a7c59] h-2 rounded-full transition-all duration-300"
-            style={{ 
-              width: `${quiz.questions.length > 0 ? (getAnsweredCount / quiz.questions.length) * 100 : 0}%` 
-            }}
-          />
         </div>
       </div>
 
@@ -518,7 +519,7 @@ const QuizQuestion = memo(function QuizQuestion({ question, qIndex, selectedAnsw
 
       {questionType === "fill_in_blanks" && (
         <div>
-          <p className="text-sm text-[#5c6d5e] mb-2 italic">Complete the sentence:</p>
+          <p className="text-sm text-[#5c6d5e] mb-2 italic">Fill in the blanks:</p>
           <FillInBlanksQuestion
             question={question}
             questionId={questionId}
@@ -624,7 +625,7 @@ const FillInBlanksQuestion = memo(function FillInBlanksQuestion({ question, ques
             placeholder="fill in"
             value={selectedAnswer?.[index] || ''}
             onChange={(e) => handleBlankChange(index, e.target.value)}
-            className="mx-1 px-2 py-1 border-b border-[#4a7c59] bg-transparent focus:outline-none focus:border-[#2c3e2d] w-28 text-center"
+            className="mx-1 px-2 border-b-[2px] border-[#4a7c59] bg-transparent focus:outline-none focus:border-[#2c3e2d] w-32 text-center"
           />
         )
       }
@@ -682,7 +683,7 @@ const MatchingQuestion = memo(function MatchingQuestion({ question, questionId, 
           {question.pairs.map((pair, index) => (
             <div
               key={index}
-              className="p-3 border border-[#dce4d7] rounded text-center font-medium text-lg bg-white h-[48px] flex items-center justify-center"
+              className="p-3 border-[1.5px] border-[#dce4d7] rounded-md text-center font-medium text-lg bg-white h-[48px] hover:border-[#4a7c59] flex items-center justify-center transition-all"
             >
               {pair.left}
             </div>
@@ -695,7 +696,7 @@ const MatchingQuestion = memo(function MatchingQuestion({ question, questionId, 
               key={index}
               value={selectedAnswer?.[index] || ""}
               onChange={(e) => handleMatchingAnswer(index, e.target.value)}
-              className="w-full p-3 border border-[#dce4d7] rounded focus:ring-1 focus:ring-[#4a7c59] focus:border-[#4a7c59] bg-white text-center h-[48px] flex items-center justify-center"
+              className="w-full p-3 border-[1.5px] border-[#dce4d7] rounded-md focus:outline-none hover:border-[#4a7c59]  bg-white text-center h-[48px] flex items-center justify-center"
             >
               <option value="">Select match...</option>
               {shuffledRightOptions.map((rightValue, optionIndex) => (
