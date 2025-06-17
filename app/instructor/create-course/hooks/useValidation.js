@@ -1,10 +1,84 @@
-// Clear validation error for specific field// hooks/useValidation.js
+// hooks/useValidation.js - Enhanced version with multiple question types validation
 import { useState, useCallback } from "react"
 import { AlertCircle } from "lucide-react"
 
 export const useValidation = (courseData, modules) => {
   const [validationErrors, setValidationErrors] = useState({})
   const [showValidation, setShowValidation] = useState(false)
+
+  // Helper function to validate multiple choice questions
+  const validateMultipleChoice = (question, moduleIndex, questionIndex, errors) => {
+    if (!question.question.trim()) {
+      errors[`quiz_${moduleIndex}_question_${questionIndex}`] = 
+        `Question ${questionIndex + 1} in Module ${moduleIndex + 1} is required`
+    }
+    
+    const hasValidOptions = question.options.some(opt => opt.text.trim())
+    if (!hasValidOptions) {
+      errors[`quiz_${moduleIndex}_question_${questionIndex}_options`] = 
+        `Question ${questionIndex + 1} in Module ${moduleIndex + 1} needs at least one option`
+    }
+    
+    const hasCorrectAnswer = question.options.some(opt => opt.isCorrect && opt.text.trim())
+    if (!hasCorrectAnswer) {
+      errors[`quiz_${moduleIndex}_question_${questionIndex}_correct`] = 
+        `Question ${questionIndex + 1} in Module ${moduleIndex + 1} needs a correct answer`
+    }
+  }
+
+  // Helper function to validate fill-in-the-blanks questions
+  const validateFillInBlanks = (question, moduleIndex, questionIndex, errors) => {
+    if (!question.question.trim()) {
+      errors[`quiz_${moduleIndex}_question_${questionIndex}`] = 
+        `Question ${questionIndex + 1} in Module ${moduleIndex + 1} is required`
+    }
+
+    // Check if question text contains blanks (___)
+    const blankCount = (question.question.match(/___/g) || []).length
+    if (blankCount === 0) {
+      errors[`quiz_${moduleIndex}_question_${questionIndex}_content`] = 
+        `Question ${questionIndex + 1} in Module ${moduleIndex + 1} must contain ___ (3 underscores) for blanks`
+    }
+
+    // Validate blank answers
+    if (!question.blanks || question.blanks.length === 0) {
+      errors[`quiz_${moduleIndex}_question_${questionIndex}_blanks`] = 
+        `Question ${questionIndex + 1} in Module ${moduleIndex + 1} needs at least one blank answer`
+    } else {
+      const hasValidBlanks = question.blanks.some(blank => blank.answer.trim())
+      if (!hasValidBlanks) {
+        errors[`quiz_${moduleIndex}_question_${questionIndex}_blanks`] = 
+          `Question ${questionIndex + 1} in Module ${moduleIndex + 1} needs valid answers for blanks`
+      }
+
+      // Check if number of blanks matches number of _____ in question
+      if (blankCount !== question.blanks.length) {
+        errors[`quiz_${moduleIndex}_question_${questionIndex}_content`] = 
+          `Question ${questionIndex + 1} in Module ${moduleIndex + 1} has ${blankCount} blanks in text but ${question.blanks.length} answers`
+      }
+    }
+  }
+
+  // Helper function to validate matching questions
+  const validateMatching = (question, moduleIndex, questionIndex, errors) => {
+    if (!question.question.trim()) {
+      errors[`quiz_${moduleIndex}_question_${questionIndex}`] = 
+        `Question ${questionIndex + 1} in Module ${moduleIndex + 1} is required`
+    }
+
+    if (!question.pairs || question.pairs.length < 2) {
+      errors[`quiz_${moduleIndex}_question_${questionIndex}_pairs`] = 
+        `Question ${questionIndex + 1} in Module ${moduleIndex + 1} needs at least 2 matching pairs`
+    } else {
+      const hasValidPairs = question.pairs.every(pair => 
+        pair.left.trim() && pair.right.trim() && pair.points > 0
+      )
+      if (!hasValidPairs) {
+        errors[`quiz_${moduleIndex}_question_${questionIndex}_pairs`] = 
+          `Question ${questionIndex + 1} in Module ${moduleIndex + 1} has incomplete matching pairs`
+      }
+    }
+  }
 
   // Validate specific step
   const validateStep = useCallback((step) => {
@@ -58,28 +132,36 @@ export const useValidation = (courseData, modules) => {
     }
     
     if (step === 2) {
-      // Quiz validation
+      // Enhanced Quiz validation with multiple question types
       modules.forEach((module, moduleIndex) => {
         if (!module.quiz.title.trim()) {
           errors[`quiz_${moduleIndex}_title`] = `Quiz title for Module ${moduleIndex + 1} is required`
         }
         
         module.quiz.questions.forEach((question, questionIndex) => {
-          if (!question.question.trim()) {
-            errors[`quiz_${moduleIndex}_question_${questionIndex}`] = 
-              `Question ${questionIndex + 1} in Module ${moduleIndex + 1} is required`
+          // Validate based on question type
+          switch (question.type) {
+            case "multiple_choice":
+              validateMultipleChoice(question, moduleIndex, questionIndex, errors)
+              break
+            
+            case "fill_in_blanks":
+              validateFillInBlanks(question, moduleIndex, questionIndex, errors)
+              break
+            
+            case "matching":
+              validateMatching(question, moduleIndex, questionIndex, errors)
+              break
+            
+            default:
+              // Default to multiple choice validation
+              validateMultipleChoice(question, moduleIndex, questionIndex, errors)
           }
-          
-          const hasValidOptions = question.options.some(opt => opt.text.trim())
-          if (!hasValidOptions) {
-            errors[`quiz_${moduleIndex}_question_${questionIndex}_options`] = 
-              `Question ${questionIndex + 1} in Module ${moduleIndex + 1} needs at least one option`
-          }
-          
-          const hasCorrectAnswer = question.options.some(opt => opt.isCorrect && opt.text.trim())
-          if (!hasCorrectAnswer) {
-            errors[`quiz_${moduleIndex}_question_${questionIndex}_correct`] = 
-              `Question ${questionIndex + 1} in Module ${moduleIndex + 1} needs a correct answer`
+
+          // Validate points (common for all question types)
+          if (!question.points || question.points < 1) {
+            errors[`quiz_${moduleIndex}_question_${questionIndex}_points`] = 
+              `Question ${questionIndex + 1} in Module ${moduleIndex + 1} must have at least 1 point`
           }
         })
       })
@@ -120,6 +202,7 @@ export const useValidation = (courseData, modules) => {
     setShowValidation(Object.keys(stepErrors).length > 0)
     return Object.keys(stepErrors).length === 0
   }, [validateStep])
+
   const clearValidationError = useCallback((errorKey) => {
     if (showValidation && validationErrors[errorKey]) {
       setValidationErrors(prev => {

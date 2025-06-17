@@ -181,7 +181,9 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
     completed: false,
     score: 0,
     selectedAnswers: {},
-    randomizedQuiz: null
+    randomizedQuiz: null,
+    totalPoints: 0,
+    earnedPoints: 0
   })
 
   const currentQuiz = useMemo(() => 
@@ -199,27 +201,52 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
     return newArray
   }, [])
 
-  // Randomize quiz when started
+  // Enhanced randomize quiz when started - handles different question types
   useEffect(() => {
     if (currentQuiz && quizState.started && !quizState.completed) {
       const randomized = {
         ...currentQuiz,
         questions: currentQuiz.questions.map((question) => {
-          const optionsWithIndex = question.options.map((option, index) => ({
-            text: option,
-            originalIndex: index
-          }))
+          switch (question.type) {
+            case "multiple_choice":
+              // Randomize multiple choice options
+              const optionsWithIndex = question.options.map((option, index) => ({
+                text: option.text || option,
+                originalIndex: index,
+                isCorrect: option.isCorrect
+              }))
 
-          const shuffledOptions = shuffleArray(optionsWithIndex)
-          const newCorrectAnswer = shuffledOptions.findIndex(
-            option => option.originalIndex === question.correctAnswer
-          )
+              const shuffledOptions = shuffleArray(optionsWithIndex)
+              const newCorrectAnswer = shuffledOptions.findIndex(
+                option => option.isCorrect
+              )
 
-          return {
-            ...question,
-            options: shuffledOptions.map(option => option.text),
-            correctAnswer: newCorrectAnswer,
-            originalCorrectAnswer: question.correctAnswer
+              return {
+                ...question,
+                options: shuffledOptions.map(option => option.text),
+                correctAnswer: newCorrectAnswer,
+                originalCorrectAnswer: question.correctAnswer
+              }
+
+            case "matching":
+              // Shuffle matching pairs (right side only)
+              const rightItems = question.pairs.map((pair, index) => ({
+                ...pair,
+                originalIndex: index
+              }))
+              
+              return {
+                ...question,
+                pairs: question.pairs,
+                shuffledRightItems: shuffleArray(rightItems)
+              }
+
+            case "fill_in_blanks":
+              // No randomization needed for fill in blanks
+              return question
+
+            default:
+              return question
           }
         })
       }
@@ -234,35 +261,120 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
       started: true, 
       completed: false, 
       selectedAnswers: {},
-      randomizedQuiz: null 
+      randomizedQuiz: null,
+      score: 0,
+      totalPoints: 0,
+      earnedPoints: 0
     }))
   }, [])
 
-  const selectAnswer = useCallback((questionId, answerIndex) => {
+  const selectAnswer = useCallback((questionId, answerValue) => {
     setQuizState(prev => ({
       ...prev,
-      selectedAnswers: { ...prev.selectedAnswers, [questionId]: answerIndex }
+      selectedAnswers: { ...prev.selectedAnswers, [questionId]: answerValue }
     }))
+  }, [])
+
+  // Enhanced scoring system for different question types
+  const calculateScore = useCallback((quiz, answers) => {
+    if (!quiz || !quiz.questions) return { score: 0, totalPoints: 0, earnedPoints: 0 }
+
+    let totalPoints = 0
+    let earnedPoints = 0
+
+    quiz.questions.forEach(question => {
+      const questionId = question._id || question.id
+      const questionPoints = question.points || 1
+      totalPoints += questionPoints
+      
+      const userAnswer = answers[questionId]
+      if (!userAnswer) return // No answer provided
+
+      switch (question.type) {
+        case "multiple_choice":
+          const correctIndex = question.correctAnswer !== undefined 
+            ? question.correctAnswer 
+            : question.options.findIndex(opt => opt.isCorrect)
+          
+          if (userAnswer === correctIndex) {
+            earnedPoints += questionPoints
+          }
+          break
+
+        case "fill_in_blanks":
+          if (question.blanks && typeof userAnswer === 'object') {
+            let correctBlanks = 0
+            const totalBlanks = question.blanks.length
+            
+            question.blanks.forEach((blank, index) => {
+              const userBlankAnswer = userAnswer[index]?.toLowerCase().trim()
+              const correctAnswer = blank.answer.toLowerCase().trim()
+              const alternatives = blank.alternatives?.map(alt => alt.toLowerCase().trim()) || []
+              
+              if (userBlankAnswer === correctAnswer || alternatives.includes(userBlankAnswer)) {
+                correctBlanks++
+              }
+            })
+            
+            // Award points proportionally
+            earnedPoints += Math.round((correctBlanks / totalBlanks) * questionPoints)
+          }
+          break
+
+        case "matching":
+          if (question.pairs && typeof userAnswer === 'object') {
+            let correctMatches = 0
+            const totalPairs = question.pairs.length
+            
+            // Check each user answer against correct pairs
+            Object.entries(userAnswer).forEach(([leftIndex, selectedRight]) => {
+              const leftIndexNum = parseInt(leftIndex)
+              const correctRight = question.pairs[leftIndexNum]?.right
+              
+              // Check if the selected answer matches the correct answer
+              if (selectedRight === correctRight) {
+                correctMatches++
+              }
+            })
+            
+            // Award points proportionally
+            earnedPoints += Math.round((correctMatches / totalPairs) * questionPoints)
+          }
+          break
+
+        default:
+          // Default to multiple choice behavior
+          const defaultCorrectIndex = question.options?.findIndex(opt => opt.isCorrect)
+          if (userAnswer === defaultCorrectIndex) {
+            earnedPoints += questionPoints
+          }
+      }
+    })
+
+    const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
+    
+    return { score, totalPoints, earnedPoints }
   }, [])
 
   const submitQuiz = useCallback(async () => {
     const quiz = quizState.randomizedQuiz || currentQuiz
     if (!quiz) return
 
-    const questions = quiz.questions
-    const correctAnswers = questions.reduce((acc, question) => (
-      quizState.selectedAnswers[question.id] === question.correctAnswer ? acc + 1 : acc
-    ), 0)
-
-    const score = Math.round((correctAnswers / questions.length) * 100)
+    const { score, totalPoints, earnedPoints } = calculateScore(quiz, quizState.selectedAnswers)
     
-    setQuizState(prev => ({ ...prev, score, completed: true }))
+    setQuizState(prev => ({ 
+      ...prev, 
+      score, 
+      totalPoints, 
+      earnedPoints, 
+      completed: true 
+    }))
 
     if (score >= 70) {
       const moduleId = lessonData.modules[activeModule].id
       await updateModuleProgress(moduleId, score)
     }
-  }, [quizState.randomizedQuiz, quizState.selectedAnswers, currentQuiz, lessonData, activeModule, updateModuleProgress])
+  }, [quizState.randomizedQuiz, quizState.selectedAnswers, currentQuiz, lessonData, activeModule, updateModuleProgress, calculateScore])
 
   const retryQuiz = useCallback(() => {
     setQuizState(prev => ({
@@ -271,6 +383,8 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress) {
       completed: false,
       selectedAnswers: {},
       score: 0,
+      totalPoints: 0,
+      earnedPoints: 0,
       randomizedQuiz: null
     }))
   }, [])

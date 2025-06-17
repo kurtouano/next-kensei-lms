@@ -1,4 +1,4 @@
-// hooks/useModules.js
+// hooks/useModules.js - Enhanced version with multiple question types
 import { useState, useCallback, useMemo } from "react"
 
 // Default module structure
@@ -25,16 +25,48 @@ const createDefaultQuiz = () => ({
   questions: [createDefaultQuestion()],
 })
 
-// Default question structure
-const createDefaultQuestion = () => ({
-  question: "",
-  options: [
-    { text: "", isCorrect: false },
-    { text: "", isCorrect: false },
-    { text: "", isCorrect: false },
-    { text: "", isCorrect: true },
-  ],
-})
+// Enhanced default question structure with support for multiple types
+const createDefaultQuestion = (type = "multiple_choice") => {
+  const baseQuestion = {
+    id: `question_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    question: "",
+    type,
+    points: 1
+  }
+
+  switch (type) {
+    case "multiple_choice":
+      return {
+        ...baseQuestion,
+        options: [
+          { text: "", isCorrect: false },
+          { text: "", isCorrect: false },
+          { text: "", isCorrect: false },
+          { text: "", isCorrect: true },
+        ],
+      }
+    
+    case "fill_in_blanks":
+      return {
+        ...baseQuestion,
+        blanks: [
+          { answer: "", alternatives: [""] }
+        ],
+      }
+    
+    case "matching":
+      return {
+        ...baseQuestion,
+        pairs: [
+          { left: "", right: "", points: 1 },
+          { left: "", right: "", points: 1 }
+        ],
+      }
+    
+    default:
+      return baseQuestion
+  }
+}
 
 export const useModules = () => {
   const [modules, setModules] = useState([createDefaultModule(1)])
@@ -139,15 +171,33 @@ export const useModules = () => {
     ))
   }, [updateModules])
 
-  // Quiz handlers
-  const addQuestion = useCallback((moduleIndex) => {
+  // Enhanced Quiz handlers with support for multiple question types
+  const addQuestion = useCallback((moduleIndex, questionType = "multiple_choice") => {
     updateModule(moduleIndex, "quiz", {
       ...modules[moduleIndex].quiz,
-      questions: [...modules[moduleIndex].quiz.questions, createDefaultQuestion()]
+      questions: [...modules[moduleIndex].quiz.questions, createDefaultQuestion(questionType)]
     })
   }, [modules, updateModule])
 
   const updateQuestion = useCallback((moduleIndex, questionIndex, field, value) => {
+    const currentQuestion = modules[moduleIndex].quiz.questions[questionIndex]
+    
+    // Handle question type changes
+    if (field === "type" && value !== currentQuestion.type) {
+      const newQuestion = createDefaultQuestion(value)
+      newQuestion.question = currentQuestion.question
+      newQuestion.points = currentQuestion.points
+      
+      const updatedQuiz = {
+        ...modules[moduleIndex].quiz,
+        questions: modules[moduleIndex].quiz.questions.map((question, j) =>
+          j === questionIndex ? newQuestion : question
+        )
+      }
+      updateModule(moduleIndex, "quiz", updatedQuiz)
+      return
+    }
+
     const updatedQuiz = {
       ...modules[moduleIndex].quiz,
       questions: modules[moduleIndex].quiz.questions.map((question, j) =>
@@ -172,6 +222,108 @@ export const useModules = () => {
     updateModule(moduleIndex, "quiz", updatedQuiz)
   }, [modules, updateModule])
 
+  // New handlers for fill-in-the-blanks questions
+  const addFillInBlank = useCallback((moduleIndex, questionIndex) => {
+    const currentQuestion = modules[moduleIndex].quiz.questions[questionIndex]
+    const updatedQuestion = {
+      ...currentQuestion,
+      blanks: [...(currentQuestion.blanks || []), { answer: "", alternatives: [""] }]
+    }
+    
+    const updatedQuiz = {
+      ...modules[moduleIndex].quiz,
+      questions: modules[moduleIndex].quiz.questions.map((question, j) =>
+        j === questionIndex ? updatedQuestion : question
+      )
+    }
+    updateModule(moduleIndex, "quiz", updatedQuiz)
+  }, [modules, updateModule])
+
+  const removeFillInBlank = useCallback((moduleIndex, questionIndex, blankIndex) => {
+    const currentQuestion = modules[moduleIndex].quiz.questions[questionIndex]
+    const updatedQuestion = {
+      ...currentQuestion,
+      blanks: currentQuestion.blanks.filter((_, k) => k !== blankIndex)
+    }
+    
+    const updatedQuiz = {
+      ...modules[moduleIndex].quiz,
+      questions: modules[moduleIndex].quiz.questions.map((question, j) =>
+        j === questionIndex ? updatedQuestion : question
+      )
+    }
+    updateModule(moduleIndex, "quiz", updatedQuiz)
+  }, [modules, updateModule])
+
+  const updateFillInBlank = useCallback((moduleIndex, questionIndex, blankIndex, field, value) => {
+    const currentQuestion = modules[moduleIndex].quiz.questions[questionIndex]
+    const updatedQuestion = {
+      ...currentQuestion,
+      blanks: currentQuestion.blanks.map((blank, k) =>
+        k === blankIndex ? { ...blank, [field]: value } : blank
+      )
+    }
+    
+    const updatedQuiz = {
+      ...modules[moduleIndex].quiz,
+      questions: modules[moduleIndex].quiz.questions.map((question, j) =>
+        j === questionIndex ? updatedQuestion : question
+      )
+    }
+    updateModule(moduleIndex, "quiz", updatedQuiz)
+  }, [modules, updateModule])
+
+  // New handlers for matching questions
+  const addMatchingPair = useCallback((moduleIndex, questionIndex) => {
+    const currentQuestion = modules[moduleIndex].quiz.questions[questionIndex]
+    const updatedQuestion = {
+      ...currentQuestion,
+      pairs: [...(currentQuestion.pairs || []), { left: "", right: "", points: 1 }]
+    }
+    
+    const updatedQuiz = {
+      ...modules[moduleIndex].quiz,
+      questions: modules[moduleIndex].quiz.questions.map((question, j) =>
+        j === questionIndex ? updatedQuestion : question
+      )
+    }
+    updateModule(moduleIndex, "quiz", updatedQuiz)
+  }, [modules, updateModule])
+
+  const removeMatchingPair = useCallback((moduleIndex, questionIndex, pairIndex) => {
+    const currentQuestion = modules[moduleIndex].quiz.questions[questionIndex]
+    const updatedQuestion = {
+      ...currentQuestion,
+      pairs: currentQuestion.pairs.filter((_, k) => k !== pairIndex)
+    }
+    
+    const updatedQuiz = {
+      ...modules[moduleIndex].quiz,
+      questions: modules[moduleIndex].quiz.questions.map((question, j) =>
+        j === questionIndex ? updatedQuestion : question
+      )
+    }
+    updateModule(moduleIndex, "quiz", updatedQuiz)
+  }, [modules, updateModule])
+
+  const updateMatchingPair = useCallback((moduleIndex, questionIndex, pairIndex, field, value) => {
+    const currentQuestion = modules[moduleIndex].quiz.questions[questionIndex]
+    const updatedQuestion = {
+      ...currentQuestion,
+      pairs: currentQuestion.pairs.map((pair, k) =>
+        k === pairIndex ? { ...pair, [field]: value } : pair
+      )
+    }
+    
+    const updatedQuiz = {
+      ...modules[moduleIndex].quiz,
+      questions: modules[moduleIndex].quiz.questions.map((question, j) =>
+        j === questionIndex ? updatedQuestion : question
+      )
+    }
+    updateModule(moduleIndex, "quiz", updatedQuiz)
+  }, [modules, updateModule])
+
   // Memoized handlers object
   const moduleHandlers = useMemo(() => ({
     // Module handlers
@@ -189,15 +341,27 @@ export const useModules = () => {
     updateResource,
     removeResource,
     
-    // Quiz handlers
+    // Quiz handlers (enhanced)
     addQuestion,
     updateQuestion,
     updateOption,
+    
+    // Fill-in-the-blanks handlers
+    addFillInBlank,
+    removeFillInBlank,
+    updateFillInBlank,
+    
+    // Matching handlers
+    addMatchingPair,
+    removeMatchingPair,
+    updateMatchingPair,
   }), [
     addModule, updateModule, removeModule,
     addLesson, updateLesson, removeLesson,
     addResource, updateResource, removeResource,
-    addQuestion, updateQuestion, updateOption
+    addQuestion, updateQuestion, updateOption,
+    addFillInBlank, removeFillInBlank, updateFillInBlank,
+    addMatchingPair, removeMatchingPair, updateMatchingPair
   ])
 
   return {

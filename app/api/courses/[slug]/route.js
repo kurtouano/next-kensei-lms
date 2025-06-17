@@ -1,4 +1,4 @@
-// app/api/courses/[slug]/route.js
+// app/api/courses/[slug]/route.js - Fixed to handle all question types
 import { connectDb } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Course from "@/models/Course";
@@ -95,15 +95,51 @@ export async function GET(request, { params }) {
           duration: lesson.duration || "5:00", // Default duration if not set
           resources: lesson.resources || [],
         })),
+        // ✅ FIXED: Properly handle all question types
         quiz: module.quiz && Array.isArray(module.quiz.questions)
           ? {
               title: module.quiz.title || `Module ${moduleIndex + 1} Quiz`,
-              questions: module.quiz.questions.map((question, qIndex) => ({
-                id: qIndex + 1,
-                question: question.question,
-                options: question.options.map(opt => opt.text),
-                correctAnswer: question.options.findIndex(opt => opt.isCorrect),
-              })),
+              questions: module.quiz.questions.map((question) => {
+                // Base question data that's common to all types
+                const baseQuestion = {
+                  _id: question._id, // Use MongoDB's _id
+                  id: question._id, // Also include as id for backwards compatibility
+                  type: question.type || "multiple_choice", // Include the question type
+                  question: question.question,
+                  points: question.points || 1,
+                };
+
+                // Add type-specific fields based on question type
+                switch (question.type) {
+                  case "multiple_choice":
+                    return {
+                      ...baseQuestion,
+                      options: question.options || [],
+                      correctAnswer: question.options?.findIndex(opt => opt.isCorrect) || 0,
+                    };
+
+                  case "fill_in_blanks":
+                    return {
+                      ...baseQuestion,
+                      blanks: question.blanks || [],
+                    };
+
+                  case "matching":
+                    return {
+                      ...baseQuestion,
+                      pairs: question.pairs || [],
+                    };
+
+                  default:
+                    // Default to multiple choice for unknown types
+                    return {
+                      ...baseQuestion,
+                      type: "multiple_choice",
+                      options: question.options || [],
+                      correctAnswer: question.options?.findIndex(opt => opt.isCorrect) || 0,
+                    };
+                }
+              }),
             }
           : null,
       })),
