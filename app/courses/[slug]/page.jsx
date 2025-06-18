@@ -1,4 +1,4 @@
-// Updated page.jsx - Key changes to quiz hook usage
+// Updated page.jsx - Key changes to include like functionality
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react"
@@ -7,8 +7,8 @@ import { useSession } from "next-auth/react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
-// Import custom hooks
-import { useProgress, useLessonData, useQuiz, useReviews, useEnrollmentCheck } from "./hooks/useCoursePreviewHook"
+// Import custom hooks - ADDED useCourseLike
+import { useProgress, useLessonData, useQuiz, useReviews, useEnrollmentCheck, useCourseLike } from "./hooks/useCoursePreviewHook"
 
 // Import components
 import { VideoPlayer } from "./components/VideoPlayer"
@@ -58,10 +58,24 @@ export default function LessonPage() {
   const lessonSlug = params.slug
   const { data: session } = useSession()
 
+  // DEBUG: Add console logs
+  console.log('=== DEBUG INFO ===')
+  console.log('session:', session)
+  console.log('session?.user:', session?.user)
+  console.log('session?.user?.email:', session?.user?.email)
+  console.log('lessonSlug:', lessonSlug)
+  console.log('==================')
+
   // Core hooks
   const { lessonData, loading: lessonLoading, error: lessonError } = useLessonData(lessonSlug)
   const { isEnrolled, loading: enrollmentLoading, checkEnrollment } = useEnrollmentCheck(lessonData?.id)
   const { progress, loading: progressLoading, updateLessonProgress, updateVideoProgress, updateModuleProgress, getLessonCurrentTime } = useProgress(lessonSlug)
+  
+  // ADDED: Like functionality hook
+  const { likeState, toggleLike } = useCourseLike(lessonSlug, session)
+  
+  // DEBUG: Log the like state
+  console.log('likeState from hook:', likeState)
   
   // Navigation state
   const [activeModule, setActiveModule] = useState(0)
@@ -250,7 +264,8 @@ export default function LessonPage() {
 
   // ============ LOADING STATES ============
 
-  if (lessonLoading || progressLoading || enrollmentLoading) {
+  // Add session loading check
+  if (session === undefined || lessonLoading || progressLoading || enrollmentLoading) {
     return <LoadingLayout />
   }
 
@@ -307,12 +322,17 @@ export default function LessonPage() {
                     <ModuleCompleteNotif onTakeQuiz={showQuiz} />
                   )}
 
+                  {/* UPDATED: CourseInfo with like functionality */}
                   <CourseInfo 
                     lesson={lessonData}
                     showFullDescription={showFullDescription}
                     onToggleDescription={() => setShowFullDescription(!showFullDescription)}
                     progress={isEnrolled ? progress.courseProgress || 0 : 0}
                     isEnrolled={isEnrolled}
+                    // ADDED: Like functionality props
+                    likeState={likeState}
+                    onToggleLike={toggleLike}
+                    isLoggedIn={!!session?.user}
                   />
 
                   <ReviewSection

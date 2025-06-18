@@ -121,6 +121,14 @@ const CourseSchema = new mongoose.Schema(
         default: Date.now,
       },
     },
+    likedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
+    likeCount: {
+      type: Number,
+      default: 0,
+    },
     tags: [
       {
         type: String,

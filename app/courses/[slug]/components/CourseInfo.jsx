@@ -8,7 +8,9 @@ import {
   ThumbsUp, 
   Share2, 
   User,
-  Calendar
+  Calendar,
+  Heart,
+  Loader2
 } from "lucide-react"
 
 export const CourseInfo = memo(function CourseInfo({ 
@@ -16,11 +18,52 @@ export const CourseInfo = memo(function CourseInfo({
   showFullDescription, 
   onToggleDescription, 
   progress,
-  isEnrolled
+  isEnrolled,
+  // NEW: Like functionality props
+  likeState,
+  onToggleLike,
+  isLoggedIn
 }) {
   // Check if description is long enough to need truncation
   const isDescriptionLong = lesson.fullDescription?.length > 200
   const shouldShowToggle = isDescriptionLong
+
+  const handleLikeClick = () => {
+    if (!isLoggedIn) {
+      alert('Please log in to like courses')
+      return
+    }
+    onToggleLike()
+  }
+
+  const handleShareClick = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: lesson.title,
+        text: lesson.shortDescription,
+        url: window.location.href,
+      }).catch(console.error)
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        alert('Course link copied to clipboard!')
+      }).catch(() => {
+        alert('Failed to copy link')
+      })
+    }
+  }
+
+  // Format like count for display
+  const formatLikeCount = (count) => {
+    if (count >= 1000000) {
+      return `${(count / 1000000).toFixed(1)}M`
+    } else if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}K`
+    }
+    return count.toString()
+  }
+
+  const likeCount = likeState?.likeCount || 0
 
   return (
     <div className="mb-6 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm">
@@ -102,17 +145,58 @@ export const CourseInfo = memo(function CourseInfo({
         )}
       </div>
 
+      {/* Error message for like functionality */}
+      {likeState?.error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-600">{likeState.error}</p>
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3">
-        <Button variant="outline" className="border-[#4a7c59] text-[#4a7c59]">
-          <ThumbsUp className="mr-2 h-4 w-4" />
-          Like
-        </Button>
-        <Button variant="outline" className="border-[#4a7c59] text-[#4a7c59]">
+        {/* OPTION 2: Like count integrated with the button */}
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className={`border-[#4a7c59] transition-all ${
+              likeState?.isLiked 
+                ? "bg-[#4a7c59] text-white hover:bg-[#3a6147] hover:text-white" 
+                : "text-[#4a7c59] hover:bg-[#eef2eb] hover:text-[#4a7c59] hover:border-[#4a7c59]"
+            }`}
+            onClick={handleLikeClick}
+            disabled={likeState?.loading}
+          >
+            {likeState?.loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <ThumbsUp className={`mr-2 h-4 w-4 ${likeState?.isLiked ? "fill-current" : ""}`} />
+                {likeState?.isLiked ? "Liked" : "Like"}
+                {likeCount > 0 && (
+                  <span className={`text-sm font-medium ml-1 ${
+                    likeState?.isLiked ? "text-white" : "text-[#4a7c59]"
+                  }`}>
+                    ({formatLikeCount(likeCount)})
+                  </span>
+                )}
+              </>
+            )}
+          </Button>
+        </div>
+
+        <Button 
+          variant="outline" 
+          className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb] hover:text-[#4a7c59] hover:border-[#4a7c59]"
+          onClick={handleShareClick}
+        >
           <Share2 className="mr-2 h-4 w-4" />
           Share
         </Button>
       </div>
+
     </div>
   )
 })

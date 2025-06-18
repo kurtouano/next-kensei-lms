@@ -1,3 +1,4 @@
+// models/Rating.js
 import mongoose from "mongoose";
 
 const RatingSchema = new mongoose.Schema(
@@ -18,12 +19,10 @@ const RatingSchema = new mongoose.Schema(
       max: 5,
       required: true,
     },
-    isLiked: {
-      type: Boolean,
-      default: false,
-    },
     review: {
       type: String,
+      required: true,
+      maxlength: [500, "Review cannot exceed 500 characters"],
     },
   },
   { timestamps: true }

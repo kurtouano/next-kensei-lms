@@ -1,4 +1,4 @@
-// Complete enhanced useCoursePreviewHook.js with all improvements
+// Complete enhanced useCoursePreviewHook.js with all improvements including like functionality
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useSession } from "next-auth/react"
 
@@ -608,5 +608,103 @@ export function useEnrollmentCheck(courseId) {
     loading,
     error,
     checkEnrollment
+  }
+}
+
+// ============ COURSE LIKE HOOK ============
+export function useCourseLike(courseSlug, session) {
+  const [likeState, setLikeState] = useState({
+    isLiked: false,
+    likeCount: 0,
+    loading: false,
+    error: null
+  })
+
+  // Fetch like status when component mounts
+  const fetchLikeStatus = useCallback(async () => {
+    if (!courseSlug) return
+
+    try {
+      setLikeState(prev => ({ ...prev, loading: true, error: null }))
+      
+      const response = await fetch(`/api/courses/${courseSlug}/like`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setLikeState(prev => ({
+          ...prev,
+          isLiked: data.isLiked,
+          likeCount: data.likeCount,
+          loading: false
+        }))
+      } else {
+        setLikeState(prev => ({
+          ...prev,
+          error: data.error || 'Failed to fetch like status',
+          loading: false
+        }))
+      }
+    } catch (error) {
+      console.error('Error fetching like status:', error)
+      setLikeState(prev => ({
+        ...prev,
+        error: 'Failed to fetch like status',
+        loading: false
+      }))
+    }
+  }, [courseSlug])
+
+  // Toggle like/unlike
+  const toggleLike = useCallback(async () => {
+    if (!session?.user || !courseSlug) {
+      setLikeState(prev => ({ ...prev, error: 'Please log in to like courses' }))
+      return
+    }
+
+    try {
+      setLikeState(prev => ({ ...prev, loading: true, error: null }))
+      
+      const response = await fetch(`/api/courses/${courseSlug}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setLikeState(prev => ({
+          ...prev,
+          isLiked: data.isLiked,
+          likeCount: data.likeCount,
+          loading: false
+        }))
+      } else {
+        setLikeState(prev => ({
+          ...prev,
+          error: data.error || 'Failed to toggle like',
+          loading: false
+        }))
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error)
+      setLikeState(prev => ({
+        ...prev,
+        error: 'Failed to toggle like',
+        loading: false
+      }))
+    }
+  }, [session, courseSlug])
+
+  // Fetch like status on mount and when session changes
+  useEffect(() => {
+    fetchLikeStatus()
+  }, [fetchLikeStatus])
+
+  return {
+    likeState,
+    toggleLike,
+    fetchLikeStatus
   }
 }
