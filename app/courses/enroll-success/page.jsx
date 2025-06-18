@@ -2,7 +2,7 @@
 
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
-import { CheckCircle, ArrowRight, Mail } from 'lucide-react'
+import { CheckCircle, ArrowRight, Award, BookOpen, Video, Download } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
 
@@ -60,114 +60,90 @@ function PaymentSuccessContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#eef2eb] to-white py-8 sm:py-12">
-      <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto">
-          {/* Success Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-[#eef2eb] overflow-hidden">
-            {/* Success Header */}
-            <div className="bg-gradient-to-r from-[#4a7c59] to-[#3a6147] text-white p-6 sm:p-8 text-center">
-              <div className="mb-4">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto backdrop-blur-sm">
-                  <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                </div>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-                Payment Successful!
-              </h1>
-              <p className="text-white/90 text-sm sm:text-base">
-                Welcome to your learning journey. You're all set to start!
-              </p>
-            </div>
+    <div className="min-h-[85vh] bg-gradient-to-br from-[#f8f9f4] to-white flex items-center justify-center py-8 px-4">
+      <div className="max-w-lg w-full">
+        {/* Success Card */}
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden text-center">
+          
+          {/* Success Icon */}
+          <div className="pt-8 pb-6">
+            <CheckCircle className="mx-auto mb-4 h-14 w-14 text-[#4a7c59]" />
+            <h1 className="mb-4 text-2xl font-bold text-[#2c3e2d]">Payment Successful!</h1>
+            
+            <p className="text-[#5c6d5e] px-6">
+              Thank you for subscribing to{' '}
+              <span className="font-semibold text-[#2c3e2d]">
+                {loading ? (
+                  <span className="inline-block w-32 h-4 bg-[#dce4d7] rounded animate-pulse"></span>
+                ) : (
+                  orderData.courseName
+                )}
+              </span>
+              . You now have full access to the course.
+            </p>
+          </div>
 
-            {/* Course Details */}
-            <div className="p-6 sm:p-8">
-              <div className="bg-[#eef2eb] rounded-xl p-6 mb-6">
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <span className="text-[#4a7c59] font-medium">Course Name:</span>
-                    <span className="font-semibold text-[#2c3e2d] sm:text-right">
-                      {loading ? (
-                        <div className="animate-pulse bg-[#4a7c59]/20 h-4 w-32 rounded"></div>
-                      ) : (
-                        orderData.courseName
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <span className="text-[#4a7c59] font-medium">Amount Paid:</span>
-                    <span className="font-bold text-xl text-[#4a7c59]">
-                      {loading ? (
-                        <div className="animate-pulse bg-[#4a7c59]/20 h-6 w-16 rounded"></div>
-                      ) : (
-                        orderData.amount
-                      )}
-                    </span>
-                  </div>
-                  <div className="pt-4 border-t border-[#4a7c59]/20">
-                    <p className="text-sm text-[#4a7c59] flex items-start">
-                      <CheckCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                      You now have lifetime access to all course materials, including future updates.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button 
-                  onClick={handleStartLearning}
-                  className="w-full bg-[#4a7c59] hover:bg-[#3a6147] text-white py-3 px-6 rounded-lg transition-colors font-medium flex items-center justify-center group"
-                >
-                  Start Learning Now
-                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                </button>
-                
-                <button 
-                  onClick={handleGoToDashboard}
-                  className="w-full bg-white hover:bg-[#eef2eb] text-[#4a7c59] py-3 px-6 rounded-lg transition-colors font-medium border-2 border-[#4a7c59]"
-                >
-                  Go to Dashboard
-                </button>
-              </div>
-
-              {/* What's Next Section */}
-              <div className="mt-8 p-6 bg-gradient-to-r from-[#eef2eb] to-white rounded-xl border border-[#4a7c59]/10">
-                <h4 className="font-semibold text-[#2c3e2d] mb-3">What's Next?</h4>
-                <ul className="space-y-2 text-sm text-[#4a7c59]">
-                  <li className="flex items-start">
-                    <CheckCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                    Access your course materials anytime from your dashboard
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                    Track your progress and earn certificates
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                    Join our community discussions and get support
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Support Footer */}
-            <div className="bg-[#eef2eb] p-6 border-t border-[#4a7c59]/10">
-              <div className="text-center">
-                <p className="text-[#4a7c59] text-sm mb-2">
-                  Need help getting started?
+          {/* Course Benefits */}
+          <div className="px-6 pb-6">
+            <div className="bg-[#eef2eb] rounded-xl p-6">
+              
+              {/* Price Paid*/}
+              <div className="bg-[#eef2eb] rounded-lg text-center pb-3">
+                <p className="text-sm text-[#5c6d5e] mb-1">Total Paid</p>
+                <p className="text-2xl font-bold text-[#2c3e2d]">
+                  {loading ? (
+                    <span className="inline-block w-16 h-6 bg-[#dce4d7] rounded animate-pulse"></span>
+                  ) : (
+                    orderData.amount
+                  )}
                 </p>
-                <a 
-                  href="mailto:support@lmskensei.com" 
-                  className="inline-flex items-center text-[#4a7c59] hover:text-[#3a6147] font-medium text-sm transition-colors"
-                >
-                  <Mail className="w-4 h-4 mr-1" />
-                  Contact Support
-                </a>
+              </div>
+
+              <p className="text-sm text-[#5c6d5e] text-center mb-6">
+                You now have lifetime access to all course content
+              </p>
+              
+              <div className="space-y-3 text-sm text-[#5c6d5e]">
+                <div className="flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-3 text-[#4a7c59] flex-shrink-0" />
+                  <span>Lifetime access to all video lessons</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-3 text-[#4a7c59] flex-shrink-0" />
+                  <span>Downloadable resources and materials</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-3 text-[#4a7c59] flex-shrink-0" />
+                  <span>Interactive quizzes and exercises</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-3 text-[#4a7c59] flex-shrink-0" />
+                  <span>Certificate upon completion</span>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Action Buttons */}
+          <div className="px-6 pb-8">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={handleStartLearning}
+                className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147] text-white py-3 px-6 rounded-lg transition-colors font-medium flex items-center justify-center"
+              >
+                Start Learning
+              </button>
+              
+              <button 
+                onClick={handleGoToDashboard}
+                className="flex-1 bg-white hover:bg-[#eef2eb] text-[#4a7c59] py-3 px-6 rounded-lg transition-colors font-medium border border-[#4a7c59]"
+              >
+                My Learning
+              </button>
+            </div>
+          </div>
         </div>
+        
       </div>
     </div>
   )
@@ -176,40 +152,46 @@ function PaymentSuccessContent() {
 // Loading fallback component
 function PaymentSuccessLoading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#eef2eb] to-white py-8 sm:py-12">
-      <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg border border-[#eef2eb] overflow-hidden">
-            {/* Loading Header */}
-            <div className="bg-gradient-to-r from-[#4a7c59] to-[#3a6147] text-white p-6 sm:p-8 text-center">
-              <div className="mb-4">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/30 rounded-full"></div>
-                </div>
-              </div>
-              <div className="animate-pulse space-y-3">
-                <div className="h-8 bg-white/20 rounded w-3/4 mx-auto"></div>
-                <div className="h-4 bg-white/20 rounded w-full mx-auto"></div>
-              </div>
+    <div className="min-h-[60vh] bg-gradient-to-br from-[#f8f9f4] to-white flex items-center justify-center py-8 px-4">
+      <div className="max-w-lg w-full">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden text-center">
+          
+          {/* Loading Icon */}
+          <div className="pt-8 pb-6">
+            <div className="w-14 h-14 bg-[#4a7c59]/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <div className="w-10 h-10 bg-[#4a7c59]/20 rounded-full"></div>
             </div>
+            
+            <div className="space-y-3 px-6">
+              <div className="h-8 bg-[#dce4d7] rounded w-3/4 mx-auto animate-pulse"></div>
+              <div className="h-4 bg-[#dce4d7] rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-[#dce4d7] rounded w-2/3 mx-auto animate-pulse"></div>
+            </div>
+          </div>
 
-            {/* Loading Content */}
-            <div className="p-6 sm:p-8">
-              <div className="bg-[#eef2eb] rounded-xl p-6 mb-6">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-6 bg-[#4a7c59]/20 rounded w-1/3"></div>
-                  <div className="space-y-3">
-                    <div className="h-4 bg-[#4a7c59]/20 rounded"></div>
-                    <div className="h-4 bg-[#4a7c59]/20 rounded"></div>
-                    <div className="h-4 bg-[#4a7c59]/20 rounded w-3/4"></div>
-                  </div>
-                </div>
+          {/* Loading Content */}
+          <div className="px-6 pb-6">
+            <div className="bg-[#eef2eb] rounded-xl p-6">
+              <div className="bg-[#eef2eb] rounded-lg text-center pb-3">
+                <div className="h-4 bg-[#dce4d7] rounded w-1/3 mx-auto mb-2 animate-pulse"></div>
+                <div className="h-6 bg-[#dce4d7] rounded w-1/4 mx-auto animate-pulse"></div>
               </div>
               
+              <div className="h-4 bg-[#dce4d7] rounded w-2/3 mx-auto mb-6 animate-pulse"></div>
+              
               <div className="space-y-3">
-                <div className="h-12 bg-[#4a7c59]/20 rounded animate-pulse"></div>
-                <div className="h-12 bg-[#4a7c59]/10 rounded animate-pulse"></div>
+                <div className="h-4 bg-[#dce4d7] rounded animate-pulse"></div>
+                <div className="h-4 bg-[#dce4d7] rounded animate-pulse"></div>
+                <div className="h-4 bg-[#dce4d7] rounded animate-pulse"></div>
+                <div className="h-4 bg-[#dce4d7] rounded animate-pulse"></div>
               </div>
+            </div>
+          </div>
+
+          <div className="px-6 pb-8">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 h-12 bg-[#4a7c59]/20 rounded animate-pulse"></div>
+              <div className="flex-1 h-12 bg-[#dce4d7] rounded animate-pulse"></div>
             </div>
           </div>
         </div>
