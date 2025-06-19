@@ -1,4 +1,4 @@
-// hooks/useCourseData.js
+// hooks/useCourseData.js - Updated to support pre-filling data
 import { useState, useCallback } from "react"
 
 // Default course data structure
@@ -76,10 +76,16 @@ export const useCourseData = () => {
     })
   }, [])
 
+  // NEW: Function to set all course data at once (for editing)
+  const setCourseDataComplete = useCallback((data) => {
+    setCourseData(data)
+  }, [])
+
   return {
     courseData,
     updateCourseData,
     updateCourseArray,
+    setCourseData: setCourseDataComplete, // Expose setCourseData for editing
     LIMITS,
     generateSlug
   }

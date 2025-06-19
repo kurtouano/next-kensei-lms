@@ -1,20 +1,23 @@
 import { memo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Eye } from "lucide-react"
+import { Eye, Save } from "lucide-react"
 
 const ReviewStep = memo(({ 
   courseData, 
   modules, 
   totalLessons, 
   isSubmitting, 
-  handleSubmit 
+  handleSubmit,
+  isEditMode = false
 }) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Review & Publish</CardTitle>
-        <CardDescription>Review your course before publishing</CardDescription>
+        <CardTitle>{isEditMode ? 'Review & Update' : 'Review & Publish'}</CardTitle>
+        <CardDescription>
+          {isEditMode ? 'Review your changes before updating the course' : 'Review your course before publishing'}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
@@ -48,20 +51,50 @@ const ReviewStep = memo(({
           </div>
         </div>
 
-        {/* Publish Button */}
+        {/* Action Buttons */}
         <div className="flex gap-4">
-          <Button 
-            onClick={() => handleSubmit(false)} 
-            className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147]"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Publishing..." : (
-              <>
-                <Eye className="mr-2 h-4 w-4" />
-                Publish Course
-              </>
-            )}
-          </Button>
+          {isEditMode ? (
+            <>
+              <Button 
+                onClick={() => handleSubmit(true)} 
+                variant="outline"
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Saving..." : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save as Draft
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={() => handleSubmit(false)} 
+                className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147]"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Updating..." : (
+                  <>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Update & Publish
+                  </>
+                )}
+              </Button>
+            </>
+          ) : (
+            <Button 
+              onClick={() => handleSubmit(false)} 
+              className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Publishing..." : (
+                <>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Publish Course
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

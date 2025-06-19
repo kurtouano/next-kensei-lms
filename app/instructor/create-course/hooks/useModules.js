@@ -1,4 +1,4 @@
-// hooks/useModules.js - Enhanced version with multiple question types
+// hooks/useModules.js - Updated to support pre-filling data
 import { useState, useCallback, useMemo } from "react"
 
 // Default module structure
@@ -79,6 +79,11 @@ export const useModules = () => {
       }
       return updater
     })
+  }, [])
+
+  // NEW: Function to set all modules data at once (for editing)
+  const setModulesComplete = useCallback((modulesData) => {
+    setModules(modulesData)
   }, [])
 
   // Module handlers
@@ -366,6 +371,7 @@ export const useModules = () => {
 
   return {
     modules,
-    moduleHandlers
+    moduleHandlers,
+    setModules: setModulesComplete // Expose setModules for editing
   }
 }

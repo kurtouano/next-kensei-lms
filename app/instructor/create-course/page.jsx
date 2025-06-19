@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Header } from "@/components/header"
+import { useRouter } from "next/navigation"
 
 // Components - Direct imports
 import ProgressSteps from "./components/ProgressSteps"
@@ -21,17 +22,47 @@ import { useFileUpload } from "./hooks/useFileUpload"
 import { useSubmission } from "./hooks/useSubmission"
 
 export default function CreateCourse() {
+  const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editCourseId, setEditCourseId] = useState(null)
   
   // Custom hooks
-  const { courseData, updateCourseData, updateCourseArray } = useCourseData()
-  const { modules, moduleHandlers } = useModules()
+  const { courseData, updateCourseData, updateCourseArray, setCourseData } = useCourseData()
+  const { modules, moduleHandlers, setModules } = useModules()
   const { validationErrors, showValidation, setShowValidation, setValidationErrors, validateStep, validateCurrentStep, validateForm, renderValidationError } = useValidation(courseData, modules)
   const { uploadingFiles, uploadProgress, handleFileUpload } = useFileUpload()
-  const { isSubmitting, handleSubmit } = useSubmission(courseData, modules, validateForm, setCurrentStep)
+  const { isSubmitting, handleSubmit } = useSubmission(courseData, modules, validateForm, setCurrentStep, isEditMode, editCourseId)
+
+  // Check for edit data on mount
+  useEffect(() => {
+    const editData = sessionStorage.getItem('editCourseData')
+    if (editData) {
+      try {
+        const { courseData: editCourseData, modules: editModules, courseId, isEdit } = JSON.parse(editData)
+        
+        console.log('🔄 Loading edit data:', { editCourseData, editModules, courseId })
+        
+        // Set edit mode
+        setIsEditMode(isEdit)
+        setEditCourseId(courseId)
+        
+        // Load the data
+        setCourseData(editCourseData)
+        setModules(editModules)
+        
+        // Clear sessionStorage
+        sessionStorage.removeItem('editCourseData')
+        
+        console.log('✅ Edit mode activated for course:', courseId)
+      } catch (error) {
+        console.error('❌ Error loading edit data:', error)
+      }
+    }
+  }, [setCourseData, setModules])
 
   // Constants
-  const steps = useMemo(() => ["Course Details", "Modules & Lessons", "Quizzes", "Review & Publish"], [])
+  const steps = useMemo(() => ["Course Details", "Modules & Lessons", "Quizzes", isEditMode ? "Review & Update" : "Review & Publish"], [isEditMode])
 
   // Navigation handlers
   const goToPreviousStep = () => {
@@ -63,8 +94,28 @@ export default function CreateCourse() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2c3e2d]">Create New Course</h1>
-          <p className="text-[#4a7c59]">Build your Japanese learning course step by step</p>
+          {isEditMode && (
+            <div className="flex items-center gap-4 mb-4">
+              <Button
+                variant="outline"
+                onClick={() => router.push('/instructor/dashboard')}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+          )}
+          <h1 className="text-3xl font-bold text-[#2c3e2d]">
+            {isEditMode ? 'Edit Course' : 'Create New Course'}
+          </h1>
+          <p className="text-[#4a7c59]">
+            {isEditMode ? 'Update your course details and content' : 'Build your Japanese learning course step by step'}
+          </p>
+          {isEditMode && (
+            <div className="mt-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-md inline-block">
+              🔄 Edit Mode: {courseData.title || 'Loading...'}
+            </div>
+          )}
         </div>
 
         {/* Progress Steps */}
@@ -126,6 +177,7 @@ export default function CreateCourse() {
             totalLessons={totalLessons}
             isSubmitting={isSubmitting}
             handleSubmit={handleSubmit}
+            isEditMode={isEditMode}
           />
         )}
 

@@ -1,8 +1,10 @@
-// hooks/useSubmission.js
+// hooks/useSubmission.js - Updated with edit support
 import { useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 
-export const useSubmission = (courseData, modules, validateForm, setCurrentStep) => {
+export const useSubmission = (courseData, modules, validateForm, setCurrentStep, isEditMode = false, editCourseId = null) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter()
 
   // Handle form submission
   const handleSubmit = useCallback(async (isDraft = false) => {
@@ -35,8 +37,15 @@ export const useSubmission = (courseData, modules, validateForm, setCurrentStep)
         itemsReward: courseData.itemsReward.filter(item => item && item.trim() !== ''),
       }
 
-      const response = await fetch('/api/instructor/create-course', {
-        method: 'POST',
+      // Choose endpoint based on edit mode
+      const endpoint = isEditMode 
+        ? `/api/instructor/courses/${editCourseId}/edit`
+        : '/api/instructor/create-course'
+      
+      const method = isEditMode ? 'PUT' : 'POST'
+
+      const response = await fetch(endpoint, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalData),
       })
@@ -44,17 +53,22 @@ export const useSubmission = (courseData, modules, validateForm, setCurrentStep)
       const result = await response.json()
 
       if (result.success) {
-        alert(isDraft ? 'Course saved as draft!' : 'Course published successfully!')
+        const message = isEditMode 
+          ? (isDraft ? 'Course updated and saved as draft!' : 'Course updated successfully!')
+          : (isDraft ? 'Course saved as draft!' : 'Course published successfully!')
+        
+        alert(message)
+        router.push('/instructor/dashboard')
       } else {
-        throw new Error(result.error || 'Failed to save course')
+        throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'save'} course`)
       }
     } catch (error) {
       console.error('Submit error:', error)
-      alert('Error saving course: ' + error.message)
+      alert(`Error ${isEditMode ? 'updating' : 'saving'} course: ` + error.message)
     } finally {
       setIsSubmitting(false)
     }
-  }, [courseData, modules, validateForm])
+  }, [courseData, modules, validateForm, isEditMode, editCourseId, router])
 
   return {
     isSubmitting,
