@@ -1,6 +1,6 @@
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { Button } from "@/components/ui/button"
-import { Award, BookOpen, Check, PlayCircle, Star, Clock, Users } from "lucide-react"
+import { BookOpen, Check, PlayCircle, Star, LoaderCircle } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useCallback, useMemo, useEffect, useState, memo } from "react"
@@ -328,7 +328,7 @@ function LoadingState() {
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-gray-100">
-        <div className="w-10 h-10 border-3 border-[#4a7c59] border-t-transparent rounded-full animate-spin"></div>
+        <LoaderCircle className="w-10 h-10 text-green-700 animate-spin"></LoaderCircle>
         <div className="text-center space-y-2">
           <div className="text-lg font-semibold text-gray-900">
             Redirecting to checkout...

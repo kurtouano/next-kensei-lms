@@ -1,4 +1,4 @@
-// components/EnrollmentPrompt.jsx
+// components/EnrollmentPrompt.jsx - FIXED VERSION
 import { memo, useCallback, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Lock, ArrowRight, Shield } from "lucide-react"
@@ -10,30 +10,51 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
     try {
       setIsLoading(true)
       
+      // DEBUG: Log the course data to see what we're working with
+      console.log('=== ENROLLMENT PROMPT DEBUG ===')
+      console.log('Full course object:', course)
+      console.log('Course ID:', course?.id || course?._id)
+      console.log('Course Title:', course?.title)
+      console.log('Course Price:', course?.price)
+      console.log('================================')
+      
       const response = await fetch('/api/courses/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          courseId: course.id,
-          title: course.title,
-          description: course.description || course.fullDescription,
-          price: course.price,
-          thumbnail: course.thumbnail,
+          // FIXED: Handle both _id and id properties
+          courseId: course?.id || course?._id,
+          title: course?.title || 'Course Enrollment',
+          // FIXED: Handle different description property names
+          description: course?.description || course?.shortDescription || course?.fullDescription || 'Full course access',
+          // FIXED: Ensure price is a number
+          price: Number(course?.price) || 0,
+          // FIXED: Handle different thumbnail property names
+          thumbnail: course?.thumbnail || course?.image || '',
         }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API response error:', errorData);
+        throw new Error(errorData.error || 'Failed to create checkout session');
+      }
+
       const data = await response.json();
+      console.log('Checkout session response:', data);
       
       if (data.url) {
         window.location.assign(data.url);
       } else {
         console.error('No checkout URL received:', data)
+        alert('Failed to create checkout session. Please try again.');
         setIsLoading(false)
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
+      alert('Failed to create checkout session. Please try again.');
       setIsLoading(false)
     }
   }, [course])
@@ -77,14 +98,16 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
               Unlock Full Access
             </h2>
             <div className="text-center sm:text-right">
-              <div className="text-xl sm:text-lg font-bold text-[#4a7c59]">${course.price || 0}</div>
+              <div className="text-xl sm:text-lg font-bold text-[#4a7c59]">
+                ${Number(course?.price) || 0}
+              </div>
               <div className="text-xs text-[#5c6d5e]">one-time</div>
             </div>
           </div>
           
           <p className="text-sm text-[#5c6d5e] mb-4 sm:mb-6 leading-relaxed">
-            Get lifetime access to {course.modules?.length || 0} modules with {course.totalLessons} lessons, 
-            interactive quizzes, downloadable resources, bonsai items, {course.creditReward || 0} credits, 
+            Get lifetime access to {course?.modules?.length || 0} modules with {course?.totalLessons || 0} lessons, 
+            interactive quizzes, downloadable resources, bonsai items, {course?.creditReward || 0} credits, 
             and certificate upon completion.
           </p>
 
@@ -122,7 +145,7 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
           <div className="flex items-center justify-center sm:justify-start gap-2 mt-4 pt-4 border-t border-[#dce4d7]">
             <Shield className="h-4 w-4 text-[#4a7c59]" />
             <span className="text-xs text-[#5c6d5e] text-center sm:text-left">
-              Secure payment • Instant access • {course.level} level
+              Secure payment • Instant access • {course?.level || 'All'} level
             </span>
           </div>
         </div>
