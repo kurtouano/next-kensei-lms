@@ -1,8 +1,8 @@
-// components/QuizzesStep.jsx - Enhanced version with multiple question types
-import { memo } from "react"
+// components/QuizzesStep.jsx - Enhanced version with automated points calculation
+import { memo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Trash2, AlertCircle } from "lucide-react"
+import { Plus, Trash2, AlertCircle, Info } from "lucide-react"
 
 const QuizzesStep = memo(({ 
   modules, 
@@ -24,6 +24,30 @@ const QuizzesStep = memo(({
     removeFillInBlank,
     updateFillInBlank
   } = moduleHandlers
+
+  // Auto-calculate points when question data changes
+  const calculateAndUpdatePoints = (moduleIndex, questionIndex, question) => {
+    let calculatedPoints = 1; // default
+
+    switch (question.type) {
+      case "multiple_choice":
+        calculatedPoints = 1; // Always 1 point for multiple choice
+        break;
+      case "fill_in_blanks":
+        calculatedPoints = question.blanks?.length || 1; // 1 point per blank
+        break;
+      case "matching":
+        calculatedPoints = question.pairs?.length || 1; // 1 point per pair
+        break;
+      default:
+        calculatedPoints = 1;
+    }
+
+    // Only update if points changed to avoid infinite loops
+    if (question.points !== calculatedPoints) {
+      updateQuestion(moduleIndex, questionIndex, "points", calculatedPoints);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -54,6 +78,21 @@ const QuizzesStep = memo(({
               />
             </div>
 
+            {/* Points Calculation Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <strong>Points Auto-Calculation:</strong>
+                  <ul className="mt-1 space-y-1 text-xs">
+                    <li>• <strong>Multiple Choice:</strong> 1 point per question</li>
+                    <li>• <strong>Fill in Blanks:</strong> 1 point per blank (e.g., 3 blanks = 3 points)</li>
+                    <li>• <strong>Matching:</strong> 1 point per pair (e.g., 5 pairs = 5 points)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             {/* Questions */}
             {module.quiz.questions.map((question, questionIndex) => (
               <QuestionCard
@@ -72,6 +111,7 @@ const QuizzesStep = memo(({
                 addFillInBlank={addFillInBlank}
                 removeFillInBlank={removeFillInBlank}
                 updateFillInBlank={updateFillInBlank}
+                calculateAndUpdatePoints={calculateAndUpdatePoints}
                 onRemoveQuestion={() => {
                   const newQuestions = module.quiz.questions.filter((_, i) => i !== questionIndex)
                   updateModule(moduleIndex, "quiz", { ...module.quiz, questions: newQuestions })
@@ -89,7 +129,7 @@ const QuizzesStep = memo(({
   )
 })
 
-// Enhanced Question Card Component
+// Enhanced Question Card Component with auto-points calculation
 const QuestionCard = memo(function QuestionCard({
   question,
   questionIndex,
@@ -105,6 +145,7 @@ const QuestionCard = memo(function QuestionCard({
   addFillInBlank,
   removeFillInBlank,
   updateFillInBlank,
+  calculateAndUpdatePoints,
   onRemoveQuestion
 }) {
   const questionTypes = [
@@ -112,6 +153,27 @@ const QuestionCard = memo(function QuestionCard({
     { value: "fill_in_blanks", label: "Fill in the Blanks" },
     { value: "matching", label: "Matching" }
   ]
+
+  // Auto-calculate points whenever question data changes
+  useEffect(() => {
+    calculateAndUpdatePoints(moduleIndex, questionIndex, question);
+  }, [question.type, question.blanks?.length, question.pairs?.length, moduleIndex, questionIndex]);
+
+  // Get points display text based on question type
+  const getPointsDisplay = () => {
+    switch (question.type) {
+      case "multiple_choice":
+        return "1 point (auto-calculated)";
+      case "fill_in_blanks":
+        const blankCount = question.blanks?.length || 1;
+        return `${blankCount} ${blankCount === 1 ? 'point' : 'points'} (${blankCount} ${blankCount === 1 ? 'blank' : 'blanks'})`;
+      case "matching":
+        const pairCount = question.pairs?.length || 1;
+        return `${pairCount} ${pairCount === 1 ? 'point' : 'points'} (${pairCount} ${pairCount === 1 ? 'pair' : 'pairs'})`;
+      default:
+        return "1 point";
+    }
+  };
 
   return (
     <div className="border rounded-lg p-4 space-y-4">
@@ -156,8 +218,13 @@ const QuestionCard = memo(function QuestionCard({
 
       {/* Question Text */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">
+        <label className="text-sm font-medium flex flex-row items-center">
           Question <span className="text-red-500">*</span>
+          {question.type === "fill_in_blanks" && (
+            <p className="text-xs ml-2 text-gray-600">
+              {`[ Use ___ (3 underscores) to represent blanks in your question. ]`}
+            </p>
+          )}
         </label>
         <textarea
           className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`quiz_${moduleIndex}_question_${questionIndex}`] ? 'border-red-500' : 'border-gray-300'}`}
@@ -169,18 +236,12 @@ const QuestionCard = memo(function QuestionCard({
         {renderValidationError(`quiz_${moduleIndex}_question_${questionIndex}`)}
       </div>
 
-      {/* Points */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Points</label>
-        <input
-          type="number"
-          min="1"
-          max="10"
-          className="w-full rounded-md border border-gray-300 p-2"
-          placeholder="Points for this question"
-          value={question.points || 1}
-          onChange={(e) => updateQuestion(moduleIndex, questionIndex, "points", parseInt(e.target.value) || 1)}
-        />
+      {/* Auto-calculated Points Display */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Points:</span>
+          <span className="text-sm text-green-700 font-medium">{getPointsDisplay()}</span>
+        </div>
       </div>
 
       {/* Render question type specific content */}
@@ -229,7 +290,7 @@ const QuestionCard = memo(function QuestionCard({
   )
 })
 
-// Multiple Choice Question Component
+// Multiple Choice Question Component (unchanged)
 const MultipleChoiceQuestion = memo(function MultipleChoiceQuestion({
   question,
   questionIndex,
@@ -276,7 +337,7 @@ const MultipleChoiceQuestion = memo(function MultipleChoiceQuestion({
   )
 })
 
-// Fill in the Blanks Question Component
+// Fill in the Blanks Question Component (removed individual points)
 const FillInBlanksQuestion = memo(function FillInBlanksQuestion({
   question,
   questionIndex,
@@ -293,17 +354,11 @@ const FillInBlanksQuestion = memo(function FillInBlanksQuestion({
     <div className="space-y-4">
       <div className="space-y-2">
         <label className="text-sm font-medium">
-          Instructions
-        </label>
-        <p className="text-xs text-gray-600">
-          Use ___ (3 underscores) to represent blanks in your question text above.
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium">
           Answers for Blanks <span className="text-red-500">*</span>
         </label>
+        <p className="text-xs text-gray-600">
+          Each blank is worth 1 point. Total points = number of blanks.
+        </p>
         {question.blanks?.map((blank, blankIndex) => (
           <div key={blankIndex} className="flex gap-2 items-center">
             <span className="text-sm font-medium w-16">Blank {blankIndex + 1}:</span>
@@ -344,7 +399,7 @@ const FillInBlanksQuestion = memo(function FillInBlanksQuestion({
   )
 })
 
-// Matching Question Component
+// Matching Question Component (removed individual pair points)
 const MatchingQuestion = memo(function MatchingQuestion({
   question,
   questionIndex,
@@ -363,7 +418,7 @@ const MatchingQuestion = memo(function MatchingQuestion({
           Instructions
         </label>
         <p className="text-xs text-gray-600">
-          Create pairs for students to match. Each correct match will award points.
+          Create pairs for students to match. Each correct match is worth 1 point. Total points = number of pairs.
         </p>
       </div>
 
@@ -385,17 +440,6 @@ const MatchingQuestion = memo(function MatchingQuestion({
                 placeholder="Right side (e.g., Definition)"
                 value={pair.right}
                 onChange={(e) => updateMatchingPair(moduleIndex, questionIndex, pairIndex, "right", e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-xs text-gray-500 mb-1">Points</span>
-              <input
-                type="number"
-                min="1"
-                max="5"
-                className="w-16 rounded-md border border-gray-300 p-1 text-center"
-                value={pair.points || 1}
-                onChange={(e) => updateMatchingPair(moduleIndex, questionIndex, pairIndex, "points", parseInt(e.target.value) || 1)}
               />
             </div>
             <Button
