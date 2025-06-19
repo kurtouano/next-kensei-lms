@@ -197,26 +197,20 @@ export const QuizSection = memo(function QuizSection({
             Back to Module
           </Button>
           
-          {canProceed ? (
+          {/* Always show Try Again in the middle */}
+          <Button 
+            variant="outline"
+            className="border-[#4a7c59] text-[#4a7c59]" 
+            onClick={onRetryQuiz}
+          >
+            <RotateCcw className="mr-1 h-4 w-4" />
+            Try Again
+          </Button>
+          
+          {/* Show Next/Complete button only if they can proceed */}
+          {canProceed && (
             <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" onClick={onProceed}>
               {isLastModule ? "Complete Course" : "Next Module"}
-            </Button>
-          ) : (
-            <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" onClick={onRetryQuiz}>
-              <RotateCcw className="mr-1 h-4 w-4" />
-              Retry Quiz
-            </Button>
-          )}
-          
-          {/* Always show retry option */}
-          {canProceed && (
-            <Button 
-              variant="outline"
-              className="border-[#4a7c59] text-[#4a7c59]" 
-              onClick={onRetryQuiz}
-            >
-              <RotateCcw className="mr-1 h-4 w-4" />
-              Try Again
             </Button>
           )}
         </div>

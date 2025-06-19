@@ -365,6 +365,7 @@ export default function LessonPage() {
                 isEnrolled={isEnrolled}
                 previewVideoUrl={lessonData.previewVideoUrl}
                 courseData={lessonData}
+                progress={progress}
               />
             </div>
           </div>

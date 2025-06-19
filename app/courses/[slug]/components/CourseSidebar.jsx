@@ -9,7 +9,8 @@ import {
   Check, 
   Circle,
   ChevronLeft,
-  Play
+  Play,
+  Award
 } from "lucide-react"
 
 export const CourseSidebar = memo(function CourseSidebar({
@@ -26,7 +27,8 @@ export const CourseSidebar = memo(function CourseSidebar({
   onBackToModule,
   isEnrolled,
   previewVideoUrl,
-  courseData
+  courseData,
+  progress // ADDED: Progress prop for certificate check
 }) {
   const totalItems = useMemo(() => 
     modules.flatMap(m => m.items).length,
@@ -74,7 +76,7 @@ export const CourseSidebar = memo(function CourseSidebar({
         </div>
       )}
 
-      {/* FIXED: Preview video section - same styling as lessons */}
+      {/* Preview video section */}
       {previewVideoUrl && (
         <div className="border-b border-[#dce4d7] p-2">
           <div
@@ -118,6 +120,32 @@ export const CourseSidebar = memo(function CourseSidebar({
           />
         ))}
       </div>
+
+      {/* ADDED: Certificate claim section - show when course is completed */}
+      {isEnrolled && progress && progress.courseProgress === 100 && (
+        <div className="border-t border-[#dce4d7] p-4 bg-gradient-to-r from-[#eef2eb] to-white">
+          <div className="text-center">
+            <Award className="mx-auto mb-2 h-6 w-6 text-[#4a7c59]" />
+            <p className="text-sm font-medium text-[#2c3e2d] mb-2">
+              🎉 Course Completed!
+            </p>
+            <p className="text-xs text-[#5c6d5e] mb-3">
+              Congratulations! You've finished all lessons and quizzes.
+            </p>
+            <Button 
+              size="sm" 
+              className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+              onClick={() => {
+                // Navigate to certificate page
+                window.open(`/certificate/${courseData?.id}`, '_blank');
+              }}
+            >
+              <Award className="mr-2 h-4 w-4" />
+              Claim Certificate
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Enrollment prompt in sidebar for non-enrolled users */}
       {!isEnrolled && (
@@ -163,6 +191,7 @@ export const CourseSidebar = memo(function CourseSidebar({
   )
 })
 
+// Rest of the component code stays the same...
 const ModuleSection = memo(function ModuleSection({
   module,
   moduleIndex,
@@ -187,7 +216,6 @@ const ModuleSection = memo(function ModuleSection({
     [module.items, completedItems]
   )
 
-  // For non-enrolled users, show all modules as locked
   const moduleAccessible = isEnrolled ? isAccessible : false
 
   return (
@@ -209,7 +237,6 @@ const ModuleSection = memo(function ModuleSection({
         </div>
       </div>
 
-      {/* Module Access Warning */}
       {!moduleAccessible && isEnrolled && (
         <div className="mx-4 mb-3 rounded-md bg-[#eef2eb] border border-[#4a7c59] p-3">
           <div className="flex items-center">
@@ -221,7 +248,6 @@ const ModuleSection = memo(function ModuleSection({
         </div>
       )}
 
-      {/* Enrollment Required Warning for non-enrolled users */}
       {!isEnrolled && (
         <div className="mx-4 mt-2 rounded-md bg-[#eef2eb] border border-[#4a7c59] p-3">
           <div className="flex items-center">
@@ -237,7 +263,6 @@ const ModuleSection = memo(function ModuleSection({
         {module.items.map((item) => (
           <div key={item.id} className="space-y-2">
             
-            {/* Resources Section */}
             {item.resources && item.resources.length > 0 && (
               <div className="space-y-1">
                 {item.resources.map((resource, resourceIndex) => (
@@ -256,7 +281,6 @@ const ModuleSection = memo(function ModuleSection({
               </div>
             )}
 
-            {/* Main Lesson Item */}
             <LessonItem
               item={item}
               moduleIndex={moduleIndex}
@@ -270,7 +294,6 @@ const ModuleSection = memo(function ModuleSection({
           </div>
         ))}
 
-        {/* Quiz Button - Only show when module is active, completed, and quiz not shown (enrolled users only) */}
         {isEnrolled && isActive && currentModuleCompleted && !showModuleQuiz && (
           <div className="rounded-md bg-[#eef2eb] p-2">
             <div className="flex items-center justify-between">
@@ -375,7 +398,6 @@ const LessonItem = memo(function LessonItem({
         </div>
       </div>
       
-      {/* Only show completion toggle for enrolled users */}
       {isEnrolled && (
         <button
           className={`ml-2 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${

@@ -294,26 +294,38 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQu
     }))
   }, [])
 
-  // Enhanced scoring system for different question types
+  // Scoring system 
   const calculateScore = useCallback((quiz, answers) => {
     if (!quiz || !quiz.questions) return { score: 0, totalPoints: 0, earnedPoints: 0 }
 
     let totalPoints = 0
     let earnedPoints = 0
 
-    quiz.questions.forEach(question => {
+    quiz.questions.forEach((question, index) => {
       const questionId = question._id || question.id
       const questionPoints = question.points || 1
       totalPoints += questionPoints
       
       const userAnswer = answers[questionId]
-      if (!userAnswer) return
+
+      // Check for undefined, null, or empty answers
+      if (userAnswer === undefined || userAnswer === null || userAnswer === '') {
+        return
+      }
 
       switch (question.type) {
         case "multiple_choice":
-          const correctIndex = question.correctAnswer !== undefined 
-            ? question.correctAnswer 
-            : question.options.findIndex(opt => opt.isCorrect)
+          // Handle both original and randomized questions properly
+          let correctIndex
+          if (question.originalCorrectAnswer !== undefined) {
+            // This is a randomized question, use the new correct answer
+            correctIndex = question.correctAnswer
+          } else {
+            // This is the original question
+            correctIndex = question.correctAnswer !== undefined 
+              ? question.correctAnswer 
+              : question.options.findIndex(opt => opt.isCorrect)
+          }
           
           if (userAnswer === correctIndex) {
             earnedPoints += questionPoints
@@ -321,26 +333,27 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQu
           break
 
         case "fill_in_blanks":
-          if (question.blanks && typeof userAnswer === 'object') {
+          if (question.blanks && typeof userAnswer === 'object' && userAnswer !== null) {
             let correctBlanks = 0
             const totalBlanks = question.blanks.length
             
-            question.blanks.forEach((blank, index) => {
-              const userBlankAnswer = userAnswer[index]?.toLowerCase().trim()
+            question.blanks.forEach((blank, blankIndex) => {
+              const userBlankAnswer = userAnswer[blankIndex]?.toLowerCase()?.trim()
               const correctAnswer = blank.answer.toLowerCase().trim()
               const alternatives = blank.alternatives?.map(alt => alt.toLowerCase().trim()) || []
               
-              if (userBlankAnswer === correctAnswer || alternatives.includes(userBlankAnswer)) {
-                correctBlanks++
-              }
+              const isCorrect = userBlankAnswer === correctAnswer || alternatives.includes(userBlankAnswer)
+              if (isCorrect) correctBlanks++
             })
             
-            earnedPoints += Math.round((correctBlanks / totalBlanks) * questionPoints)
+            // Use proper proportional scoring without rounding too early
+            const proportionalPoints = (correctBlanks / totalBlanks) * questionPoints
+            earnedPoints += proportionalPoints
           }
           break
 
         case "matching":
-          if (question.pairs && typeof userAnswer === 'object') {
+          if (question.pairs && typeof userAnswer === 'object' && userAnswer !== null) {
             let correctMatches = 0
             const totalPairs = question.pairs.length
             
@@ -348,16 +361,18 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQu
               const leftIndexNum = parseInt(leftIndex)
               const correctRight = question.pairs[leftIndexNum]?.right
               
-              if (selectedRight === correctRight) {
-                correctMatches++
-              }
+              const isCorrect = selectedRight === correctRight
+              if (isCorrect) correctMatches++
             })
             
-            earnedPoints += Math.round((correctMatches / totalPairs) * questionPoints)
+            // Use proper proportional scoring without rounding too early
+            const proportionalPoints = (correctMatches / totalPairs) * questionPoints
+            earnedPoints += proportionalPoints
           }
           break
 
         default:
+          // Handle unknown types as multiple choice fallback
           const defaultCorrectIndex = question.options?.findIndex(opt => opt.isCorrect)
           if (userAnswer === defaultCorrectIndex) {
             earnedPoints += questionPoints
@@ -365,6 +380,7 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQu
       }
     })
 
+    // Round only at the very end for accuracy
     const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
     
     return { score, totalPoints, earnedPoints }
