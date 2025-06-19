@@ -1,6 +1,6 @@
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { Button } from "@/components/ui/button"
-import { Award, BookOpen, Check, PlayCircle, Star } from "lucide-react"
+import { Award, BookOpen, Check, PlayCircle, Star, Clock, Users } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useCallback, useMemo, useEffect, useState, memo } from "react"
@@ -12,7 +12,6 @@ export const CourseCard = memo(function CourseCard({ course }) {
   const [checkingEnrollment, setCheckingEnrollment] = useState(false)
 
   // useCallback: Memoize handleSubscribe function
-  // This is passed to Button component, so needs stable reference
   const handleSubscribe = useCallback(async (e) => {
     e.preventDefault();
     
@@ -47,13 +46,10 @@ export const CourseCard = memo(function CourseCard({ course }) {
     }
   }, [course.id, course.title, course.description, course.shortDescription, course.price, course.thumbnail])
 
-  // useCallback: Memoize error handler for image loading
   const handleImageError = useCallback((e) => {
     e.target.src = "/placeholder.svg"
   }, [])
 
-  // useMemo: Parse course data once instead of on every render
-  // This is expensive because it involves multiple fallback checks
   const courseData = useMemo(() => ({
     averageRating: course.ratingStats?.averageRating || course.averageRating || 0,
     totalReviews: course.ratingStats?.totalRatings || course.totalReviews || 0,
@@ -73,16 +69,15 @@ export const CourseCard = memo(function CourseCard({ course }) {
       : ['Certificate', 'Resources']
   }), [course])
 
-    // Check if enrolled or display course price
   const priceDisplay = useMemo(() => {
-  if (checkingEnrollment) {
-    return <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
-  }
-  if (isEnrolled) {
-    return <span className="text-[#4a7c59]">Enrolled</span>
-  }
-  return courseData.price === 0 ? 'Free' : `$ ${courseData.price}`
-}, [isEnrolled, checkingEnrollment, courseData.price])
+    if (checkingEnrollment) {
+      return <div className="h-4 w-5 bg-transparent rounded animate-pulse"></div>
+    }
+    if (isEnrolled) {
+      return <div className="hidden"></div>
+    }
+    return courseData.price === 0 ? 'Free' : `$ ${courseData.price}`
+  }, [isEnrolled, checkingEnrollment, courseData.price])
 
   useEffect(() => {
     const checkEnrollment = async () => {
@@ -109,42 +104,76 @@ export const CourseCard = memo(function CourseCard({ course }) {
   if (isLoading) return <LoadingState />
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm transition-all hover:shadow-md flex flex-col h-full">
-      <div className="aspect-video w-full overflow-hidden">
+    <div className="group relative overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full">
+      {/* Image with overlay gradient */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden">
         <img
           src={course.thumbnail || "/placeholder.svg"}
           alt={courseData.title}
-          className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+          className="h-full w-full object-cover transition-transform duration-500"
           onError={handleImageError}
         />
-      </div>
-      <div className="p-5 flex flex-col flex-grow">
-        <h3 className="mb-2 text-xl font-semibold text-[#2c3e2d] line-clamp-2 min-h-[3.5rem] flex">
-          <span>{courseData.title}</span>
-        </h3>
-        <p className="mb-3 text-sm text-[#5c6d5e] line-clamp-2">
-          {courseData.description}
-        </p>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
 
-        <div className="mb-3">
-          <StarRating rating={courseData.averageRating} totalReviews={courseData.totalReviews} />
-        </div>
-
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-md font-bold text-[#2c3e2d]">
+        {/* Price badge */}
+        <div className="absolute top-4 right-4">
+          <div className={`${isEnrolled && "hidden"} rounded-full bg-green-800/90 backdrop-blur-sm px-3 py-1.5 text-sm font-medium text-white`}>
             {priceDisplay}
           </div>
-          {courseData.credits > 0 && (
-            <div className="flex items-center text-sm text-[#5c6d5e]">
-              <BonsaiIcon className="mr-1 h-4 w-4 text-[#4a7c59]" />
-              {courseData.credits} credits
-            </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex flex-1 flex-col p-6">
+        {/* Rating */}
+        <div className="mb-3 w-full flex flex-row gap-3">
+          <StarRating rating={courseData.averageRating} totalReviews={courseData.totalReviews} />
+          {isEnrolled && (
+            <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800 backdrop-blur-sm">
+              <Check className="mr-1 h-3 w-3" />
+              Enrolled
+            </span>
           )}
         </div>
 
-        <CourseInfo courseData={courseData} />
-        <LearningHighlights highlights={courseData.highlights} />
-        
+        {/* Title */}
+        <h3 className="mb-3 text-xl font-bold text-gray-900 line-clamp-2 leading-tight">
+          {courseData.title}
+        </h3>
+
+        {/* Description */}
+        <p className="mb-4 text-sm text-gray-600 line-clamp-2 leading-relaxed">
+          {courseData.description}
+        </p>
+
+        {/* Course stats */}
+        <div className="mb-4 flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex items-center gap-1">
+            <BookOpen className="h-4 w-4" />
+            <span>{courseData.modulesCount} modules</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <PlayCircle className="h-4 w-4" />
+            <span>{courseData.lessonsCount} lessons</span>
+          </div>
+        </div>
+
+        {/* Learning highlights */}
+        <div className="mb-6 flex-1">
+          <h4 className="mb-3 text-sm font-semibold text-gray-900">What you'll learn:</h4>
+          <div className="space-y-2">
+            {courseData.highlights.slice(0, 3).map((highlight, index) => (
+              <div key={index} className="flex items-center gap-2 ">
+                <div className="mt-0.5 flex-shrink-0">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#4a7c59]"></div>
+                </div>
+                <span className="text-sm text-gray-600 line-clamp-1">{highlight}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Action buttons */}
         <CourseActions
           checkingEnrollment={checkingEnrollment}
           isEnrolled={isEnrolled}
@@ -154,198 +183,161 @@ export const CourseCard = memo(function CourseCard({ course }) {
           coursePublished={course.isPublished}
           onSubscribe={handleSubscribe}
         />
-
-        {course.isPublished === false && (
-          <div className="mt-2 text-center">
-            <span className="inline-block rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
-              Coming Soon
-            </span>
-          </div>
-        )}
       </div>
     </div>
   )
 })
 
-const CourseInfo = memo(function CourseInfo({ courseData }) {
-  return (
-    <div className="mb-4 space-y-2 rounded-md bg-[#eef2eb] p-3">
-      <div className="flex items-center text-sm font-medium text-[#2c3e2d]">
-        <BookOpen className="mr-2 h-4 w-4 text-[#4a7c59]" />
-        {courseData.modulesCount} module{courseData.modulesCount !== 1 ? 's' : ''} • {courseData.lessonsCount} lesson{courseData.lessonsCount !== 1 ? 's' : ''}
-      </div>
-      {courseData.itemsReward.length > 0 && (
-        <div className="flex items-center text-sm font-medium text-[#2c3e2d]">
-          <Award className="mr-2 h-4 w-4 text-[#4a7c59]" />
-          Includes: {courseData.itemsReward.join(", ")}
-        </div>
-      )}
-    </div>
-  )
-})
+const CourseActions = memo(function CourseActions({ 
+  checkingEnrollment, 
+  isEnrolled, 
+  isLoading, 
+  coursePrice, 
+  courseSlug, 
+  coursePublished, 
+  onSubscribe 
+}) {
+  if (checkingEnrollment) {
+    return <EnrollmentCheckingSkeleton />
+  }
 
-const LearningHighlights = memo(function LearningHighlights({ highlights }) {
-  return (
-    <div className="mb-4 flex-grow">
-      <h4 className="mb-2 text-sm font-semibold text-[#2c3e2d]">Learning Highlights:</h4>
-      <ul className="space-y-1">
-        {highlights.slice(0, 4).map((highlight, index) => (
-          <li key={index} className="flex items-start text-sm">
-            <Check className="mr-2 h-4 w-4 shrink-0 text-[#4a7c59]" />
-            <span className="text-[#5c6d5e] line-clamp-1">{highlight}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-})
-
-  const CourseActions = memo(function CourseActions({ 
-    checkingEnrollment, 
-    isEnrolled, 
-    isLoading, 
-    coursePrice, 
-    courseSlug, 
-    coursePublished, 
-    onSubscribe 
-  }) {
-    if (checkingEnrollment) {
-      return <EnrollmentCheckingSkeleton />
-    }
-
-    if (isEnrolled) {
-      return (
-        <Button 
-          asChild
-          className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]"
-        >
-          <Link href={`/courses/${courseSlug}`}>
-            <PlayCircle className="mr-2 h-4 w-4" />
-            Continue Learning
-          </Link>
-        </Button>
-      )
-    }
-
+  if (isEnrolled) {
     return (
-      <div className="flex gap-2 mt-auto">
-        <Button 
-          onClick={onSubscribe} 
-          className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147] disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={coursePublished === false || isLoading}
-        >
-          {isLoading ? (
-            <span className="flex items-center">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              {coursePrice === 0 ? 'Processing...' : 'Processing...'}
-            </span>
-          ) : (
-            coursePrice === 0 ? 'Enroll Free' : 'Buy Course'
-          )}
-        </Button>
-
-        <Link 
-          href={`/courses/${courseSlug}`}
-          className={`flex-1 rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-center text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb] ${
-            isLoading ? 'pointer-events-none opacity-50' : ''
-          }`}
-        >
-          Preview
+      <Button 
+        asChild
+        className="w-full rounded-xl bg-gradient-to-r from-[#4a7c59] to-[#5a8c69] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-[#3a6147] hover:to-[#4a7c57] hover:shadow-lg active:scale-[0.98]"
+      >
+        <Link href={`/courses/${courseSlug}`}>
+          <PlayCircle className="mr-2 h-4 w-4" />
+          Continue Learning
         </Link>
-      </div>
-    )
-  })
-
-  const StarRating = memo(function StarRating({ rating, totalReviews }) {
-    // useMemo: Expensive star calculation logic
-    const stars = useMemo(() => {
-      const starArray = [];
-      const fullStars = Math.floor(rating);
-      const hasHalfStar = rating % 1 >= 0.5;
-
-      if (rating === 0) {
-        for (let i = 0; i < 5; i++) {
-          starArray.push(
-            <Star
-              key={`empty-${i}`}
-              className="h-4 w-4 text-gray-300"
-            />
-          );
-        }
-      } else {
-        for (let i = 0; i < fullStars; i++) {
-          starArray.push(
-            <Star
-              key={`full-${i}`}
-              className="h-4 w-4 fill-yellow-400 text-yellow-400"
-            />
-          );
-        }
-
-        if (hasHalfStar) {
-          starArray.push(
-            <div key="half" className="relative">
-              <Star className="h-4 w-4 text-gray-300" />
-              <Star 
-                className="absolute top-0 h-4 w-4 fill-yellow-400 text-yellow-400"
-                style={{ clipPath: 'inset(0 50% 0 0)' }}
-              />
-            </div>
-          );
-        }
-
-        const remainingStars = 5 - Math.ceil(rating);
-        for (let i = 0; i < remainingStars; i++) {
-          starArray.push(
-            <Star
-              key={`empty-${i}`}
-              className="h-4 w-4 text-gray-300"
-            />
-          );
-        }
-      }
-
-      return starArray;
-    }, [rating])
-
-    return (
-      <div className="flex items-center gap-1">
-        <div className="flex items-center">
-          {stars}
-        </div>
-        <span className="text-sm font-medium text-[#2c3e2d]">
-          {rating > 0 ? rating.toFixed(1) : '0.0'}
-        </span>
-        <span className="text-sm text-[#5c6d5e]">
-          ({totalReviews} review{totalReviews !== 1 ? 's' : ''})
-        </span>
-      </div>
-    );
-  })
-
-  const EnrollmentCheckingSkeleton = memo(function EnrollmentCheckingSkeleton() {
-    return (
-      <div className="flex gap-2 mt-auto">
-        <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
-        <div className="flex-1 h-10 bg-gray-200 rounded animate-pulse"></div>
-      </div>
-    )
-  })
-
-  function LoadingState() {
-    return (
-      <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg p-6 shadow-2xl flex flex-col sm:flex-row items-center gap-4 max-w-sm w-full mx-4 border border-gray-200">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 border-3 border-[#4a7c59] border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-          <div className="text-center sm:text-left space-y-1">
-            <div className="text-sm sm:text-base font-medium text-[#2c3e2d]">
-              Redirecting to checkout...
-            </div>
-            <div className="text-xs sm:text-sm text-[#5c6d5e]">
-              Please wait while we prepare your payment
-            </div>
-          </div>
-        </div>
-      </div>
+      </Button>
     )
   }
+
+  return (
+    <div className="flex gap-3">
+      <Button 
+        onClick={onSubscribe} 
+        className="flex-1 rounded-md bg-[#4a7c57] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#4a7c57] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+        disabled={coursePublished === false || isLoading}
+      >
+        {isLoading ? (
+          <span className="flex items-center">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+            Processing...
+          </span>
+        ) : (
+          coursePrice === 0 ? 'Enroll Free' : 'Buy Course'
+        )}
+      </Button>
+
+      <Button
+        asChild
+        variant="outline"
+        className={`flex-1 rounded-md border-2 border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 transition-all duration-200 hover:border-[#5d7e6763] hover:bg-gray-50 ${
+          isLoading ? 'pointer-events-none opacity-50' : ''
+        }`}
+      >
+        <Link href={`/courses/${courseSlug}`}>
+          Preview
+        </Link>
+      </Button>
+    </div>
+  )
+})
+
+const StarRating = memo(function StarRating({ rating, totalReviews }) {
+  const stars = useMemo(() => {
+    const starArray = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+
+    if (rating === 0) {
+      for (let i = 0; i < 5; i++) {
+        starArray.push(
+          <Star
+            key={`empty-${i}`}
+            className="h-3.5 w-3.5 text-gray-300"
+          />
+        );
+      }
+    } else {
+      for (let i = 0; i < fullStars; i++) {
+        starArray.push(
+          <Star
+            key={`full-${i}`}
+            className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
+          />
+        );
+      }
+
+      if (hasHalfStar) {
+        starArray.push(
+          <div key="half" className="relative">
+            <Star className="h-3.5 w-3.5 text-gray-300" />
+            <Star 
+              className="absolute top-0 h-3.5 w-3.5 fill-amber-400 text-amber-400"
+              style={{ clipPath: 'inset(0 50% 0 0)' }}
+            />
+          </div>
+        );
+      }
+
+      const remainingStars = 5 - Math.ceil(rating);
+      for (let i = 0; i < remainingStars; i++) {
+        starArray.push(
+          <Star
+            key={`empty-${i}`}
+            className="h-3.5 w-3.5 text-gray-300"
+          />
+        );
+      }
+    }
+
+    return starArray;
+  }, [rating])
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-0.5">
+        {stars}
+      </div>
+      <div className="flex items-center gap-1 text-sm">
+        <span className="font-semibold text-gray-900">
+          {rating > 0 ? rating.toFixed(1) : '0.0'}
+        </span>
+        <span className="text-gray-500">
+          ({totalReviews})
+        </span>
+      </div>
+    </div>
+  );
+})
+
+const EnrollmentCheckingSkeleton = memo(function EnrollmentCheckingSkeleton() {
+  return (
+    <div className="flex gap-3">
+      <div className="flex-1 h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+      <div className="flex-1 h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+    </div>
+  )
+})
+
+function LoadingState() {
+  return (
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-gray-100">
+        <div className="w-10 h-10 border-3 border-[#4a7c59] border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-center space-y-2">
+          <div className="text-lg font-semibold text-gray-900">
+            Redirecting to checkout...
+          </div>
+          <div className="text-sm text-gray-600">
+            Please wait while we prepare your payment
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

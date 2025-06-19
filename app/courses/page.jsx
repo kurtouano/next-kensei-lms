@@ -1,9 +1,11 @@
-// CoursesPage.jsx - Super clean with just one hook!
+// CoursesPage.jsx - With Inline Search & Filters
 "use client"
 
 import { useState, useEffect, memo } from "react"
-import { BookOpen, AlertCircle } from "lucide-react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { BookOpen, AlertCircle, Search, X } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { useSession } from "next-auth/react"
@@ -13,7 +15,7 @@ import { useCourses } from "./useCoursesHook"
 export default function CoursesPage() {
   const { data: session, status } = useSession()
   
-  // One hook handles all course logic
+  // One hook handles all course logic including pagination
   const {
     courses,
     loading,
@@ -21,9 +23,19 @@ export default function CoursesPage() {
     selectedCategory,
     categories,
     courseStats,
+    searchQuery,
+    pagination,
     handleCategoryChange,
+    handleSearchChange,
+    handleClearSearch,
+    handlePageChange,
+    handleNextPage,
+    handlePrevPage,
     handleRetry
   } = useCourses()
+
+  // Local state for search input (for immediate UI feedback)
+  const [searchInput, setSearchInput] = useState("")
 
   // Keep user profile logic as-is (simple enough)
   useEffect(() => {
@@ -49,6 +61,18 @@ export default function CoursesPage() {
     }
   }, [status])
 
+  // Handle search input changes
+  const handleSearchInputChange = (e) => {
+    const value = e.target.value
+    setSearchInput(value)
+    handleSearchChange(value)
+  }
+
+  const handleClearSearchClick = () => {
+    setSearchInput("")
+    handleClearSearch()
+  }
+
   if (loading) {
     return (
       <PageLayout session={session}>
@@ -70,35 +94,75 @@ export default function CoursesPage() {
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold text-[#2c3e2d]">Course Catalog</h1>
         <p className="text-[#5c6d5e]">
-          Browse our comprehensive selection of Japanese language courses
+          Discover and enroll in professional Japanese language courses
         </p>
-        <div className="mt-2 text-sm text-[#5c6d5e]">
-          {courseStats.total} course{courseStats.total !== 1 ? 's' : ''} available
-        </div>
       </div>
 
-      <Tabs defaultValue="all" className="mb-8">
-        <CategoryTabs 
-          categories={categories} 
-          onCategoryChange={handleCategoryChange}
-        />
+      {/* Search and Filter Bar */}
+      <div className="mb-3">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch justify-between">
+          {/* Search Input */}
+          <div className="relative w-full sm:max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#5c6d5e] h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Search courses..."
+              value={searchInput}
+              onChange={handleSearchInputChange}
+              className="pl-10 pr-10 py-2 w-full border-[#dce4d7] bg-white focus:border-[#4a7c59] focus:ring-[#4a7c59] rounded-lg text-[#2c3e2d] placeholder:text-[#5c6d5e] h-10"
+            />
+            {searchInput && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearSearchClick}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-5 w-5 hover:bg-[#eef2eb] rounded-full"
+              >
+                <X className="h-3 w-3 text-[#5c6d5e]" />
+              </Button>
+            )}
+          </div>
 
-        <TabsContent value={selectedCategory} className="mt-0">
-          <CourseGrid 
-            courses={courses}
-            courseStats={courseStats}
-            selectedCategory={selectedCategory}
-            onShowAll={() => handleCategoryChange("all")}
-          />
-        </TabsContent>
-      </Tabs>
+          {/* Level Filter */}
+          <div className="w-full sm:w-[230px]">
+            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+              <SelectTrigger className="w-full h-10 border-[#dce4d7] bg-white text-[#2c3e2d] hover:bg-[#f8f9fa]">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem 
+                    key={category.id} 
+                    value={category.id}
+                    className="hover:bg-[#eef2eb] w-full pl-3 mt-2 cursor-pointer data-[highlighted]:bg-[#eef2eb] data-[state=checked]:bg-[#4a7c59] data-[state=checked]:text-white"
+                  >
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* horizontal line */}
+        <div className="mt-5 pt-4 border-t border-[#dce4d7]"></div>
+      </div>
+
+      {/* Results Section */}
+      <CourseGrid 
+        courses={courses}
+        courseStats={courseStats}
+        selectedCategory={selectedCategory}
+        pagination={pagination}
+        onPageChange={handlePageChange}
+      />
     </PageLayout>
   )
 }
 
 const PageLayout = memo(function PageLayout({ session, children }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
+    <div className="flex min-h-screen flex-col bg-[#f9fafb]">
       <Header isLoggedIn={!!session?.user} />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
@@ -110,27 +174,23 @@ const PageLayout = memo(function PageLayout({ session, children }) {
   )
 })
 
-const EmptyState = memo(function EmptyState({ selectedCategory, categoryName, onShowAll }) {
+const EmptyState = memo(function EmptyState({ selectedCategory, categoryName, searchQuery }) {
+  const isSearchEmpty = searchQuery && searchQuery.trim()
+  
   return (
     <div className="text-center py-12">
       <BookOpen className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e]" />
       <h3 className="text-lg font-medium text-[#2c3e2d] mb-2">
-        No courses found
+        {isSearchEmpty ? 'No courses found' : 'No courses found'}
       </h3>
-      <p className="text-[#5c6d5e]">
-        {selectedCategory === "all" 
-          ? "No courses are currently available." 
-          : `No courses found in the ${categoryName} category.`
+      <p className="text-[#5c6d5e] mb-4">
+        {isSearchEmpty 
+          ? `No courses match "${searchQuery}". Try adjusting your search terms.`
+          : selectedCategory === "all" 
+            ? "No courses are currently available." 
+            : `No courses found in the ${categoryName} category.`
         }
       </p>
-      {selectedCategory !== "all" && (
-        <button 
-          onClick={onShowAll}
-          className="mt-4 px-4 py-2 bg-[#4a7c59] text-white rounded-md hover:bg-[#3a6147]"
-        >
-          View All Courses
-        </button>
-      )}
     </div>
   )
 })
@@ -142,12 +202,12 @@ const ErrorDisplay = memo(function ErrorDisplay({ error, onRetry }) {
         <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
         <p className="text-red-500 mb-2">Error loading courses</p>
         <p className="text-[#5c6d5e]">{error}</p>
-        <button 
+        <Button 
           onClick={onRetry} 
-          className="mt-4 px-4 py-2 bg-[#4a7c59] text-white rounded-md hover:bg-[#3a6147]"
+          className="mt-4 bg-[#4a7c59] text-white hover:bg-[#3a6147]"
         >
           Try Again
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -159,10 +219,18 @@ const LoadingSkeleton = memo(function LoadingSkeleton() {
       <div className="mb-8 space-y-3">
         <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
         <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
-        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
       </div>
 
-      <CategorySkeleton />
+      {/* Search and filter skeleton */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 justify-between">
+          <div className="w-full sm:max-w-md h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="w-full sm:w-[200px] h-10 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        
+        {/* Always visible line skeleton */}
+        <div className="mt-4 pt-4 border-t border-[#dce4d7]"></div>
+      </div>
 
       <div className="mb-4 flex justify-between">
         <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
@@ -170,29 +238,11 @@ const LoadingSkeleton = memo(function LoadingSkeleton() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <CourseSkeleton key={i} />
         ))}
       </div>
     </>
-  )
-})
-
-const CategorySkeleton = memo(function CategorySkeleton() {
-  return (
-    <div className="mb-8">
-      <div className="grid grid-cols-2 gap-2 w-full sm:hidden">
-        {[1, 2].map((i) => (
-          <div key={i} className="h-10 bg-gray-200 rounded animate-pulse"></div>
-        ))}
-      </div>
-      
-      <div className="hidden gap-3 sm:flex justify-center">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-        ))}
-      </div>
-    </div>
   )
 })
 
@@ -216,45 +266,19 @@ const CourseSkeleton = memo(function CourseSkeleton() {
   )
 })
 
-const CategoryTabs = memo(function CategoryTabs({ categories, onCategoryChange }) {
-  return (
-    <TabsList className="mb-6 w-full bg-transparent p-0 justify-around">
-      <div className="grid grid-cols-2 gap-2 w-full sm:hidden">
-        {categories.map((category) => (
-          <TabsTrigger
-            key={category.id}
-            value={category.id}
-            onClick={() => onCategoryChange(category.id)}
-            className="border border-[#dce4d7] bg-white data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white hover:bg-[#eef2eb] transition-colors text-xs px-2 py-2"
-          >
-            {category.name}
-          </TabsTrigger>
-        ))}
-      </div>
-      
-      <div className="hidden gap-3 sm:flex sm:flex-wrap sm:justify-start">
-        {categories.map((category) => (
-          <TabsTrigger
-            key={category.id}
-            value={category.id}
-            onClick={() => onCategoryChange(category.id)}
-            className="border border-[#dce4d7] bg-white data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white hover:bg-[#eef2eb] transition-colors whitespace-nowrap"
-          >
-            {category.name}
-          </TabsTrigger>
-        ))}
-      </div>
-    </TabsList>
-  )
-})
-
-const CourseGrid = memo(function CourseGrid({ courses, courseStats, selectedCategory, onShowAll }) {
+const CourseGrid = memo(function CourseGrid({ 
+  courses, 
+  courseStats, 
+  selectedCategory, 
+  pagination,
+  onPageChange
+}) {
   if (courses.length === 0) {
     return (
       <EmptyState 
         selectedCategory={selectedCategory}
         categoryName={courseStats.selectedCategoryName}
-        onShowAll={onShowAll}
+        searchQuery={courseStats.searchQuery}
       />
     )
   }
@@ -262,11 +286,20 @@ const CourseGrid = memo(function CourseGrid({ courses, courseStats, selectedCate
   return (
     <>
       <CourseGridInfo courseStats={courseStats} selectedCategory={selectedCategory} />
+      
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {courses.map((course) => (
           <CourseCard key={course._id || course.id} course={course} />
         ))}
       </div>
+
+      {/* Modern Pagination */}
+      {pagination.totalPages > 1 && (
+        <ModernPagination
+          pagination={pagination}
+          onPageChange={onPageChange}
+        />
+      )}
     </>
   )
 })
@@ -277,17 +310,108 @@ const CourseGridInfo = memo(function CourseGridInfo({ courseStats, selectedCateg
       <div className="flex flex-row justify-between space-y-1 sm:space-y-0 sm:flex-row items-center">
         <div className="text-xs text-[#5c6d5e]">
           <span className="flex sm:inline">
-            Showing {courseStats.filtered} course{courseStats.filtered !== 1 ? 's' : ''}
+            {courseStats.searchQuery ? (
+              <>Showing {courseStats.pagination.startIndex}-{courseStats.pagination.endIndex} of {courseStats.filtered} result{courseStats.filtered !== 1 ? 's' : ''}</>
+            ) : (
+              <>Showing {courseStats.pagination.startIndex}-{courseStats.pagination.endIndex} of {courseStats.filtered} course{courseStats.filtered !== 1 ? 's' : ''}</>
+            )}
           </span>
-          {selectedCategory !== "all" && (
+          {selectedCategory !== "all" && !courseStats.searchQuery && (
             <span className="block sm:inline sm:ml-1">
               in {courseStats.selectedCategoryName}
             </span>
           )}
         </div>
         <div className="text-xs text-[#5c6d5e] sm:text-right">
-          Sorted by rating and date
+          {courseStats.searchQuery ? 'Sorted by relevance' : 'Sorted by rating and date'}
         </div>
+      </div>
+    </div>
+  )
+})
+
+const ModernPagination = memo(function ModernPagination({ pagination, onPageChange }) {
+  const { currentPage, totalPages } = pagination
+
+  const getPageNumbers = () => {
+    const pages = []
+    const maxVisible = 5
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages)
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages)
+      }
+    }
+    
+    return pages
+  }
+
+  return (
+    <div className="mt-12 flex flex-col items-center gap-6">
+      {/* Page Info */}
+      <div className="text-sm text-[#5c6d5e]">
+        Page {currentPage} of {totalPages}
+      </div>
+
+      {/* Modern Pagination Buttons */}
+      <div className="flex items-center gap-2">
+        {/* Previous */}
+        <Button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          variant="outline"
+          size="sm"
+          className="border-[#dce4d7] text-[#2c3e2d] hover:bg-[#eef2eb] disabled:opacity-50"
+        >
+          Previous
+        </Button>
+
+        {/* Page Numbers */}
+        <div className="hidden sm:flex items-center gap-1 mx-4">
+          {getPageNumbers().map((page, index) => (
+            page === '...' ? (
+              <span key={index} className="px-2 py-1 text-[#5c6d5e]">...</span>
+            ) : (
+              <Button
+                key={page}
+                onClick={() => onPageChange(page)}
+                variant={currentPage === page ? "default" : "outline"}
+                size="sm"
+                className={
+                  currentPage === page
+                    ? "bg-[#4a7c59] text-white hover:bg-[#3a6147] border-[#4a7c59]"
+                    : "border-[#dce4d7] text-[#2c3e2d] hover:bg-[#eef2eb]"
+                }
+              >
+                {page}
+              </Button>
+            )
+          ))}
+        </div>
+
+        {/* Mobile page indicator */}
+        <div className="sm:hidden mx-4 px-3 py-1 bg-[#eef2eb] rounded-md text-sm text-[#2c3e2d]">
+          {currentPage} / {totalPages}
+        </div>
+
+        {/* Next */}
+        <Button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          variant="outline"
+          size="sm"
+          className="border-[#dce4d7] text-[#2c3e2d] hover:bg-[#eef2eb] disabled:opacity-50"
+        >
+          Next
+        </Button>
       </div>
     </div>
   )

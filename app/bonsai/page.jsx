@@ -184,7 +184,7 @@ export default function BonsaiPage() {
       : allShopItems.filter((item) => item.category === shopCategory || item.type === shopCategory)
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
+    <div className="flex min-h-screen flex-col bg-[#f9fafb]">
       {/* Header */}
       <Header isLoggedIn={true} />
 
