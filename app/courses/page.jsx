@@ -134,7 +134,7 @@ export default function CoursesPage() {
                   <SelectItem 
                     key={category.id} 
                     value={category.id}
-                    className="hover:bg-[#eef2eb] w-full pl-3 mt-2 cursor-pointer data-[highlighted]:bg-[#eef2eb] data-[state=checked]:bg-[#4a7c59] data-[state=checked]:text-white"
+                    className="hover:bg-[#eef2eb] min-w-48 pl-3 mt-1 cursor-pointer data-[highlighted]:bg-[#eef2eb] data-[state=checked]:bg-[#4a7c59] data-[state=checked]:text-white"
                   >
                     {category.name}
                   </SelectItem>

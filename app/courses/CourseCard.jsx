@@ -205,7 +205,7 @@ const CourseActions = memo(function CourseActions({
     return (
       <Button 
         asChild
-        className="w-full rounded-xl bg-gradient-to-r from-[#4a7c59] to-[#5a8c69] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-[#3a6147] hover:to-[#4a7c57] hover:shadow-lg active:scale-[0.98]"
+        className="w-full rounded-lg bg-[#4a7c59] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#519668] hover:shadow-lg"
       >
         <Link href={`/courses/${courseSlug}`}>
           <PlayCircle className="mr-2 h-4 w-4" />
