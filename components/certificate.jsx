@@ -21,7 +21,7 @@ export function Certificate({
       </div>
 
       {/* Certificate content */}
-      <div className="relative flex h-full flex-col items-center justify-between p-8 text-center">
+      <div className="relative flex h-full flex-col items-center p-8 text-center">
         {/* Header */}
         <div className="mb-4 w-full">
           <div className="flex items-center justify-center gap-3">
@@ -35,7 +35,7 @@ export function Certificate({
         </div>
 
         {/* Main content */}
-        <div className="my-6 w-full">
+        <div className="flex-1 flex flex-col justify-center w-full">
           <p className="mb-4 text-lg text-[#5c6d5e]">This is to certify that</p>
           <h2 className="mb-6 font-serif text-3xl font-bold italic text-[#2c3e2d]">{userName}</h2>
           <p className="mb-4 text-lg text-[#5c6d5e]">has successfully completed the course</p>
@@ -69,9 +69,11 @@ export function Certificate({
         </div>
 
         {/* Footer */}
-        <div className="mt-6 flex w-full items-center justify-between text-xs text-[#5c6d5e]">
-          <p>Certificate ID: {certificateId}</p>
-          <p>Verify at: bonsailearning.com/verify</p>
+        <div className="mt-4 w-full border-t border-[#4a7c59]/20 pt-4">
+          <div className="flex w-full items-center justify-between text-xs text-[#5c6d5e]">
+            <p>Certificate ID: {certificateId}</p>
+            <p>Verify at: bonsailearning.com/verify</p>
+          </div>
         </div>
       </div>
     </div>
