@@ -228,7 +228,7 @@ const CourseActions = memo(function CourseActions({
             Processing...
           </span>
         ) : (
-          coursePrice === 0 ? 'Enroll Free' : 'Buy Course'
+          coursePrice === 0 ? 'Free' : 'Enroll Now'
         )}
       </Button>
 
