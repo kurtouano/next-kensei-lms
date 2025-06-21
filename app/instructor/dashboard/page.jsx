@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { BarChart, LineChart, Users, BookOpen, DollarSign, Star, Plus, Loader2, UserPlus, Trophy, CheckCircle, Activity, Heart, User } from "lucide-react"
 import { Header } from "@/components/header"
+import { CoursePerformanceChart } from "./components/course-performance-chart"
 
 export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
@@ -233,7 +234,7 @@ export default function AdminDashboard() {
                 <CardContent className="pt-0">
                   <div className="text-lg sm:text-2xl font-bold">{stats.totalCourses}</div>
                   <p className="text-xs text-muted-foreground">
-                    {stats.publishedCourses} published, {stats.draftCourses} draft{stats.draftCourses !== 1 ? 's' : ''}
+                     Published courses
                   </p>
                 </CardContent>
               </Card>
@@ -271,11 +272,12 @@ export default function AdminDashboard() {
                 <CardHeader>
                   <CardTitle className="text-sm sm:text-base">Course Performance</CardTitle>
                 </CardHeader>
-                <CardContent className="h-[200px] sm:h-[300px] flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <BarChart className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-[#4a7c59] opacity-50" />
-                    <p className="mt-2 text-xs sm:text-sm">Course performance chart would appear here</p>
-                  </div>
+                <CardContent className="h-[200px] sm:h-[350px]">
+                  <CoursePerformanceChart 
+                    courses={courses} 
+                    stats={stats}
+                    monthlyData={dashboardData?.monthlyData || []}
+                  />
                 </CardContent>
               </Card>
               
@@ -286,11 +288,11 @@ export default function AdminDashboard() {
                     <Loader2 className="h-4 w-4 animate-spin text-[#4a7c59]" />
                   )}
                 </CardHeader>
-                <CardContent className="h-[200px] sm:h-[300px] overflow-y-auto">
+                <CardContent className="h-[200px] sm:h-[350px] overflow-y-auto">
                   {recentActivity && recentActivity.activities && recentActivity.activities.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {recentActivity.activities.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg bg-[#f8f7f4] hover:bg-[#eef2eb] transition-colors">
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 border-b hover:bg-[#eef2eb] transition-colors">
                           <div className="flex-shrink-0">
                             {activity.user && activity.user.avatar ? (
                               <img 
