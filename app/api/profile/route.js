@@ -6,6 +6,8 @@ import { connectDb } from "@/lib/mongodb";
 import User from "@/models/User.js";
 import Bonsai from "@/models/Bonsai.js";
 import Progress from "@/models/Progress.js";
+import Module from "@/models/Module.js";
+import Lesson from "@/models/Lesson.js";
 import Course from "@/models/Course.js";
 import Rating from "@/models/Rating.js";
 

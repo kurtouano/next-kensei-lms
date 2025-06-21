@@ -65,43 +65,53 @@ export async function GET(req) {
 
         // ✅ Calculate detailed course statistics
         const coursesWithStats = getUser.publishedCourses.map(course => {
-        // ✅ Use ratingStats instead of ratings array
-        const avgRating = course.ratingStats?.averageRating || 0;
-        const ratingCount = course.ratingStats?.totalRatings || 0;
+            // ✅ Use ratingStats instead of ratings array
+            const avgRating = course.ratingStats?.averageRating || 0;
+            const ratingCount = course.ratingStats?.totalRatings || 0;
 
-        // Calculate total revenue for this course
-        const revenue = (course.enrolledStudents || 0) * (course.price || 0);
+            // Calculate total revenue for this course
+            const revenue = (course.enrolledStudents || 0) * (course.price || 0);
 
-        // Calculate total lessons count
-        const totalLessons = course.modules?.reduce((total, module) => 
-            total + (module.lessons?.length || 0), 0) || 0;
+            // Calculate total lessons count
+            const totalLessons = course.modules?.reduce((total, module) => 
+                total + (module.lessons?.length || 0), 0) || 0;
 
-        // Calculate total duration
-        const totalDuration = course.modules?.reduce((total, module) => 
-            total + (module.lessons?.reduce((lessonTotal, lesson) => 
-                lessonTotal + (lesson.videoDuration || 0), 0) || 0), 0) || 0;
+            // Calculate total duration
+            const totalDuration = course.modules?.reduce((total, module) => 
+                total + (module.lessons?.reduce((lessonTotal, lesson) => 
+                    lessonTotal + (lesson.videoDuration || 0), 0) || 0), 0) || 0;
 
-        return {
-            id: course._id,
-            title: course.title,
-            description: course.shortDescription,
-            thumbnail: course.thumbnail,
-            price: course.price || 0,
-            students: course.enrolledStudents || 0,
-            revenue: revenue,
-            rating: Number(avgRating.toFixed(1)), 
-            ratingCount: ratingCount,             
-            status: course.isPublished ? "Published" : "Draft",
-            published: course.createdAt,
-            lastUpdated: course.updatedAt,
-            level: course.level,
-            category: course.category,
-            modulesCount: course.modules?.length || 0,
-            lessonsCount: totalLessons,
-            totalDuration: Math.round(totalDuration / 60),
-            isPublished: course.isPublished
-        };
-    });
+            return {
+                id: course._id,
+                title: course.title,
+                description: course.shortDescription,
+                thumbnail: course.thumbnail,
+                price: course.price || 0,
+                students: course.enrolledStudents || 0,
+                revenue: revenue,
+                rating: Number(avgRating.toFixed(1)), 
+                ratingCount: ratingCount,             
+                status: course.isPublished ? "Published" : "Draft",
+                published: course.createdAt,
+                lastUpdated: course.updatedAt,
+                level: course.level,
+                category: course.category,
+                modulesCount: course.modules?.length || 0,
+                lessonsCount: totalLessons,
+                totalDuration: Math.round(totalDuration / 60),
+                isPublished: course.isPublished
+            };
+        });
+
+        // ✅ Calculate WEIGHTED average rating (fixed logic)
+        const totalRatingPoints = coursesWithStats.reduce((sum, course) => 
+            sum + (course.rating * course.ratingCount), 0);
+        const totalRatingCount = coursesWithStats.reduce((sum, course) => 
+            sum + course.ratingCount, 0);
+
+        const overallAverageRating = totalRatingCount > 0 
+            ? (totalRatingPoints / totalRatingCount).toFixed(1)
+            : "0.0";
 
         // ✅ Calculate overall statistics
         const stats = {
@@ -110,9 +120,7 @@ export async function GET(req) {
             draftCourses: coursesWithStats.filter(course => !course.isPublished).length,
             totalStudents: coursesWithStats.reduce((sum, course) => sum + course.students, 0),
             totalRevenue: coursesWithStats.reduce((sum, course) => sum + course.revenue, 0),
-            averageRating: coursesWithStats.length > 0 
-                ? (coursesWithStats.reduce((sum, course) => sum + course.rating, 0) / coursesWithStats.length).toFixed(1)
-                : 0,
+            averageRating: overallAverageRating, // ✅ Fixed: Now using weighted average
             totalLessons: coursesWithStats.reduce((sum, course) => sum + course.lessonsCount, 0),
             totalModules: coursesWithStats.reduce((sum, course) => sum + course.modulesCount, 0)
         };

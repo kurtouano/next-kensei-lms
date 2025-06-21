@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BonsaiIcon } from "@/components/bonsai-icon"
-import { User, Settings, Award, BookOpen, Flag, Globe, Mail, Lock, LogOut, Check, ChevronRight, Loader2, Upload } from "lucide-react"
+import { User, Award, BookOpen, Flag, Globe, Mail, Lock, LogOut, Check, ChevronRight, Loader2, Upload } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { CertificateModal } from "@/components/certificate-modal"
@@ -322,7 +322,7 @@ export default function ProfilePage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 bg-[#eef2eb]">
+            <TabsList className="grid w-full grid-cols-2 bg-[#eef2eb]">
               <TabsTrigger value="profile" className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white">
                 <User className="mr-2 h-4 w-4" />
                 Profile
@@ -333,10 +333,6 @@ export default function ProfilePage() {
               >
                 <Award className="mr-2 h-4 w-4" />
                 Certifications
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
               </TabsTrigger>
             </TabsList>
 
@@ -494,14 +490,6 @@ export default function ProfilePage() {
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Password</label>
-                        <Button variant="outline" className="w-full border-[#4a7c59] text-[#4a7c59]">
-                          <Lock className="mr-2 h-4 w-4" />
-                          Change Password
-                        </Button>
-                      </div>
-
-                      <div>
                         <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Country</label>
                         <select 
                           className="w-full rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none"
@@ -545,6 +533,8 @@ export default function ProfilePage() {
                     )}
                   </div>
 
+
+
                   {/* Subscription Information */}
                   {userData.subscription && (
                     <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
@@ -564,72 +554,86 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   )}
+
+
                 </div>
 
-                {/* Bonsai Preview */}
-                <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">My Bonsai</h2>
-                  {userData.bonsai ? (
-                    <div className="mb-6 flex flex-col items-center">
-                      <div className="relative mb-4 h-48 w-48">
-                        {/* Pot */}
-                        <div 
-                          className="absolute bottom-0 left-1/2 h-16 w-24 -translate-x-1/2 rounded-t-sm rounded-b-xl"
-                          style={{
-                            backgroundColor: userData.bonsai.pot.type === 'ceramic' ? '#5b8fb0' : 
-                                           userData.bonsai.pot.type === 'stone' ? '#8a8a8a' :
-                                           userData.bonsai.pot.type === 'plastic' ? '#4CAF50' : '#8B5E3C'
-                          }}
-                        ></div>
-                        {/* Trunk */}
-                        <div className="absolute bottom-12 left-1/2 h-24 w-4 -translate-x-1/2 bg-[#8B5E3C]"></div>
-                        {/* Main foliage */}
-                        <div 
-                          className="absolute bottom-24 left-1/2 h-16 w-16 -translate-x-1/2 rounded-full"
-                          style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
-                        ></div>
-                        {/* Side branches */}
-                        <div 
-                          className="absolute bottom-28 left-1/4 h-12 w-12 -translate-x-1/2 rounded-full"
-                          style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
-                        ></div>
-                        <div 
-                          className="absolute bottom-28 right-1/4 h-12 w-12 translate-x-1/2 rounded-full"
-                          style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
-                        ></div>
-                        <div 
-                          className="absolute bottom-32 left-1/2 h-14 w-14 -translate-x-1/2 rounded-full"
-                          style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
-                        ></div>
-                        {/* Decoration */}
-                        <div className="absolute bottom-6 right-12 h-6 w-6 rounded-md bg-[#d3d3d3]"></div>
+                {/* Bonsai Preview & Logout */}
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">My Bonsai</h2>
+                    {userData.bonsai ? (
+                      <div className="mb-6 flex flex-col items-center">
+                        <div className="relative mb-4 h-48 w-48">
+                          {/* Pot */}
+                          <div 
+                            className="absolute bottom-0 left-1/2 h-16 w-24 -translate-x-1/2 rounded-t-sm rounded-b-xl"
+                            style={{
+                              backgroundColor: userData.bonsai.pot.type === 'ceramic' ? '#5b8fb0' : 
+                                             userData.bonsai.pot.type === 'stone' ? '#8a8a8a' :
+                                             userData.bonsai.pot.type === 'plastic' ? '#4CAF50' : '#8B5E3C'
+                            }}
+                          ></div>
+                          {/* Trunk */}
+                          <div className="absolute bottom-12 left-1/2 h-24 w-4 -translate-x-1/2 bg-[#8B5E3C]"></div>
+                          {/* Main foliage */}
+                          <div 
+                            className="absolute bottom-24 left-1/2 h-16 w-16 -translate-x-1/2 rounded-full"
+                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
+                          ></div>
+                          {/* Side branches */}
+                          <div 
+                            className="absolute bottom-28 left-1/4 h-12 w-12 -translate-x-1/2 rounded-full"
+                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
+                          ></div>
+                          <div 
+                            className="absolute bottom-28 right-1/4 h-12 w-12 translate-x-1/2 rounded-full"
+                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
+                          ></div>
+                          <div 
+                            className="absolute bottom-32 left-1/2 h-14 w-14 -translate-x-1/2 rounded-full"
+                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
+                          ></div>
+                          {/* Decoration */}
+                          <div className="absolute bottom-6 right-12 h-6 w-6 rounded-md bg-[#d3d3d3]"></div>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-medium text-[#2c3e2d]">
+                            {capitalizeFirst(userData.bonsai.tree.type)} Bonsai (Level {userData.bonsai.tree.level})
+                          </p>
+                          <p className="text-sm text-[#5c6d5e]">
+                            {capitalizeFirst(userData.bonsai.pot.type)} {capitalizeFirst(userData.bonsai.pot.size)} Pot
+                          </p>
+                          <p className="text-sm text-[#5c6d5e]">
+                            {capitalizeFirst(userData.bonsai.decoration.style)} {capitalizeFirst(userData.bonsai.decoration.type)}
+                          </p>
+                          <p className="text-xs text-[#5c6d5e] mt-1">
+                            Total Credits: {userData.bonsai.totalCredits}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <p className="font-medium text-[#2c3e2d]">
-                          {capitalizeFirst(userData.bonsai.tree.type)} Bonsai (Level {userData.bonsai.tree.level})
-                        </p>
-                        <p className="text-sm text-[#5c6d5e]">
-                          {capitalizeFirst(userData.bonsai.pot.type)} {capitalizeFirst(userData.bonsai.pot.size)} Pot
-                        </p>
-                        <p className="text-sm text-[#5c6d5e]">
-                          {capitalizeFirst(userData.bonsai.decoration.style)} {capitalizeFirst(userData.bonsai.decoration.type)}
-                        </p>
-                        <p className="text-xs text-[#5c6d5e] mt-1">
-                          Total Credits: {userData.bonsai.totalCredits}
-                        </p>
+                    ) : (
+                      <div className="text-center p-4">
+                        <p className="text-[#5c6d5e] mb-4">No bonsai found</p>
                       </div>
+                    )}
+                    <div className="space-y-3">
+                      <Button className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]" asChild>
+                        <Link href="/bonsai">
+                          Customize My Bonsai
+                          <ChevronRight className="ml-1 h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button 
+                        onClick={handleLogout} 
+                        variant="outline"
+                        className="w-full border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="text-center p-4">
-                      <p className="text-[#5c6d5e] mb-4">No bonsai found</p>
-                    </div>
-                  )}
-                  <Button className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]" asChild>
-                    <Link href="/bonsai">
-                      Customize My Bonsai
-                      <ChevronRight className="ml-1 h-4 w-4" />
-                    </Link>
-                  </Button>
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -680,81 +684,6 @@ export default function ProfilePage() {
                     </Button>
                   </div>
                 )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="settings" className="mt-0 border-0 p-0">
-              <div className="space-y-6">
-                <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Privacy Settings</h2>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-[#2c3e2d]">Public Profile</h3>
-                        <p className="text-sm text-[#5c6d5e]">Allow others to see your profile</p>
-                      </div>
-                      <label className="relative inline-flex cursor-pointer items-center">
-                        <input type="checkbox" className="peer sr-only" defaultChecked />
-                        <div className="peer h-6 w-11 rounded-full bg-[#dce4d7] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#4a7c59] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
-                      </label>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-[#2c3e2d]">Show Learning Progress</h3>
-                        <p className="text-sm text-[#5c6d5e]">Display your progress to other users</p>
-                      </div>
-                      <label className="relative inline-flex cursor-pointer items-center">
-                        <input type="checkbox" className="peer sr-only" defaultChecked />
-                        <div className="peer h-6 w-11 rounded-full bg-[#dce4d7] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#4a7c59] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
-                      </label>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-[#2c3e2d]">Share Certifications</h3>
-                        <p className="text-sm text-[#5c6d5e]">Allow others to see your certifications</p>
-                      </div>
-                      <label className="relative inline-flex cursor-pointer items-center">
-                        <input type="checkbox" className="peer sr-only" defaultChecked />
-                        <div className="peer h-6 w-11 rounded-full bg-[#dce4d7] after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-[#4a7c59] peer-checked:after:translate-x-full peer-focus:outline-none"></div>
-                      </label>
-                    </div>
-                  </div>
-
-                  <Button className="mt-6 w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]">Save Preferences</Button>
-                  <Button onClick={handleLogout} className="w-full mt-5 bg-[#f8f7f4] text-[#4a7c59] border border-[#4a7c59] hover:bg-[#eef2eb]">
-                    <LogOut className="mr-2 h-4 w-4" />Logout
-                  </Button>
-                </div>
-
-                {/* Additional Account Information */}
-                <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Account Information</h2>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-[#5c6d5e]">Member since:</span>
-                      <span className="text-[#2c3e2d] font-medium">{formatDate(userData.joinDate)}</span>
-                    </div>
-                    {userData.lastLogin && (
-                      <div className="flex justify-between">
-                        <span className="text-[#5c6d5e]">Last login:</span>
-                        <span className="text-[#2c3e2d] font-medium">{formatDate(userData.lastLogin)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-[#5c6d5e]">Total courses enrolled:</span>
-                      <span className="text-[#2c3e2d] font-medium">{userData.progress.enrolledCourses}</span>
-                    </div>
-                    {userData.role === 'instructor' && (
-                      <div className="flex justify-between">
-                        <span className="text-[#5c6d5e]">Published courses:</span>
-                        <span className="text-[#2c3e2d] font-medium">{userData.progress.publishedCourses}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             </TabsContent>
             
