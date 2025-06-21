@@ -6,6 +6,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Course from "@/models/Course";
 import Rating from "@/models/Rating";
 import User from "@/models/User";
+import Activity from "@/models/Activity";
 
 // GET - Fetch all reviews for a course
 export async function GET(request, { params }) {
@@ -24,7 +25,7 @@ export async function GET(request, { params }) {
     const ratings = await Rating.find({ courseId: course._id })
       .populate({
         path: 'user',
-        select: 'name email image'
+        select: 'name email icon' // Changed from 'image' to 'icon'
       })
       .sort({ createdAt: -1 })
       .lean();
@@ -43,7 +44,7 @@ export async function GET(request, { params }) {
       user: {
         name: rating.user?.name || "Anonymous",
         email: rating.user?.email || "",
-        avatar: rating.user?.image || null
+        avatar: rating.user?.icon || null // Changed from 'image' to 'icon'
       }
     }));
 
@@ -127,12 +128,14 @@ export async function POST(request, { params }) {
     });
 
     let savedRating;
+    let isNewRating = false;
 
     if (existingRating) {
       // Update existing review
       existingRating.rating = rating;
       existingRating.review = comment.trim();
       savedRating = await existingRating.save();
+      console.log('ℹ️ Updated existing review, no new activity created');
     } else {
       // Create new review
       const newRating = new Rating({
@@ -143,10 +146,45 @@ export async function POST(request, { params }) {
         isLiked: false
       });
       savedRating = await newRating.save();
+      isNewRating = true;
     }
 
     // Update course rating statistics
     await updateCourseRatingStats(course._id);
+
+    // ✅ FIXED: Create activity record only for NEW ratings, and prevent duplicates
+    if (isNewRating) {
+      try {
+        // Check if activity already exists (safety check)
+        const existingActivity = await Activity.findOne({
+          instructor: course.instructor,
+          course: course._id,
+          user: user._id,
+          type: 'course_rated'
+        });
+
+        if (!existingActivity) {
+          const ratingActivity = new Activity({
+            instructor: course.instructor,
+            course: course._id,
+            user: user._id,
+            type: 'course_rated',
+            metadata: {
+              rating: Number(rating),
+              reviewText: comment.trim()
+            }
+          });
+          
+          await ratingActivity.save();
+          console.log('✅ Rating activity created for instructor dashboard');
+        } else {
+          console.log('ℹ️ Rating activity already exists, skipping creation');
+        }
+      } catch (activityError) {
+        console.error('Failed to create rating activity:', activityError);
+        // Don't fail the rating if activity creation fails
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -209,6 +247,19 @@ export async function DELETE(request, { params }) {
         { error: "Review not found" }, 
         { status: 404 }
       );
+    }
+
+    // ✅ NEW: Remove the rating activity when review is deleted
+    try {
+      await Activity.findOneAndDelete({
+        instructor: course.instructor,
+        course: course._id,
+        user: user._id,
+        type: 'course_rated'
+      });
+      console.log('✅ Rating activity removed from dashboard');
+    } catch (activityError) {
+      console.error('Failed to remove rating activity:', activityError);
     }
 
     // Update course rating statistics

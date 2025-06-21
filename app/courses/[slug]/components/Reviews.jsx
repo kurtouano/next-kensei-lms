@@ -327,29 +327,52 @@ const ReviewsList = memo(function ReviewsList({ reviews, loading }) {
 })
 
 const ReviewItem = memo(function ReviewItem({ review }) {
-  return (
-    <div className="border-b border-[#dce4d7] pb-4 last:border-b-0">
-      <div className="flex items-start gap-3">
-        {review.user.avatar ? (
+  const [imageError, setImageError] = useState(false)
+  
+  const handleImageError = () => {
+    setImageError(true)
+  }
+
+  // Helper function to display avatar
+  const renderAvatar = () => {
+    // If there's an avatar and no image error
+    if (review.user.avatar && !imageError) {
+      // Check if it's a URL (uploaded image) or emoji
+      if (review.user.avatar.startsWith('http')) {
+        return (
           <img
             src={review.user.avatar}
             alt={review.user.name}
             className="h-10 w-10 rounded-full object-cover"
-            onError={(e) => {
-              e.target.style.display = 'none'
-              e.target.nextSibling.style.display = 'flex'
-            }}
+            onError={handleImageError}
           />
-        ) : (
-          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-            <User size={20} className="text-[#2c3e2d]" />
+        )
+      } else {
+        // It's an emoji
+        return (
+          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+            <span className="text-2xl">{review.user.avatar}</span>
           </div>
-        )}
-        {review.user.avatar && (
-          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center" style={{display: 'none'}}>
-            <User size={20} className="text-[#2c3e2d]" />
-          </div>
-        )}
+        )
+      }
+    } else {
+      // Fallback to default avatar
+      return (
+        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+          <User className="h-5 w-5 text-gray-500" />
+        </div>
+      )
+    }
+  }
+
+  return (
+    <div className="border-b border-[#dce4d7] pb-4 last:border-b-0">
+      <div className="flex items-start gap-3">
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          {renderAvatar()}
+        </div>
+
         <div className="flex-1">
           <div className="flex items-center justify-between mb-2">
             <div>

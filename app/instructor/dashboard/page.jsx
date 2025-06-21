@@ -4,13 +4,14 @@ import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { BarChart, LineChart, Users, BookOpen, DollarSign, Star, Plus, Loader2 } from "lucide-react"
+import { BarChart, LineChart, Users, BookOpen, DollarSign, Star, Plus, Loader2, UserPlus, Trophy, CheckCircle, Activity, Heart, User } from "lucide-react"
 import { Header } from "@/components/header"
 
 export default function AdminDashboard() {
-  // ✅ State for real data
   const [dashboardData, setDashboardData] = useState(null);
+  const [recentActivity, setRecentActivity] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -39,10 +40,30 @@ export default function AdminDashboard() {
       }
     };
 
+    const fetchRecentActivity = async () => {
+      try {
+        setActivityLoading(true);
+        const res = await fetch("/api/instructor/recent-activity?limit=5");
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setRecentActivity(data.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching recent activity:", error);
+        // Don't set error state for activity, just log it
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+
     fetchDashboardData();
+    fetchRecentActivity();
   }, []);
 
-  // ✅ Helper function to format date
+  // Helper function to format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -51,7 +72,7 @@ export default function AdminDashboard() {
     });
   };
 
-  // ✅ Helper function to format currency
+  // Helper function to format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -59,7 +80,45 @@ export default function AdminDashboard() {
     }).format(amount);
   };
 
-  // ✅ Loading state
+  // Helper function to format relative time
+  const formatRelativeTime = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    
+    return formatDate(dateString);
+  };
+
+  // Helper function to get activity icon
+  const getActivityIcon = (type) => {
+    const iconClass = "h-4 w-4 text-[#4a7c59]";
+    
+    switch (type) {
+      case 'student_enrolled':
+        return <UserPlus className={iconClass} />;
+      case 'course_rated':
+        return <Star className={iconClass} />;
+      case 'lesson_completed':
+        return <CheckCircle className={iconClass} />;
+      case 'course_completed':
+        return <Trophy className={iconClass} />;
+      case 'course_liked':
+        return <Heart className={iconClass} />;
+      default:
+        return <Activity className={iconClass} />;
+    }
+  };
+
+  // Loading state
   if (loading) {
     return (
       <>
@@ -74,7 +133,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // ✅ Error state
+  // Error state
   if (error) {
     return (
       <>
@@ -95,7 +154,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // ✅ No courses state (only applies to the entire dashboard, not the tab)
+  // No courses state
   if (dashboardData?.courses?.length === 0) {
     return (
       <>
@@ -117,7 +176,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // ✅ Extract data for easier use
+  // Extract data for easier use
   const { user, courses, stats } = dashboardData;
 
   return (
@@ -150,7 +209,7 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab - Keep 4 cards but remove data from Course Performance and Recent Activity */}
+          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4 sm:space-y-6">
             <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-4">
               <Card>
@@ -206,7 +265,7 @@ export default function AdminDashboard() {
               </Card>
             </div>
 
-            {/* ✅ REPLACED: Remove course data, bring back chart icons */}
+            {/* Charts and Recent Activity */}
             <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -221,20 +280,114 @@ export default function AdminDashboard() {
               </Card>
               
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-sm sm:text-base">Recent Activity</CardTitle>
+                  {activityLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin text-[#4a7c59]" />
+                  )}
                 </CardHeader>
-                <CardContent className="h-[200px] sm:h-[300px] flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <LineChart className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-[#4a7c59] opacity-50" />
-                    <p className="mt-2 text-xs sm:text-sm">Recent activity chart would appear here</p>
-                  </div>
+                <CardContent className="h-[200px] sm:h-[300px] overflow-y-auto">
+                  {recentActivity && recentActivity.activities && recentActivity.activities.length > 0 ? (
+                    <div className="space-y-3">
+                      {recentActivity.activities.map((activity) => (
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg bg-[#f8f7f4] hover:bg-[#eef2eb] transition-colors">
+                          <div className="flex-shrink-0">
+                            {activity.user && activity.user.avatar ? (
+                              <img 
+                                src={activity.user.avatar} 
+                                alt={activity.user.name || 'User'}
+                                className="w-8 h-8 rounded-full object-cover"
+                                onError={(e) => {
+                                  // Hide the broken image and show fallback
+                                  e.target.style.display = 'none';
+                                  e.target.nextElementSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div 
+                              className={`w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center ${
+                                activity.user && activity.user.avatar ? 'hidden' : 'flex'
+                              }`}
+                            >
+                              <User className="h-4 w-4 text-gray-500" />
+                            </div>
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-[#2c3e2d] leading-tight">
+                                  {activity.message || 'Recent activity'}
+                                </p>
+                                
+                                {/* Type-specific metadata */}
+                                {activity.type === 'student_enrolled' && activity.metadata && activity.metadata.price > 0 && (
+                                  <p className="text-xs text-[#4a7c59] mt-1">
+                                    Revenue: {formatCurrency(activity.metadata.price)}
+                                  </p>
+                                )}
+                                
+                                {activity.type === 'course_rated' && activity.metadata && activity.metadata.rating && (
+                                  <div className="flex items-center mt-1">
+                                    <div className="flex items-center">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star 
+                                          key={i} 
+                                          className={`h-3 w-3 ${
+                                            i < activity.metadata.rating 
+                                              ? 'text-yellow-400 fill-yellow-400' 
+                                              : 'text-gray-300'
+                                          }`} 
+                                        />
+                                      ))}
+                                    </div>
+                                    <span className="ml-1 text-xs text-[#5c6d5e]">
+                                      {activity.metadata.rating}/5
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center space-x-2 ml-2">
+                                {getActivityIcon(activity.type)}
+                                <span className="text-xs text-[#5c6d5e] whitespace-nowrap">
+                                  {formatRelativeTime(activity.createdAt)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {recentActivity.pagination && recentActivity.pagination.hasMore && (
+                        <div className="text-center pt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-[#4a7c59] border-[#4a7c59] hover:bg-[#eef2eb]"
+                          >
+                            View More Activity
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                      <div>
+                        <Activity className="mx-auto h-8 w-8 text-[#4a7c59] opacity-50 mb-2" />
+                        <p className="text-xs sm:text-sm">No recent activity yet</p>
+                        <p className="text-xs text-[#5c6d5e] mt-1">
+                          Activity will appear here when students interact with your courses
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          {/* Courses Tab - Real Data with No Courses State */}
+          {/* Courses Tab */}
           <TabsContent value="courses">
             <Card>
               <CardHeader className="pb-4">
@@ -242,7 +395,6 @@ export default function AdminDashboard() {
                 <CardDescription className="text-sm">Manage your published courses</CardDescription>
               </CardHeader>
               <CardContent className="px-0 sm:px-6">
-                {/* Check if there are no courses */}
                 {(!courses || courses.length === 0) ? (
                   <div className="text-center py-12 px-4">
                     <BookOpen className="mx-auto h-16 w-16 text-[#4a7c59] opacity-50 mb-4" />

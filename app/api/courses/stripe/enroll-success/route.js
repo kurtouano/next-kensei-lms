@@ -5,8 +5,9 @@ import { connectDb } from '@/lib/mongodb';
 import User from '@/models/User';
 import Course from '@/models/Course';
 import Progress from '@/models/Progress';
+import Activity from '@/models/Activity'; // Import Activity model
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Adjust path as needed
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export async function GET(request) {
   try {
@@ -116,10 +117,28 @@ export async function GET(request) {
       // Save course changes
       await course.save();
       console.log('Course statistics updated');
+
+      // ✅ NEW: Create activity record for instructor
+      try {
+        const enrollmentActivity = new Activity({
+          instructor: course.instructor,
+          course: courseId,
+          user: user._id,
+          type: 'student_enrolled',
+          metadata: {
+            enrollmentPrice: session.amount_total / 100
+          }
+        });
+        
+        await enrollmentActivity.save();
+        console.log('✅ Enrollment activity created for instructor dashboard');
+      } catch (activityError) {
+        console.error('Failed to create enrollment activity:', activityError);
+        // Don't fail the enrollment if activity creation fails
+      }
     }
 
     // Return success response
-    
     return NextResponse.json({
       success: true,
       courseName: course.title,
