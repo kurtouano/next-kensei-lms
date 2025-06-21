@@ -22,68 +22,16 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
       return monthlyData
     }
     
-    // Fallback: generate mock data for demonstration
-    const months = []
-    const now = new Date()
+    // Fallback: generate mock data for January to December
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-      
-      months.push({
-        month: monthName,
-        enrollments: Math.floor(Math.random() * 50) + 10,
-        revenue: Math.floor(Math.random() * 2000) + 500,
-        courses: Math.min(courses?.length || 1, 3)
-      })
-    }
-    return months
+    return months.map(monthName => ({
+      month: monthName,
+      enrollments: Math.floor(Math.random() * 50) + 10,
+      revenue: Math.floor(Math.random() * 2000) + 500,
+      courses: Math.min(courses?.length || 1, 3)
+    }));
   }, [monthlyData, courses])
-
-  // Calculate performance metrics
-  const performanceMetrics = useMemo(() => {
-    if (chartData.length < 2) return null
-
-    const thisMonth = chartData[chartData.length - 1]
-    const lastMonth = chartData[chartData.length - 2]
-    const yearToDate = chartData.reduce((sum, month) => sum + (month.enrollments || 0), 0)
-    const lastYearToDate = chartData.slice(0, -1).reduce((sum, month) => sum + (month.enrollments || 0), 0)
-
-    const monthlyGrowth = lastMonth.enrollments > 0 
-      ? ((thisMonth.enrollments - lastMonth.enrollments) / lastMonth.enrollments) * 100 
-      : 0
-
-    const yearlyGrowth = lastYearToDate > 0 
-      ? ((yearToDate - lastYearToDate) / lastYearToDate) * 100 
-      : 0
-
-    const avgMonthly = chartData.reduce((sum, month) => sum + (month.enrollments || 0), 0) / chartData.length
-
-    const bestMonth = chartData.reduce((best, month) => 
-      (month.enrollments || 0) > (best.enrollments || 0) ? month : best, chartData[0])
-
-    return {
-      thisMonth: thisMonth.enrollments || 0,
-      lastMonth: lastMonth.enrollments || 0,
-      monthlyGrowth,
-      yearToDate,
-      yearlyGrowth,
-      avgMonthly: Math.round(avgMonthly),
-      bestMonth: bestMonth.month,
-      bestMonthValue: bestMonth.enrollments || 0
-    }
-  }, [chartData])
-
-  // Course distribution data for pie chart
-  const courseDistribution = useMemo(() => {
-    if (!courses || courses.length === 0) return []
-    
-    return courses.slice(0, 5).map((course, index) => ({
-      name: course.title && course.title.length > 20 ? course.title.substring(0, 20) + '...' : course.title || 'Untitled Course',
-      value: course.students || 0,
-      color: ['#4a7c59', '#6fb58a', '#8bc8a3', '#a8dbc0', '#c5eddd'][index % 5]
-    }))
-  }, [courses])
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -91,18 +39,6 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
       currency: 'USD',
       minimumFractionDigits: 0
     }).format(value)
-  }
-
-  const getGrowthIcon = (growth) => {
-    if (growth > 0) return <ArrowUp className="h-4 w-4 text-green-600" />
-    if (growth < 0) return <ArrowDown className="h-4 w-4 text-red-600" />
-    return <Minus className="h-4 w-4 text-gray-400" />
-  }
-
-  const getGrowthColor = (growth) => {
-    if (growth > 0) return "text-green-600"
-    if (growth < 0) return "text-red-600"
-    return "text-gray-400"
   }
 
   // If no data, show a simple message
@@ -126,20 +62,22 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
       <div className="h-56 sm:h-72">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-2">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="enrollments" className="text-xs">Students</TabsTrigger>
+            <TabsTrigger value="enrollments" className="text-xs">Enrollments</TabsTrigger>
             <TabsTrigger value="revenue" className="text-xs">Revenue</TabsTrigger>
           </TabsList>
 
           <TabsContent value="enrollments" className="mt-2">
             <div className="h-48 sm:h-64 mt-6">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
+                <LineChart data={chartData} margin={{ top: 5, right: 15, left: 5, bottom: 25 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="month" 
                     stroke="#666"
-                    fontSize={10}
-                    interval="preserveStartEnd"
+                    fontSize={9}
+                    interval={0}
+                    tick={{ fontSize: 9 }}
+                    height={20}
                   />
                   <YAxis 
                     stroke="#666"
@@ -154,7 +92,7 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
                       boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       fontSize: '12px'
                     }}
-                    formatter={(value, name) => [value, 'Students']}
+                    formatter={(value, name) => [value, 'Enrollments']}
                     labelFormatter={(label) => `Month: ${label}`}
                   />
                   <Line 
@@ -173,13 +111,15 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
           <TabsContent value="revenue" className="mt-2">
             <div className="h-48 sm:h-64 mt-6">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
+                <BarChart data={chartData} margin={{ top: 5, right: 15, left: -10, bottom: 25 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="month" 
                     stroke="#666"
-                    fontSize={10}
-                    interval="preserveStartEnd"
+                    fontSize={9}
+                    interval={0}
+                    tick={{ fontSize: 9 }}
+                    height={20}
                   />
                   <YAxis 
                     stroke="#666"
@@ -201,7 +141,7 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
                   <Bar 
                     dataKey="revenue" 
                     fill="#4a7c59"
-                    radius={[2, 2, 0, 0]}
+                    radius={[5, 5, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>

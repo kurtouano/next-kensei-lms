@@ -290,9 +290,9 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent className="h-[200px] sm:h-[350px] overflow-y-auto">
                   {recentActivity && recentActivity.activities && recentActivity.activities.length > 0 ? (
-                    <div className="space-y-2">
+                    <div>
                       {recentActivity.activities.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3 p-3 border-b hover:bg-[#eef2eb] transition-colors">
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 py-5 border-b hover:bg-[#eef2eb] transition-colors">
                           <div className="flex-shrink-0">
                             {activity.user && activity.user.avatar ? (
                               <img 

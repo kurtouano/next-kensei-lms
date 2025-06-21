@@ -164,10 +164,12 @@ export async function GET(req) {
 async function generateMonthlyEnrollmentData(courseIds) {
     const monthlyData = [];
     const now = new Date();
+    const currentYear = now.getFullYear();
     
-    for (let i = 11; i >= 0; i--) {
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+    // Generate data for all 12 months of the current year (Jan to Dec)
+    for (let month = 0; month < 12; month++) {
+        const startOfMonth = new Date(currentYear, month, 1);
+        const endOfMonth = new Date(currentYear, month + 1, 0, 23, 59, 59);
         
         // Get enrollments for this month from Progress collection
         const enrollments = await Progress.countDocuments({
@@ -191,7 +193,7 @@ async function generateMonthlyEnrollmentData(courseIds) {
             sum + (record.course?.price || 0), 0);
 
         monthlyData.push({
-            month: startOfMonth.toLocaleDateString('en-US', { month: 'short' }), // FIXED: Just month name like "July"
+            month: startOfMonth.toLocaleDateString('en-US', { month: 'short' }), // Jan, Feb, Mar, etc.
             enrollments,
             revenue: monthlyRevenue,
             courses: courseIds.length
