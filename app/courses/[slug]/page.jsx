@@ -57,15 +57,7 @@ export default function LessonPage() {
   const params = useParams()
   const lessonSlug = params.slug
   const { data: session } = useSession()
-
-  // DEBUG: Add console logs
-  console.log('=== DEBUG INFO ===')
-  console.log('session:', session)
-  console.log('session?.user:', session?.user)
-  console.log('session?.user?.email:', session?.user?.email)
-  console.log('lessonSlug:', lessonSlug)
-  console.log('==================')
-
+  
   // Core hooks
   const { lessonData, loading: lessonLoading, error: lessonError } = useLessonData(lessonSlug)
   const { isEnrolled, loading: enrollmentLoading, checkEnrollment } = useEnrollmentCheck(lessonData?.id)

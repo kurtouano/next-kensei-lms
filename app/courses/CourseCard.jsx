@@ -71,13 +71,15 @@ export const CourseCard = memo(function CourseCard({ course }) {
 
   const priceDisplay = useMemo(() => {
     if (checkingEnrollment) {
-      return <div className="h-4 w-5 bg-transparent rounded animate-pulse"></div>
+      return <div className="h-4 w-5 bg-transparent rounded animate-pulse"></div>;
     }
     if (isEnrolled) {
-      return <div className="hidden"></div>
+      return <div className="hidden"></div>;
     }
-    return courseData.price === 0 ? 'Free' : `$ ${courseData.price}`
-  }, [isEnrolled, checkingEnrollment, courseData.price])
+    return courseData.price === 0
+      ? 'Free'
+      : `${Number(courseData.price).toFixed(2)}`;
+  }, [isEnrolled, checkingEnrollment, courseData.price]);
 
   useEffect(() => {
     const checkEnrollment = async () => {
@@ -117,8 +119,8 @@ export const CourseCard = memo(function CourseCard({ course }) {
 
         {/* Price badge */}
         <div className="absolute top-4 right-4">
-          <div className={`${isEnrolled && "hidden"} rounded-full bg-green-800/90 backdrop-blur-sm px-3 py-1.5 text-sm font-medium text-white`}>
-            {priceDisplay}
+          <div className={`${isEnrolled && "hidden"} rounded-full bg-green-800/75 backdrop-blur-sm px-3 py-1 text-sm font-semibold text-white`}>
+            $ {priceDisplay}
           </div>
         </div>
       </div>
