@@ -32,7 +32,8 @@ export const QASection = memo(function QASection({
   onToggleLike,
   onLoadMore,
   isEnrolled = false,
-  userRole = 'student'
+  userRole = 'student',
+  courseData = null // Add courseData prop for enrollment
 }) {
   const {
     questions,
@@ -57,15 +58,56 @@ export const QASection = memo(function QASection({
     onUpdateQuestion({ question: e.target.value })
   }, [onUpdateQuestion])
 
-  const handleShowForm = useCallback(() => {
+  // UPDATED: Handle "Ask Question" button click
+  const handleAskQuestionClick = useCallback(() => {
+    if (!isLoggedIn) {
+      // Redirect to login
+      window.location.href = '/login'
+      return
+    }
+    
+    if (!isEnrolled) {
+      // Non-enrolled users see the prompt in place of questions
+      return
+    }
+    
+    // User is logged in and enrolled, show the form
     onToggleForm(true)
-  }, [onToggleForm])
+  }, [isLoggedIn, isEnrolled, onToggleForm])
+
+  const handleShowForm = useCallback(() => {
+    handleAskQuestionClick()
+  }, [handleAskQuestionClick])
 
   const handleCancelForm = useCallback(() => {
     onToggleForm(false)
     onUpdateQuestion({ question: "" })
   }, [onToggleForm, onUpdateQuestion])
 
+  // Handle enrollment
+  const handleEnrollClick = useCallback(() => {
+    if (!courseData) return
+    
+    fetch('/api/courses/stripe/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        courseId: courseData?.id,
+        title: courseData?.title || 'Course Enrollment',
+        description: courseData?.description || courseData?.fullDescription || 'Full course access',
+        price: Number(courseData?.price) || 0,
+        thumbnail: courseData?.thumbnail || '',
+      }),
+    }).then(response => response.json())
+    .then(data => {
+      if (data.url) {
+        window.location.assign(data.url);
+      }
+    }).catch(console.error);
+  }, [courseData])
+  
   const handleDeleteClick = useCallback((type, id, commentId = null) => {
     setDeleteTarget({ type, id, commentId })
     setShowDeleteConfirm(true)
@@ -140,109 +182,121 @@ export const QASection = memo(function QASection({
         return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     }
   }, [questions, sortBy])
+  
 
-  return (
+    return (
     <>
-      <div className="mt-4 rounded-lg border border-[#dce4d7] bg-white p-4 shadow-sm">
-        <QAHeader
-          totalQuestions={totalQuestions}
-          loadedQuestions={questions.length}
-          isLoggedIn={isLoggedIn}
-          userHasAsked={userHasAsked}
-          showForm={showForm}
-          onShowForm={handleShowForm}
-          onAskQuestion={handleShowForm}
-          isEnrolled={isEnrolled}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-        />
-
-        {/* Show form if user is logged in AND enrolled */}
-        {showForm && isLoggedIn && isEnrolled && (
-          <QuestionForm
-            newQuestion={newQuestion}
-            submitting={submitting}
-            onQuestionChange={handleQuestionChange}
-            onSubmitQuestion={onSubmitQuestion}
-            onCancelQuestion={handleCancelForm}
+      {/* Show full Q&A interface only for logged in and enrolled users */}
+      {isLoggedIn && isEnrolled ? (
+        <div className="mt-4 rounded-lg border border-[#dce4d7] bg-white p-4 shadow-sm">
+          <QAHeader
+            totalQuestions={totalQuestions}
+            loadedQuestions={questions.length}
+            isLoggedIn={isLoggedIn}
+            userHasAsked={userHasAsked}
+            showForm={showForm}
+            onShowForm={handleShowForm}
+            onAskQuestion={handleAskQuestionClick}
+            isEnrolled={isEnrolled}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
           />
-        )}
 
-        {/* Show enrollment message if logged in but not enrolled */}
-        {isLoggedIn && !isEnrolled && (
-          <div className="border-b border-[#dce4d7] py-4">
-            <div className="flex items-center justify-center p-4 bg-[#eef2eb] rounded-md border border-[#4a7c59]">
-              <div className="text-center ">
-                <p className="text-sm font-medium text-[#2c3e2d] mb-1">
-                  Enroll to Ask Questions
-                </p>
-                <p className="text-xs text-[#5c6d5e]">
-                  You need to be enrolled in this course to ask questions and participate in discussions
+          {/* Show form only if user is logged in AND enrolled */}
+          {showForm && (
+            <QuestionForm
+              newQuestion={newQuestion}
+              submitting={submitting}
+              onQuestionChange={handleQuestionChange}
+              onSubmitQuestion={onSubmitQuestion}
+              onCancelQuestion={handleCancelForm}
+            />
+          )}
+
+          {/* Questions list for enrolled users */}
+          <>
+            <QuestionsList 
+              questions={sortedQuestions} 
+              loading={loading}
+              isLoggedIn={isLoggedIn}
+              isEnrolled={isEnrolled}
+              userRole={userRole}
+              onDeleteQuestion={(id) => handleDeleteClick('question', id)}
+              onToggleLike={onToggleLike}
+              onSubmitComment={handleSubmitComment}
+              onDeleteComment={(questionId, commentId) => handleDeleteClick('comment', questionId, commentId)}
+              onEditComment={handleEditComment}
+              onUpdateComment={handleUpdateComment}
+              onCancelEdit={handleCancelEdit}
+              editingComment={editingComment}
+              commentText={commentText}
+              setCommentText={setCommentText}
+              replyingTo={replyingTo}
+              setReplyingTo={setReplyingTo}
+            />
+
+            {/* Load More Button */}
+            {!loading && questions.length > 0 && hasMore && (
+              <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
+                <Button
+                  variant="outline"
+                  className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading more questions...
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="mr-2 h-4 w-4" />
+                      Load More Questions
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-[#5c6d5e] mt-2">
+                  Showing {questions.length} of {totalQuestions} questions
                 </p>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        <QuestionsList 
-          questions={sortedQuestions} 
-          loading={loading}
-          isLoggedIn={isLoggedIn}
-          isEnrolled={isEnrolled}
-          userRole={userRole}
-          onDeleteQuestion={(id) => handleDeleteClick('question', id)}
-          onToggleLike={onToggleLike}
-          onSubmitComment={handleSubmitComment}
-          onDeleteComment={(questionId, commentId) => handleDeleteClick('comment', questionId, commentId)}
-          onEditComment={handleEditComment}
-          onUpdateComment={handleUpdateComment}
-          onCancelEdit={handleCancelEdit}
-          editingComment={editingComment}
-          commentText={commentText}
-          setCommentText={setCommentText}
-          replyingTo={replyingTo}
-          setReplyingTo={setReplyingTo}
-        />
-
-        {/* Load More Button */}
-        {!loading && questions.length > 0 && hasMore && (
-          <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
-            <Button
-              variant="outline"
-              className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-            >
-              {loadingMore ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading more questions...
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-2 h-4 w-4" />
-                  Load More Questions
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-[#5c6d5e] mt-2">
-              Showing {questions.length} of {totalQuestions} questions
+            {/* End of questions message */}
+            {!loading && questions.length > 0 && !hasMore && (
+              <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
+                <p className="text-sm text-[#5c6d5e]">
+                  You've reached the end! 🎉
+                </p>
+                <p className="text-xs text-[#5c6d5e] mt-1">
+                  All {totalQuestions} questions loaded
+                </p>
+              </div>
+            )}
+          </>
+        </div>
+      ) : (
+        /* Clean enrollment prompt for non-enrolled users - matches your design */
+        <div className="mt-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
+          <div className="text-[#5c6d5e] mb-4">
+            <p className="text-lg font-medium text-[#2c3e2d] mb-2">
+              Join the Discussion
+            </p>
+            <p className="text-sm">
+              {!isLoggedIn 
+                ? "Log in to view and participate in course discussions"
+                : "Enroll in this course to access student discussions and ask questions"
+              }
             </p>
           </div>
-        )}
-
-        {/* End of questions message */}
-        {!loading && questions.length > 0 && !hasMore && (
-          <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
-            <p className="text-sm text-[#5c6d5e]">
-              You've reached the end!
-            </p>
-            <p className="text-xs text-[#5c6d5e] mt-1">
-              All questions loaded
-            </p>
-          </div>
-        )}
-      </div>
+          <button 
+            onClick={!isLoggedIn ? () => window.location.href = '/login' : handleEnrollClick}
+            className="bg-[#4a7c59] text-white px-6 py-2 rounded-lg hover:bg-[#3a6147] transition-colors"
+          >
+            {!isLoggedIn ? "Log In to Continue" : `Enroll Now`}
+          </button>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

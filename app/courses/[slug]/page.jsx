@@ -421,40 +421,22 @@ export default function LessonPage() {
 
                   {activeTab === 'questions' && (
                     <div id="questions-section">
-                      {isLoggedIn ? (
-                        <QASection
-                          qaState={qaState}
-                          isLoggedIn={isLoggedIn}
-                          onSubmitQuestion={submitQuestion}
-                          onDeleteQuestion={deleteQuestion}
-                          onUpdateQuestion={updateQuestion}
-                          onToggleForm={toggleQAForm}
-                          onSubmitComment={submitComment}
-                          onDeleteComment={deleteComment}
-                          onUpdateComment={updateComment}
-                          onToggleLike={toggleQuestionLike}
-                          onLoadMore={loadMoreQuestions}
-                          isEnrolled={isEnrolled}
-                          userRole={session?.user?.role || 'student'}
-                        />
-                      ) : (
-                        <div className="mt-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
-                          <div className="text-[#5c6d5e] mb-4">
-                            <p className="text-lg font-medium text-[#2c3e2d] mb-2">
-                              Join the Discussion
-                            </p>
-                            <p className="text-sm">
-                              Log in to view and participate in course discussions
-                            </p>
-                          </div>
-                          <button 
-                            onClick={() => window.location.href = '/auth/login'}
-                            className="bg-[#4a7c59] text-white px-6 py-2 rounded-lg hover:bg-[#3a6147] transition-colors"
-                          >
-                            Log In to Continue
-                          </button>
-                        </div>
-                      )}
+                      <QASection
+                        qaState={qaState}
+                        isLoggedIn={isLoggedIn}
+                        onSubmitQuestion={submitQuestion}
+                        onDeleteQuestion={deleteQuestion}
+                        onUpdateQuestion={updateQuestion}
+                        onToggleForm={toggleQAForm}
+                        onSubmitComment={submitComment}
+                        onDeleteComment={deleteComment}
+                        onUpdateComment={updateComment}
+                        onToggleLike={toggleQuestionLike}
+                        onLoadMore={loadMoreQuestions}
+                        isEnrolled={isEnrolled}
+                        userRole={session?.user?.role || 'student'}
+                        courseData={lessonData} // Pass course data for enrollment
+                      />
                     </div>
                   )}
                 </>
