@@ -129,9 +129,9 @@ function EmptyState() {
 
 function ErrorState({ error, onRetry }) {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-[#f9fafb]">
       <Header isLoggedIn={true} />
-      <main className="flex-1 py-8">
+      <main className="flex-1 py-8 ">
         <div className="container mx-auto px-4">
           <div className="text-center py-12">
             <div className="text-red-600 mb-4">

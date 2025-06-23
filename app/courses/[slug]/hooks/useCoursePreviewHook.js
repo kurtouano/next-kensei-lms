@@ -1054,8 +1054,10 @@ export function useEnrollmentCheck(courseId) {
   const [error, setError] = useState(null)
 
   const checkEnrollment = useCallback(async () => {
+    // FIXED: Return early if no courseId or no session
     if (!courseId || !session?.user) {
       setIsEnrolled(false)
+      setLoading(false)
       return
     }
     
@@ -1080,10 +1082,12 @@ export function useEnrollmentCheck(courseId) {
   }, [courseId, session?.user])
 
   useEffect(() => {
+    // FIXED: Only run if both courseId and session exist
     if (courseId && session?.user) {
       checkEnrollment()
     } else {
       setIsEnrolled(false)
+      setLoading(false)
     }
   }, [checkEnrollment, courseId, session?.user])
 

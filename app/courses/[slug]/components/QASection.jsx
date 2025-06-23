@@ -235,10 +235,10 @@ export const QASection = memo(function QASection({
         {!loading && questions.length > 0 && !hasMore && (
           <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
             <p className="text-sm text-[#5c6d5e]">
-              You've reached the end! 🎉
+              You've reached the end!
             </p>
             <p className="text-xs text-[#5c6d5e] mt-1">
-              All {totalQuestions} questions loaded
+              All questions loaded
             </p>
           </div>
         )}
