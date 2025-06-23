@@ -43,17 +43,23 @@ export async function GET() {
         const lessons = await Lesson.find({ courseRef: course._id }).select('_id title');
         const totalLessons = lessons.length;
 
-        // Filter out invalid lesson references before counting
+        // FIXED: Use the same logic as your course progress system
+        // Count completed lessons from the lessonProgress array
         const completedLessons = progress?.lessonProgress
           ?.filter(lp => lp.lesson && lp.isCompleted)
-          .map(lp => lp.lesson.toString()).filter(lessonId =>
-            lessons.some(lesson => lesson._id.toString() === lessonId)
-          ).length || 0;
+          .length || 0;
 
-        // Get percentage
-        const courseProgress = totalLessons > 0
-          ? Math.round((completedLessons / totalLessons) * 100)
-          : 0;
+        // Use the courseProgress directly from the progress record
+        const courseProgress = progress?.courseProgress || 0;
+
+        console.log('📊 My Learning Debug:', {
+          courseId: course._id.toString(),
+          courseTitle: course.title,
+          totalLessons,
+          completedLessons,
+          courseProgress,
+          lessonProgressCount: progress?.lessonProgress?.length || 0
+        });
 
         // Determine last lesson (or next lesson)
         let lastLesson = "Getting Started";
@@ -82,7 +88,7 @@ export async function GET() {
           id: course._id.toString(),
           title: course.title,
           level: course.level.charAt(0).toUpperCase() + course.level.slice(1),
-          progress: courseProgress,
+          progress: courseProgress, // Use the already calculated progress
           lastLesson,
           image: course.thumbnail,
           totalLessons,

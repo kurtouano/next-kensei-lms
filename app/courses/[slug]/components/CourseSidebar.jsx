@@ -127,7 +127,7 @@ export const CourseSidebar = memo(function CourseSidebar({
           <div className="text-center">
             <Award className="mx-auto mb-2 h-6 w-6 text-[#4a7c59]" />
             <p className="text-sm font-medium text-[#2c3e2d] mb-2">
-              🎉 Course Completed!
+              Course Completed!
             </p>
             <p className="text-xs text-[#5c6d5e] mb-3">
               Congratulations! You've finished all lessons and quizzes.

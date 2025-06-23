@@ -40,7 +40,10 @@ export async function GET(request, { params }) {
       progress = new Progress({
         user: user._id,
         course: course._id,
-        status: 'not_started'
+        status: 'not_started',
+        lessonProgress: [],
+        completedModules: [],
+        courseProgress: 0
       })
       await progress.save()
       
@@ -49,6 +52,14 @@ export async function GET(request, { params }) {
         $addToSet: { progressRecords: progress._id }
       })
     }
+
+    console.log('📊 GET Progress Debug:', {
+      courseSlug: slug,
+      progressId: progress._id,
+      lessonProgressCount: progress.lessonProgress.length,
+      completedLessons: progress.lessonProgress.filter(lp => lp.isCompleted).length,
+      courseProgress: progress.courseProgress
+    })
 
     return NextResponse.json({
       success: true,
@@ -66,7 +77,6 @@ export async function GET(request, { params }) {
         courseProgress: progress.courseProgress,
         status: progress.status,
         isCompleted: progress.isCompleted,
-        // ✅ ADD THIS - Include the full lessonProgress array!
         lessonProgress: progress.lessonProgress.map(lp => ({
           lesson: lp.lesson?.toString(),
           currentTime: lp.currentTime || 0,
@@ -74,7 +84,7 @@ export async function GET(request, { params }) {
           completedAt: lp.completedAt
         }))
       }
-  })
+    })
   } catch (error) {
     console.error('Error fetching progress:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -95,7 +105,7 @@ export async function POST(request, { params }) {
     const body = await request.json()
     const { lessonId, isCompleted, currentTime = 0 } = body
 
-    console.log('📝 Processing lesson progress update:', { slug, lessonId, isCompleted })
+    console.log('📝 POST Progress Update:', { slug, lessonId, isCompleted, currentTime })
 
     // Find user
     const user = await User.findOne({ email: session.user.email })
@@ -103,7 +113,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // FIXED: Find course by slug and populate modules with their lessons
+    // Find course by slug and populate modules with their lessons
     const course = await Course.findOne({ slug }).populate({
       path: 'modules',
       populate: {
@@ -116,8 +126,6 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Course not found' }, { status: 404 })
     }
 
-    console.log('📚 Found course:', { id: course._id, title: course.title })
-
     // Find or create progress record using the course ObjectId
     let progress = await Progress.findOne({ 
       user: user._id, 
@@ -128,26 +136,29 @@ export async function POST(request, { params }) {
       progress = new Progress({
         user: user._id,
         course: course._id,
-        status: 'in_progress'
+        status: 'in_progress',
+        lessonProgress: [],
+        completedModules: [],
+        courseProgress: 0
       })
     }
 
-    // Update lesson progress - FIXED: Add null checks
+    // FIXED: Prevent duplicates by checking for existing lesson progress properly
     const existingLessonIndex = progress.lessonProgress.findIndex(
-      lesson => lesson.lesson && lesson.lesson.toString() === lessonId
+      lesson => lesson.lesson && lesson.lesson.toString() === lessonId.toString()
     )
 
     if (existingLessonIndex >= 0) {
       // Update existing lesson progress
       progress.lessonProgress[existingLessonIndex] = {
-        ...progress.lessonProgress[existingLessonIndex],
+        lesson: lessonId,
         currentTime,
         isCompleted,
-        completedAt: isCompleted ? new Date() : progress.lessonProgress[existingLessonIndex].completedAt
+        completedAt: isCompleted ? new Date() : progress.lessonProgress[existingLessonIndex].completedAt || null
       }
-      console.log('✏️ Updated existing lesson progress')
+      console.log('✏️ Updated existing lesson progress at index:', existingLessonIndex)
     } else {
-      // Add new lesson progress
+      // Add new lesson progress only if it doesn't exist
       progress.lessonProgress.push({
         lesson: lessonId,
         currentTime,
@@ -157,54 +168,44 @@ export async function POST(request, { params }) {
       console.log('➕ Added new lesson progress')
     }
 
-    // FIXED: Calculate overall course progress using populated data
+    // FIXED: Clean up any duplicate lesson progress entries
+    const uniqueLessonProgress = []
+    const seenLessons = new Set()
+    
+    for (const lp of progress.lessonProgress) {
+      if (lp.lesson && !seenLessons.has(lp.lesson.toString())) {
+        uniqueLessonProgress.push(lp)
+        seenLessons.add(lp.lesson.toString())
+      }
+    }
+    
+    progress.lessonProgress = uniqueLessonProgress
+    console.log('🧹 Cleaned up duplicates. Unique lessons:', uniqueLessonProgress.length)
+
+    // Calculate overall course progress using populated data
     let totalLessons = 0
     let courseProgress = 0
 
-    console.log('🔍 Calculating course progress from populated data...')
-    console.log('📖 Course structure:', {
-      hasModules: !!course.modules,
-      modulesLength: course.modules?.length || 0
-    })
-
     if (course && course.modules && Array.isArray(course.modules)) {
       // Count total lessons across all populated modules
-      totalLessons = course.modules.reduce((total, module, moduleIndex) => {
+      totalLessons = course.modules.reduce((total, module) => {
         const moduleLessons = module.lessons || []
-        console.log(`📁 Module ${moduleIndex} (${module.title || 'Unnamed'}):`, {
-          lessonsCount: moduleLessons.length,
-          lessons: moduleLessons.map(lesson => ({ 
-            id: lesson._id.toString(), 
-            title: lesson.title, 
-            order: lesson.order 
-          }))
-        })
         return total + moduleLessons.length
       }, 0)
-
-      console.log('📊 Total lessons in course:', totalLessons)
 
       // Count completed lessons (only those with valid lesson IDs)
       const completedLessons = progress.lessonProgress.filter(
         lesson => lesson.lesson && lesson.isCompleted
       ).length
 
-      console.log('✅ Completed lessons:', completedLessons)
-      console.log('📋 All lesson progress:', progress.lessonProgress.map(lp => ({
-        lesson: lp.lesson?.toString(),
-        isCompleted: lp.isCompleted
-      })))
-
       // Calculate percentage
       courseProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
       
-      console.log('📈 Calculated progress:', {
-        completedLessons,
+      console.log('📈 Progress Calculation:', {
         totalLessons,
+        completedLessons,
         percentage: courseProgress
       })
-    } else {
-      console.log('❌ Course modules not found or not populated properly')
     }
 
     // Update progress object
@@ -215,14 +216,16 @@ export async function POST(request, { params }) {
       progress.isCompleted = true
       progress.status = 'completed'
       progress.completedAt = new Date()
-      console.log('🎉 Course completed!')
     } else if (progress.courseProgress > 0) {
       progress.status = 'in_progress'
-      console.log('🔄 Course in progress')
+    } else {
+      progress.status = 'not_started'
     }
 
+    // Mark as modified to ensure save works
+    progress.markModified('lessonProgress')
     await progress.save()
-    console.log('💾 Progress saved to database')
+    console.log('💾 Progress saved successfully')
 
     // Add progress to user's records if not already there
     if (!user.progressRecords.includes(progress._id)) {
@@ -231,14 +234,6 @@ export async function POST(request, { params }) {
       })
     }
 
-    console.log('✅ Final response:', {
-      completedLessons: progress.lessonProgress
-        .filter(lesson => lesson.lesson && lesson.isCompleted)
-        .map(lesson => lesson.lesson.toString()),
-      courseProgress: progress.courseProgress,
-      status: progress.status
-    })
-
     return NextResponse.json({
       success: true,
       progress: {
@@ -246,7 +241,13 @@ export async function POST(request, { params }) {
           .filter(lesson => lesson.lesson && lesson.isCompleted)
           .map(lesson => lesson.lesson.toString()),
         courseProgress: progress.courseProgress,
-        status: progress.status
+        status: progress.status,
+        lessonProgress: progress.lessonProgress.map(lp => ({
+          lesson: lp.lesson?.toString(),
+          currentTime: lp.currentTime || 0,
+          isCompleted: lp.isCompleted || false,
+          completedAt: lp.completedAt
+        }))
       }
     })
   } catch (error) {
