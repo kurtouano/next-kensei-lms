@@ -1,4 +1,4 @@
-// Updated page.jsx - Key changes to include like functionality
+// Fixed page.jsx - Preventing infinite loops in useEffect
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react"
@@ -7,13 +7,14 @@ import { useSession } from "next-auth/react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
-// Import custom hooks - ADDED useCourseLike
-import { useProgress, useLessonData, useQuiz, useReviews, useEnrollmentCheck, useCourseLike } from "./hooks/useCoursePreviewHook"
+// Import custom hooks
+import { useProgress, useLessonData, useQuiz, useReviews, useEnrollmentCheck, useCourseLike, useQA } from "./hooks/useCoursePreviewHook"
 
 // Import components
 import { VideoPlayer } from "./components/VideoPlayer"
 import { QuizSection } from "./components/Quiz"
 import { ReviewSection } from "./components/Reviews"
+import QASection from "./components/QASection"
 import { CourseSidebar } from "./components/CourseSidebar"
 import { CourseInfo } from "./components/CourseInfo"
 import { ModuleCompleteNotif } from "./components/ModuleCompleteNotif"
@@ -63,11 +64,23 @@ export default function LessonPage() {
   const { isEnrolled, loading: enrollmentLoading, checkEnrollment } = useEnrollmentCheck(lessonData?.id)
   const { progress, loading: progressLoading, updateLessonProgress, updateVideoProgress, updateModuleProgress, getLessonCurrentTime } = useProgress(lessonSlug)
   
-  // ADDED: Like functionality hook
+  // Like functionality hook
   const { likeState, toggleLike } = useCourseLike(lessonSlug, session)
   
-  // DEBUG: Log the like state
-  console.log('likeState from hook:', likeState)
+  // Q&A functionality hook with pagination
+  const { 
+    qaState, 
+    fetchQuestions, 
+    loadMoreQuestions,
+    submitQuestion, 
+    deleteQuestion, 
+    updateQuestion, 
+    submitComment, 
+    deleteComment, 
+    updateComment, 
+    toggleQuestionLike, 
+    toggleForm: toggleQAForm 
+  } = useQA(lessonSlug, session)
   
   // Navigation state
   const [activeModule, setActiveModule] = useState(0)
@@ -75,13 +88,18 @@ export default function LessonPage() {
   const [completedItems, setCompletedItems] = useState([])
   const [moduleQuizCompleted, setModuleQuizCompleted] = useState([])
 
-  // UPDATED: Pass moduleQuizCompleted to quiz hook
+  // Quiz hook
   const { quizState, currentQuiz, existingScore, startQuiz, selectAnswer, submitQuiz, retryQuiz, showQuiz, hideQuiz } = useQuiz(lessonData, activeModule, updateModuleProgress, moduleQuizCompleted)
   
+  // Reviews hook
   const { reviewsState, fetchReviews, submitReview, deleteReview, updateReview, toggleForm } = useReviews(lessonSlug, session)
 
   // UI state
   const [showFullDescription, setShowFullDescription] = useState(false)
+  const [activeTab, setActiveTab] = useState('reviews')
+  
+  // FIXED: Add a flag to prevent multiple initial loads
+  const [hasInitializedQA, setHasInitializedQA] = useState(false)
 
   // ============ EFFECTS ============
 
@@ -117,33 +135,32 @@ export default function LessonPage() {
     }
   }, [progress.completedModules, lessonData])
 
-  // Set initial active video - show preview for non-enrolled users
+  // Set initial active video
   useEffect(() => {
     if (lessonData && !activeVideoId) {
       if (!isEnrolled && lessonData.previewVideoUrl) {
-        // Show preview video for non-enrolled users
         setActiveVideoId("preview")
       } else if (isEnrolled && lessonData.modules?.length > 0) {
-        // Show first actual lesson for enrolled users
         const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
         if (firstVideo) setActiveVideoId(firstVideo.id)
       }
     }
   }, [lessonData, activeVideoId, isEnrolled])
 
-  // Fetch reviews when lesson data loads
+  // FIXED: Fetch reviews and questions when lesson data loads (only once)
   useEffect(() => {
-    if (lessonData) {
+    if (lessonData && !hasInitializedQA) {
       fetchReviews()
+      fetchQuestions() // This will load first page
+      setHasInitializedQA(true) // Prevent multiple calls
     }
-  }, [lessonData, fetchReviews])
+  }, [lessonData, hasInitializedQA, fetchReviews, fetchQuestions])
 
   // ============ COMPUTED VALUES ============
 
   const activeItem = useMemo(() => {
     if (!lessonData) return null
     
-    // If showing preview video
     if (activeVideoId === "preview") {
       return {
         id: "preview",
@@ -190,7 +207,6 @@ export default function LessonPage() {
     return moduleItems.every(item => completedItems.includes(item.id))
   }, [lessonData, activeModule, completedItems])
 
-  // Check if current module quiz is completed
   const currentModuleQuizCompleted = useMemo(() => {
     return moduleQuizCompleted.some(completed => completed.moduleIndex === activeModule)
   }, [moduleQuizCompleted, activeModule])
@@ -198,7 +214,6 @@ export default function LessonPage() {
   // ============ EVENT HANDLERS ============
 
   const handleSelectItem = useCallback((itemId, moduleIndex) => {
-    // Prevent non-enrolled users from accessing course content
     if (!isEnrolled && itemId !== "preview") {
       return
     }
@@ -210,23 +225,19 @@ export default function LessonPage() {
   const handleToggleCompletion = useCallback(async (itemId, e) => {
     e.stopPropagation()
     
-    // Only allow enrolled users to mark completion
     if (!isEnrolled) return
     
     const isCurrentlyCompleted = completedItems.includes(itemId)
     const newCompletionState = !isCurrentlyCompleted
     
-    // Optimistic update
     setCompletedItems(prev => 
       newCompletionState 
         ? [...prev, itemId] 
         : prev.filter(id => id !== itemId)
     )
     
-    // Save to database
     const success = await updateLessonProgress(itemId, newCompletionState)
     
-    // Revert if failed
     if (!success) {
       setCompletedItems(prev => 
         isCurrentlyCompleted 
@@ -241,7 +252,6 @@ export default function LessonPage() {
     if (quizState.score >= 70 || existingScore >= 70) {
       hideQuiz()
       
-      // Move to next module if available
       if (lessonData?.modules?.[activeModule + 1]) {
         setActiveModule(prev => prev + 1)
         const firstVideo = lessonData.modules[activeModule + 1].items.find(item => item.type === "video")
@@ -254,9 +264,20 @@ export default function LessonPage() {
     hideQuiz()
   }, [hideQuiz])
 
+  // Tab and scroll handlers
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab)
+  }, [])
+
+  const handleScrollToSection = useCallback((section) => {
+    const element = document.getElementById(`${section}-section`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [])
+
   // ============ LOADING STATES ============
 
-  // Add session loading check
   if (session === undefined || lessonLoading || progressLoading || enrollmentLoading) {
     return <LoadingLayout />
   }
@@ -278,7 +299,6 @@ export default function LessonPage() {
             {/* Main Content Area */}
             <div className="w-full lg:w-2/3 lg:pr-4">
               {quizState.showModuleQuiz ? (
-                // Only show quiz if enrolled
                 isEnrolled ? (
                   <QuizSection 
                     quiz={quizState.randomizedQuiz || currentQuiz}
@@ -290,7 +310,7 @@ export default function LessonPage() {
                     onProceed={handleNextModule}
                     onBack={handleBackToModule}
                     isLastModule={activeModule === lessonData.modules.length - 1}
-                    existingScore={existingScore} // Pass existing score
+                    existingScore={existingScore}
                   />
                 ) : (
                   <EnrollmentPrompt course={lessonData} />
@@ -304,38 +324,62 @@ export default function LessonPage() {
                     isEnrolled={isEnrolled}
                   />
                   
-                  {/* Show enrollment prompt for non-enrolled users */}
                   {!isEnrolled && (
                     <EnrollmentPrompt course={lessonData} />
                   )}
                   
-                  {/* Only show module completion notification for enrolled users */}
                   {isEnrolled && currentModuleCompleted && !currentModuleQuizCompleted && (
                     <ModuleCompleteNotif onTakeQuiz={showQuiz} />
                   )}
 
-                  {/* UPDATED: CourseInfo with like functionality */}
                   <CourseInfo 
                     lesson={lessonData}
                     showFullDescription={showFullDescription}
                     onToggleDescription={() => setShowFullDescription(!showFullDescription)}
                     progress={isEnrolled ? progress.courseProgress || 0 : 0}
                     isEnrolled={isEnrolled}
-                    // ADDED: Like functionality props
                     likeState={likeState}
                     onToggleLike={toggleLike}
                     isLoggedIn={!!session?.user}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                    onScrollToSection={handleScrollToSection}
                   />
 
-                  <ReviewSection
-                    reviewsState={reviewsState}
-                    isLoggedIn={!!session?.user}
-                    onSubmitReview={submitReview}
-                    onDeleteReview={deleteReview}
-                    onUpdateReview={updateReview}
-                    onToggleForm={toggleForm}
-                    isEnrolled={isEnrolled}
-                  />
+                  {/* Conditional rendering based on active tab */}
+                  {activeTab === 'reviews' && (
+                    <div id="reviews-section">
+                      <ReviewSection
+                        reviewsState={reviewsState}
+                        isLoggedIn={!!session?.user}
+                        onSubmitReview={submitReview}
+                        onDeleteReview={deleteReview}
+                        onUpdateReview={updateReview}
+                        onToggleForm={toggleForm}
+                        isEnrolled={isEnrolled}
+                      />
+                    </div>
+                  )}
+
+                  {activeTab === 'questions' && (
+                    <div id="questions-section">
+                      <QASection
+                        qaState={qaState}
+                        isLoggedIn={!!session?.user}
+                        onSubmitQuestion={submitQuestion}
+                        onDeleteQuestion={deleteQuestion}
+                        onUpdateQuestion={updateQuestion}
+                        onToggleForm={toggleQAForm}
+                        onSubmitComment={submitComment}
+                        onDeleteComment={deleteComment}
+                        onUpdateComment={updateComment}
+                        onToggleLike={toggleQuestionLike}
+                        onLoadMore={loadMoreQuestions}
+                        isEnrolled={isEnrolled}
+                        userRole={session?.user?.role || 'student'}
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -347,7 +391,7 @@ export default function LessonPage() {
                 activeModule={activeModule}
                 activeVideoId={activeVideoId}
                 completedItems={completedItems}
-                moduleQuizCompleted={moduleQuizCompleted.map(m => m.moduleIndex)} // Convert to indices for compatibility
+                moduleQuizCompleted={moduleQuizCompleted.map(m => m.moduleIndex)}
                 currentModuleCompleted={currentModuleCompleted}
                 showModuleQuiz={quizState.showModuleQuiz}
                 onSelectItem={handleSelectItem}

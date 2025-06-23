@@ -1,4 +1,4 @@
-import { memo } from "react"
+import { memo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { 
@@ -10,7 +10,9 @@ import {
   User,
   Calendar,
   Heart,
-  Loader2
+  Loader2,
+  MessageCircle,
+  Star
 } from "lucide-react"
 
 export const CourseInfo = memo(function CourseInfo({ 
@@ -19,10 +21,13 @@ export const CourseInfo = memo(function CourseInfo({
   onToggleDescription, 
   progress,
   isEnrolled,
-  // NEW: Like functionality props
   likeState,
   onToggleLike,
-  isLoggedIn
+  isLoggedIn,
+  // NEW: Q&A props
+  activeTab,
+  onTabChange,
+  onScrollToSection
 }) {
   // Check if description is long enough to need truncation
   const isDescriptionLong = lesson.fullDescription?.length > 200
@@ -153,8 +158,7 @@ export const CourseInfo = memo(function CourseInfo({
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3">
-        {/* OPTION 2: Like count integrated with the button */}
+      <div className="flex flex-wrap gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
@@ -197,6 +201,44 @@ export const CourseInfo = memo(function CourseInfo({
         </Button>
       </div>
 
+      {/* NEW: Tab Navigation for Reviews and Q&A */}
+      <div className="border-b border-[#dce4d7]">
+        <div className="flex gap-6">
+          <button
+            className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'reviews'
+                ? "border-[#4a7c59] text-[#4a7c59]"
+                : "border-transparent text-[#5c6d5e] hover:text-[#2c3e2d] hover:border-[#dce4d7]"
+            }`}
+            onClick={() => {
+              onTabChange('reviews')
+              onScrollToSection('reviews')
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Star className="h-4 w-4" />
+              Reviews & Ratings
+            </div>
+          </button>
+          
+          <button
+            className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'questions'
+                ? "border-[#4a7c59] text-[#4a7c59]"
+                : "border-transparent text-[#5c6d5e] hover:text-[#2c3e2d] hover:border-[#dce4d7]"
+            }`}
+            onClick={() => {
+              onTabChange('questions')
+              onScrollToSection('questions')
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Ask a Question
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   )
 })

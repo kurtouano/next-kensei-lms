@@ -1,6 +1,475 @@
-// Complete enhanced useCoursePreviewHook.js with all improvements including like functionality
+// Complete useCoursePreviewHook.js - All hooks for course functionality
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useSession } from "next-auth/react"
+
+// ============ Q&A HOOK ============
+export function useQA(courseSlug, session) {
+  const [qaState, setQAState] = useState({
+    questions: [],
+    loading: false,
+    loadingMore: false,
+    totalQuestions: 0,
+    hasMore: false,
+    currentPage: 1,
+    userHasAsked: false,
+    showForm: false,
+    submitting: false,
+    newQuestion: { question: "" }
+  })
+
+  const QUESTIONS_PER_PAGE = 5
+
+  // Memoize session values to prevent dependency changes
+  const userId = session?.user?.id
+  const userEmail = session?.user?.email
+
+  const fetchQuestions = useCallback(async (page = 1, append = false) => {
+    if (!courseSlug) return
+
+    // Set appropriate loading state
+    if (append) {
+      setQAState(prev => ({ ...prev, loadingMore: true }))
+    } else {
+      setQAState(prev => ({ ...prev, loading: true }))
+    }
+
+    try {
+      const response = await fetch(`/api/courses/${courseSlug}/questions?page=${page}&limit=${QUESTIONS_PER_PAGE}`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        const userHasAsked = userEmail 
+          ? data.questions.some(q => q.user.email === userEmail)
+          : false
+
+        // Add like status for questions and comments
+        const questionsWithLikeStatus = data.questions.map(question => {
+          const questionLiked = question.likedBy?.includes(userId) || false
+          
+          const commentsWithLikeStatus = question.comments?.map(comment => ({
+            ...comment,
+            isLiked: comment.likedBy?.includes(userId) || false,
+            currentUserEmail: userEmail
+          })) || []
+
+          return {
+            ...question,
+            isLiked: questionLiked,
+            currentUserEmail: userEmail,
+            comments: commentsWithLikeStatus
+          }
+        })
+
+        setQAState(prev => ({
+          ...prev,
+          questions: append 
+            ? [...prev.questions, ...questionsWithLikeStatus]
+            : questionsWithLikeStatus,
+          totalQuestions: data.totalQuestions,
+          hasMore: data.hasMore,
+          currentPage: page,
+          userHasAsked: append ? prev.userHasAsked || userHasAsked : userHasAsked
+        }))
+      } else {
+        throw new Error(data.error || 'Failed to fetch questions');
+      }
+    } catch (error) {
+      console.error("Error fetching questions:", error)
+      alert(`Failed to load questions: ${error.message}`);
+    } finally {
+      setQAState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        loadingMore: false 
+      }))
+    }
+  }, [courseSlug, userEmail, userId, QUESTIONS_PER_PAGE])
+
+  // NEW: Optimistic update functions to prevent flickering
+  const updateQuestionOptimistically = useCallback((questionId, updates) => {
+    setQAState(prev => ({
+      ...prev,
+      questions: prev.questions.map(question =>
+        question.id === questionId
+          ? { ...question, ...updates }
+          : question
+      )
+    }))
+  }, [])
+
+  const updateCommentOptimistically = useCallback((questionId, commentId, updates) => {
+    setQAState(prev => ({
+      ...prev,
+      questions: prev.questions.map(question =>
+        question.id === questionId
+          ? {
+              ...question,
+              comments: question.comments.map(comment =>
+                comment._id === commentId
+                  ? { ...comment, ...updates }
+                  : comment
+              )
+            }
+          : question
+      )
+    }))
+  }, [])
+
+  const addCommentOptimistically = useCallback((questionId, newComment) => {
+    setQAState(prev => ({
+      ...prev,
+      questions: prev.questions.map(question =>
+        question.id === questionId
+          ? {
+              ...question,
+              comments: [...(question.comments || []), newComment]
+            }
+          : question
+      )
+    }))
+  }, [])
+
+  const removeQuestionOptimistically = useCallback((questionId) => {
+    setQAState(prev => ({
+      ...prev,
+      questions: prev.questions.filter(question => question.id !== questionId),
+      totalQuestions: prev.totalQuestions - 1
+    }))
+  }, [])
+
+  const removeCommentOptimistically = useCallback((questionId, commentId) => {
+    setQAState(prev => ({
+      ...prev,
+      questions: prev.questions.map(question =>
+        question.id === questionId
+          ? {
+              ...question,
+              comments: question.comments.filter(comment => comment._id !== commentId)
+            }
+          : question
+      )
+    }))
+  }, [])
+
+  // Load more questions function
+  const loadMoreQuestions = useCallback(async () => {
+    if (qaState.loadingMore || !qaState.hasMore) return
+    
+    const nextPage = qaState.currentPage + 1
+    await fetchQuestions(nextPage, true)
+  }, [qaState.loadingMore, qaState.hasMore, qaState.currentPage, fetchQuestions])
+
+  const submitQuestion = useCallback(async () => {
+    if (!session?.user || !qaState.newQuestion.question.trim()) {
+      return
+    }
+
+    setQAState(prev => ({ ...prev, submitting: true }))
+    
+    try {
+      const response = await fetch(`/api/courses/${courseSlug}/questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: qaState.newQuestion.question.trim()
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Reset to first page and fetch fresh data (this is necessary for new questions)
+        await fetchQuestions(1, false)
+        setQAState(prev => ({ 
+          ...prev, 
+          showForm: false,
+          newQuestion: { question: "" }
+        }))
+      } else {
+        throw new Error(data.error || 'Failed to submit question');
+      }
+    } catch (error) {
+      console.error("Error submitting question:", error)
+      alert(`Failed to submit question: ${error.message}`)
+    } finally {
+      setQAState(prev => ({ ...prev, submitting: false }))
+    }
+  }, [qaState.newQuestion, session, courseSlug, fetchQuestions])
+
+  const deleteQuestion = useCallback(async (questionId) => {
+    if (!session?.user) return
+
+    // Optimistic update
+    removeQuestionOptimistically(questionId)
+
+    try {
+      const response = await fetch(`/api/courses/${courseSlug}/questions/${questionId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        // Revert optimistic update on error
+        await fetchQuestions(1, false)
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        // Revert optimistic update on error
+        await fetchQuestions(1, false)
+        throw new Error(data.error || 'Failed to delete question');
+      }
+    } catch (error) {
+      console.error("Error deleting question:", error)
+      alert(`Failed to delete question: ${error.message}`)
+    }
+  }, [session, courseSlug, fetchQuestions, removeQuestionOptimistically])
+
+  const updateQuestion = useCallback((updates) => {
+    setQAState(prev => ({
+      ...prev,
+      newQuestion: { ...prev.newQuestion, ...updates }
+    }))
+  }, [])
+
+  const submitComment = useCallback(async (questionId, comment) => {
+    if (!session?.user || !comment || !comment.trim()) {
+      alert('Please log in and enter a comment');
+      return;
+    }
+
+    // Create optimistic comment
+    const optimisticComment = {
+      _id: `temp-${Date.now()}`, // Temporary ID
+      comment: comment.trim(),
+      likeCount: 0,
+      isLiked: false,
+      isInstructorReply: false, // Will be determined by server
+      createdAt: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      user: {
+        name: session.user.name || "You",
+        email: session.user.email,
+        avatar: session.user.image || null
+      },
+      currentUserEmail: userEmail
+    }
+
+    // Optimistic update
+    addCommentOptimistically(questionId, optimisticComment)
+
+    try {
+      const response = await fetch(`/api/courses/${courseSlug}/questions/${questionId}/comments`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ comment: comment.trim() })
+      });
+
+      if (!response.ok) {
+        // Revert optimistic update on error
+        removeCommentOptimistically(questionId, optimisticComment._id)
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Replace optimistic comment with real data by refetching
+        await fetchQuestions(1, false)
+      } else {
+        // Revert optimistic update on error
+        removeCommentOptimistically(questionId, optimisticComment._id)
+        throw new Error(data.error || 'Failed to submit comment');
+      }
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+      alert(`Failed to submit comment: ${error.message}`);
+    }
+  }, [session, courseSlug, userEmail, addCommentOptimistically, removeCommentOptimistically, fetchQuestions])
+
+  const deleteComment = useCallback(async (questionId, commentId) => {
+    if (!session?.user) return
+
+    // Optimistic update
+    removeCommentOptimistically(questionId, commentId)
+
+    try {
+      const response = await fetch(`/api/courses/${courseSlug}/questions/${questionId}/comments/${commentId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        // Revert optimistic update on error
+        await fetchQuestions(1, false)
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        // Revert optimistic update on error
+        await fetchQuestions(1, false)
+        throw new Error(data.error || 'Failed to delete comment');
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error)
+      alert(`Failed to delete comment: ${error.message}`)
+    }
+  }, [session, courseSlug, fetchQuestions, removeCommentOptimistically])
+
+  const updateComment = useCallback(async (questionId, commentId, comment) => {
+    if (!session?.user || !comment.trim()) return
+
+    // Optimistic update
+    updateCommentOptimistically(questionId, commentId, { 
+      comment: comment.trim(),
+      updatedAt: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    })
+
+    try {
+      const response = await fetch(`/api/courses/${courseSlug}/questions/${questionId}/comments/${commentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: comment.trim() })
+      })
+
+      if (!response.ok) {
+        // Revert optimistic update on error
+        await fetchQuestions(1, false)
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        // Revert optimistic update on error
+        await fetchQuestions(1, false)
+        throw new Error(data.error || 'Failed to update comment');
+      }
+    } catch (error) {
+      console.error("Error updating comment:", error)
+      alert(`Failed to update comment: ${error.message}`)
+    }
+  }, [session, courseSlug, fetchQuestions, updateCommentOptimistically])
+
+  // FIXED: Optimistic like updates to prevent flickering
+  const toggleQuestionLike = useCallback(async (type, questionId, commentId = null) => {
+    if (!session?.user) {
+      alert('Please log in to like questions and comments')
+      return
+    }
+
+    try {
+      if (type === 'question') {
+        // Optimistic update for question like
+        const currentQuestion = qaState.questions.find(q => q.id === questionId)
+        if (currentQuestion) {
+          const newIsLiked = !currentQuestion.isLiked
+          const newLikeCount = newIsLiked 
+            ? (currentQuestion.likeCount || 0) + 1 
+            : Math.max(0, (currentQuestion.likeCount || 0) - 1)
+          
+          updateQuestionOptimistically(questionId, {
+            isLiked: newIsLiked,
+            likeCount: newLikeCount
+          })
+        }
+      } else {
+        // Optimistic update for comment like
+        const currentQuestion = qaState.questions.find(q => q.id === questionId)
+        const currentComment = currentQuestion?.comments?.find(c => c._id === commentId)
+        if (currentComment) {
+          const newIsLiked = !currentComment.isLiked
+          const newLikeCount = newIsLiked 
+            ? (currentComment.likeCount || 0) + 1 
+            : Math.max(0, (currentComment.likeCount || 0) - 1)
+          
+          updateCommentOptimistically(questionId, commentId, {
+            isLiked: newIsLiked,
+            likeCount: newLikeCount
+          })
+        }
+      }
+
+      // Make API call
+      const url = type === 'question' 
+        ? `/api/courses/${courseSlug}/questions/${questionId}/like`
+        : `/api/courses/${courseSlug}/questions/${questionId}/comments/${commentId}/like`
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (!response.ok) {
+        // Revert optimistic update on error
+        await fetchQuestions(1, false)
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json()
+
+      if (!data.success) {
+        // Revert optimistic update on error
+        await fetchQuestions(1, false)
+        throw new Error(data.error || 'Failed to toggle like');
+      }
+
+      // API call successful - optimistic update was correct!
+    } catch (error) {
+      console.error("Error toggling like:", error)
+      // Don't show alert for like errors, just revert silently
+    }
+  }, [session, courseSlug, qaState.questions, updateQuestionOptimistically, updateCommentOptimistically, fetchQuestions])
+
+  const toggleForm = useCallback((show) => {
+    setQAState(prev => ({ ...prev, showForm: show }))
+  }, [])
+
+  // Create a stable version of fetchQuestions for initial load
+  const initialFetchQuestions = useCallback(() => {
+    fetchQuestions(1, false)
+  }, [fetchQuestions])
+
+  return {
+    qaState,
+    fetchQuestions: initialFetchQuestions,
+    loadMoreQuestions,
+    submitQuestion,
+    deleteQuestion,
+    updateQuestion,
+    submitComment,
+    deleteComment,
+    updateComment,
+    toggleQuestionLike,
+    toggleForm
+  }
+}
 
 // ============ PROGRESS HOOK ============
 export function useProgress(slug) {
@@ -108,7 +577,6 @@ export function useProgress(slug) {
       const data = await response.json()
       
       if (data.success) {
-        // Only update state if the database was actually updated
         if (data.updated) {
           setProgress(prev => ({
             ...prev,

@@ -94,7 +94,6 @@ export const ReviewSection = memo(function ReviewSection({
         {isLoggedIn && !isEnrolled && (
           <div className="border-b border-[#dce4d7] py-4">
             <div className="flex items-center justify-center p-4 bg-[#eef2eb] rounded-md border border-[#4a7c59]">
-              <Lock className="h-5 w-5 text-[#4a7c59] mr-2" />
               <div className="text-center">
                 <p className="text-sm font-medium text-[#2c3e2d] mb-1">
                   Enroll to Leave a Review
