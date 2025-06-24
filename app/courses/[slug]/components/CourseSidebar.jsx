@@ -1,5 +1,7 @@
-import { memo, useCallback, useMemo } from "react"
+// Updated CourseSidebar.jsx - FIXED with missing variables
+import { memo, useCallback, useMemo, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { CertificateModal } from "@/components/certificate-modal" // ADDED: Import modal
 import { 
   CheckCircle2, 
   PlayCircle, 
@@ -10,7 +12,8 @@ import {
   Circle,
   ChevronLeft,
   Play,
-  Award
+  Award,
+  Loader2
 } from "lucide-react"
 
 export const CourseSidebar = memo(function CourseSidebar({
@@ -28,20 +31,22 @@ export const CourseSidebar = memo(function CourseSidebar({
   isEnrolled,
   previewVideoUrl,
   courseData,
-  progress // ADDED: Progress prop for certificate check
+  progress
 }) {
+  const [claimingCertificate, setClaimingCertificate] = useState(false)
+  const [showCertificateModal, setShowCertificateModal] = useState(false) // ADDED: Modal state
+  const [hasCertificate, setHasCertificate] = useState(false) // ADDED: Certificate status
+
   const totalItems = useMemo(() => 
     modules.flatMap(m => m.items).length,
     [modules]
   )
 
   const isModuleAccessible = useCallback((moduleIndex) => {
-    // For non-enrolled users, only preview is accessible
     if (!isEnrolled) return false
     
     if (moduleIndex === 0) return true
     
-    // Check if previous module is completed AND quiz is passed
     const prevModuleIndex = moduleIndex - 1
     const prevModule = modules[prevModuleIndex]
     const isPrevModuleComplete = prevModule?.items.every(item => completedItems.includes(item.id))
@@ -49,6 +54,76 @@ export const CourseSidebar = memo(function CourseSidebar({
     
     return isPrevModuleComplete && isPrevQuizPassed
   }, [modules, completedItems, moduleQuizCompleted, isEnrolled])
+
+  // Check if course is 100% completed
+  const isCourseCompleted = isEnrolled && progress && progress.courseProgress === 100
+
+  // ADDED: Check if certificate already exists when course is completed
+  useEffect(() => {
+    if (isCourseCompleted && courseData?.id) {
+      checkExistingCertificate()
+    }
+  }, [isCourseCompleted, courseData?.id])
+
+  const checkExistingCertificate = async () => {
+    try {
+      const response = await fetch(`/api/certificates/${courseData.id}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setHasCertificate(true)
+      } else {
+        setHasCertificate(false)
+      }
+    } catch (error) {
+      console.error('Error checking certificate:', error)
+      setHasCertificate(false)
+    }
+  }
+
+  const handleClaimCertificate = async () => {
+    if (!courseData?.id) {
+      alert('Course information not available')
+      return
+    }
+
+    try {
+      setClaimingCertificate(true)
+      
+      const response = await fetch(`/api/certificates/${courseData.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setHasCertificate(true) // ADDED: Update state
+        if (data.certificate.alreadyIssued) {
+          // Certificate already exists, show it
+          setShowCertificateModal(true)
+        } else {
+          // New certificate created, show it
+          setShowCertificateModal(true)
+        }
+      } else {
+        alert(`Failed to generate certificate: ${data.error}`)
+      }
+
+    } catch (error) {
+      console.error('Certificate claim error:', error)
+      alert('Failed to generate certificate. Please try again.')
+    } finally {
+      setClaimingCertificate(false)
+    }
+  }
+
+  // ADDED: Handle viewing existing certificate
+  const handleViewCertificate = () => {
+    setShowCertificateModal(true)
+  }
 
   return (
     <div className="sticky top-4 rounded-lg border border-[#dce4d7] bg-white shadow-sm">
@@ -121,31 +196,60 @@ export const CourseSidebar = memo(function CourseSidebar({
         ))}
       </div>
 
-      {/* ADDED: Certificate claim section - show when course is completed */}
-      {isEnrolled && progress && progress.courseProgress === 100 && (
+      {/* Certificate claim section - show when course is completed */}
+      {isCourseCompleted && (
         <div className="border-t border-[#dce4d7] p-4 bg-gradient-to-r from-[#eef2eb] to-white">
           <div className="text-center">
             <Award className="mx-auto mb-2 h-6 w-6 text-[#4a7c59]" />
             <p className="text-sm font-medium text-[#2c3e2d] mb-2">
-              Course Completed!
+              🎉 Course Completed!
             </p>
             <p className="text-xs text-[#5c6d5e] mb-3">
-              Congratulations! You've finished all lessons and quizzes.
+              {hasCertificate 
+                ? "Your certificate is ready for download!"
+                : "Congratulations! You've finished all lessons and quizzes."
+              }
             </p>
-            <Button 
-              size="sm" 
-              className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
-              onClick={() => {
-                // Navigate to certificate page
-                window.open(`/certificate/${courseData?.id}`, '_blank');
-              }}
-            >
-              <Award className="mr-2 h-4 w-4" />
-              Claim Certificate
-            </Button>
+            
+            {hasCertificate ? (
+              <Button 
+                size="sm" 
+                className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+                onClick={handleViewCertificate}
+              >
+                <Award className="mr-2 h-4 w-4" />
+                View Certificate
+              </Button>
+            ) : (
+              <Button 
+                size="sm" 
+                className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+                onClick={handleClaimCertificate}
+                disabled={claimingCertificate}
+              >
+                {claimingCertificate ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Award className="mr-2 h-4 w-4" />
+                    Claim Certificate
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       )}
+
+      {/* Certificate Modal */}
+      <CertificateModal
+        isOpen={showCertificateModal}
+        onClose={() => setShowCertificateModal(false)}
+        courseId={courseData?.id}
+      />
 
       {/* Enrollment prompt in sidebar for non-enrolled users */}
       {!isEnrolled && (
@@ -156,7 +260,7 @@ export const CourseSidebar = memo(function CourseSidebar({
               Unlock {totalItems} Lessons
             </p>
             <p className="text-xs text-[#5c6d5e] mb-3">
-              Get full access to all content, quizzes, and resources
+              Get full access to all content, quizzes, and certificate
             </p>
             <Button 
               size="sm" 
@@ -191,7 +295,7 @@ export const CourseSidebar = memo(function CourseSidebar({
   )
 })
 
-// Rest of the component code stays the same...
+// ModuleSection component remains the same...
 const ModuleSection = memo(function ModuleSection({
   module,
   moduleIndex,
@@ -316,6 +420,7 @@ const ModuleSection = memo(function ModuleSection({
   )
 })
 
+// LessonItem and ResourceItem components remain the same as in your original code...
 const LessonItem = memo(function LessonItem({
   item,
   moduleIndex,

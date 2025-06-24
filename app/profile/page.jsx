@@ -17,8 +17,6 @@ export default function ProfilePage() {
   const router = useRouter()
   const fileInputRef = useRef(null)
   const [activeTab, setActiveTab] = useState("profile")
-  const [certificateModalOpen, setCertificateModalOpen] = useState(false)
-  const [selectedCertificate, setSelectedCertificate] = useState(null)
   const [userData, setUserData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -26,6 +24,15 @@ export default function ProfilePage() {
   const [editData, setEditData] = useState({})
   const [updating, setUpdating] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
+
+  // Certificate state
+  const [certificates, setCertificates] = useState([])
+  const [certificatesLoading, setCertificatesLoading] = useState(false)
+  const [showCertificateModal, setShowCertificateModal] = useState(false)
+  const [selectedCourseId, setSelectedCourseId] = useState(null)
+
+  // FIXED: Define isLoggedIn properly
+  const isLoggedIn = status === "authenticated" && !!session?.user
 
   // Predefined avatar options
   const avatarOptions = [
@@ -37,6 +44,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (status === "authenticated") {
       fetchUserProfile()
+      fetchUserCertificates() // FIXED: Call here instead of separate useEffect
     } else if (status === "unauthenticated") {
       router.push("/auth/login")
     }
@@ -63,6 +71,22 @@ export default function ProfilePage() {
       console.error("Profile fetch error:", err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUserCertificates = async () => {
+    try {
+      setCertificatesLoading(true)
+      const response = await fetch('/api/certificates')
+      const data = await response.json()
+      
+      if (data.success) {
+        setCertificates(data.certificates)
+      }
+    } catch (error) {
+      console.error('Error fetching certificates:', error)
+    } finally {
+      setCertificatesLoading(false)
     }
   }
 
@@ -102,14 +126,9 @@ export default function ProfilePage() {
     }
   }
 
-  const handleViewCertificate = (cert) => {
-    setSelectedCertificate({
-      userName: userData.name,
-      courseTitle: cert.title,
-      completionDate: new Date(cert.date),
-      certificateId: `BONSAI-CERT-${cert.id}`,
-    })
-    setCertificateModalOpen(true)
+  const handleViewCertificate = (certificate) => {
+    setSelectedCourseId(certificate.courseId)
+    setShowCertificateModal(true)
   }
 
   const handleLogout = async () => {
@@ -345,15 +364,15 @@ export default function ProfilePage() {
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Learning Progress</h2>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                       <div className="rounded-lg bg-[#eef2eb] p-4 text-center">
-                        <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress.coursesCompleted}</p>
+                        <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress?.coursesCompleted || 0}</p>
                         <p className="text-sm text-[#5c6d5e]">Courses Completed</p>
                       </div>
                       <div className="rounded-lg bg-[#eef2eb] p-4 text-center">
-                        <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress.lessonsCompleted}</p>
+                        <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress?.lessonsCompleted || 0}</p>
                         <p className="text-sm text-[#5c6d5e]">Lessons Completed</p>
                       </div>
                       <div className="rounded-lg bg-[#eef2eb] p-4 text-center">
-                        <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress.quizzesCompleted}</p>
+                        <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress?.quizzesCompleted || 0}</p>
                         <p className="text-sm text-[#5c6d5e]">Quizzes Passed</p>
                       </div>
                       <div className="rounded-lg bg-[#eef2eb] p-4 text-center">
@@ -533,8 +552,6 @@ export default function ProfilePage() {
                     )}
                   </div>
 
-
-
                   {/* Subscription Information */}
                   {userData.subscription && (
                     <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
@@ -554,8 +571,6 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   )}
-
-
                 </div>
 
                 {/* Bonsai Preview & Logout */}
@@ -642,64 +657,95 @@ export default function ProfilePage() {
               <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                 <h2 className="mb-6 text-xl font-semibold text-[#2c3e2d]">My Certifications</h2>
 
-                {userData.certifications && userData.certifications.length > 0 ? (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {userData.certifications.map((cert) => (
-                      <div key={cert.id} className="rounded-lg border border-[#dce4d7] bg-[#eef2eb] p-4">
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#4a7c59]">
-                            {cert.level}
-                          </span>
-                          <span className="text-xs text-[#5c6d5e]">{formatDate(cert.date)}</span>
-                        </div>
-                        <div className="mb-4 flex items-center">
-                          <Award className="mr-3 h-8 w-8 text-[#4a7c59]" />
-                          <h3 className="text-lg font-semibold text-[#2c3e2d]">{cert.title}</h3>
-                        </div>
-                        <div className="flex justify-between">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-[#4a7c59] text-[#4a7c59]"
-                            onClick={() => handleViewCertificate(cert)}
-                          >
-                            View Certificate
-                          </Button>
-                          <Button variant="outline" size="sm" className="border-[#4a7c59] text-[#4a7c59]">
-                            Share
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-[#dce4d7] bg-[#f8f7f4] p-8 text-center">
-                    <Award className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e] opacity-50" />
-                    <h3 className="mb-2 text-lg font-medium text-[#2c3e2d]">No Certifications Yet</h3>
-                    <p className="mb-4 text-[#5c6d5e]">
-                      Complete courses and pass certification tests to earn your first certificate.
-                    </p>
-                    <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" asChild>
-                      <Link href="/courses">Browse Courses</Link>
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-            
-          </Tabs>
-        </div>
-      </main>
+                {certificatesLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4a7c59] mx-auto mb-3"></div>
+                    <p className="text-[#5c6d5e]">Loading certificates...</p>
+                    </div>
+               ) : certificates && certificates.length > 0 ? (
+                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                   {certificates.map((cert) => (
+                     <div key={cert.id} className="rounded-lg border border-[#dce4d7] bg-[#eef2eb] p-4">
+                       <div className="mb-2 flex items-center justify-between">
+                         <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#4a7c59]">
+                           Certificate
+                         </span>
+                         <span className="text-xs text-[#5c6d5e]">
+                           {new Date(cert.completionDate).toLocaleDateString('en-US', {
+                             year: 'numeric',
+                             month: 'long',
+                             day: 'numeric'
+                           })}
+                         </span>
+                       </div>
+                       <div className="mb-4 flex items-center">
+                         <Award className="mr-3 h-8 w-8 text-[#4a7c59]" />
+                         <h3 className="text-lg font-semibold text-[#2c3e2d]">{cert.courseTitle}</h3>
+                       </div>
+                       <div className="flex justify-between">
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           className="border-[#4a7c59] text-[#4a7c59]"
+                           onClick={() => handleViewCertificate(cert)}
+                         >
+                           View Certificate
+                         </Button>
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           className="border-[#4a7c59] text-[#4a7c59]"
+                           onClick={() => {
+                             const shareText = `I just completed "${cert.courseTitle}" on Bonsai Learning! 🌿🎓`
+                             const shareUrl = window.location.origin
+                             
+                             if (navigator.share) {
+                               navigator.share({
+                                 title: 'My Certificate',
+                                 text: shareText,
+                                 url: shareUrl
+                               })
+                             } else {
+                               navigator.clipboard.writeText(`${shareText} ${shareUrl}`)
+                               alert('Certificate shared to clipboard!')
+                             }
+                           }}
+                         >
+                           Share
+                         </Button>
+                       </div>
+                       <div className="mt-2 text-xs text-[#5c6d5e]">
+                         ID: {cert.certificateId}
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               ) : (
+                 <div className="rounded-lg border border-dashed border-[#dce4d7] bg-[#f8f7f4] p-8 text-center">
+                   <Award className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e] opacity-50" />
+                   <h3 className="mb-2 text-lg font-medium text-[#2c3e2d]">No Certificates Yet</h3>
+                   <p className="mb-4 text-[#5c6d5e]">
+                     Complete courses and pass all quizzes to earn your first certificate.
+                   </p>
+                   <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" asChild>
+                     <Link href="/courses">Browse Courses</Link>
+                   </Button>
+                 </div>
+               )}
+             </div>
 
-      {/* Footer */}
-      <Footer />
-      
-      {/* Certificate Modal */}
-      <CertificateModal
-        isOpen={certificateModalOpen}
-        onClose={() => setCertificateModalOpen(false)}
-        certificateData={selectedCertificate}
-      />
-    </div>
-  )
+             {/* Certificate Modal */}
+             <CertificateModal
+               isOpen={showCertificateModal}
+               onClose={() => setShowCertificateModal(false)}
+               courseId={selectedCourseId}
+             />
+           </TabsContent>
+         </Tabs>
+       </div>
+     </main>
+
+     <Footer />
+   </div>
+ )
 }
