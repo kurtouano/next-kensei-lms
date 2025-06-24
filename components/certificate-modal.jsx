@@ -1,16 +1,16 @@
-// components/certificate-modal.jsx - FIXED PDF DOWNLOAD
+// components/certificate-modal.jsx
 "use client"
 import { X, Download, Loader2, ExternalLink, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 
-// Display Certificate component for modal viewing
 function DisplayCertificate({
   userName = "SakuraBonsai",
   courseTitle = "Japanese Basics",
   completionDate = new Date(),
   certificateId = "BONSAI-CERT-12345",
+  instructorName = "Instructor", 
 }) {
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -25,9 +25,9 @@ function DisplayCertificate({
       className="relative w-full bg-white shadow-2xl"
       style={{ 
         width: "800px", 
-        height: "600px", 
+        height: "650px",
         maxWidth: "100%",
-        margin: "0 auto"
+        margin: "0 auto",
       }}
     >
       {/* Gradient Background */}
@@ -36,22 +36,18 @@ function DisplayCertificate({
       {/* Decorative Corner Elements */}
       <div className="absolute top-0 left-0 w-20 h-20">
         <div className="absolute top-4 left-4 w-12 h-12 border-2 border-[#4a7c59] opacity-20 rotate-45"></div>
-        <div className="absolute top-6 left-6 w-8 h-8 border border-[#6b8e6b] opacity-30 rotate-45"></div>
       </div>
       
       <div className="absolute top-0 right-0 w-20 h-20">
         <div className="absolute top-4 right-4 w-12 h-12 border-2 border-[#4a7c59] opacity-20 rotate-45"></div>
-        <div className="absolute top-6 right-6 w-8 h-8 border border-[#6b8e6b] opacity-30 rotate-45"></div>
       </div>
       
       <div className="absolute bottom-0 left-0 w-20 h-20">
         <div className="absolute bottom-4 left-4 w-12 h-12 border-2 border-[#4a7c59] opacity-20 rotate-45"></div>
-        <div className="absolute bottom-6 left-6 w-8 h-8 border border-[#6b8e6b] opacity-30 rotate-45"></div>
       </div>
       
       <div className="absolute bottom-0 right-0 w-20 h-20">
         <div className="absolute bottom-4 right-4 w-12 h-12 border-2 border-[#4a7c59] opacity-20 rotate-45"></div>
-        <div className="absolute bottom-6 right-6 w-8 h-8 border border-[#6b8e6b] opacity-30 rotate-45"></div>
       </div>
 
       {/* Main Border Design */}
@@ -60,27 +56,27 @@ function DisplayCertificate({
       <div className="absolute inset-4 border border-[#8ba68b] opacity-30"></div>
 
       {/* Certificate Content */}
-      <div className="relative flex h-full flex-col items-center justify-between p-8 text-center">
+      <div className="relative flex h-full flex-col items-center justify-between p-6 text-center">
         {/* Header */}
         <div className="w-full">
           {/* Academy Logo and Name */}
-          <div className="flex items-center justify-center gap-4 mb-3">
-            <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-[#4a7c59] to-[#6b8e6b] rounded-full">
-              <BonsaiIcon className="h-7 w-7 text-white" />
+          <div className="flex items-center justify-center gap-4 mb-2">
+            <div className="flex items-center justify-center w-12 h-12 bg-[#4a7c59] rounded-full">
+              <span className="text-white text-lg font-bold">日</span>
             </div>
             <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-wide text-[#2c3e2d] mb-1">BONSAI ACADEMY</h1>
+              <h1 className="text-2xl font-bold tracking-wide text-[#2c3e2d] mb-1">GENKO TREE</h1>
               <div className="text-xs font-medium text-[#6b8e6b] tracking-widest">
-                JAPANESE LANGUAGE INSTITUTE
+                JAPANESE LANGUAGE LEARNING
               </div>
             </div>
-            <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-[#4a7c59] to-[#6b8e6b] rounded-full">
+            <div className="flex items-center justify-center w-12 h-12 bg-[#4a7c59] rounded-full">
               <span className="text-white text-lg font-bold">日</span>
             </div>
           </div>
           
           {/* Certificate Title */}
-          <div className="border-t border-b border-[#4a7c59] py-3 my-4">
+          <div className="border-t border-[#4a7c59] py-2 my-2">
             <h2 className="text-lg font-bold uppercase tracking-[0.2em] text-[#4a7c59]">
               Certificate of Completion
             </h2>
@@ -91,12 +87,12 @@ function DisplayCertificate({
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col justify-center w-full max-w-[600px] py-6">
-          <div className="bg-gradient-to-r from-transparent via-[#f8f9fa] to-transparent p-6 rounded-lg">
-            <p className="mb-4 text-lg text-[#5c6d5e] font-light">This is to certify that</p>
+        <div className="flex-1 flex flex-col justify-center w-full max-w-[600px] py-1">
+          <div className="p-4 rounded-lg">
+            <p className="mb-3 text-lg text-[#5c6d5e] font-light">This is to certify that</p>
             
-            <div className="border-b-2 border-[#4a7c59] pb-2 mb-4">
-              <h3 className="font-serif text-3xl font-bold text-[#2c3e2d] tracking-wide">
+            <div className="border-b-2 border-[#4a7c59] pb-2 mb-3 max-w-[77%] mx-auto">
+              <h3 className="font-serif text-3xl font-bold text-[#2c3e2d] tracking-wide italic">
                 {userName}
               </h3>
             </div>
@@ -105,53 +101,43 @@ function DisplayCertificate({
               has successfully completed the comprehensive course
             </p>
             
-            <div className="bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white p-4 rounded-lg mb-4">
-              <h4 className="font-serif text-xl font-bold break-words">
+            {/* Green Course Box */}
+            <div className="bg-[#4a7c59] text-white p-3 rounded-lg mb-4 mx-auto max-w-[560px]">
+              <h4 className="font-serif text-xl font-bold">
                 "{courseTitle}"
               </h4>
-              <div className="text-sm opacity-90 mt-1">
+              <div className="text-sm opacity-90 mt-1 mb-4">
                 Japanese Language Mastery Program
               </div>
             </div>
             
-            <div className="flex items-center justify-center gap-4 mb-2">
-              <div className="h-px bg-[#4a7c59] flex-1"></div>
-              <p className="text-lg text-[#5c6d5e] font-medium px-4">
+            {/* Completion Date */}
+            <div className="mb-2">
+              <p className="text-lg text-[#5c6d5e] font-medium">
                 Completed on {formatDate(completionDate)}
               </p>
-              <div className="h-px bg-[#4a7c59] flex-1"></div>
             </div>
             
             <div className="text-sm text-[#6b8e6b]">
-              Recognized by Bonsai Academy Japanese Language Institute
+              Recognized by Genko Tree Japanese Language Learning
             </div>
           </div>
         </div>
 
-        {/* Authority and Validation */}
+        {/* Authority and Validation - FIXED: Use real instructor name */}
         <div className="w-full">
           {/* Signatures */}
-          <div className="flex justify-between items-end mb-6 px-12">
+          <div className="flex justify-between items-end mb-4 px-8">
             <div className="flex flex-col items-center">
-              <div className="w-40 border-b-2 border-[#2c3e2d] mb-2 h-8 flex items-end justify-center">
-                <div className="text-xs text-[#6b8e6b] mb-1">Dr. Sakura Tanaka</div>
+              <div className="w-32 border-b-2 border-[#2c3e2d] mb-2 h-8 flex items-end justify-center pb-1">
+                <div className="text-xs text-[#6b8e6b] font-medium">{instructorName}</div>
               </div>
-              <p className="text-xs font-medium text-[#2c3e2d]">Academy Director</p>
-              <p className="text-xs text-[#6b8e6b]">Chief Language Instructor</p>
-            </div>
-
-            {/* Academy Seal */}
-            <div className="flex flex-col items-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#4a7c59] to-[#6b8e6b] rounded-full flex items-center justify-center mb-2">
-                <div className="w-12 h-12 border-2 border-white rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">認定</span>
-                </div>
-              </div>
-              <p className="text-xs font-medium text-[#2c3e2d]">Official Seal</p>
+              <p className="text-xs font-medium text-[#2c3e2d]">Course Instructor</p>
+              <p className="text-xs text-[#6b8e6b]">Japanese Language Expert</p>
             </div>
 
             <div className="flex flex-col items-center">
-              <div className="w-40 border-b-2 border-[#2c3e2d] mb-2 h-8 flex items-end justify-center">
+              <div className="w-32 border-b-2 border-[#2c3e2d] mb-2 h-6 flex items-end justify-center">
                 <div className="text-xs text-[#6b8e6b] mb-1">Prof. Hiroshi Nakamura</div>
               </div>
               <p className="text-xs font-medium text-[#2c3e2d]">Program Coordinator</p>
@@ -159,17 +145,12 @@ function DisplayCertificate({
             </div>
           </div>
 
-          {/* Footer with enhanced validation */}
-          <div className="bg-gradient-to-r from-[#f8f9fa] via-white to-[#f8f9fa] border-t-2 border-[#4a7c59] pt-4">
+          {/* Footer */}
+          <div className="border-t-2 border-[#4a7c59] pt-3">
             <div className="flex justify-between items-center text-xs text-[#5c6d5e] px-4">
               <div className="text-left">
                 <div className="font-medium">Certificate ID: {certificateId}</div>
                 <div className="text-[#6b8e6b]">Issued: {formatDate(new Date())}</div>
-              </div>
-              
-              <div className="text-center">
-                <div className="font-medium text-[#4a7c59]">Bonsai Academy</div>
-                <div>Japanese Language Institute</div>
               </div>
               
               <div className="text-right">
@@ -180,21 +161,17 @@ function DisplayCertificate({
           </div>
         </div>
       </div>
-      
-      {/* Watermark */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="text-[#4a7c59] opacity-5 text-8xl font-bold rotate-12 select-none">
-          CERTIFIED
-        </div>
-      </div>
     </div>
   )
 }
+
+// FIXED: PDF Certificate component with real instructor name
 function PDFCertificate({
   userName = "SakuraBonsai",
   courseTitle = "Japanese Basics", 
   completionDate = new Date(),
   certificateId = "BONSAI-CERT-12345",
+  instructorName = "Instructor", // ADDED: Real instructor name prop
 }) {
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -208,7 +185,7 @@ function PDFCertificate({
     <div
       style={{ 
         width: "800px", 
-        height: "600px", 
+        height: "650px",
         backgroundColor: "#ffffff",
         position: "relative",
         fontFamily: "Arial, sans-serif",
@@ -284,25 +261,27 @@ function PDFCertificate({
 
       {/* Main content container */}
       <div style={{
-        padding: "28px",
+        padding: "24px",
         height: "100%",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
         textAlign: "center",
         position: "relative",
-        zIndex: "10"
+        zIndex: "10",
+        alignItems: "center"
       }}>
         
         {/* Header */}
-        <div>
+        <div style={{ width: "100%", textAlign: "center" }}>
           {/* Academy logo and name */} 
           <div style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "16px",
-            marginBottom: "12px"
+            marginBottom: "8px",
+            width: "100%"
           }}>
             <div style={{
               width: "48px",
@@ -313,13 +292,17 @@ function PDFCertificate({
               alignItems: "center",
               justifyContent: "center",
               color: "white",
-              fontSize: "20px",
-              fontWeight: "bold"
+              fontSize: "21px",
+              fontWeight: "bold",
+              fontFamily: "Arial, sans-serif",
+              paddingBottom: "18px"
             }}>
-              🌿
+              日
             </div>
             
-            <div>
+            <div style={{ 
+              textAlign: "center"
+            }}>
               <div style={{
                 fontSize: "24px",
                 fontWeight: "bold",
@@ -327,17 +310,17 @@ function PDFCertificate({
                 letterSpacing: "2px",
                 marginBottom: "4px"
               }}>
-                BONSAI ACADEMY
+                GENKO TREE
               </div>
               <div style={{
                 fontSize: "12px",
                 color: "#6b8e6b",
                 letterSpacing: "2px"
               }}>
-                JAPANESE LANGUAGE INSTITUTE
+                JAPANESE LANGUAGE LEARNING
               </div>
             </div>
-            
+          
             <div style={{
               width: "48px",
               height: "48px",
@@ -347,8 +330,10 @@ function PDFCertificate({
               alignItems: "center",
               justifyContent: "center",
               color: "white",
-              fontSize: "20px",
-              fontWeight: "bold"
+              fontSize: "21px",
+              fontWeight: "bold",
+              fontFamily: "Arial, sans-serif",
+              paddingBottom: "18px"
             }}>
               日
             </div>
@@ -357,9 +342,10 @@ function PDFCertificate({
           {/* Certificate title */}
           <div style={{
             borderTop: "2px solid #4a7c59",
-            borderBottom: "2px solid #4a7c59", 
-            padding: "12px 0",
-            margin: "16px 0"
+            padding: "8px 0",
+            margin: "12px 0 6px 0",
+            textAlign: "center",
+            width: "100%"
           }}>
             <div style={{
               fontSize: "18px",
@@ -382,23 +368,25 @@ function PDFCertificate({
 
         {/* Main content */}
         <div style={{
-          backgroundColor: "#f8f9fa",
-          padding: "20px",
+          padding: "16px",
           borderRadius: "8px",
-          margin: "12px 0"
+          margin: "8px 0",
+          width: "100%",
+          textAlign: "center"
         }}>
           <div style={{
             fontSize: "16px",
             color: "#5c6d5e",
-            marginBottom: "12px"
+            marginBottom: "8px" 
           }}>
             This is to certify that
           </div>
           
           <div style={{
+            width: "77%",
+            margin: "0 auto 8px auto", 
             borderBottom: "2px solid #4a7c59",
-            paddingBottom: "6px",
-            marginBottom: "12px"
+            paddingBottom: "15px",
           }}>
             <div style={{
               fontSize: "28px",
@@ -414,7 +402,7 @@ function PDFCertificate({
           <div style={{
             fontSize: "16px",
             color: "#5c6d5e",
-            marginBottom: "12px"
+            marginBottom: "15px"
           }}>
             has successfully completed the comprehensive course
           </div>
@@ -422,9 +410,12 @@ function PDFCertificate({
           <div style={{
             backgroundColor: "#4a7c59",
             color: "white",
-            padding: "12px",
+            padding: "5px",
             borderRadius: "8px",
-            marginBottom: "12px"
+            textAlign: "center", 
+            margin: "0 auto 10px auto", 
+            maxWidth: "560px",
+            width: "100%" 
           }}>
             <div style={{
               fontSize: "18px",
@@ -436,20 +427,16 @@ function PDFCertificate({
             <div style={{
               fontSize: "13px",
               opacity: "0.9",
-              marginTop: "2px"
+              marginTop: "2px",
+              marginBottom: "15px"
             }}>
               Japanese Language Mastery Program
             </div>
           </div>
           
           <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "12px",
             marginBottom: "6px"
           }}>
-            <div style={{ height: "1px", backgroundColor: "#4a7c59", flex: "1" }}></div>
             <div style={{
               fontSize: "16px",
               color: "#5c6d5e",
@@ -457,123 +444,89 @@ function PDFCertificate({
             }}>
               Completed on {formatDate(completionDate)}
             </div>
-            <div style={{ height: "1px", backgroundColor: "#4a7c59", flex: "1" }}></div>
           </div>
           
           <div style={{
             fontSize: "13px",
             color: "#6b8e6b"
           }}>
-            Recognized by Bonsai Academy Japanese Language Institute
+            Recognized by Genko Tree Japanese Language Learning
           </div>
         </div>
 
-        {/* Authority and Validation */}
-        <div>
+        {/* Authority and Validation - FIXED: Use real instructor name */}
+        <div style={{ width: "100%", textAlign: "center" }}>
           {/* Signatures */}
           <div style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "end",
-            marginBottom: "24px",
-            padding: "0 48px"
+            marginBottom: "16px",
+            padding: "0 32px"
           }}>
             <div style={{ textAlign: "center" }}>
               <div style={{
-                width: "160px",
+                width: "120px",
                 borderBottom: "2px solid #2c3e2d",
-                height: "32px",
+                height: "28px",
                 display: "flex",
                 alignItems: "end",
                 justifyContent: "center",
-                marginBottom: "8px"
+                marginBottom: "6px",
+                paddingBottom: "2px"
               }}>
                 <div style={{
-                  fontSize: "12px",
+                  fontSize: "11px",
                   color: "#6b8e6b",
-                  marginBottom: "4px"
+                  fontWeight: "500",
+                  paddingBottom: "8px",
                 }}>
-                  Dr. Sakura Tanaka
+                  {instructorName}
                 </div>
               </div>
               <div style={{
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: "500",
                 color: "#2c3e2d"
               }}>
-                Academy Director
+                Course Instructor
               </div>
               <div style={{
-                fontSize: "12px",
+                fontSize: "10px",
                 color: "#6b8e6b"
               }}>
-                Chief Language Instructor
-              </div>
-            </div>
-
-            {/* Academy Seal */}
-            <div style={{ textAlign: "center" }}>
-              <div style={{
-                width: "64px",
-                height: "64px",
-                backgroundColor: "#4a7c59",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 8px auto"
-              }}>
-                <div style={{
-                  width: "48px",
-                  height: "48px",
-                  border: "2px solid white",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  fontSize: "12px",
-                  fontWeight: "bold"
-                }}>
-                  認定
-                </div>
-              </div>
-              <div style={{
-                fontSize: "12px",
-                fontWeight: "500",
-                color: "#2c3e2d"
-              }}>
-                Official Seal
+                Japanese Language Expert
               </div>
             </div>
 
             <div style={{ textAlign: "center" }}>
               <div style={{
-                width: "160px",
+                width: "120px",
                 borderBottom: "2px solid #2c3e2d",
-                height: "32px",
+                height: "24px",
                 display: "flex",
                 alignItems: "end",
                 justifyContent: "center",
-                marginBottom: "8px"
+                marginBottom: "6px"
               }}>
                 <div style={{
-                  fontSize: "12px",
+                  fontSize: "11px",
                   color: "#6b8e6b",
-                  marginBottom: "4px"
+                  marginBottom: "4px",
+                  paddingBottom: "8px",
                 }}>
                   Prof. Hiroshi Nakamura
                 </div>
               </div>
               <div style={{
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: "500",
                 color: "#2c3e2d"
               }}>
                 Program Coordinator
               </div>
               <div style={{
-                fontSize: "12px",
+                fontSize: "10px",
                 color: "#6b8e6b"
               }}>
                 Curriculum Specialist
@@ -581,27 +534,21 @@ function PDFCertificate({
             </div>
           </div>
 
-          {/* Footer with enhanced validation */}
+          {/* Footer */}
           <div style={{
-            backgroundColor: "#f8f9fa",
             borderTop: "2px solid #4a7c59",
-            padding: "16px"
+            padding: "12px"
           }}>
             <div style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              fontSize: "12px",
+              fontSize: "11px",
               color: "#5c6d5e"
             }}>
               <div style={{ textAlign: "left" }}>
                 <div style={{ fontWeight: "500" }}>Certificate ID: {certificateId}</div>
                 <div style={{ color: "#6b8e6b" }}>Issued: {formatDate(new Date())}</div>
-              </div>
-              
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontWeight: "500", color: "#4a7c59" }}>Bonsai Academy</div>
-                <div>Japanese Language Institute</div>
               </div>
               
               <div style={{ textAlign: "right" }}>
@@ -616,13 +563,13 @@ function PDFCertificate({
       {/* Watermark */}
       <div style={{
         position: "absolute",
-        top: "50%",
+        top: "30%",
         left: "50%",
         transform: "translate(-50%, -50%) rotate(12deg)",
-        fontSize: "80px",
+        fontSize: "100px",
         fontWeight: "bold",
         color: "#4a7c59",
-        opacity: "0.05",
+        opacity: "0.06",
         pointerEvents: "none",
         userSelect: "none",
         zIndex: "1"
@@ -664,6 +611,7 @@ export function CertificateModal({
           courseTitle: data.certificate.courseTitle,
           completionDate: new Date(data.certificate.completionDate),
           certificateId: data.certificate.certificateId,
+          instructorName: data.certificate.instructorName || "Instructor",
         })
       } else {
         setError(data.error || "Certificate not found")
@@ -708,11 +656,11 @@ export function CertificateModal({
         allowTaint: true,
         backgroundColor: '#ffffff',
         width: 800,
-        height: 600,
+        height: 650,
         scrollX: 0,
         scrollY: 0,
         windowWidth: 800,
-        windowHeight: 600,
+        windowHeight: 650,
         logging: false,
         imageTimeout: 0,
         removeContainer: false,
@@ -738,11 +686,11 @@ export function CertificateModal({
       
       // Calculate scaling to fit A4 with aspect ratio
       const scaleX = availableWidth / (800 * 0.264583) // Convert px to mm
-      const scaleY = availableHeight / (600 * 0.264583)
+      const scaleY = availableHeight / (650 * 0.264583)
       const scale = Math.min(scaleX, scaleY)
       
       const finalWidth = 800 * 0.264583 * scale
-      const finalHeight = 600 * 0.264583 * scale
+      const finalHeight = 650 * 0.264583 * scale
       
       // Center the certificate
       const x = (pdfWidth - finalWidth) / 2
@@ -756,13 +704,13 @@ export function CertificateModal({
       pdf.setProperties({
         title: `Certificate - ${certificateData.courseTitle}`,
         subject: `Certificate of Completion for ${certificateData.userName}`,
-        author: 'Bonsai Academy - Japanese Language Institute',
+        author: 'Genko Tree - Japanese Language Learning',
         keywords: 'certificate, japanese, language, completion',
-        creator: 'Bonsai Academy'
+        creator: 'Genko Tree'
       })
 
       // Download with descriptive filename
-      const fileName = `BonsaiAcademy_Certificate_${certificateData.userName.replace(/[^a-zA-Z0-9]/g, '_')}_${certificateData.certificateId}.pdf`
+      const fileName = `GenkoTree_Certificate_${certificateData.userName.replace(/[^a-zA-Z0-9]/g, '_')}_${certificateData.certificateId}.pdf`
       pdf.save(fileName)
 
     } catch (error) {
@@ -773,46 +721,18 @@ export function CertificateModal({
     }
   }
 
-  const handleShare = async () => {
-    if (!certificateData) return
-
-    const shareData = {
-      title: `Certificate of Completion - ${certificateData.courseTitle}`,
-      text: `I've successfully completed "${certificateData.courseTitle}" at Bonsai Academy - Japanese Language Institute!`,
-      url: window.location.href
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData)
-      } catch (error) {
-        handleCopyLink()
-      }
-    } else {
-      handleCopyLink()
-    }
-  }
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      alert('Certificate link copied to clipboard!')
-    }).catch(() => {
-      alert('Unable to copy link')
-    })
-  }
-
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-6xl max-h-[95vh] overflow-auto rounded-xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-6xl max-h-[85vh] overflow-auto rounded-xl bg-white shadow-2xl" style={{ marginTop: '2vh' }}>
         
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white">
-          <div className="flex items-center justify-between p-6">
+        <div className="bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white">
+          <div className="flex items-center justify-between py-6 px-12">
             <div>
-              <h2 className="text-2xl font-bold">Your Professional Certificate</h2>
-              <p className="text-sm opacity-90 mt-1">Bonsai Academy - Japanese Language Institute</p>
+              <h2 className="text-2xl font-bold">Your Course Certificate of Completion</h2>
+              <p className="text-sm opacity-90 mt-1">Genko Tree - Japanese Language Learning</p>
             </div>
             <button
               onClick={onClose}
@@ -824,12 +744,12 @@ export function CertificateModal({
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
               <Loader2 className="h-12 w-12 animate-spin text-[#4a7c59] mb-4" />
               <span className="text-lg text-[#5c6d5e]">Loading your certificate...</span>
-              <p className="text-sm text-[#6b8e6b] mt-2">Please wait while we prepare your professional certificate</p>
+              <p className="text-sm text-[#6b8e6b] mt-2">Please wait while we prepare your certificate</p>
             </div>
           ) : error ? (
             <div className="text-center py-16">
@@ -843,11 +763,11 @@ export function CertificateModal({
           ) : certificateData ? (
             <>
               {/* Certificate display */}
-              <div className="bg-gradient-to-br from-gray-50 to-white p-8 rounded-lg mb-8">
+              <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg">
                 <div className="flex justify-center">
                   <div 
                     className="inline-block shadow-xl rounded-lg overflow-hidden"
-                    style={{ transform: 'scale(0.9)' }}
+                    style={{ transform: 'scale(0.85)' }}
                   >
                     <DisplayCertificate {...certificateData} />
                   </div>
@@ -862,7 +782,7 @@ export function CertificateModal({
               </div>
 
               {/* Action buttons */}
-              <div className="flex flex-wrap gap-4 justify-center">
+              <div className="flex flex-wrap gap-4 justify-center mb-6">
                 <Button 
                   onClick={handleDownload} 
                   size="lg"
@@ -877,20 +797,9 @@ export function CertificateModal({
                   ) : (
                     <>
                       <Download className="mr-2 h-5 w-5" />
-                      Download Professional Certificate
+                      Download Certificate
                     </>
                   )}
-                </Button>
-                
-                <Button 
-                  onClick={handleShare}
-                  size="lg"
-                  variant="outline" 
-                  className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white px-8 py-3"
-                  disabled={downloading}
-                >
-                  <Share2 className="mr-2 h-5 w-5" />
-                  Share Achievement
                 </Button>
 
                 <Button 
@@ -903,21 +812,11 @@ export function CertificateModal({
                   <ExternalLink className="mr-2 h-5 w-5" />
                   Verify Certificate
                 </Button>
-                
-                <Button 
-                  onClick={onClose} 
-                  size="lg"
-                  variant="ghost" 
-                  className="text-[#5c6d5e] hover:bg-gray-100 px-8 py-3"
-                  disabled={downloading}
-                >
-                  Close
-                </Button>
               </div>
 
               {/* Certificate info section */}
               {certificateData && (
-                <div className="mt-8 bg-gradient-to-r from-[#f8f9fa] to-[#f1f7f1] rounded-lg p-6">
+                <div className="bg-gradient-to-r from-[#f8f9fa] to-[#f1f7f1] rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-[#2c3e2d] mb-4">Certificate Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
@@ -927,6 +826,10 @@ export function CertificateModal({
                     <div>
                       <span className="font-medium text-[#4a7c59]">Course:</span>
                       <span className="ml-2 text-[#2c3e2d]">{certificateData.courseTitle}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-[#4a7c59]">Instructor:</span>
+                      <span className="ml-2 text-[#2c3e2d]">{certificateData.instructorName}</span>
                     </div>
                     <div>
                       <span className="font-medium text-[#4a7c59]">Completion Date:</span>
@@ -939,7 +842,7 @@ export function CertificateModal({
                   </div>
                   <div className="mt-4 pt-4 border-t border-[#4a7c59]/20">
                     <p className="text-xs text-[#6b8e6b]">
-                      This certificate is issued by Bonsai Academy - Japanese Language Institute and can be verified at bonsaiacademy.com/verify
+                      This certificate is issued by Genko Tree - Japanese Language Learning and can be verified at bonsaiacademy.com/verify
                     </p>
                   </div>
                 </div>

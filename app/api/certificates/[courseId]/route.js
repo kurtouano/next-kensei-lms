@@ -1,4 +1,4 @@
-// app/api/certificates/[courseId]/route.js - FIXED VERSION
+// app/api/certificates/[courseId]/route.js - FIXED: Include real instructor name
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
@@ -21,6 +21,7 @@ export async function GET(request, { params }) {
     }
 
     const { courseId } = await params
+    console.log('🔍 GET Certificate for course ID:', courseId)
 
     // Find user
     const user = await User.findOne({ email: session.user.email })
@@ -35,7 +36,14 @@ export async function GET(request, { params }) {
     const certificate = await Certificate.findOne({
       user: user._id,
       course: courseId
-    }).populate('course', 'title')
+    }).populate('course', 'title instructor')
+      .populate({
+        path: 'course',
+        populate: {
+          path: 'instructor',
+          select: 'name'
+        }
+      })
 
     if (!certificate) {
       return NextResponse.json({ 
@@ -44,12 +52,13 @@ export async function GET(request, { params }) {
       }, { status: 404 })
     }
 
-    // Add user name to certificate data
+    // FIXED: Add user name and real instructor name to certificate data
     const certificateData = {
       certificateId: certificate.certificateId,
       courseTitle: certificate.courseTitle,
       completionDate: certificate.completionDate,
-      userName: user.name || "Student"
+      userName: user.name || "Student",
+      instructorName: certificate.course?.instructor?.name || certificate.instructorName || "Instructor"
     }
 
     return NextResponse.json({
@@ -87,7 +96,7 @@ export async function POST(request, { params }) {
     }
 
     const { courseId } = await params
-    console.log('🎓 Creating certificate for course ID:', courseId)
+    console.log('🎓 POST Creating certificate for course ID:', courseId)
 
     // Find user
     const user = await User.findOne({ email: session.user.email })
@@ -100,7 +109,7 @@ export async function POST(request, { params }) {
 
     console.log('👤 User found:', user.name, user.email)
 
-    // Find course
+    // Find course with instructor details
     const course = await Course.findById(courseId).populate('instructor', 'name')
     if (!course) {
       console.error('❌ Course not found for ID:', courseId)
@@ -111,6 +120,7 @@ export async function POST(request, { params }) {
     }
 
     console.log('📚 Course found:', course.title)
+    console.log('👨‍🏫 Instructor:', course.instructor?.name || 'No instructor found')
 
     // Check if certificate already exists
     let existingCertificate = await Certificate.findOne({
@@ -121,12 +131,13 @@ export async function POST(request, { params }) {
     if (existingCertificate) {
       console.log('📜 Certificate already exists:', existingCertificate.certificateId)
       
-      // Certificate already exists, return it
+      // Certificate already exists, return it with real instructor name
       const certificateData = {
         certificateId: existingCertificate.certificateId,
         courseTitle: existingCertificate.courseTitle,
         completionDate: existingCertificate.completionDate,
-        userName: user.name || "Student"
+        userName: user.name || "Student",
+        instructorName: course.instructor?.name || existingCertificate.instructorName || "Instructor"
       }
 
       return NextResponse.json({
@@ -139,21 +150,19 @@ export async function POST(request, { params }) {
       })
     }
 
-    // FIXED: Generate certificate ID manually
     const certificateId = generateCertificateId()
     console.log('🆔 Generated certificate ID:', certificateId)
 
-    // Create new certificate with explicit certificateId
     const newCertificate = new Certificate({
       user: user._id,
       course: courseId,
-      certificateId: certificateId, // FIXED: Explicitly set the ID
+      certificateId: certificateId,
       courseTitle: course.title,
       instructorName: course.instructor?.name || "Instructor",
       completionDate: new Date()
     })
 
-    console.log('💾 Saving certificate...')
+    console.log('Saving certificate with instructor:', course.instructor?.name)
     await newCertificate.save()
     console.log('✅ Certificate saved successfully!')
 
@@ -161,7 +170,8 @@ export async function POST(request, { params }) {
       certificateId: newCertificate.certificateId,
       courseTitle: newCertificate.courseTitle,
       completionDate: newCertificate.completionDate,
-      userName: user.name || "Student"
+      userName: user.name || "Student",
+      instructorName: course.instructor?.name || "Instructor"
     }
 
     return NextResponse.json({

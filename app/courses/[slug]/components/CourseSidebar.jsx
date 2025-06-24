@@ -90,6 +90,7 @@ export const CourseSidebar = memo(function CourseSidebar({
     try {
       setClaimingCertificate(true)
       
+      // Change from: `/api/certificates/${courseData.id}`
       const response = await fetch(`/api/certificates/${courseData.id}`, {
         method: 'POST',
         headers: {
@@ -100,12 +101,10 @@ export const CourseSidebar = memo(function CourseSidebar({
       const data = await response.json()
 
       if (data.success) {
-        setHasCertificate(true) // ADDED: Update state
+        setHasCertificate(true)
         if (data.certificate.alreadyIssued) {
-          // Certificate already exists, show it
           setShowCertificateModal(true)
         } else {
-          // New certificate created, show it
           setShowCertificateModal(true)
         }
       } else {
