@@ -3,7 +3,6 @@
 import { X, Download, Loader2, ExternalLink, Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
-import { BonsaiIcon } from "@/components/bonsai-icon"
 
 function DisplayCertificate({
   userName = "SakuraBonsai",
@@ -155,7 +154,7 @@ function DisplayCertificate({
               
               <div className="text-right">
                 <div className="font-medium">Verify at:</div>
-                <div className="text-[#4a7c59]">bonsaiacademy.com/verify</div>
+                <div className="text-[#4a7c59]">genkotree.com/verify</div>
               </div>
             </div>
           </div>
@@ -553,7 +552,7 @@ function PDFCertificate({
               
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontWeight: "500" }}>Verify at:</div>
-                <div style={{ color: "#4a7c59" }}>bonsaiacademy.com/verify</div>
+                <div style={{ color: "#4a7c59" }}>genkotree.com/verify</div>
               </div>
             </div>
           </div>
@@ -803,7 +802,7 @@ export function CertificateModal({
                 </Button>
 
                 <Button 
-                  onClick={() => window.open('https://bonsaiacademy.com/verify', '_blank')}
+                  onClick={() => window.open('https://genkotree.com/verify', '_blank')}
                   size="lg"
                   variant="outline" 
                   className="border-[#6b8e6b] text-[#6b8e6b] hover:bg-[#6b8e6b] hover:text-white px-8 py-3"
@@ -819,10 +818,6 @@ export function CertificateModal({
                 <div className="bg-gradient-to-r from-[#f8f9fa] to-[#f1f7f1] rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-[#2c3e2d] mb-4">Certificate Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-[#4a7c59]">Recipient:</span>
-                      <span className="ml-2 text-[#2c3e2d]">{certificateData.userName}</span>
-                    </div>
                     <div>
                       <span className="font-medium text-[#4a7c59]">Course:</span>
                       <span className="ml-2 text-[#2c3e2d]">{certificateData.courseTitle}</span>
@@ -842,7 +837,7 @@ export function CertificateModal({
                   </div>
                   <div className="mt-4 pt-4 border-t border-[#4a7c59]/20">
                     <p className="text-xs text-[#6b8e6b]">
-                      This certificate is issued by Genko Tree - Japanese Language Learning and can be verified at bonsaiacademy.com/verify
+                      This certificate is issued by Genko Tree - Japanese Language Learning and can be verified at genkotree.com/verify
                     </p>
                   </div>
                 </div>

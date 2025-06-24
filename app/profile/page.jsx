@@ -220,10 +220,6 @@ export default function ProfilePage() {
     }
   }
 
-  const selectEmojiIcon = (emoji) => {
-    setEditData(prev => ({ ...prev, icon: emoji }))
-  }
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -364,16 +360,16 @@ export default function ProfilePage() {
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Learning Progress</h2>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                       <div className="rounded-lg bg-[#eef2eb] p-4 text-center">
+                        <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress?.enrolledCourses || 0}</p>
+                        <p className="text-sm text-[#5c6d5e]">Courses Enrolled</p>
+                      </div>
+                      <div className="rounded-lg bg-[#eef2eb] p-4 text-center">
                         <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress?.coursesCompleted || 0}</p>
                         <p className="text-sm text-[#5c6d5e]">Courses Completed</p>
                       </div>
                       <div className="rounded-lg bg-[#eef2eb] p-4 text-center">
                         <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress?.lessonsCompleted || 0}</p>
                         <p className="text-sm text-[#5c6d5e]">Lessons Completed</p>
-                      </div>
-                      <div className="rounded-lg bg-[#eef2eb] p-4 text-center">
-                        <p className="text-2xl font-bold text-[#4a7c59]">{userData.progress?.quizzesCompleted || 0}</p>
-                        <p className="text-sm text-[#5c6d5e]">Quizzes Passed</p>
                       </div>
                       <div className="rounded-lg bg-[#eef2eb] p-4 text-center">
                         <p className="text-2xl font-bold text-[#4a7c59]">
@@ -463,30 +459,10 @@ export default function ProfilePage() {
                         {/* Help text */}
                         {!editMode && (
                           <p className="text-xs text-[#5c6d5e] mt-2">
-                            Click "Edit" above to change your profile picture
+                            Click "Edit" above to change your personal details
                           </p>
                         )}
-                        
-                        {/* Emoji Selection */}
-                        {editMode && (
-                          <div className="mt-3">
-                            <p className="text-xs text-[#5c6d5e] mb-2">Or choose an emoji:</p>
-                            <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-2 border border-[#dce4d7] rounded-md bg-[#f8f7f4]">
-                              {avatarOptions.map((emoji, index) => (
-                                <button
-                                  key={index}
-                                  type="button"
-                                  onClick={() => selectEmojiIcon(emoji)}
-                                  className={`text-xl p-2 rounded-md hover:bg-[#eef2eb] transition-colors ${
-                                    editData.icon === emoji ? 'bg-[#4a7c59] ring-2 ring-[#4a7c59]' : 'bg-white'
-                                  }`}
-                                >
-                                  {emoji}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+
                       </div>
                       
                       <div>
@@ -666,10 +642,7 @@ export default function ProfilePage() {
                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                    {certificates.map((cert) => (
                      <div key={cert.id} className="rounded-lg border border-[#dce4d7] bg-[#eef2eb] p-4">
-                       <div className="mb-2 flex items-center justify-between">
-                         <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#4a7c59]">
-                           Certificate
-                         </span>
+                       <div className="mb-2 flex items-center">
                          <span className="text-xs text-[#5c6d5e]">
                            {new Date(cert.completionDate).toLocaleDateString('en-US', {
                              year: 'numeric',
