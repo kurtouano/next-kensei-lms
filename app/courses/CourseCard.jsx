@@ -164,7 +164,7 @@ export const CourseCard = memo(function CourseCard({ course }) {
         <div className="mb-6 flex-1">
           <h4 className="mb-3 text-sm font-semibold text-gray-900">What you'll learn:</h4>
           <div className="space-y-2">
-            {courseData.highlights.slice(0, 3).map((highlight, index) => (
+            {courseData.highlights.slice(0, 4).map((highlight, index) => (
               <div key={index} className="flex items-center gap-2 ">
                 <div className="mt-0.5 flex-shrink-0">
                   <div className="h-1.5 w-1.5 rounded-full bg-[#4a7c59]"></div>
