@@ -1,11 +1,12 @@
-// Fixed page.jsx - Allow non-logged in users to view course preview
+// Updated page.jsx - Handles instructor preview mode
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { useRouter } from "next/navigation"
 
 // Import custom hooks
 import { useProgress, useLessonData, useQuiz, useReviews, useEnrollmentCheck, useCourseLike, useQA } from "./hooks/useCoursePreviewHook"
@@ -19,6 +20,7 @@ import { CourseSidebar } from "./components/CourseSidebar"
 import { CourseInfo } from "./components/CourseInfo"
 import { ModuleCompleteNotif } from "./components/ModuleCompleteNotif"
 import { EnrollmentPrompt } from "./components/EnrollmentPrompt"
+import { InstructorPreviewToggle } from "./components/InstructorPreviewToggle"
 
 // ============ LOADING & ERROR LAYOUTS ============
 
@@ -55,34 +57,69 @@ const ErrorLayout = memo(function ErrorLayout({ error }) {
 // ============ MAIN COMPONENT ============
 
 export default function LessonPage() {
+  const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const lessonSlug = params.slug
   const { data: session, status } = useSession()
   
-  // FIXED: Determine if user is logged in based on session status, not just session existence
+  // Check if this is instructor preview mode
+  const isInstructorPreview = searchParams.get('instructor-preview') === 'true'
+  
+  // Instructor preview mode state
+  const [instructorPreviewMode, setInstructorPreviewMode] = useState('enrolled') // 'enrolled' or 'guest'
+  
   const isLoggedIn = status === "authenticated" && !!session?.user
   const isSessionLoading = status === "loading"
   
   // Core hooks - these should work regardless of login status
   const { lessonData, loading: lessonLoading, error: lessonError } = useLessonData(lessonSlug)
   
-  // FIXED: Only run enrollment check if user is logged in
-  const { isEnrolled, loading: enrollmentLoading, checkEnrollment } = useEnrollmentCheck(
-    isLoggedIn ? lessonData?.id : null
+  // Helper function to check if user is instructor of this course
+  const isInstructorOwned = useMemo(() => {
+    if (!isLoggedIn || !lessonData) return false
+    
+    // Check if user is admin
+    if (session?.user?.role === 'admin') return true
+    
+    // Check if user owns this course
+    return lessonData.instructor?.email === session.user.email || 
+          lessonData.instructorId === session.user.id
+  }, [isLoggedIn, lessonData, session])
+
+  // Only run enrollment check if user is logged in and not in instructor preview mode
+  const { isEnrolled: actualIsEnrolled, loading: enrollmentLoading, checkEnrollment } = useEnrollmentCheck(
+    (isLoggedIn && !isInstructorPreview) ? lessonData?.id : null
   )
+
+  // Determine effective enrollment status
+  const effectiveIsEnrolled = useMemo(() => {
+    if (isInstructorPreview && isInstructorOwned) {
+      return instructorPreviewMode === 'enrolled'
+    }
+    return actualIsEnrolled
+  }, [isInstructorPreview, isInstructorOwned, instructorPreviewMode, actualIsEnrolled])
+
+  // Determine effective login status
+  const effectiveIsLoggedIn = useMemo(() => {
+    if (isInstructorPreview && isInstructorOwned) {
+      return instructorPreviewMode === 'enrolled' // Guest mode simulates logged out
+    }
+    return isLoggedIn
+  }, [isInstructorPreview, isInstructorOwned, instructorPreviewMode, isLoggedIn])
   
-  // FIXED: Only run progress tracking if user is logged in
+  // Only run progress tracking if user is logged in and enrolled (or instructor in enrolled mode)
   const { progress, loading: progressLoading, updateLessonProgress, updateVideoProgress, updateModuleProgress, getLessonCurrentTime } = useProgress(
-    isLoggedIn ? lessonSlug : null
+    (effectiveIsLoggedIn && effectiveIsEnrolled) ? lessonSlug : null
   )
   
-  // FIXED: Only run like functionality if user is logged in
+  // Only run like functionality if user is logged in
   const { likeState, toggleLike } = useCourseLike(
-    isLoggedIn ? lessonSlug : null, 
-    isLoggedIn ? session : null
+    effectiveIsLoggedIn ? lessonSlug : null, 
+    effectiveIsLoggedIn ? session : null
   )
   
-  // FIXED: Only run Q&A functionality if user is logged in
+  // Only run Q&A functionality if user is logged in
   const { 
     qaState, 
     fetchQuestions, 
@@ -96,8 +133,8 @@ export default function LessonPage() {
     toggleQuestionLike, 
     toggleForm: toggleQAForm 
   } = useQA(
-    isLoggedIn ? lessonSlug : null, 
-    isLoggedIn ? session : null
+    effectiveIsLoggedIn ? lessonSlug : null, 
+    effectiveIsLoggedIn ? session : null
   )
   
   // Navigation state
@@ -106,45 +143,64 @@ export default function LessonPage() {
   const [completedItems, setCompletedItems] = useState([])
   const [moduleQuizCompleted, setModuleQuizCompleted] = useState([])
 
-  // FIXED: Only run quiz hook if user is logged in
+  // Only run quiz hook if user is logged in and enrolled
   const { quizState, currentQuiz, existingScore, startQuiz, selectAnswer, submitQuiz, retryQuiz, showQuiz, hideQuiz } = useQuiz(
     lessonData, 
     activeModule, 
-    isLoggedIn ? updateModuleProgress : null, 
+    (effectiveIsLoggedIn && effectiveIsEnrolled) ? updateModuleProgress : null, 
     moduleQuizCompleted
   )
   
-  // FIXED: Only run reviews hook if user is logged in
+  // Only run reviews hook if user is logged in
   const { reviewsState, fetchReviews, submitReview, deleteReview, updateReview, toggleForm } = useReviews(
     lessonSlug, 
-    isLoggedIn ? session : null
+    effectiveIsLoggedIn ? session : null
   )
 
   // UI state
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [activeTab, setActiveTab] = useState('reviews')
-  
-  // FIXED: Add a flag to prevent multiple initial loads
   const [hasInitializedQA, setHasInitializedQA] = useState(false)
+
+  // Handle instructor preview mode toggle
+  const handleTogglePreviewMode = useCallback((mode) => {
+    setInstructorPreviewMode(mode)
+    
+    // Reset some state when switching modes
+    setCompletedItems([])
+    setModuleQuizCompleted([])
+    setActiveVideoId(null)
+    setHasInitializedQA(false)
+    
+    // Set appropriate initial video based on mode
+    if (lessonData) {
+      if (mode === 'guest' && lessonData.previewVideoUrl) {
+        setActiveVideoId("preview")
+      } else if (mode === 'enrolled' && lessonData.modules?.length > 0) {
+        const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
+        if (firstVideo) setActiveVideoId(firstVideo.id)
+      }
+    }
+  }, [lessonData])
 
   // ============ EFFECTS ============
 
-  // FIXED: Check enrollment only when lesson data loads AND user is logged in
+  // Check enrollment only when lesson data loads AND user is logged in AND not in instructor preview
   useEffect(() => {
-    if (lessonData?.id && isLoggedIn) {
+    if (lessonData?.id && isLoggedIn && !isInstructorPreview) {
       checkEnrollment()
     }
-  }, [lessonData?.id, isLoggedIn, checkEnrollment])
+  }, [lessonData?.id, isLoggedIn, isInstructorPreview, checkEnrollment])
 
-  // FIXED: Sync progress data with local state only if user is logged in
+  // Sync progress data with local state only if user is logged in and enrolled
   useEffect(() => {
-    if (isLoggedIn && progress.completedLessons.length > 0) {
+    if (effectiveIsLoggedIn && effectiveIsEnrolled && progress.completedLessons.length > 0) {
       setCompletedItems(progress.completedLessons)
     }
-  }, [isLoggedIn, progress.completedLessons])
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, progress.completedLessons])
 
   useEffect(() => {
-    if (isLoggedIn && progress.completedModules.length > 0 && lessonData?.modules) {
+    if (effectiveIsLoggedIn && effectiveIsEnrolled && progress.completedModules.length > 0 && lessonData?.modules) {
       const completedModuleData = progress.completedModules
         .map(completedModule => {
           const moduleIndex = lessonData.modules.findIndex(module => module.id === completedModule.moduleId)
@@ -159,45 +215,45 @@ export default function LessonPage() {
       
       setModuleQuizCompleted(completedModuleData)
     }
-  }, [isLoggedIn, progress.completedModules, lessonData])
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, progress.completedModules, lessonData])
 
-  // FIXED: Set initial active video - allow preview for non-logged users
+  // Set initial active video
   useEffect(() => {
     if (lessonData && !activeVideoId) {
-      if (!isLoggedIn && lessonData.previewVideoUrl) {
+      if (!effectiveIsLoggedIn && lessonData.previewVideoUrl) {
         // Non-logged users can only see preview
         setActiveVideoId("preview")
-      } else if (!isLoggedIn && !lessonData.previewVideoUrl) {
+      } else if (!effectiveIsLoggedIn && !lessonData.previewVideoUrl) {
         // No preview available for non-logged users, show first video but locked
         if (lessonData.modules?.length > 0) {
           const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
           if (firstVideo) setActiveVideoId(firstVideo.id)
         }
-      } else if (isLoggedIn && !isEnrolled && lessonData.previewVideoUrl) {
+      } else if (effectiveIsLoggedIn && !effectiveIsEnrolled && lessonData.previewVideoUrl) {
         // Logged in but not enrolled, show preview
         setActiveVideoId("preview")
-      } else if (isLoggedIn && isEnrolled && lessonData.modules?.length > 0) {
+      } else if (effectiveIsLoggedIn && effectiveIsEnrolled && lessonData.modules?.length > 0) {
         // Logged in and enrolled, show first actual video
         const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
         if (firstVideo) setActiveVideoId(firstVideo.id)
       }
     }
-  }, [lessonData, activeVideoId, isLoggedIn, isEnrolled])
+  }, [lessonData, activeVideoId, effectiveIsLoggedIn, effectiveIsEnrolled])
 
-  // FIXED: Fetch reviews and questions when lesson data loads - work for all users
+  // Fetch reviews and questions when lesson data loads
   useEffect(() => {
     if (lessonData && !hasInitializedQA) {
-      // Always fetch reviews (works for non-logged users too)
+      // Always fetch reviews
       fetchReviews()
       
-      // Only fetch questions if user is logged in
-      if (isLoggedIn) {
+      // Only fetch questions if user is effectively logged in
+      if (effectiveIsLoggedIn) {
         fetchQuestions()
       }
       
       setHasInitializedQA(true)
     }
-  }, [lessonData, hasInitializedQA, isLoggedIn, fetchReviews, fetchQuestions])
+  }, [lessonData, hasInitializedQA, effectiveIsLoggedIn, fetchReviews, fetchQuestions])
 
   // ============ COMPUTED VALUES ============
 
@@ -245,37 +301,37 @@ export default function LessonPage() {
   }, [lessonData, activeVideoId, activeModule])
 
   const currentModuleCompleted = useMemo(() => {
-    if (!isLoggedIn || !lessonData?.modules?.[activeModule]) return false
+    if (!effectiveIsLoggedIn || !effectiveIsEnrolled || !lessonData?.modules?.[activeModule]) return false
     const moduleItems = lessonData.modules[activeModule].items
     return moduleItems.every(item => completedItems.includes(item.id))
-  }, [isLoggedIn, lessonData, activeModule, completedItems])
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, lessonData, activeModule, completedItems])
 
   const currentModuleQuizCompleted = useMemo(() => {
-    if (!isLoggedIn) return false
+    if (!effectiveIsLoggedIn || !effectiveIsEnrolled) return false
     return moduleQuizCompleted.some(completed => completed.moduleIndex === activeModule)
-  }, [isLoggedIn, moduleQuizCompleted, activeModule])
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, moduleQuizCompleted, activeModule])
 
   // ============ EVENT HANDLERS ============
 
   const handleSelectItem = useCallback((itemId, moduleIndex) => {
-    // FIXED: Allow preview selection for non-logged users
-    if (!isLoggedIn && itemId !== "preview") {
-      return // Non-logged users can only access preview
+    // Allow preview selection for non-logged users and guest mode
+    if (!effectiveIsLoggedIn && itemId !== "preview") {
+      return
     }
     
-    if (isLoggedIn && !isEnrolled && itemId !== "preview") {
-      return // Logged in but not enrolled users can only access preview
+    if (effectiveIsLoggedIn && !effectiveIsEnrolled && itemId !== "preview") {
+      return
     }
     
     setActiveVideoId(itemId)
     setActiveModule(moduleIndex)
-  }, [isLoggedIn, isEnrolled])
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled])
 
   const handleToggleCompletion = useCallback(async (itemId, e) => {
     e.stopPropagation()
     
-    // FIXED: Only allow completion tracking for logged in enrolled users
-    if (!isLoggedIn || !isEnrolled) return
+    // Only allow completion tracking for logged in enrolled users (not instructor preview guest mode)
+    if (!effectiveIsLoggedIn || !effectiveIsEnrolled || (isInstructorPreview && instructorPreviewMode === 'guest')) return
     
     const isCurrentlyCompleted = completedItems.includes(itemId)
     const newCompletionState = !isCurrentlyCompleted
@@ -286,17 +342,20 @@ export default function LessonPage() {
         : prev.filter(id => id !== itemId)
     )
     
-    const success = await updateLessonProgress(itemId, newCompletionState)
-    
-    if (!success) {
-      setCompletedItems(prev => 
-        isCurrentlyCompleted 
-          ? [...prev, itemId] 
-          : prev.filter(id => id !== itemId)
-      )
-      alert('Failed to update progress. Please try again.')
+    // Only update database if not in instructor preview mode
+    if (!isInstructorPreview) {
+      const success = await updateLessonProgress(itemId, newCompletionState)
+      
+      if (!success) {
+        setCompletedItems(prev => 
+          isCurrentlyCompleted 
+            ? [...prev, itemId] 
+            : prev.filter(id => id !== itemId)
+        )
+        alert('Failed to update progress. Please try again.')
+      }
     }
-  }, [isLoggedIn, isEnrolled, completedItems, updateLessonProgress])
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, isInstructorPreview, instructorPreviewMode, completedItems, updateLessonProgress])
 
   const handleNextModule = useCallback(() => {
     if (quizState.score >= 70 || existingScore >= 70) {
@@ -328,14 +387,11 @@ export default function LessonPage() {
 
   // ============ LOADING STATES ============
 
-  // FIXED: Show loading only when session is loading OR lesson is loading
-  // Don't wait for session if it's not loading
   if (isSessionLoading || lessonLoading) {
     return <LoadingLayout />
   }
 
-  // FIXED: Only wait for progress and enrollment if user is logged in
-  if (isLoggedIn && (progressLoading || enrollmentLoading)) {
+  if (effectiveIsLoggedIn && !isInstructorPreview && enrollmentLoading) {
     return <LoadingLayout />
   }
 
@@ -343,20 +399,42 @@ export default function LessonPage() {
     return <ErrorLayout error={lessonError || "Failed to load lesson data"} />
   }
 
-  // ============ MAIN RENDER ============
+  console.log('🔍 INSTRUCTOR PREVIEW STATUS:', {
+  isInstructorPreview,
+  instructorPreviewMode, 
+  isInstructorOwned,
+  effectiveIsLoggedIn,
+  effectiveIsEnrolled,
+  actualIsEnrolled,
+  sessionUserEmail: session?.user?.email,
+  lessonInstructorEmail: lessonData?.instructor?.email
+})
 
+  // ============ MAIN RENDER ============
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
       <Header isLoggedIn={isLoggedIn} />
 
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8">
+          {/* Instructor Preview Toggle */}
+          
+          {isInstructorPreview && (isInstructorOwned) && (
+            <InstructorPreviewToggle
+              previewMode={instructorPreviewMode}
+              onTogglePreviewMode={handleTogglePreviewMode}
+              courseTitle={lessonData.title}
+              isInstructorOwned={isInstructorOwned}
+              onBackToDashboard={() => router.push('/instructor/dashboard')}
+            />
+          )}
+
           <div className="flex flex-col lg:flex-row">
             
             {/* Main Content Area */}
             <div className="w-full lg:w-2/3 lg:pr-4">
               {quizState.showModuleQuiz ? (
-                isLoggedIn && isEnrolled ? (
+                effectiveIsLoggedIn && effectiveIsEnrolled ? (
                   <QuizSection 
                     quiz={quizState.randomizedQuiz || currentQuiz}
                     quizState={quizState}
@@ -376,17 +454,17 @@ export default function LessonPage() {
                 <>
                   <VideoPlayer 
                     activeItem={activeItem} 
-                    currentTime={isLoggedIn && isEnrolled ? getLessonCurrentTime(activeItem?.id) : 0}
-                    onProgressUpdate={isLoggedIn && isEnrolled ? updateVideoProgress : null}
-                    isEnrolled={isEnrolled}
+                    currentTime={effectiveIsLoggedIn && effectiveIsEnrolled && !isInstructorPreview ? getLessonCurrentTime(activeItem?.id) : 0}
+                    onProgressUpdate={effectiveIsLoggedIn && effectiveIsEnrolled && !isInstructorPreview ? updateVideoProgress : null}
+                    isEnrolled={effectiveIsEnrolled}
                   />
                   
-                  {/* FIXED: Show enrollment prompt for non-logged users too */}
-                  {(!isLoggedIn || !isEnrolled) && (
+                  {/* Show enrollment prompt for non-enrolled users */}
+                  {(!effectiveIsLoggedIn || !effectiveIsEnrolled) && (
                     <EnrollmentPrompt course={lessonData} />
                   )}
                   
-                  {isLoggedIn && isEnrolled && currentModuleCompleted && !currentModuleQuizCompleted && (
+                  {effectiveIsLoggedIn && effectiveIsEnrolled && currentModuleCompleted && !currentModuleQuizCompleted && (
                     <ModuleCompleteNotif onTakeQuiz={showQuiz} />
                   )}
 
@@ -394,11 +472,11 @@ export default function LessonPage() {
                     lesson={lessonData}
                     showFullDescription={showFullDescription}
                     onToggleDescription={() => setShowFullDescription(!showFullDescription)}
-                    progress={isLoggedIn && isEnrolled ? progress.courseProgress || 0 : 0}
-                    isEnrolled={isEnrolled}
+                    progress={effectiveIsLoggedIn && effectiveIsEnrolled ? progress.courseProgress || 0 : 0}
+                    isEnrolled={effectiveIsEnrolled}
                     likeState={likeState}
                     onToggleLike={toggleLike}
-                    isLoggedIn={isLoggedIn}
+                    isLoggedIn={effectiveIsLoggedIn}
                     activeTab={activeTab}
                     onTabChange={handleTabChange}
                     onScrollToSection={handleScrollToSection}
@@ -409,12 +487,12 @@ export default function LessonPage() {
                     <div id="reviews-section">
                       <ReviewSection
                         reviewsState={reviewsState}
-                        isLoggedIn={isLoggedIn}
+                        isLoggedIn={effectiveIsLoggedIn}
                         onSubmitReview={submitReview}
                         onDeleteReview={deleteReview}
                         onUpdateReview={updateReview}
                         onToggleForm={toggleForm}
-                        isEnrolled={isEnrolled}
+                        isEnrolled={effectiveIsEnrolled}
                       />
                     </div>
                   )}
@@ -423,7 +501,7 @@ export default function LessonPage() {
                     <div id="questions-section">
                       <QASection
                         qaState={qaState}
-                        isLoggedIn={isLoggedIn}
+                        isLoggedIn={effectiveIsLoggedIn}
                         onSubmitQuestion={submitQuestion}
                         onDeleteQuestion={deleteQuestion}
                         onUpdateQuestion={updateQuestion}
@@ -433,9 +511,9 @@ export default function LessonPage() {
                         onUpdateComment={updateComment}
                         onToggleLike={toggleQuestionLike}
                         onLoadMore={loadMoreQuestions}
-                        isEnrolled={isEnrolled}
+                        isEnrolled={effectiveIsEnrolled}
                         userRole={session?.user?.role || 'student'}
-                        courseData={lessonData} // Pass course data for enrollment
+                        courseData={lessonData}
                       />
                     </div>
                   )}
@@ -457,7 +535,7 @@ export default function LessonPage() {
                 onToggleCompletion={handleToggleCompletion}
                 onTakeQuiz={showQuiz}
                 onBackToModule={handleBackToModule}
-                isEnrolled={isEnrolled}
+                isEnrolled={effectiveIsEnrolled}
                 previewVideoUrl={lessonData.previewVideoUrl}
                 courseData={lessonData}
                 progress={progress}

@@ -1,4 +1,4 @@
-// CoursesPage.jsx - With Inline Search & Filters
+// CoursesPage.jsx - Updated with instructor course detection
 "use client"
 
 import { useState, useEffect, memo } from "react"
@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { useSession } from "next-auth/react"
-import { CourseCard } from "./CourseCard"
+import { CourseCard } from "./CourseCard" // Updated import path
+import { InstructorCourseCard } from "./InstructorCourseCard" // Import the new component
 import { useCourses } from "./useCoursesHook"
 
 export default function CoursesPage() {
@@ -71,6 +72,17 @@ export default function CoursesPage() {
   const handleClearSearchClick = () => {
     setSearchInput("")
     handleClearSearch()
+  }
+
+  // Helper function to check if user is the instructor of a course
+  const isInstructorOwnedCourse = (course) => {
+    if (!session?.user) return false
+    
+    // Check if the current user is the instructor of this course
+    // This assumes the course has instructor data populated
+    return course.instructor?.email === session.user.email || 
+           course.instructor?.id === session.user.id ||
+           course.instructorId === session.user.id
   }
 
   if (loading) {
@@ -155,6 +167,8 @@ export default function CoursesPage() {
         selectedCategory={selectedCategory}
         pagination={pagination}
         onPageChange={handlePageChange}
+        isInstructorOwnedCourse={isInstructorOwnedCourse} // Pass the helper function
+        session={session}
       />
     </PageLayout>
   )
@@ -271,7 +285,9 @@ const CourseGrid = memo(function CourseGrid({
   courseStats, 
   selectedCategory, 
   pagination,
-  onPageChange
+  onPageChange,
+  isInstructorOwnedCourse,
+  session
 }) {
   if (courses.length === 0) {
     return (
@@ -288,9 +304,23 @@ const CourseGrid = memo(function CourseGrid({
       <CourseGridInfo courseStats={courseStats} selectedCategory={selectedCategory} />
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {courses.map((course) => (
-          <CourseCard key={course._id || course.id} course={course} />
-        ))}
+        {courses.map((course) => {
+          const isOwned = isInstructorOwnedCourse(course)
+          
+          // Use different components based on ownership
+          return isOwned ? (
+            <InstructorCourseCard 
+              key={course._id || course.id} 
+              course={course} 
+              isInstructorOwned={true}
+            />
+          ) : (
+            <CourseCard 
+              key={course._id || course.id} 
+              course={course} 
+            />
+          )
+        })}
       </div>
 
       {/* Modern Pagination */}
@@ -309,7 +339,7 @@ const CourseGridInfo = memo(function CourseGridInfo({ courseStats, selectedCateg
     <div className="mb-4 space-y-2 mt-6 lg:mt-0">
       <div className="flex flex-row justify-between space-y-1 sm:space-y-0 sm:flex-row items-center">
         <div className="text-xs text-[#5c6d5e]">
-          <span className="flex sm:inline">
+                      <span className="flex sm:inline">
             {courseStats.searchQuery ? (
               <>Showing {courseStats.pagination.startIndex}-{courseStats.pagination.endIndex} of {courseStats.filtered} result{courseStats.filtered !== 1 ? 's' : ''}</>
             ) : (
