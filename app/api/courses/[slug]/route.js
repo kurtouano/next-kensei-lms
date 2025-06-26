@@ -1,16 +1,23 @@
-// app/api/courses/[slug]/route.js - Fixed to handle video duration correctly
+// app/api/courses/[slug]/route.js - Fixed to handle video duration correctly + SECURITY
 import { connectDb } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Course from "@/models/Course";
 import User from "@/models/User";
 import Module from "@/models/Module";
 import Lesson from "@/models/Lesson";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(request, { params }) {
   await connectDb();
 
   try {
     const { slug } = await params;
+    const url = new URL(request.url);
+    const instructorPreview = url.searchParams.get('instructor-preview') === 'true';
+    
+    // 🔒 SECURITY: Get session for instructor verification
+    const session = await getServerSession(authOptions);
 
     const course = await Course.findOne({ slug })
       .populate({
@@ -28,6 +35,22 @@ export async function GET(request, { params }) {
 
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
+    }
+
+    // 🔒 SECURITY: Verify instructor access if instructor-preview is requested
+    let canAccessInstructorView = false;
+    
+    if (instructorPreview && session?.user) {
+      const user = await User.findById(session.user.id);
+      
+      // Admin can access any course
+      if (user?.role === 'admin') {
+        canAccessInstructorView = true;
+      }
+      // Instructor can only access their own courses
+      else if (user?.role === 'instructor' && course.instructor._id.toString() === user._id.toString()) {
+        canAccessInstructorView = true;
+      }
     }
 
     // Calculate total duration and lessons
@@ -111,6 +134,9 @@ export async function GET(request, { params }) {
       averageRating: course.ratingStats?.averageRating || 0,
       totalRatings: course.ratingStats?.totalRatings || 0,
       ratingDistribution: course.ratingStats?.distribution || { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+      // 🔒 SECURITY: Add authorization info to response
+      canAccessInstructorView,
+      isInstructorPreview: instructorPreview && canAccessInstructorView,
       modules: course.modules.map((module, moduleIndex) => ({
         id: module._id.toString(),
         title: module.title,
@@ -173,7 +199,15 @@ export async function GET(request, { params }) {
       })),
     };
 
-    return NextResponse.json({ lessons: formattedCourse });
+    return NextResponse.json({ 
+      lessons: formattedCourse,
+      // 🔒 SECURITY: Include authorization status in response
+      meta: {
+        canAccessInstructorView,
+        isInstructorPreview: instructorPreview && canAccessInstructorView,
+        requestedInstructorPreview: instructorPreview
+      }
+    });
   } catch (error) {
     console.error("Error fetching course:", error);
     return NextResponse.json({ error: "Failed to fetch course data" }, { status: 500 });
