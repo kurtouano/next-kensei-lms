@@ -1,4 +1,4 @@
-// components/EnrollmentPrompt.jsx - FIXED VERSION
+// components/EnrollmentPrompt.jsx - Enhanced for instructor preview
 import { memo, useCallback, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Lock, ArrowRight, Shield } from "lucide-react"
@@ -10,28 +10,16 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
     try {
       setIsLoading(true)
       
-      // DEBUG: Log the course data to see what we're working with
-      console.log('=== ENROLLMENT PROMPT DEBUG ===')
-      console.log('Full course object:', course)
-      console.log('Course ID:', course?.id || course?._id)
-      console.log('Course Title:', course?.title)
-      console.log('Course Price:', course?.price)
-      console.log('================================')
-      
       const response = await fetch('/api/courses/stripe/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          // FIXED: Handle both _id and id properties
           courseId: course?.id || course?._id,
           title: course?.title || 'Course Enrollment',
-          // FIXED: Handle different description property names
           description: course?.description || course?.shortDescription || course?.fullDescription || 'Full course access',
-          // FIXED: Ensure price is a number
           price: Number(course?.price) || 0,
-          // FIXED: Handle different thumbnail property names
           thumbnail: course?.thumbnail || course?.image || '',
         }),
       });
