@@ -484,27 +484,73 @@ export function useProgress(slug) {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isInitialized, setIsInitialized] = useState(false)
+  
+  // 🔧 NEW: Track the initialization state more precisely
+  const [initializationState, setInitializationState] = useState('pending') // 'pending', 'loading', 'completed', 'no-auth'
 
   const fetchProgress = useCallback(async () => {
-    if (!session?.user || !slug) return
+    // Handle case where user is not logged in
+    if (!session?.user || !slug) {
+      setLoading(false)
+      setIsInitialized(true)
+      setInitializationState('no-auth')
+      // Set empty but consistent state
+      setProgress({
+        completedLessons: [],
+        completedModules: [],
+        courseProgress: 0,
+        status: 'not_started',
+        isCompleted: false,
+        lessonProgress: []
+      })
+      return
+    }
     
     try {
       setLoading(true)
+      setInitializationState('loading')
+      
       const response = await fetch(`/api/courses/progress/${slug}`)
       const data = await response.json()
       
       if (data.success) {
         setProgress(data.progress)
+        setInitializationState('completed')
       } else {
         setError(data.error)
+        setInitializationState('completed') // Still mark as completed even with error
       }
     } catch (err) {
       setError('Failed to fetch progress')
+      setInitializationState('completed') // Mark as completed to prevent infinite loading
       console.error('Error fetching progress:', err)
     } finally {
       setLoading(false)
+      setIsInitialized(true)
     }
   }, [session, slug])
+
+  // 🔧 ENHANCED: Better loading state that prevents flickering
+  const isFullyInitialized = useMemo(() => {
+    return initializationState === 'completed' || initializationState === 'no-auth'
+  }, [initializationState])
+
+  // 🔧 STABLE: Return consistent data structure
+  const stableProgress = useMemo(() => {
+    if (!isFullyInitialized) {
+      // Return null/undefined during loading to indicate "not ready"
+      return null
+    }
+    
+    return {
+      ...progress,
+      // Ensure arrays are always arrays
+      completedLessons: progress.completedLessons || [],
+      completedModules: progress.completedModules || [],
+      lessonProgress: progress.lessonProgress || []
+    }
+  }, [progress, isFullyInitialized])
 
   const updateLessonProgress = useCallback(async (lessonId, isCompleted, currentTime = 0) => {
     if (!session?.user || !slug) return false
@@ -521,10 +567,10 @@ export function useProgress(slug) {
       if (data.success) {
         setProgress(prev => ({
           ...prev,
-          completedLessons: data.progress.completedLessons,
+          completedLessons: data.progress.completedLessons || [],
           courseProgress: data.progress.courseProgress,
           status: data.progress.status,
-          lessonProgress: data.progress.lessonProgress
+          lessonProgress: data.progress.lessonProgress || []
         }))
         return true
       } else {
@@ -553,7 +599,7 @@ export function useProgress(slug) {
       if (data.success) {
         setProgress(prev => ({
           ...prev,
-          lessonProgress: data.progress.lessonProgress
+          lessonProgress: data.progress.lessonProgress || []
         }))
         return true
       }
@@ -580,7 +626,7 @@ export function useProgress(slug) {
         if (data.updated) {
           setProgress(prev => ({
             ...prev,
-            completedModules: data.completedModules
+            completedModules: data.completedModules || []
           }))
         }
         return { success: true, updated: data.updated, message: data.message }
@@ -596,18 +642,20 @@ export function useProgress(slug) {
   }, [session, slug])
 
   const getLessonCurrentTime = useCallback((lessonId) => {
-    const lessonProgress = progress.lessonProgress?.find(lp => lp.lesson === lessonId)
+    if (!stableProgress) return 0
+    const lessonProgress = stableProgress.lessonProgress?.find(lp => lp.lesson === lessonId)
     return lessonProgress?.currentTime || 0
-  }, [progress.lessonProgress])
+  }, [stableProgress])
 
   useEffect(() => {
     fetchProgress()
   }, [fetchProgress])
 
   return {
-    progress,
+    progress: stableProgress, // Return null during loading, stable object when ready
     loading,
     error,
+    isInitialized: isFullyInitialized, // Enhanced initialization check
     updateLessonProgress,
     updateVideoProgress,
     updateModuleProgress,
@@ -663,22 +711,33 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQu
     [lessonData, activeModule]
   )
 
-  // Get existing quiz score from progress data
+  // FIXED: Get existing quiz score properly
   const existingScore = useMemo(() => {
-    if (!lessonData?.modules?.[activeModule] || !moduleQuizCompleted) return null
+    if (!lessonData?.modules?.[activeModule] || !Array.isArray(moduleQuizCompleted)) return null
     
-    const moduleId = lessonData.modules[activeModule].id
+    const currentModuleId = lessonData.modules[activeModule].id
     const completedModule = moduleQuizCompleted.find(
-      cm => cm.moduleId === moduleId
+      cm => cm.moduleId === currentModuleId
     )
     
     return completedModule?.quizScore || null
   }, [lessonData, activeModule, moduleQuizCompleted])
 
-  // Update existing score in state when it changes
+  // FIXED: Reset quiz state when activeModule changes
   useEffect(() => {
-    setQuizState(prev => ({ ...prev, existingScore }))
-  }, [existingScore])
+    setQuizState({
+      showModuleQuiz: false,
+      started: false,
+      completed: false,
+      score: 0,
+      selectedAnswers: {},
+      randomizedQuiz: null,
+      totalPoints: 0,
+      earnedPoints: 0,
+      showReview: false,
+      existingScore: null
+    })
+  }, [activeModule])
 
   // Shuffle array utility
   const shuffleArray = useCallback((array) => {
@@ -874,7 +933,7 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQu
     // 2. Either no existing score OR new score is higher than existing score
     const shouldUpdateDatabase = score >= 70 && (!existingScore || score > existingScore)
     
-    if (shouldUpdateDatabase && lessonData?.modules?.[activeModule]) {
+    if (shouldUpdateDatabase && lessonData?.modules?.[activeModule] && updateModuleProgress) {
       const moduleId = lessonData.modules[activeModule].id
       const result = await updateModuleProgress(moduleId, score)
       
@@ -901,11 +960,30 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQu
   }, [])
 
   const showQuiz = useCallback(() => {
-    setQuizState(prev => ({ ...prev, showModuleQuiz: true }))
+    setQuizState(prev => ({ 
+      ...prev, 
+      showModuleQuiz: true,
+      // Reset these to ensure clean state
+      started: false,
+      completed: false,
+      score: 0,
+      selectedAnswers: {},
+      randomizedQuiz: null,
+      showReview: false
+    }))
   }, [])
 
   const hideQuiz = useCallback(() => {
-    setQuizState(prev => ({ ...prev, showModuleQuiz: false, showReview: false }))
+    setQuizState(prev => ({ 
+      ...prev, 
+      showModuleQuiz: false, 
+      showReview: false,
+      // Reset other states too
+      started: false,
+      completed: false,
+      selectedAnswers: {},
+      randomizedQuiz: null
+    }))
   }, [])
 
   const toggleReview = useCallback(() => {

@@ -1,4 +1,4 @@
-// Updated page.jsx - Handles instructor preview mode
+// Updated page.jsx - Handles instructor preview mode with NO FLICKERING
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, memo } from "react"
@@ -108,8 +108,16 @@ export default function LessonPage() {
     return isLoggedIn
   }, [isInstructorPreview, isInstructorOwned, instructorPreviewMode, isLoggedIn])
   
-  // Only run progress tracking if user is logged in and enrolled (or instructor in enrolled mode)
-  const { progress, loading: progressLoading, updateLessonProgress, updateVideoProgress, updateModuleProgress, getLessonCurrentTime } = useProgress(
+  // FIXED: Progress hook with initialization tracking - Only run if user is logged in and enrolled
+  const { 
+    progress, 
+    loading: progressLoading, 
+    isInitialized: progressInitialized,
+    updateLessonProgress, 
+    updateVideoProgress, 
+    updateModuleProgress, 
+    getLessonCurrentTime 
+  } = useProgress(
     (effectiveIsLoggedIn && effectiveIsEnrolled) ? lessonSlug : null
   )
   
@@ -137,7 +145,7 @@ export default function LessonPage() {
     effectiveIsLoggedIn ? session : null
   )
   
-  // Navigation state
+  // Navigation state - FIXED: Initialize properly to prevent flickering
   const [activeModule, setActiveModule] = useState(0)
   const [activeVideoId, setActiveVideoId] = useState(null)
   const [completedItems, setCompletedItems] = useState([])
@@ -192,30 +200,34 @@ export default function LessonPage() {
     }
   }, [lessonData?.id, isLoggedIn, isInstructorPreview, checkEnrollment])
 
-  // Sync progress data with local state only if user is logged in and enrolled
+  // FIXED: Sync progress data immediately when available - prevents flickering
   useEffect(() => {
-    if (effectiveIsLoggedIn && effectiveIsEnrolled && progress.completedLessons.length > 0) {
-      setCompletedItems(progress.completedLessons)
-    }
-  }, [effectiveIsLoggedIn, effectiveIsEnrolled, progress.completedLessons])
-
-  useEffect(() => {
-    if (effectiveIsLoggedIn && effectiveIsEnrolled && progress.completedModules.length > 0 && lessonData?.modules) {
-      const completedModuleData = progress.completedModules
-        .map(completedModule => {
-          const moduleIndex = lessonData.modules.findIndex(module => module.id === completedModule.moduleId)
-          return moduleIndex >= 0 ? {
-            moduleIndex,
-            moduleId: completedModule.moduleId,
-            quizScore: completedModule.quizScore,
-            completedAt: completedModule.completedAt
-          } : null
-        })
-        .filter(Boolean)
+    if (effectiveIsLoggedIn && effectiveIsEnrolled && progressInitialized) {
+      // Update completed items immediately when progress is initialized
+      setCompletedItems(progress.completedLessons || [])
       
-      setModuleQuizCompleted(completedModuleData)
+      // Update completed modules immediately when progress is initialized
+      if (progress.completedModules && lessonData?.modules) {
+        const completedModuleData = progress.completedModules
+          .map(completedModule => {
+            const moduleIndex = lessonData.modules.findIndex(module => module.id === completedModule.moduleId)
+            return moduleIndex >= 0 ? {
+              moduleIndex,
+              moduleId: completedModule.moduleId,
+              quizScore: completedModule.quizScore,
+              completedAt: completedModule.completedAt
+            } : null
+          })
+          .filter(Boolean)
+        
+        setModuleQuizCompleted(completedModuleData)
+      }
+    } else if (!effectiveIsLoggedIn || !effectiveIsEnrolled) {
+      // Clear progress for non-enrolled users
+      setCompletedItems([])
+      setModuleQuizCompleted([])
     }
-  }, [effectiveIsLoggedIn, effectiveIsEnrolled, progress.completedModules, lessonData])
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, progressInitialized, progress, lessonData?.modules])
 
   // Set initial active video
   useEffect(() => {
@@ -385,13 +397,23 @@ export default function LessonPage() {
     }
   }, [])
 
-  // ============ LOADING STATES ============
+  // ============ ENHANCED LOADING STATE - PREVENTS FLICKERING ============
 
-  if (isSessionLoading || lessonLoading) {
-    return <LoadingLayout />
-  }
+  // FIXED: Wait for ALL necessary data before showing content
+  const isDataLoading = useMemo(() => {
+    // Always wait for session and lesson data
+    if (isSessionLoading || lessonLoading) return true
+    
+    // Wait for enrollment check if needed
+    if (effectiveIsLoggedIn && !isInstructorPreview && enrollmentLoading) return true
+    
+    // CRITICAL: Wait for progress if user is enrolled - this prevents flickering!
+    if (effectiveIsLoggedIn && effectiveIsEnrolled && !progressInitialized) return true
+    
+    return false
+  }, [isSessionLoading, lessonLoading, effectiveIsLoggedIn, effectiveIsEnrolled, enrollmentLoading, progressInitialized, isInstructorPreview])
 
-  if (effectiveIsLoggedIn && !isInstructorPreview && enrollmentLoading) {
+  if (isDataLoading) {
     return <LoadingLayout />
   }
 
@@ -400,15 +422,15 @@ export default function LessonPage() {
   }
 
   console.log('🔍 INSTRUCTOR PREVIEW STATUS:', {
-  isInstructorPreview,
-  instructorPreviewMode, 
-  isInstructorOwned,
-  effectiveIsLoggedIn,
-  effectiveIsEnrolled,
-  actualIsEnrolled,
-  sessionUserEmail: session?.user?.email,
-  lessonInstructorEmail: lessonData?.instructor?.email
-})
+    isInstructorPreview,
+    instructorPreviewMode, 
+    isInstructorOwned,
+    effectiveIsLoggedIn,
+    effectiveIsEnrolled,
+    actualIsEnrolled,
+    sessionUserEmail: session?.user?.email,
+    lessonInstructorEmail: lessonData?.instructor?.email
+  })
 
   // ============ MAIN RENDER ============
   return (
@@ -418,8 +440,7 @@ export default function LessonPage() {
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8">
           {/* Instructor Preview Toggle */}
-          
-          {isInstructorPreview && (isInstructorOwned) && (
+          {isInstructorPreview && isInstructorOwned && (
             <InstructorPreviewToggle
               previewMode={instructorPreviewMode}
               onTogglePreviewMode={handleTogglePreviewMode}
