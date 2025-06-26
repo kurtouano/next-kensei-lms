@@ -49,7 +49,7 @@ export const InstructorPreviewToggle = memo(function InstructorPreviewToggle({
               onClick={() => handleToggle('enrolled')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 previewMode === 'enrolled'
-                  ? 'bg-green-600 text-white shadow-sm'
+                  ? 'bg-[#4a7c59] text-white shadow-sm'
                   : 'text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -59,7 +59,7 @@ export const InstructorPreviewToggle = memo(function InstructorPreviewToggle({
               onClick={() => handleToggle('guest')}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 previewMode === 'guest'
-                  ? 'bg-gray-600 text-white shadow-sm'
+                  ? 'bg-gray-500 text-white shadow-sm'
                   : 'text-gray-700 hover:bg-gray-200'
               }`}
             >

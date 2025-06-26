@@ -83,7 +83,7 @@ export const VideoPlayer = memo(function VideoPlayer({
         // Only save if we've moved significantly (more than 10 seconds from last save)
         const timeDiff = Math.abs(video.currentTime - lastSavedTimeRef.current)
         
-        if (timeDiff >= 10) { // Save every 10 seconds of actual progress
+        if (timeDiff >= 30) { // Save every 10 seconds of actual progress
           if (onProgressUpdate && activeItem?.id) {
             onProgressUpdate(activeItem.id, video.currentTime)
             lastSavedTimeRef.current = video.currentTime
