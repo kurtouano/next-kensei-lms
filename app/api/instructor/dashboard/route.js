@@ -24,7 +24,7 @@ export async function GET(req) {
         const getUser = await User.findById(session.user.id)
             .populate({
                 path: "publishedCourses",
-                select: "_id title shortDescription thumbnail price isPublished enrolledStudents ratingStats createdAt updatedAt level category modules revenue",
+                select: "_id slug title shortDescription thumbnail price isPublished enrolledStudents ratingStats createdAt updatedAt level category modules revenue",
                 populate: {
                     path: "modules",
                     select: "lessons",
@@ -87,6 +87,7 @@ export async function GET(req) {
 
             return {
                 id: course._id,
+                slug: course.slug,
                 title: course.title,
                 description: course.shortDescription,
                 thumbnail: course.thumbnail,

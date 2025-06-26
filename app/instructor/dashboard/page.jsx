@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { BarChart, LineChart, Users, BookOpen, DollarSign, Star, Plus, Loader2, UserPlus, Trophy, CheckCircle, Activity, Heart, User } from "lucide-react"
 import { Header } from "@/components/header"
 import { CoursePerformanceChart } from "./components/course-performance-chart"
+import { useRouter } from "next/navigation"
 
 export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
@@ -14,6 +15,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activityLoading, setActivityLoading] = useState(false);
   const [error, setError] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -144,7 +146,7 @@ export default function AdminDashboard() {
             <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
             <p className="text-gray-600">{error}</p>
             <Button 
-              onClick={() => window.location.reload()} 
+              onClick={() => router.refresh()} 
               className="mt-4 bg-[#4a7c59] hover:bg-[#3a6147]"
             >
               Retry
@@ -171,7 +173,7 @@ export default function AdminDashboard() {
           </div>
           <Button
             className="bg-[#4a7c59] hover:bg-[#3a6147] w-full sm:w-auto"
-            onClick={() => (window.location.href = "/instructor/create-course")}
+            onClick={() => router.push("/instructor/create-course")}
           >
             <Plus className="mr-2 h-4 w-4" /> Create New Course
           </Button>
@@ -384,7 +386,7 @@ export default function AdminDashboard() {
                     </p>
                     <Button
                       className="bg-[#4a7c59] hover:bg-[#3a6147]"
-                      onClick={() => (window.location.href = "/instructor/create-course")}
+                      onClick={() => router.push("/instructor/create-course")}
                     >
                       <Plus className="mr-2 h-4 w-4" /> Create Your First Course
                     </Button>
@@ -453,7 +455,7 @@ export default function AdminDashboard() {
                                 variant="outline" 
                                 size="sm"
                                 className="flex-1 text-xs"
-                                onClick={() => window.location.href = `/instructor/courses/${course.id}/edit`}
+                                onClick={() => router.push(`/instructor/courses/${course.id}/edit`)}
                               >
                                 Edit
                               </Button>
@@ -461,7 +463,7 @@ export default function AdminDashboard() {
                                 variant="outline" 
                                 size="sm"
                                 className="flex-1 text-xs"
-                                onClick={() => window.location.href = `/courses/${course.id}`}
+                                onClick={() => router.push(`/courses/${course.slug}?instructor-preview=true`)}
                               >
                                 View
                               </Button>
@@ -532,14 +534,14 @@ export default function AdminDashboard() {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={() => window.location.href = `/instructor/courses/${course.id}/edit`}
+                                    onClick={() => router.push(`/instructor/courses/${course.id}/edit`)}
                                   >
                                     Edit
                                   </Button>
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={() => window.location.href = `/courses/${course.id}`}
+                                    onClick={() => router.push(`/courses/${course.slug}?instructor-preview=true`)}
                                   >
                                     View
                                   </Button>
