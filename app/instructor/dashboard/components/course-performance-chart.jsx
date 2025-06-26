@@ -16,20 +16,21 @@ import { TrendingUp } from "lucide-react"
 export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
   const [activeTab, setActiveTab] = useState("enrollments")
 
-  // Use provided monthlyData or generate fallback data
+  // FIXED: Use real data or zeros, never fake data
   const chartData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // If we have actual monthly data, use it
     if (monthlyData && monthlyData.length > 0) {
       return monthlyData
     }
     
-    // Fallback: generate mock data for January to December
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+    // Otherwise, return zeros for all months (no fake data!)
     return months.map(monthName => ({
       month: monthName,
-      enrollments: Math.floor(Math.random() * 50) + 10,
-      revenue: Math.floor(Math.random() * 2000) + 500,
-      courses: Math.min(courses?.length || 1, 3)
+      enrollments: 0,
+      revenue: 0,
+      courses: courses?.length || 0
     }));
   }, [monthlyData, courses])
 
@@ -41,15 +42,18 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
     }).format(value)
   }
 
-  // If no data, show a simple message
-  if (!chartData || chartData.length === 0) {
+  // Check if we have any actual data
+  const hasRealData = chartData.some(data => data.enrollments > 0 || data.revenue > 0)
+
+  // If no real data and no courses, show empty state
+  if (!hasRealData && (!courses || courses.length === 0)) {
     return (
       <div className="flex items-center justify-center h-full text-center text-muted-foreground p-6">
         <div>
           <TrendingUp className="mx-auto h-12 w-12 text-[#4a7c59] opacity-50 mb-4" />
           <p className="text-sm">No performance data available yet</p>
           <p className="text-xs text-[#5c6d5e] mt-1">
-            Data will appear here as students enroll in your courses
+            Create your first course to see analytics here
           </p>
         </div>
       </div>
@@ -58,6 +62,13 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
 
   return (
     <div className="space-y-4">
+      {/* Show message when charts have no real data */}
+      {!hasRealData && courses && courses.length > 0 && (
+        <div className="text-center text-sm text-muted-foreground mb-4">
+          <p>Charts will populate as students enroll in your courses</p>
+        </div>
+      )}
+
       {/* Charts */}
       <div className="h-56 sm:h-72">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-2">
@@ -83,6 +94,7 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
                     stroke="#666"
                     fontSize={10}
                     width={30}
+                    domain={[0, 'dataMax + 10']}
                   />
                   <Tooltip 
                     contentStyle={{
@@ -125,7 +137,8 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
                     stroke="#666"
                     fontSize={10}
                     width={50}
-                    tickFormatter={(value) => `${value}`}
+                    tickFormatter={(value) => `$${value}`}
+                    domain={[0, 'dataMax + 100']}
                   />
                   <Tooltip 
                     contentStyle={{

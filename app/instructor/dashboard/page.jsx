@@ -155,28 +155,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // No courses state
-  if (dashboardData?.courses?.length === 0) {
-    return (
-      <>
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <BookOpen className="mx-auto h-16 w-16 text-[#4a7c59] opacity-50 mb-4" />
-            <h2 className="text-2xl font-bold text-[#2c3e2d] mb-2">No Courses Yet</h2>
-            <p className="text-[#4a7c59] mb-6">Start by creating your first course</p>
-            <Button
-              className="bg-[#4a7c59] hover:bg-[#3a6147]"
-              onClick={() => (window.location.href = "/instructor/create-course")}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Create Your First Course
-            </Button>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   // Extract data for easier use
   const { user, courses, stats } = dashboardData;
 
