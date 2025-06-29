@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { BarChart, LineChart, Users, BookOpen, DollarSign, Star, Plus, Loader2, UserPlus, Trophy, CheckCircle, Activity, Heart, User } from "lucide-react"
+import { BarChart, LineChart, Users, BookOpen, DollarSign, Star, Plus, Loader2, UserPlus, Trophy, CheckCircle, Activity, Heart, User, MessageCircle } from "lucide-react"
 import { Header } from "@/components/header"
 import { CoursePerformanceChart } from "./components/course-performance-chart"
 import { useRouter } from "next/navigation"
@@ -15,7 +15,57 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activityLoading, setActivityLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // NEW: Pagination state for activities
+  const [activityOffset, setActivityOffset] = useState(0);
+  const [loadingMoreActivity, setLoadingMoreActivity] = useState(false);
+  
   const router = useRouter();
+
+  // UPDATED: Enhanced fetchRecentActivity with pagination support
+  const fetchRecentActivity = async (offset = 0, append = false) => {
+    try {
+      if (append) {
+        setLoadingMoreActivity(true);
+      } else {
+        setActivityLoading(true);
+      }
+      
+      const res = await fetch(`/api/instructor/recent-activity?limit=5&offset=${offset}`);
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          if (append) {
+            // Append new activities to existing ones
+            setRecentActivity(prevActivity => ({
+              ...data.data,
+              activities: [...(prevActivity?.activities || []), ...data.data.activities]
+            }));
+          } else {
+            // Replace activities (initial load)
+            setRecentActivity(data.data);
+          }
+          setActivityOffset(offset);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching recent activity:", error);
+      // Don't set error state for activity, just log it
+    } finally {
+      if (append) {
+        setLoadingMoreActivity(false);
+      } else {
+        setActivityLoading(false);
+      }
+    }
+  };
+
+  // NEW: Function to load more activities
+  const handleLoadMoreActivity = () => {
+    const newOffset = activityOffset + 5; // Load next 5 activities
+    fetchRecentActivity(newOffset, true); // true = append to existing
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -43,27 +93,8 @@ export default function AdminDashboard() {
       }
     };
 
-    const fetchRecentActivity = async () => {
-      try {
-        setActivityLoading(true);
-        const res = await fetch("/api/instructor/recent-activity?limit=5");
-        
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success) {
-            setRecentActivity(data.data);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching recent activity:", error);
-        // Don't set error state for activity, just log it
-      } finally {
-        setActivityLoading(false);
-      }
-    };
-
     fetchDashboardData();
-    fetchRecentActivity();
+    fetchRecentActivity(0, false); // Initial load with offset 0
   }, []);
 
   // Helper function to format date
@@ -101,7 +132,7 @@ export default function AdminDashboard() {
     return formatDate(dateString);
   };
 
-  // Helper function to get activity icon
+  // UPDATED: Helper function to get activity icon (added question_asked)
   const getActivityIcon = (type) => {
     const iconClass = "h-4 w-4 text-[#4a7c59]";
     
@@ -116,6 +147,8 @@ export default function AdminDashboard() {
         return <Trophy className={iconClass} />;
       case 'course_liked':
         return <Heart className={iconClass} />;
+      case 'question_asked': // NEW: Icon for question asked
+        return <MessageCircle className={iconClass} />;
       default:
         return <Activity className={iconClass} />;
     }
@@ -297,9 +330,13 @@ export default function AdminDashboard() {
                           
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-[#2c3e2d] leading-tight">
-                                  {activity.message || 'Recent activity'}
+                              <div className="flex-1 min-w-0 pr-2">
+                                {/* FIXED: Truncated activity message */}
+                                <p className="text-sm font-medium text-[#2c3e2d] leading-tight truncate">
+                                  {activity.message && activity.message.length > 60 
+                                    ? `${activity.message.substring(0, 60)}...` 
+                                    : (activity.message || 'Recent activity')
+                                  }
                                 </p>
                                 
                                 {/* Type-specific metadata */}
@@ -328,9 +365,19 @@ export default function AdminDashboard() {
                                     </span>
                                   </div>
                                 )}
+
+                                {/* FIXED: Truncated question text */}
+                                {activity.type === 'question_asked' && activity.metadata && activity.metadata.questionText && (
+                                  <p className="text-xs text-[#5c6d5e] mt-1 italic truncate">
+                                    "{activity.metadata.questionText.length > 50 
+                                      ? `${activity.metadata.questionText.substring(0, 50)}...` 
+                                      : activity.metadata.questionText
+                                    }"
+                                  </p>
+                                )}
                               </div>
                               
-                              <div className="flex items-center space-x-2 ml-2">
+                              <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
                                 {getActivityIcon(activity.type)}
                                 <span className="text-xs text-[#5c6d5e] whitespace-nowrap">
                                   {formatRelativeTime(activity.createdAt)}
@@ -341,14 +388,24 @@ export default function AdminDashboard() {
                         </div>
                       ))}
                       
+                      {/* FIXED: View More Activity button with proper click handler */}
                       {recentActivity.pagination && recentActivity.pagination.hasMore && (
                         <div className="text-center pt-2">
                           <Button 
                             variant="outline" 
                             size="sm"
                             className="text-[#4a7c59] border-[#4a7c59] hover:bg-[#eef2eb]"
+                            onClick={handleLoadMoreActivity}
+                            disabled={loadingMoreActivity}
                           >
-                            View More Activity
+                            {loadingMoreActivity ? (
+                              <>
+                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                Loading...
+                              </>
+                            ) : (
+                              'View More Activity'
+                            )}
                           </Button>
                         </div>
                       )}

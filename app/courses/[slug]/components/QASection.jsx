@@ -33,7 +33,7 @@ export const QASection = memo(function QASection({
   onLoadMore,
   isEnrolled = false,
   userRole = 'student',
-  courseData = null // Add courseData prop for enrollment
+  courseData = null
 }) {
   const {
     questions,
@@ -58,20 +58,16 @@ export const QASection = memo(function QASection({
     onUpdateQuestion({ question: e.target.value })
   }, [onUpdateQuestion])
 
-  // UPDATED: Handle "Ask Question" button click
   const handleAskQuestionClick = useCallback(() => {
     if (!isLoggedIn) {
-      // Redirect to login
       window.location.href = '/login'
       return
     }
     
     if (!isEnrolled) {
-      // Non-enrolled users see the prompt in place of questions
       return
     }
     
-    // User is logged in and enrolled, show the form
     onToggleForm(true)
   }, [isLoggedIn, isEnrolled, onToggleForm])
 
@@ -84,7 +80,6 @@ export const QASection = memo(function QASection({
     onUpdateQuestion({ question: "" })
   }, [onToggleForm, onUpdateQuestion])
 
-  // Handle enrollment
   const handleEnrollClick = useCallback(() => {
     if (!courseData) return
     
@@ -184,9 +179,8 @@ export const QASection = memo(function QASection({
   }, [questions, sortBy])
   
 
-    return (
+  return (
     <>
-      {/* Show full Q&A interface only for logged in and enrolled users */}
       {isLoggedIn && isEnrolled ? (
         <div className="mt-4 rounded-lg border border-[#dce4d7] bg-white p-4 shadow-sm">
           <QAHeader
@@ -202,7 +196,6 @@ export const QASection = memo(function QASection({
             onSortChange={setSortBy}
           />
 
-          {/* Show form only if user is logged in AND enrolled */}
           {showForm && (
             <QuestionForm
               newQuestion={newQuestion}
@@ -213,7 +206,6 @@ export const QASection = memo(function QASection({
             />
           )}
 
-          {/* Questions list for enrolled users */}
           <>
             <QuestionsList 
               questions={sortedQuestions} 
@@ -235,7 +227,6 @@ export const QASection = memo(function QASection({
               setReplyingTo={setReplyingTo}
             />
 
-            {/* Load More Button */}
             {!loading && questions.length > 0 && hasMore && (
               <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
                 <Button
@@ -262,7 +253,6 @@ export const QASection = memo(function QASection({
               </div>
             )}
 
-            {/* End of questions message */}
             {!loading && questions.length > 0 && !hasMore && (
               <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
                 <p className="text-sm text-[#5c6d5e]">
@@ -276,7 +266,6 @@ export const QASection = memo(function QASection({
           </>
         </div>
       ) : (
-        /* Clean enrollment prompt for non-enrolled users - matches your design */
         <div className="mt-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
           <div className="text-[#5c6d5e] mb-4">
             <p className="text-lg font-medium text-[#2c3e2d] mb-2">
@@ -298,7 +287,6 @@ export const QASection = memo(function QASection({
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <DeleteConfirmationModal
           type={deleteTarget?.type}
@@ -335,7 +323,6 @@ const QAHeader = memo(function QAHeader({
           </span>
         </div>
         
-        {/* Ask Question Button */}
         {isLoggedIn && isEnrolled && !showForm && (
           <Button
             variant="outline"
@@ -348,7 +335,6 @@ const QAHeader = memo(function QAHeader({
         )}
       </div>
 
-      {/* Sort Options */}
       {totalQuestions > 0 && (
         <div className="flex items-center gap-2">
           <span className="text-sm text-[#5c6d5e]">Sort by:</span>
@@ -581,29 +567,28 @@ const QuestionItem = memo(function QuestionItem({
   return (
     <div className="border-b border-[#dce4d7] pb-4 last:border-b-0">
       <div className="flex items-start gap-3">
-        {/* Avatar */}
         <div className="flex-shrink-0">
           {renderAvatar(question.user)}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0"> {/* FIXED: Added min-w-0 for proper flex shrinking */}
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <h5 className="font-medium text-[#2c3e2d]">{question.user.name}</h5>
+            <div className="flex items-center gap-2 min-w-0"> {/* FIXED: Added min-w-0 */}
+              <h5 className="font-medium text-[#2c3e2d] truncate">{question.user.name}</h5> {/* FIXED: Added truncate */}
               {question.isPinned && (
-                <Pin className="h-4 w-4 text-[#4a7c59]" />
+                <Pin className="h-4 w-4 text-[#4a7c59] flex-shrink-0" />
               )}
               {question.isAnswered && (
-                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex-shrink-0">
                   Answered
                 </span>
               )}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#5c6d5e]">{question.createdAt}</span>
+                <span className="text-xs text-[#5c6d5e] whitespace-nowrap">{question.createdAt}</span>
               </div>
             </div>
             {question.user.email === question.currentUserEmail && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0"> {/* FIXED: Added flex-shrink-0 */}
                 <Button
                   size="sm"
                   variant="outline"
@@ -616,10 +601,11 @@ const QuestionItem = memo(function QuestionItem({
             )}
           </div>
 
-          {/* Question Content */}
-          <p className="text-sm text-[#5c6d5e] mb-3 leading-relaxed">{question.question}</p>
+          {/* FIXED: Question Content with proper text wrapping */}
+          <p className="text-sm text-[#5c6d5e] mb-3 leading-relaxed break-words overflow-wrap-anywhere">
+            {question.question}
+          </p>
 
-          {/* Question Actions */}
           <div className="flex items-center gap-4 text-sm mb-3">
             <button
               className={`flex items-center gap-1 transition-colors ${
@@ -653,7 +639,6 @@ const QuestionItem = memo(function QuestionItem({
             )}
           </div>
 
-          {/* Reply Form */}
           {replyingTo === question.id && isLoggedIn && isEnrolled && (
             <div className="mb-4 bg-white border border-[#dce4d7] rounded-lg p-3">
               <textarea
@@ -691,7 +676,6 @@ const QuestionItem = memo(function QuestionItem({
             </div>
           )}
 
-          {/* Comments/Answers Section */}
           {showComments && question.comments && question.comments.length > 0 && (
             <div className="space-y-3 ml-0">
               {question.comments.map((comment) => (
@@ -773,19 +757,19 @@ const CommentItem = memo(function CommentItem({
           {renderAvatar(comment.user)}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0"> {/* FIXED: Added min-w-0 for proper flex shrinking */}
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <h6 className="font-medium text-[#2c3e2d] text-sm">{comment.user.name}</h6>
+            <div className="flex items-center gap-2 min-w-0"> {/* FIXED: Added min-w-0 */}
+              <h6 className="font-medium text-[#2c3e2d] text-sm truncate">{comment.user.name}</h6> {/* FIXED: Added truncate */}
               {comment.isInstructorReply && (
-                <span className="bg-[#4a7c59] text-white text-xs px-2 py-1 rounded-full">
+                <span className="bg-[#4a7c59] text-white text-xs px-2 py-1 rounded-full flex-shrink-0">
                   Instructor
                 </span>
               )}
-              <span className="text-xs text-[#5c6d5e]">{comment.createdAt}</span>
+              <span className="text-xs text-[#5c6d5e] whitespace-nowrap">{comment.createdAt}</span>
             </div>
             {comment.user.email === comment.currentUserEmail && (
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-shrink-0"> {/* FIXED: Added flex-shrink-0 */}
                 <Button
                   size="sm"
                   variant="outline"
@@ -806,7 +790,6 @@ const CommentItem = memo(function CommentItem({
             )}
           </div>
 
-          {/* Comment Content or Edit Form */}
           {editingComment === comment._id ? (
             <div className="space-y-2">
               <textarea
@@ -839,9 +822,11 @@ const CommentItem = memo(function CommentItem({
             </div>
           ) : (
             <>
-              <p className="text-sm text-[#5c6d5e] mb-2 leading-relaxed">{comment.comment}</p>
+              {/* FIXED: Comment Content with proper text wrapping */}
+              <p className="text-sm text-[#5c6d5e] mb-2 leading-relaxed break-words overflow-wrap-anywhere">
+                {comment.comment}
+              </p>
               
-              {/* Comment Actions */}
               <div className="flex items-center gap-4 text-sm">
                 <button
                   className={`flex items-center gap-1 transition-colors ${

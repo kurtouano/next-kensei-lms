@@ -9,7 +9,7 @@ export const ReviewSection = memo(function ReviewSection({
   onDeleteReview,
   onUpdateReview,
   onToggleForm,
-  isEnrolled = false // Add isEnrolled prop with default value
+  isEnrolled = false
 }) {
   const {
     reviews,
@@ -77,7 +77,6 @@ export const ReviewSection = memo(function ReviewSection({
           isEnrolled={isEnrolled}
         />
 
-        {/* FIXED: Show form if user is logged in AND enrolled */}
         {showForm && isLoggedIn && isEnrolled && (
           <ReviewForm
             newReview={newReview}
@@ -90,7 +89,6 @@ export const ReviewSection = memo(function ReviewSection({
           />
         )}
 
-        {/* Show enrollment message if logged in but not enrolled */}
         {isLoggedIn && !isEnrolled && (
           <div className="border-b border-[#dce4d7] py-4">
             <div className="flex items-center justify-center p-4 bg-[#eef2eb] rounded-md border border-[#4a7c59]">
@@ -109,7 +107,6 @@ export const ReviewSection = memo(function ReviewSection({
         <ReviewsList reviews={reviews} loading={loading} />
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <DeleteConfirmationModal
           onConfirm={handleConfirmDelete}
@@ -129,24 +126,23 @@ const ReviewHeader = memo(function ReviewHeader({
   onShowForm,
   onEditReview,
   onDeleteReview,
-  isEnrolled // Add isEnrolled prop
+  isEnrolled
 }) {
   return (
     <div className="border-b border-[#dce4d7] pb-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0"> {/* FIXED: Added min-w-0 */}
           <h3 className="font-medium text-[#2c3e2d]">Reviews & Ratings</h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0"> {/* FIXED: Added min-w-0 */}
             <StarRating rating={Math.round(averageRating)} />
-            <span className="text-sm text-[#5c6d5e]">
+            <span className="text-sm text-[#5c6d5e] whitespace-nowrap"> {/* FIXED: Added whitespace-nowrap */}
               {averageRating} ({totalReviews} reviews)
             </span>
           </div>
         </div>
         
-        {/* FIXED: Show review buttons if user is logged in, enrolled, and not showing form */}
         {isLoggedIn && isEnrolled && !showForm && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0"> {/* FIXED: Added flex-shrink-0 */}
             {userHasReviewed ? (
               <>
                 <Button
@@ -332,11 +328,8 @@ const ReviewItem = memo(function ReviewItem({ review }) {
     setImageError(true)
   }
 
-  // Helper function to display avatar
   const renderAvatar = () => {
-    // If there's an avatar and no image error
     if (review.user.avatar && !imageError) {
-      // Check if it's a URL (uploaded image) or emoji
       if (review.user.avatar.startsWith('http')) {
         return (
           <img
@@ -347,7 +340,6 @@ const ReviewItem = memo(function ReviewItem({ review }) {
           />
         )
       } else {
-        // It's an emoji
         return (
           <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
             <span className="text-2xl">{review.user.avatar}</span>
@@ -355,7 +347,6 @@ const ReviewItem = memo(function ReviewItem({ review }) {
         )
       }
     } else {
-      // Fallback to default avatar
       return (
         <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
           <User className="h-5 w-5 text-gray-500" />
@@ -367,27 +358,30 @@ const ReviewItem = memo(function ReviewItem({ review }) {
   return (
     <div className="border-b border-[#dce4d7] pb-4 last:border-b-0">
       <div className="flex items-start gap-3">
-        {/* Avatar */}
         <div className="flex-shrink-0">
           {renderAvatar()}
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0"> {/* FIXED: Added min-w-0 for proper flex shrinking */}
           <div className="flex items-center justify-between mb-2">
-            <div>
-              <h5 className="font-medium text-[#2c3e2d]">{review.user.name}</h5>
+            <div className="min-w-0"> {/* FIXED: Added min-w-0 */}
+              <h5 className="font-medium text-[#2c3e2d] truncate">{review.user.name}</h5> {/* FIXED: Added truncate */}
               <div className="flex items-center gap-2">
                 <StarRating rating={review.rating} />
-                <span className="text-xs text-[#5c6d5e]">{review.createdAt}</span>
+                <span className="text-xs text-[#5c6d5e] whitespace-nowrap">{review.createdAt}</span> {/* FIXED: Added whitespace-nowrap */}
               </div>
             </div>
             {review.isLiked && (
-              <div className="flex items-center text-red-500">
+              <div className="flex items-center text-red-500 flex-shrink-0"> {/* FIXED: Added flex-shrink-0 */}
                 <Heart className="h-4 w-4 fill-current" />
               </div>
             )}
           </div>
-          <p className="text-sm text-[#5c6d5e]">{review.comment}</p>
+          
+          {/* FIXED: Review comment with proper text wrapping */}
+          <p className="text-sm text-[#5c6d5e] break-words overflow-wrap-anywhere">
+            {review.comment}
+          </p>
         </div>
       </div>
     </div>
@@ -420,3 +414,5 @@ const StarRating = memo(function StarRating({
     </div>
   )
 })
+
+export default ReviewSection
