@@ -233,7 +233,7 @@ export default function LessonPage() {
 
   // Sync progress data immediately when available - prevents flickering
   useEffect(() => {
-    if (effectiveIsLoggedIn && effectiveIsEnrolled && progressInitialized) {
+    if (effectiveIsLoggedIn && effectiveIsEnrolled && progressInitialized && progress) {
       // Update completed items immediately when progress is initialized
       setCompletedItems(progress.completedLessons || [])
       
@@ -510,7 +510,7 @@ export default function LessonPage() {
                 <>
                   <VideoPlayer 
                     activeItem={activeItem} 
-                    currentTime={effectiveIsLoggedIn && effectiveIsEnrolled && !isInstructorPreview ? getLessonCurrentTime(activeItem?.id) : 0}
+                    currentTime={effectiveIsLoggedIn && effectiveIsEnrolled && !isInstructorPreview && progress ? getLessonCurrentTime(activeItem?.id) : 0}
                     onProgressUpdate={effectiveIsLoggedIn && effectiveIsEnrolled && !isInstructorPreview ? updateVideoProgress : null}
                     isEnrolled={effectiveIsEnrolled}
                   />
@@ -528,7 +528,7 @@ export default function LessonPage() {
                     lesson={lessonData}
                     showFullDescription={showFullDescription}
                     onToggleDescription={() => setShowFullDescription(!showFullDescription)}
-                    progress={effectiveIsLoggedIn && effectiveIsEnrolled ? progress.courseProgress || 0 : 0}
+                    progress={effectiveIsLoggedIn && effectiveIsEnrolled && progress ? progress.courseProgress || 0 : 0}
                     isEnrolled={effectiveIsEnrolled}
                     likeState={likeState}
                     onToggleLike={toggleLike}
@@ -594,7 +594,7 @@ export default function LessonPage() {
                 isEnrolled={effectiveIsEnrolled}
                 previewVideoUrl={lessonData.previewVideoUrl}
                 courseData={lessonData}
-                progress={progress}
+                progress={progress || { courseProgress: 0 }}
               />
             </div>
           </div>

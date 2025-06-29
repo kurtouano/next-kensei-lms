@@ -1,5 +1,5 @@
 // Complete useCoursePreviewHook.js - All hooks for course functionality
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useSession } from "next-auth/react"
 
 // ============ Q&A HOOK ============
@@ -482,20 +482,21 @@ export function useProgress(slug) {
     isCompleted: false,
     lessonProgress: []
   })
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // Start as false
   const [error, setError] = useState(null)
   const [isInitialized, setIsInitialized] = useState(false)
   
-  // 🔧 NEW: Track the initialization state more precisely
-  const [initializationState, setInitializationState] = useState('pending') // 'pending', 'loading', 'completed', 'no-auth'
+  // More stable initialization tracking
+  const [initializationState, setInitializationState] = useState('pending')
+  const initRef = useRef(false) // Prevent double initialization
 
   const fetchProgress = useCallback(async () => {
-    // Handle case where user is not logged in
+    // Handle case where user is not logged in or no slug
     if (!session?.user || !slug) {
       setLoading(false)
       setIsInitialized(true)
       setInitializationState('no-auth')
-      // Set empty but consistent state
+      // Set empty but consistent state immediately
       setProgress({
         completedLessons: [],
         completedModules: [],
@@ -506,6 +507,10 @@ export function useProgress(slug) {
       })
       return
     }
+
+    // Prevent duplicate fetches
+    if (initRef.current) return
+    initRef.current = true
     
     try {
       setLoading(true)
@@ -515,32 +520,64 @@ export function useProgress(slug) {
       const data = await response.json()
       
       if (data.success) {
-        setProgress(data.progress)
-        setInitializationState('completed')
+        // 🔧 FIXED: Ensure all required fields exist
+        setProgress({
+          completedLessons: data.progress.completedLessons || [],
+          completedModules: data.progress.completedModules || [],
+          courseProgress: data.progress.courseProgress || 0,
+          status: data.progress.status || 'not_started',
+          isCompleted: data.progress.isCompleted || false,
+          lessonProgress: data.progress.lessonProgress || []
+        })
       } else {
         setError(data.error)
-        setInitializationState('completed') // Still mark as completed even with error
+        // Still set empty state to prevent undefined
+        setProgress({
+          completedLessons: [],
+          completedModules: [],
+          courseProgress: 0,
+          status: 'not_started',
+          isCompleted: false,
+          lessonProgress: []
+        })
       }
+      setInitializationState('completed')
     } catch (err) {
       setError('Failed to fetch progress')
-      setInitializationState('completed') // Mark as completed to prevent infinite loading
+      setInitializationState('completed')
       console.error('Error fetching progress:', err)
+      // Set empty state on error too
+      setProgress({
+        completedLessons: [],
+        completedModules: [],
+        courseProgress: 0,
+        status: 'not_started',
+        isCompleted: false,
+        lessonProgress: []
+      })
     } finally {
       setLoading(false)
       setIsInitialized(true)
     }
   }, [session, slug])
 
-  // 🔧 ENHANCED: Better loading state that prevents flickering
+  // 🔧 STABLE: Immediate initialization for non-auth cases
   const isFullyInitialized = useMemo(() => {
     return initializationState === 'completed' || initializationState === 'no-auth'
   }, [initializationState])
 
-  // 🔧 STABLE: Return consistent data structure
+  // 🔧 STABLE: Always return a consistent object (never null)
   const stableProgress = useMemo(() => {
     if (!isFullyInitialized) {
-      // Return null/undefined during loading to indicate "not ready"
-      return null
+      // Return default structure during loading instead of null
+      return {
+        completedLessons: [],
+        completedModules: [],
+        courseProgress: 0,
+        status: 'not_started',
+        isCompleted: false,
+        lessonProgress: []
+      }
     }
     
     return {
@@ -568,8 +605,8 @@ export function useProgress(slug) {
         setProgress(prev => ({
           ...prev,
           completedLessons: data.progress.completedLessons || [],
-          courseProgress: data.progress.courseProgress,
-          status: data.progress.status,
+          courseProgress: data.progress.courseProgress || 0,
+          status: data.progress.status || 'not_started',
           lessonProgress: data.progress.lessonProgress || []
         }))
         return true
@@ -642,7 +679,7 @@ export function useProgress(slug) {
   }, [session, slug])
 
   const getLessonCurrentTime = useCallback((lessonId) => {
-    if (!stableProgress) return 0
+    if (!stableProgress || !lessonId) return 0
     const lessonProgress = stableProgress.lessonProgress?.find(lp => lp.lesson === lessonId)
     return lessonProgress?.currentTime || 0
   }, [stableProgress])
@@ -652,10 +689,10 @@ export function useProgress(slug) {
   }, [fetchProgress])
 
   return {
-    progress: stableProgress, // Return null during loading, stable object when ready
+    progress: stableProgress, // Always returns a valid object, never null
     loading,
     error,
-    isInitialized: isFullyInitialized, // Enhanced initialization check
+    isInitialized: isFullyInitialized,
     updateLessonProgress,
     updateVideoProgress,
     updateModuleProgress,
