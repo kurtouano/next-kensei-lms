@@ -25,7 +25,6 @@ const ProgressSchema = new mongoose.Schema( // Individual Progress Record for a 
         currentTime: { type: Number, default: 0 },
         isCompleted: { type: Boolean, default: false },
         completedAt: Date,
-        quizScore: { type: Number, default: 0}
       }
     ],
     courseProgress: { 

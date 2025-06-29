@@ -1,7 +1,7 @@
-// Updated page.jsx - Handles instructor preview mode with NO FLICKERING
+// Fixed page.jsx - Prevents loading flickering with debounced loading state
 "use client"
 
-import { useState, useEffect, useCallback, useMemo, memo } from "react"
+import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Header } from "@/components/header"
@@ -53,6 +53,37 @@ const ErrorLayout = memo(function ErrorLayout({ error }) {
     </div>
   )
 })
+
+// ============ CUSTOM HOOK FOR DEBOUNCED LOADING ============
+function useDebouncedLoading(isLoading, delay = 150) {
+  const [debouncedLoading, setDebouncedLoading] = useState(isLoading)
+  const timeoutRef = useRef(null)
+
+  useEffect(() => {
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+
+    if (isLoading) {
+      // Show loading immediately when starting
+      setDebouncedLoading(true)
+    } else {
+      // Delay hiding loading to prevent flickering
+      timeoutRef.current = setTimeout(() => {
+        setDebouncedLoading(false)
+      }, delay)
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [isLoading, delay])
+
+  return debouncedLoading
+}
 
 // ============ MAIN COMPONENT ============
 
@@ -108,7 +139,7 @@ export default function LessonPage() {
     return isLoggedIn
   }, [isInstructorPreview, isInstructorOwned, instructorPreviewMode, isLoggedIn])
   
-  // FIXED: Progress hook with initialization tracking - Only run if user is logged in and enrolled
+  // Progress hook with initialization tracking - Only run if user is logged in and enrolled
   const { 
     progress, 
     loading: progressLoading, 
@@ -145,7 +176,7 @@ export default function LessonPage() {
     effectiveIsLoggedIn ? session : null
   )
   
-  // Navigation state - FIXED: Initialize properly to prevent flickering
+  // Navigation state - Initialize properly to prevent flickering
   const [activeModule, setActiveModule] = useState(0)
   const [activeVideoId, setActiveVideoId] = useState(null)
   const [completedItems, setCompletedItems] = useState([])
@@ -200,7 +231,7 @@ export default function LessonPage() {
     }
   }, [lessonData?.id, isLoggedIn, isInstructorPreview, checkEnrollment])
 
-  // FIXED: Sync progress data immediately when available - prevents flickering
+  // Sync progress data immediately when available - prevents flickering
   useEffect(() => {
     if (effectiveIsLoggedIn && effectiveIsEnrolled && progressInitialized) {
       // Update completed items immediately when progress is initialized
@@ -323,6 +354,25 @@ export default function LessonPage() {
     return moduleQuizCompleted.some(completed => completed.moduleIndex === activeModule)
   }, [effectiveIsLoggedIn, effectiveIsEnrolled, moduleQuizCompleted, activeModule])
 
+  // ============ ENHANCED LOADING STATE - PREVENTS FLICKERING ============
+
+  // Calculate raw loading state
+  const rawIsDataLoading = useMemo(() => {
+    // Always wait for session and lesson data
+    if (isSessionLoading || lessonLoading) return true
+    
+    // Wait for enrollment check if needed (but only briefly)
+    if (effectiveIsLoggedIn && !isInstructorPreview && enrollmentLoading) return true
+    
+    // Wait for progress if user is enrolled (this is the main cause of flickering)
+    if (effectiveIsLoggedIn && effectiveIsEnrolled && !progressInitialized) return true
+    
+    return false
+  }, [isSessionLoading, lessonLoading, effectiveIsLoggedIn, effectiveIsEnrolled, enrollmentLoading, progressInitialized, isInstructorPreview])
+
+  // 🔧 FIX: Use debounced loading to prevent flickering
+  const isDataLoading = useDebouncedLoading(rawIsDataLoading, 100)
+
   // ============ EVENT HANDLERS ============
 
   const handleSelectItem = useCallback((itemId, moduleIndex) => {
@@ -397,22 +447,7 @@ export default function LessonPage() {
     }
   }, [])
 
-  // ============ ENHANCED LOADING STATE - PREVENTS FLICKERING ============
-
-  // FIXED: Wait for ALL necessary data before showing content
-  const isDataLoading = useMemo(() => {
-    // Always wait for session and lesson data
-    if (isSessionLoading || lessonLoading) return true
-    
-    // Wait for enrollment check if needed
-    if (effectiveIsLoggedIn && !isInstructorPreview && enrollmentLoading) return true
-    
-    // CRITICAL: Wait for progress if user is enrolled - this prevents flickering!
-    if (effectiveIsLoggedIn && effectiveIsEnrolled && !progressInitialized) return true
-    
-    return false
-  }, [isSessionLoading, lessonLoading, effectiveIsLoggedIn, effectiveIsEnrolled, enrollmentLoading, progressInitialized, isInstructorPreview])
-
+  // Show loading only when we're actually loading
   if (isDataLoading) {
     return <LoadingLayout />
   }
