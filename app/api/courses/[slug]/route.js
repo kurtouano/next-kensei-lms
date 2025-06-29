@@ -1,4 +1,4 @@
-// app/api/courses/[slug]/route.js - Fixed to handle video duration correctly + SECURITY
+// app/api/courses/[slug]/route.js - Fixed instructor authorization for preview mode
 import { connectDb } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import Course from "@/models/Course";
@@ -29,7 +29,7 @@ export async function GET(request, { params }) {
       })
       .populate({
         path: 'instructor',
-        select: "name image icon"
+        select: "name image icon email _id" // 🔧 ADDED: Include _id and email
       })
       .lean();
 
@@ -41,15 +41,63 @@ export async function GET(request, { params }) {
     let canAccessInstructorView = false;
     
     if (instructorPreview && session?.user) {
-      const user = await User.findById(session.user.id);
-      
-      // Admin can access any course
-      if (user?.role === 'admin') {
+      console.log('🔍 Checking instructor access:', {
+        userId: session.user.id,
+        userEmail: session.user.email,
+        userRole: session.user.role,
+        courseInstructorId: course.instructor?._id?.toString(),
+        courseInstructorEmail: course.instructor?.email,
+        requestedPreview: instructorPreview
+      });
+
+      // Method 1: Check if user is admin (admins can preview any course)
+      if (session.user.role === 'admin') {
         canAccessInstructorView = true;
+        console.log('✅ Access granted: User is admin');
       }
-      // Instructor can only access their own courses
-      else if (user?.role === 'instructor' && course.instructor._id.toString() === user._id.toString()) {
-        canAccessInstructorView = true;
+      // Method 2: Check if user is instructor and owns this course
+      else if (session.user.role === 'instructor') {
+        const sessionUserId = session.user.id?.toString();
+        const courseInstructorId = course.instructor?._id?.toString();
+        
+        // Check by ID comparison (most reliable)
+        if (sessionUserId && courseInstructorId && sessionUserId === courseInstructorId) {
+          canAccessInstructorView = true;
+          console.log('✅ Access granted: User ID matches course instructor ID');
+        }
+        // Fallback: Check by email if ID comparison fails
+        else if (session.user.email && course.instructor?.email && 
+                 session.user.email === course.instructor.email) {
+          canAccessInstructorView = true;
+          console.log('✅ Access granted: Email matches course instructor email');
+        }
+        // Final fallback: Database lookup by email
+        else if (session.user.email) {
+          try {
+            const user = await User.findOne({ email: session.user.email }).lean();
+            
+            if (user && user._id.toString() === courseInstructorId) {
+              canAccessInstructorView = true;
+              console.log('✅ Access granted: Database lookup confirmed ownership');
+            } else {
+              console.log('❌ Access denied: Database lookup failed or ID mismatch', {
+                userIdFromDB: user?._id?.toString(),
+                courseInstructorId: courseInstructorId
+              });
+            }
+          } catch (error) {
+            console.error('Error looking up user by email:', error);
+          }
+        }
+      }
+      
+      if (!canAccessInstructorView) {
+        console.log('❌ Access denied - Final check:', {
+          userRole: session.user.role,
+          sessionUserId: session.user.id,
+          courseInstructorId: course.instructor?._id?.toString(),
+          emailMatch: session.user.email === course.instructor?.email
+        });
       }
     }
 
@@ -121,6 +169,7 @@ export async function GET(request, { params }) {
       progress: 0,
       instructor: course.instructor?.name || "Japanese Instructor",
       instructorImg: course.instructor?.image || course.instructor?.icon || null,
+      instructorId: course.instructor?._id?.toString(), // 🔧 ADDED: Include instructor ID
       lastUpdated: new Date(course.updatedAt).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
