@@ -1,4 +1,4 @@
-// app/api/instructor/recent-activity/route.js
+// app/api/instructor/recent-activity/route.js - UPDATED with question_asked handling
 import { NextResponse } from "next/server";
 import { connectDb } from "@/lib/mongodb";
 import { getServerSession } from "next-auth/next";
@@ -116,6 +116,19 @@ export async function GET(req) {
             message: `${baseActivity.user.name} liked ${baseActivity.course.title}`,
             icon: 'heart',
             color: 'red'
+          };
+
+        // NEW: Handle question asked activity
+        case 'question_asked':
+          return {
+            ...baseActivity,
+            message: `${baseActivity.user.name} asked a question in ${baseActivity.course.title}`,
+            icon: 'message-circle',
+            color: 'indigo',
+            metadata: {
+              questionText: activity.metadata?.questionText || 'Question content not available',
+              questionId: activity.metadata?.questionId || null
+            }
           };
 
         default:

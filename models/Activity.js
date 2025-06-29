@@ -27,7 +27,8 @@ const ActivitySchema = new mongoose.Schema(
         "course_reviewed", 
         "lesson_completed",
         "course_completed",
-        "course_liked" 
+        "course_liked",
+        "question_asked"
       ],
       required: true
     },
@@ -49,7 +50,11 @@ const ActivitySchema = new mongoose.Schema(
       
       // For course completion
       completionPercentage: Number,
-      totalLessons: Number
+      totalLessons: Number,
+
+      // For question asked activities
+      questionText: String,
+      questionId: mongoose.Schema.Types.ObjectId,
     },
     createdAt: {
       type: Date,
