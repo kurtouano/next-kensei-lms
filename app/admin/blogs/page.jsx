@@ -1,88 +1,139 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
-import { Plus, Search, Edit, Trash2, Eye } from "lucide-react"
+import Fuse from "fuse.js"
+import { Plus, Search, Edit, Trash2, Eye, LoaderCircle, RefreshCcw } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 
 export default function AdminBlogPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [categoryFilter, setCategoryFilter] = useState("all")
+  const [sortBy, setSortBy] = useState("newest")
+  const [blogs, setBlogs] = useState([])
+  const [stats, setStats] = useState({
+    totalPosts: 0,
+    published: 0,
+    drafts: 0,
+    totalViews: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // Mock blog posts data
-  const blogPosts = [
-    {
-      id: 1,
-      title: "Understanding Japanese Honorifics: A Complete Guide",
-      author: "Tanaka Sensei",
-      status: "published",
-      publishedAt: "2024-01-15",
-      views: 1250,
-      category: "Grammar",
-    },
-    {
-      id: 2,
-      title: "5 Essential Japanese Phrases for Travelers",
-      author: "Yamada Sensei",
-      status: "published",
-      publishedAt: "2024-01-12",
-      views: 890,
-      category: "Travel",
-    },
-    {
-      id: 3,
-      title: "The Art of Japanese Tea Ceremony",
-      author: "Sato Sensei",
-      status: "draft",
-      publishedAt: null,
-      views: 0,
-      category: "Culture",
-    },
-    {
-      id: 4,
-      title: "Mastering Kanji: Study Techniques That Work",
-      author: "Tanaka Sensei",
-      status: "published",
-      publishedAt: "2024-01-08",
-      views: 2100,
-      category: "Vocabulary",
-    },
-    {
-      id: 5,
-      title: "Japanese Business Etiquette: Do's and Don'ts",
-      author: "Suzuki Sensei",
-      status: "scheduled",
-      publishedAt: "2024-01-20",
-      views: 0,
-      category: "Business",
-    },
-  ]
-
-  const stats = {
-    totalPosts: blogPosts.length,
-    published: blogPosts.filter((post) => post.status === "published").length,
-    drafts: blogPosts.filter((post) => post.status === "draft").length,
-    totalViews: blogPosts.reduce((sum, post) => sum + post.views, 0),
+  // Fuse.js configuration for fuzzy search
+  const fuseOptions = {
+    keys: [
+      { name: 'title', weight: 0.4 },
+      { name: 'excerpt', weight: 0.3 },
+      { name: 'author.name', weight: 0.1 }
+    ],
+    threshold: 0.4, // Lower = more strict, Higher = more fuzzy
+    includeScore: true,
   }
 
-  const filteredPosts = blogPosts.filter((post) => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || post.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  // Initialize Fuse instance
+  const fuse = useMemo(() => {
+    return new Fuse(blogs, fuseOptions)
+  }, [blogs])
 
-  const getStatusBadge = (status) => {
-    const styles = {
-      published: "bg-green-100 text-green-800",
-      draft: "bg-gray-100 text-gray-800",
-      scheduled: "bg-blue-100 text-blue-800",
+  // Fetch blogs from API
+  const fetchBlogs = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Only send category and sort filters to API, handle search client-side
+      const params = new URLSearchParams({
+        category: categoryFilter !== 'all' ? categoryFilter : '',
+        sortBy: sortBy,
+        limit: '50' // Get more blogs for admin view
+      })
+
+      const response = await fetch(`/api/admin/blogs?${params}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setBlogs(data.blogs)
+        
+        // Calculate stats from fetched data
+        const totalViews = data.blogs.reduce((sum, blog) => sum + blog.views, 0)
+        setStats({
+          totalPosts: data.blogs.length,
+          published: data.blogs.length,
+          drafts: 0,
+          totalViews: totalViews
+        })
+      } else {
+        setError(data.error || 'Failed to fetch blogs')
+      }
+    } catch (err) {
+      console.error('Error fetching blogs:', err)
+      setError('Failed to fetch blogs')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  // Fetch blogs when category or sort changes (not search)
+  useEffect(() => {
+    fetchBlogs()
+  }, [categoryFilter, sortBy])
+
+  // Handle blog deletion
+  const handleDelete = async (blogId, blogTitle) => {
+    if (!confirm(`Are you sure you want to delete "${blogTitle}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/blogs/${blogId}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert('Blog deleted successfully!')
+        fetchBlogs() // Refresh the list
+      } else {
+        alert(result.error || 'Failed to delete blog')
+      }
+    } catch (error) {
+      console.error('Error deleting blog:', error)
+      alert('Failed to delete blog')
+    }
+  }
+
+  // Filter and search blogs using Fuse.js
+  const filteredBlogs = useMemo(() => {
+    let results = blogs
+
+    // Apply search using Fuse.js if search term exists
+    if (searchTerm.trim()) {
+      const fuseResults = fuse.search(searchTerm.trim())
+      results = fuseResults.map(result => result.item)
+    }
+
+    return results
+  }, [blogs, searchTerm, fuse])
+
+  if (loading && blogs.length === 0) {
     return (
-      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
+      <>
+        <Header/>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <LoaderCircle className="h-8 w-8 animate-spin mx-auto mb-4 text-[#4a7c59]" />
+              <p className="text-gray-600">Loading blogs...</p>
+            </div>
+          </div>
+        </div>
+        <Footer/>
+      </>
     )
   }
 
@@ -95,12 +146,38 @@ export default function AdminBlogPage() {
           <h1 className="text-3xl font-bold text-[#2c3e2d]">Blog Management</h1>
           <p className="text-[#4a7c59]">Create and manage your blog posts</p>
         </div>
-        <Link href="/admin/blog/create">
-          <Button className="bg-[#4a7c59] hover:bg-[#3a6147]">
-            <Plus className="mr-2 h-4 w-4" /> New Post
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={fetchBlogs}
+            disabled={loading}
+            className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+          >
+            <RefreshCcw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
-        </Link>
+          <Link href="/admin/blogs/create">
+            <Button className="bg-[#4a7c59] hover:bg-[#3a6147]">
+              <Plus className="mr-2 h-4 w-4" /> New Post
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <Card className="mb-6 border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center">
+              <div className="text-red-600 mr-2">⚠️</div>
+              <div>
+                <h4 className="font-medium text-red-800">Error loading blogs</h4>
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
@@ -122,10 +199,10 @@ export default function AdminBlogPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Drafts</CardTitle>
+            <CardTitle className="text-sm font-medium">Categories</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.drafts}</div>
+            <div className="text-2xl font-bold">{new Set(blogs.map(b => b.category)).size}</div>
           </CardContent>
         </Card>
         <Card>
@@ -147,7 +224,7 @@ export default function AdminBlogPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <input
                   type="text"
-                  placeholder="Search posts..."
+                  placeholder="Search posts by title, excerpt, or author..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -156,13 +233,26 @@ export default function AdminBlogPage() {
             </div>
             <select
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
             >
-              <option value="all">All Status</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-              <option value="scheduled">Scheduled</option>
+              <option value="all">All Categories</option>
+              <option value="Grammar">Grammar</option>
+              <option value="Vocabulary">Vocabulary</option>
+              <option value="Culture">Culture</option>
+              <option value="Travel">Travel</option>
+              <option value="Business">Business</option>
+              <option value="Food">Food</option>
+              <option value="Entertainment">Entertainment</option>
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="popular">Most Popular</option>
             </select>
           </div>
         </CardContent>
@@ -171,57 +261,115 @@ export default function AdminBlogPage() {
       {/* Posts Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Blog Posts</CardTitle>
-          <CardDescription>Manage your blog posts and their status</CardDescription>
+          <CardTitle>
+            Blog Posts ({filteredBlogs.length})
+            {searchTerm && (
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                • Searching for "{searchTerm}"
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>Manage your blog posts and their content</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="pb-3 text-left font-medium">Title</th>
-                  <th className="pb-3 text-left font-medium">Author</th>
-                  <th className="pb-3 text-left font-medium">Category</th>
-                  <th className="pb-3 text-left font-medium">Status</th>
-                  <th className="pb-3 text-left font-medium">Published</th>
-                  <th className="pb-3 text-left font-medium">Views</th>
-                  <th className="pb-3 text-left font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPosts.map((post) => (
-                  <tr key={post.id} className="border-b">
-                    <td className="py-4">
-                      <div className="font-medium text-[#2c3e2d] max-w-xs truncate">{post.title}</div>
-                    </td>
-                    <td className="py-4 text-gray-600">{post.author}</td>
-                    <td className="py-4 text-gray-600">{post.category}</td>
-                    <td className="py-4">{getStatusBadge(post.status)}</td>
-                    <td className="py-4 text-gray-600">
-                      {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : "-"}
-                    </td>
-                    <td className="py-4 text-gray-600">{post.views.toLocaleString()}</td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
+          {filteredBlogs.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Search className="h-16 w-16 mx-auto" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                {searchTerm ? 'No matching posts found' : 'No blog posts found'}
+              </h3>
+              <p className="text-gray-500 mb-4">
+                {searchTerm 
+                  ? `No posts match your search for "${searchTerm}". Try a different search term.`
+                  : blogs.length === 0 
+                    ? 'Get started by creating your first blog post!' 
+                    : 'Try adjusting your filter criteria.'
+                }
+              </p>
+              {!searchTerm && blogs.length === 0 && (
+                <Link href="/admin/blogs/create">
+                  <Button className="bg-[#4a7c59] hover:bg-[#3a6147]">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create First Post
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="pb-3 text-left font-medium">Title</th>
+                    <th className="pb-3 text-left font-medium">Author</th>
+                    <th className="pb-3 text-left font-medium">Category</th>
+                    <th className="pb-3 text-left font-medium">Read Time</th>
+                    <th className="pb-3 text-left font-medium">Published</th>
+                    <th className="pb-3 text-left font-medium">Views</th>
+                    <th className="pb-3 text-left font-medium">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredBlogs.map((blog) => (
+                    <tr key={blog._id} className="border-b hover:bg-gray-50">
+                      <td className="py-4">
+                        <div className="max-w-xs">
+                          <div className="font-medium text-[#2c3e2d] truncate">{blog.title}</div>
+                          <div className="text-sm text-gray-500 truncate">{blog.excerpt}</div>
+                        </div>
+                      </td>
+                      <td className="py-4 text-gray-600">
+                        {blog.author?.name || 'Unknown Author'}
+                      </td>
+                      <td className="py-4">
+                        <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-[#eef2eb] text-[#4a7c59]">
+                          {blog.category}
+                        </span>
+                      </td>
+                      <td className="py-4 text-gray-600 text-sm">
+                        {blog.readTime}
+                      </td>
+                      <td className="py-4 text-gray-600 text-sm">
+                        {new Date(blog.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-4 text-gray-600">
+                        {blog.views.toLocaleString()}
+                      </td>
+                      <td className="py-4">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/blogs/${blog.slug}`} target="_blank">
+                            <Button variant="ghost" size="sm" title="View Post">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/admin/blogs/edit/${blog._id}`}>
+                            <Button variant="ghost" size="sm" title="Edit Post">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            title="Delete Post"
+                            onClick={() => handleDelete(blog._id, blog.title)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
+    <Footer/>
     </>
   )
 }
