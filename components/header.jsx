@@ -73,7 +73,7 @@ export function Header() {
                 <Link href="/instructor/dashboard" className={`text-sm font-medium ${isActive("/instructor/dashboard") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Instructor</Link>
               )}
               { session?.user?.role === "admin" && (
-                <Link href="/admin/blog" className={`text-sm font-medium ${isActive("/admin/blog") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Admin</Link>
+                <Link href="/admin/blogs" className={`text-sm font-medium ${isActive("/admin/blog") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Admin</Link>
               )}
             </>
           ) : (
@@ -145,7 +145,7 @@ export function Header() {
                   <Link href="/instructor/dashboard" className={`block text-sm font-medium ${isActive("/instructor/dashboard") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Instructor</Link>
                 )}
                 {session?.user?.role === "admin" && (
-                  <Link href="/admin/blog" className={`block text-sm font-medium ${isActive("/admin/blog") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Admin</Link>
+                  <Link href="/admin/blogs" className={`block text-sm font-medium ${isActive("/admin/blog") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Admin</Link>
                 )}
                 
                 {/* Mobile Profile Link */}

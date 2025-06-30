@@ -48,6 +48,7 @@
     "cmdk": "1.0.4",
     "embla-carousel-react": "8.5.1",
     "framer-motion": "latest",
+    "fuse.js": "^7.1.0",
     "html2canvas": "^1.4.1",
     "input-otp": "1.4.1",
     "jspdf": "^3.0.1",
