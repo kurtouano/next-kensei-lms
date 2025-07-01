@@ -5,13 +5,15 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { BannerSlider } from "@/components/banner-slider"
 import { LoadingScreen } from "@/components/loading-screen"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, BookOpen, PlayCircle, Star } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [featuredCourses, setFeaturedCourses] = useState([])
+  const [coursesLoading, setCoursesLoading] = useState(true)
+  const [coursesError, setCourseError] = useState(null)
 
   useEffect(() => {
     // Simulate loading time
@@ -21,6 +23,32 @@ export default function Home() {
 
     return () => clearTimeout(timer)
   }, [])
+
+  // Fetch featured courses
+  useEffect(() => {
+    const fetchFeaturedCourses = async () => {
+      try {
+        setCoursesLoading(true)
+        const response = await fetch('/api/courses/featured')
+        const data = await response.json()
+        
+        if (data.success) {
+          setFeaturedCourses(data.courses)
+        } else {
+          setCourseError(data.message || 'Failed to load featured courses')
+        }
+      } catch (error) {
+        console.error('Error fetching featured courses:', error)
+        setCourseError('Failed to load featured courses')
+      } finally {
+        setCoursesLoading(false)
+      }
+    }
+
+    if (!isLoading) {
+      fetchFeaturedCourses()
+    }
+  }, [isLoading])
 
   if (isLoading) {
     return <LoadingScreen />
@@ -82,63 +110,20 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  title: "Japanese for Beginners",
-                  level: "N5",
-                  lessons: 24,
-                  image: "/placeholder.svg?height=200&width=400",
-                },
-                {
-                  title: "Intermediate Conversation",
-                  level: "N4",
-                  lessons: 18,
-                  image: "/placeholder.svg?height=200&width=400",
-                },
-                {
-                  title: "Business Japanese",
-                  level: "N3",
-                  lessons: 20,
-                  image: "/placeholder.svg?height=200&width=400",
-                },
-              ].map((course, index) => (
-                <div
-                  key={index}
-                  className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm transition-all hover:shadow-md"
-                >
-                  <div className="aspect-video w-full overflow-hidden">
-                    <img
-                      src={course.image || "/placeholder.svg"}
-                      alt={course.title}
-                      className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-5">
-                    <div className="mb-3 flex items-center justify-between">
-                      <span className="rounded-full bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59]">
-                        JLPT {course.level}
-                      </span>
-                      <span className="text-sm text-[#5c6d5e]">{course.lessons} lessons</span>
-                    </div>
-                    <h3 className="mb-2 text-xl font-semibold text-[#2c3e2d]">{course.title}</h3>
-                    <p className="mb-4 text-[#5c6d5e]">
-                      Master essential Japanese skills with our structured curriculum and interactive lessons.
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="w-full border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
-                      asChild
-                    >
-                      <Link href={`/courses/${index + 1}`}>
-                        View Course
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Dynamic Featured Courses */}
+            {coursesLoading ? (
+              <FeaturedCoursesLoading />
+            ) : coursesError ? (
+              <FeaturedCoursesError error={coursesError} />
+            ) : featuredCourses.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {featuredCourses.map((course) => (
+                  <FeaturedCourseCard key={course.id} course={course} />
+                ))}
+              </div>
+            ) : (
+              <EmptyFeaturedCourses />
+            )}
 
             <div className="mt-10 text-center">
               <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" asChild>
@@ -230,6 +215,126 @@ export default function Home() {
 
       {/* Footer */}
       <Footer />
+    </div>
+  )
+}
+
+// Featured Course Card Component
+function FeaturedCourseCard({ course }) {
+  const handleImageError = (e) => {
+    e.target.src = "/placeholder.svg"
+  }
+
+  return (
+    <Link href={`/courses/${course.slug}`} className="block">
+      <div className="group relative overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+        <div className="aspect-video w-full overflow-hidden relative">
+          <img
+            src={course.thumbnail || "/placeholder.svg"}
+            alt={course.title}
+            className="h-full w-full object-cover transition-transform duration-500"
+            onError={handleImageError}
+          />
+          {/* JLPT Level Badge on Image */}
+          <div className="absolute top-4 right-4">
+            <span className="rounded-full bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
+              JLPT {course.level}
+            </span>
+          </div>
+        </div>
+        <div className="p-5 flex flex-col flex-1">
+          {/* Rating and Lessons in one row */}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-3 w-3 ${
+                      i < Math.floor(course.averageRating)
+                        ? "fill-amber-400 text-amber-400"
+                        : "text-gray-300"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-[#5c6d5e]">
+                {course.averageRating > 0 ? course.averageRating.toFixed(1) : '0.0'} ({course.totalRatings})
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-[#5c6d5e]">
+              <PlayCircle className="h-3 w-3" />
+              <span>{course.lessonsCount} lessons</span>
+            </div>
+          </div>
+
+          <h3 className="mb-2 text-xl font-bold text-[#2c3e2d]">{course.title}</h3>
+          <p className="mb-4 text-[#5c6d5e] text-sm line-clamp-2 flex-1">
+            {course.description}
+          </p>
+
+          {/* Button always at bottom */}
+          <div className="mt-auto">
+            <div className="w-full border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200 ease-out backdrop-blur-sm group rounded-md px-4 py-2 text-center text-sm font-medium">
+              <span className="flex items-center justify-center">
+                View Course
+                <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+// Loading component for featured courses
+function FeaturedCoursesLoading() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm">
+          <div className="aspect-video w-full bg-gray-200 animate-pulse"></div>
+          <div className="p-5 space-y-4">
+            <div className="flex justify-between">
+              <div className="h-5 bg-gray-200 rounded-full w-16 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+            </div>
+            <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+            <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+            </div>
+            <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Error component for featured courses
+function FeaturedCoursesError({ error }) {
+  return (
+    <div className="text-center py-12">
+      <div className="text-red-500 mb-2">Failed to load featured courses</div>
+      <p className="text-[#5c6d5e] text-sm">{error}</p>
+    </div>
+  )
+}
+
+// Empty state component
+function EmptyFeaturedCourses() {
+  return (
+    <div className="text-center py-12">
+      <BookOpen className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e]" />
+      <h3 className="text-lg font-medium text-[#2c3e2d] mb-2">No featured courses available</h3>
+      <p className="text-[#5c6d5e] mb-4">
+        Featured courses will appear here once they are published and have student enrollments.
+      </p>
     </div>
   )
 }
