@@ -1,6 +1,6 @@
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Check, PlayCircle, Star, LoaderCircle } from "lucide-react"
+import { BookOpen, Check, PlayCircle, Star, LoaderCircle, ChevronRight } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useCallback, useMemo, useEffect, useState, memo } from "react"
@@ -13,10 +13,19 @@ export const CourseCard = memo(function CourseCard({ course }) {
 
   // useCallback: Memoize handleSubscribe function
   const handleSubscribe = useCallback(async (e) => {
+    e.stopPropagation(); // Prevent card click
     e.preventDefault();
+    
+    // Check if user is logged in first
+    if (!session?.user) {
+      console.log('❌ User not logged in, redirecting to login')
+      window.location.href = '/auth/login'
+      return
+    }
     
     try {
       setIsLoading(true)
+      console.log('🛒 Starting checkout for course:', course.id)
       
       const response = await fetch('/api/courses/stripe/create-checkout-session', {
         method: 'POST',
@@ -44,7 +53,15 @@ export const CourseCard = memo(function CourseCard({ course }) {
       console.error('Error creating checkout session:', error);
       setIsLoading(false)
     }
-  }, [course.id, course.title, course.description, course.shortDescription, course.price, course.thumbnail])
+  }, [course.id, course.title, course.description, course.shortDescription, course.price, course.thumbnail, session])
+
+  const handleContinueLearning = useCallback((e) => {
+    e.stopPropagation(); // Prevent card click
+  }, [])
+
+  const handlePreview = useCallback((e) => {
+    e.stopPropagation(); // Prevent card click
+  }, [])
 
   const handleImageError = useCallback((e) => {
     e.target.src = "/placeholder.svg"
@@ -71,10 +88,10 @@ export const CourseCard = memo(function CourseCard({ course }) {
 
   const priceDisplay = useMemo(() => {
     if (checkingEnrollment) {
-      return <div className="rounded-full px-4 py-2 text-sm font-semibold"></div>;
+      return "";
     }
     if (isEnrolled) {
-      return <div className="hidden"></div>;
+      return "";
     }
     return courseData.price === 0
       ? 'Free'
@@ -106,87 +123,93 @@ export const CourseCard = memo(function CourseCard({ course }) {
   if (isLoading) return <LoadingState />
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full">
-      {/* Image with overlay gradient */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden">
-        <img
-          src={course.thumbnail || "/placeholder.svg"}
-          alt={courseData.title}
-          className="h-full w-full object-cover transition-transform duration-500"
-          onError={handleImageError}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
+    <Link href={`/courses/${course.slug}`} className="block">
+      <div className="group relative overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+        {/* Image with overlay gradient */}
+        <div className="relative aspect-[16/10] w-full overflow-hidden">
+          <img
+            src={course.thumbnail || "/placeholder.svg"}
+            alt={courseData.title}
+            className="h-full w-full object-cover transition-transform duration-500"
+            onError={handleImageError}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
 
-        {/* Price badge */}
-        <div className="absolute top-4 right-4">
-          <div className={`${isEnrolled && "hidden"} rounded-full bg-green-800/75 backdrop-blur-sm px-3 py-1 text-sm font-semibold text-white`}>
-            {priceDisplay}
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex flex-1 flex-col p-6">
-        {/* Rating */}
-        <div className="mb-3 w-full flex flex-row gap-3">
-          <StarRating rating={courseData.averageRating} totalReviews={courseData.totalReviews} />
-          {isEnrolled && (
-            <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800 backdrop-blur-sm">
-              <Check className="mr-1 h-3 w-3" />
-              Enrolled
+          {/* JLPT Level and Price badges in same row */}
+          <div className="absolute top-4 right-4 flex flex-row gap-2 items-center">
+            {/* JLPT Level Badge */}
+            <span className="rounded-full bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
+              JLPT {course.level}
             </span>
-          )}
-        </div>
-
-        {/* Title */}
-        <h3 className="mb-3 text-xl font-bold text-gray-900 line-clamp-2 leading-tight">
-          {courseData.title}
-        </h3>
-
-        {/* Description */}
-        <p className="mb-4 text-sm text-gray-600 line-clamp-2 leading-relaxed">
-          {courseData.description}
-        </p>
-
-        {/* Course stats */}
-        <div className="mb-4 flex items-center gap-4 text-sm text-gray-500">
-          <div className="flex items-center gap-1">
-            <BookOpen className="h-4 w-4" />
-            <span>{courseData.modulesCount} modules</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <PlayCircle className="h-4 w-4" />
-            <span>{courseData.lessonsCount} lessons</span>
+            
+            {/* Price Badge - only show if not enrolled and has price */}
+            {!isEnrolled && !checkingEnrollment && priceDisplay && (
+              <span className="rounded-full bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
+                {priceDisplay}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Learning highlights */}
-        <div className="mb-6 flex-1">
-          <h4 className="mb-3 text-sm font-semibold text-gray-900">What you'll learn:</h4>
-          <div className="space-y-2">
-            {courseData.highlights.slice(0, 4).map((highlight, index) => (
-              <div key={index} className="flex items-center gap-2 ">
-                <div className="mt-0.5 flex-shrink-0">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#4a7c59]"></div>
+        {/* Content */}
+        <div className="flex flex-1 flex-col p-6">
+          {/* Rating and Lessons in one row - same as homepage */}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <StarRating rating={courseData.averageRating} totalReviews={courseData.totalReviews} />
+              {isEnrolled && (
+                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800 backdrop-blur-sm ml-2">
+                  <Check className="mr-1 h-3 w-3" />
+                  Enrolled
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-[#5c6d5e]">
+              <PlayCircle className="h-3 w-3" />
+              <span>{courseData.lessonsCount} lessons</span>
+            </div>
+          </div>
+
+          {/* Title */}
+          <h3 className="mb-3 text-xl font-bold text-gray-900 line-clamp-2 leading-tight">
+            {courseData.title}
+          </h3>
+
+          {/* Description */}
+          <p className="mb-4 text-sm text-gray-600 line-clamp-2 leading-relaxed">
+            {courseData.description}
+          </p>
+
+          {/* Learning highlights */}
+          <div className="mb-6 flex-1">
+            <h4 className="mb-3 text-sm font-semibold text-gray-900">What you'll learn:</h4>
+            <div className="space-y-2">
+              {courseData.highlights.slice(0, 3).map((highlight, index) => (
+                <div key={index} className="flex items-center gap-2 ">
+                  <div className="mt-0.5 flex-shrink-0">
+                    <div className="h-1.5 w-1.5 rounded-full bg-[#4a7c59]"></div>
+                  </div>
+                  <span className="text-sm text-gray-600 line-clamp-1">{highlight}</span>
                 </div>
-                <span className="text-sm text-gray-600 line-clamp-1">{highlight}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Action buttons */}
-        <CourseActions
-          checkingEnrollment={checkingEnrollment}
-          isEnrolled={isEnrolled}
-          isLoading={isLoading}
-          coursePrice={courseData.price}
-          courseSlug={course.slug}
-          coursePublished={course.isPublished}
-          onSubscribe={handleSubscribe}
-        />
+          {/* Action buttons */}
+          <CourseActions
+            checkingEnrollment={checkingEnrollment}
+            isEnrolled={isEnrolled}
+            isLoading={isLoading}
+            coursePrice={courseData.price}
+            courseSlug={course.slug}
+            coursePublished={course.isPublished}
+            onSubscribe={handleSubscribe}
+            onContinueLearning={handleContinueLearning}
+            onPreview={handlePreview}
+          />
+        </div>
       </div>
-    </div>
+    </Link>
   )
 })
 
@@ -197,7 +220,9 @@ const CourseActions = memo(function CourseActions({
   coursePrice, 
   courseSlug, 
   coursePublished, 
-  onSubscribe 
+  onSubscribe,
+  onContinueLearning,
+  onPreview
 }) {
   if (checkingEnrollment) {
     return <EnrollmentCheckingSkeleton />
@@ -205,23 +230,23 @@ const CourseActions = memo(function CourseActions({
 
   if (isEnrolled) {
     return (
-      <Button 
-        asChild
-        className="w-full rounded-lg bg-[#4a7c59] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#519668] hover:shadow-lg"
+      <div className="w-full rounded-md border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200 ease-out backdrop-blur-sm group px-4 py-2 text-center text-sm font-medium cursor-pointer"
+        onClick={onContinueLearning}
       >
-        <Link href={`/courses/${courseSlug}`}>
+        <Link href={`/courses/${courseSlug}`} className="flex items-center justify-center">
           <PlayCircle className="mr-2 h-4 w-4" />
           Continue Learning
         </Link>
-      </Button>
+      </div>
     )
   }
 
   return (
     <div className="flex gap-3">
+      {/* Enroll Now Button - Modern Gradient Design */}
       <Button 
         onClick={onSubscribe} 
-        className="flex-1 rounded-md bg-[#4a7c57] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#4a7c57] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+        className="flex-1 rounded-md bg-gradient-to-r from-[#4a7c59] to-[#5d9e75] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-[#3a6147] hover:to-[#4a7c59] hover:shadow-lg hover:shadow-[#4a7c59]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
         disabled={coursePublished === false || isLoading}
       >
         {isLoading ? (
@@ -230,21 +255,22 @@ const CourseActions = memo(function CourseActions({
             Processing...
           </span>
         ) : (
-          coursePrice === 0 ? 'Free' : 'Enroll Now'
+          coursePrice === 0 ? 'Get Free Access' : 'Get Started'
         )}
       </Button>
 
-      <Button
-        asChild
-        variant="outline"
-        className={`flex-1 rounded-md border-2 border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 transition-all duration-200 hover:border-[#5d7e6763] hover:bg-gray-50 ${
+      {/* Preview Button - Same as Homepage */}
+      <div
+        onClick={onPreview}
+        className={`flex-1 rounded-md border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200 ease-out backdrop-blur-sm group px-4 py-2 text-center text-sm font-medium cursor-pointer ${
           isLoading ? 'pointer-events-none opacity-50' : ''
         }`}
       >
-        <Link href={`/courses/${courseSlug}`}>
-          Preview
+        <Link href={`/courses/${courseSlug}`} className="flex items-center justify-center">
+          Learn More
+          <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
         </Link>
-      </Button>
+      </div>
     </div>
   )
 })
@@ -260,7 +286,7 @@ const StarRating = memo(function StarRating({ rating, totalReviews }) {
         starArray.push(
           <Star
             key={`empty-${i}`}
-            className="h-3.5 w-3.5 text-gray-300"
+            className="h-3 w-3 text-gray-300"
           />
         );
       }
@@ -269,7 +295,7 @@ const StarRating = memo(function StarRating({ rating, totalReviews }) {
         starArray.push(
           <Star
             key={`full-${i}`}
-            className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
+            className="h-3 w-3 fill-amber-400 text-amber-400"
           />
         );
       }
@@ -277,9 +303,9 @@ const StarRating = memo(function StarRating({ rating, totalReviews }) {
       if (hasHalfStar) {
         starArray.push(
           <div key="half" className="relative">
-            <Star className="h-3.5 w-3.5 text-gray-300" />
+            <Star className="h-3 w-3 text-gray-300" />
             <Star 
-              className="absolute top-0 h-3.5 w-3.5 fill-amber-400 text-amber-400"
+              className="absolute top-0 h-3 w-3 fill-amber-400 text-amber-400"
               style={{ clipPath: 'inset(0 50% 0 0)' }}
             />
           </div>
@@ -291,7 +317,7 @@ const StarRating = memo(function StarRating({ rating, totalReviews }) {
         starArray.push(
           <Star
             key={`empty-${i}`}
-            className="h-3.5 w-3.5 text-gray-300"
+            className="h-3 w-3 text-gray-300"
           />
         );
       }
@@ -305,7 +331,7 @@ const StarRating = memo(function StarRating({ rating, totalReviews }) {
       <div className="flex items-center gap-0.5">
         {stars}
       </div>
-      <div className="flex items-center gap-1 text-sm">
+      <div className="flex items-center gap-1 text-xs">
         <span className="font-semibold text-gray-900">
           {rating > 0 ? rating.toFixed(1) : '0.0'}
         </span>

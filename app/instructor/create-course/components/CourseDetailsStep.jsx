@@ -39,7 +39,7 @@ const CourseDetailsStep = memo(({
 
   // Constants for limits
   const LIMITS = {
-    highlights: 4,
+    highlights: 3,
     tags: 5,
     itemsReward: 3
   }
