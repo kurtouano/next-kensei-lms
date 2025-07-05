@@ -69,7 +69,7 @@ export function BannerSlider({ banners, autoSlideInterval = 5000 }) {
   }
 
   return (
-    <div className="relative h-[500px] w-full overflow-hidden md:h-[600px] bg-gray-100">
+    <div className="relative h-[500px] w-full overflow-hidden md:h-[630px] bg-gray-100">
       {/* Banners */}
       {banners.map((banner, index) => (
         <div

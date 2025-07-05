@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { BannerSlider } from "@/components/banner-slider"
 import { LoadingScreen } from "@/components/loading-screen"
-import { ChevronRight, BookOpen, PlayCircle, Star } from "lucide-react"
+import { ChevronRight, BookOpen, PlayCircle, Star, Award, ShoppingBag, Palette } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
@@ -82,6 +82,33 @@ export default function Home() {
     },
   ]
 
+  const benefits = [
+    {
+      icon: Award,
+      title: "Official Certificates",
+      description: "Earn recognized completion certificates for each course you finish, perfect for your professional portfolio and language learning journey.",
+      color: "bg-amber-500"
+    },
+    {
+      icon: ShoppingBag,
+      title: "Bonsai Store Credits",
+      description: "Collect credits as you learn and spend them in our exclusive store to customize your virtual bonsai tree with unique decorations.",
+      color: "bg-emerald-500"
+    },
+    {
+      icon: Palette,
+      title: "Customizable Bonsai Tree",
+      description: "Express your personality by decorating your bonsai with pots, ornaments, backgrounds, and seasonal themes as you progress.",
+      color: "bg-violet-500"
+    },
+    {
+      icon: BookOpen,
+      title: "Interactive Quizzes & Exercises",
+      description: "Test your knowledge with engaging quizzes and practice exercises in every course to reinforce your learning and track your progress.",
+      color: "bg-blue-500"
+    }
+  ]
+
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
       {/* Header */}
@@ -91,6 +118,36 @@ export default function Home() {
         {/* Banner Slider */}
         <section className="relative">
           <BannerSlider banners={banners} />
+        </section>
+
+        {/* What You'll Get Section */}
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="mb-12 text-center">
+              <h2 className="mb-4 text-3xl font-bold text-[#2c3e2d]">What You'll Get</h2>
+              <p className="mx-auto max-w-2xl text-[#5c6d5e]">
+                Every course completion comes with valuable rewards that enhance your learning experience and celebrate your progress
+              </p>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
+              {benefits.map((benefit, index) => (
+                <div key={index} className="group flex items-start gap-6 rounded-2xl bg-gradient-to-r from-white to-gray-50 p-6 shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-default">
+                  <div className="flex-shrink-0">
+                    <div className={`${benefit.color} rounded-2xl p-4 shadow-md transition-transform duration-300 group-hover:scale-110`}>
+                      <benefit.icon className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="mb-3 text-xl font-bold text-[#2c3e2d]">{benefit.title}</h3>
+                    <p className="text-[#5c6d5e] leading-relaxed">{benefit.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+
+          </div>
         </section>
 
         {/* Featured Courses */}

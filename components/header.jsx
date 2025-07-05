@@ -54,7 +54,7 @@ export function Header() {
   const isActive = (path) => pathname === path
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/90 backdrop-blur-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href={status === "authenticated" ? "/my-learning" : "/"} className="flex items-center gap-2">
           <BonsaiIcon className="h-8 w-8 text-[#4a7c59]" />
@@ -65,7 +65,7 @@ export function Header() {
         <nav className="hidden items-center gap-6 md:flex">
           {status == "authenticated" ? (
             <>
-              <Link href="/my-learning" className={`text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Home</Link>
+              <Link href="/my-learning" className={`text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>My Learning</Link>
               <Link href="/courses" className={`text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Courses</Link>
               <Link href="/blogs" className={`text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Blogs</Link>
               <Link href="/bonsai" className={`text-sm font-medium ${isActive("/bonsai") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>My Bonsai</Link>
@@ -137,7 +137,7 @@ export function Header() {
             {/* Mobile Navigation Links */}
             {status === "authenticated" ? (
               <>
-                <Link href="/my-learning" className={`block text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Home</Link>
+                <Link href="/my-learning" className={`block text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>My Learning</Link>
                 <Link href="/courses" className={`block text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Courses</Link>
                 <Link href="/blogs" className={`block text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Blogs</Link>
                 <Link href="/bonsai" className={`block text-sm font-medium ${isActive("/bonsai") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>My Bonsai</Link>
