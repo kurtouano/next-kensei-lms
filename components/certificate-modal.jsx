@@ -66,7 +66,7 @@ function DisplayCertificate({
             <div className="text-center">
               <h1 className="text-2xl font-bold tracking-wide text-[#2c3e2d] mb-1">GENKO TREE</h1>
               <div className="text-xs font-medium text-[#6b8e6b] tracking-widest">
-                JAPANESE LANGUAGE LEARNING
+                JAPANESE LANGUAGE LEARNING ACADEMY
               </div>
             </div>
             <div className="flex items-center justify-center w-12 h-12 bg-[#4a7c59] rounded-full">
@@ -118,7 +118,7 @@ function DisplayCertificate({
             </div>
             
             <div className="text-sm text-[#6b8e6b]">
-              Recognized by Genko Tree Japanese Language Learning
+              Recognized by Genko Tree Japanese Language Learning Academy
             </div>
           </div>
         </div>
@@ -137,9 +137,9 @@ function DisplayCertificate({
 
             <div className="flex flex-col items-center">
               <div className="w-32 border-b-2 border-[#2c3e2d] mb-2 h-6 flex items-end justify-center">
-                <div className="text-xs text-[#6b8e6b] mb-1">Prof. Hiroshi Nakamura</div>
+                <div className="text-xs text-[#6b8e6b] mb-1">Genko Tree Academy</div>
               </div>
-              <p className="text-xs font-medium text-[#2c3e2d]">Program Coordinator</p>
+              <p className="text-xs font-medium text-[#2c3e2d]">Academic Director</p>
               <p className="text-xs text-[#6b8e6b]">Curriculum Specialist</p>
             </div>
           </div>
@@ -152,10 +152,6 @@ function DisplayCertificate({
                 <div className="text-[#6b8e6b]">Issued: {formatDate(new Date())}</div>
               </div>
               
-              <div className="text-right">
-                <div className="font-medium">Verify at:</div>
-                <div className="text-[#4a7c59]">genkotree.com/verify</div>
-              </div>
             </div>
           </div>
         </div>
@@ -316,7 +312,7 @@ function PDFCertificate({
                 color: "#6b8e6b",
                 letterSpacing: "2px"
               }}>
-                JAPANESE LANGUAGE LEARNING
+                JAPANESE LANGUAGE LEARNING ACADEMY
               </div>
             </div>
           
@@ -449,7 +445,7 @@ function PDFCertificate({
             fontSize: "13px",
             color: "#6b8e6b"
           }}>
-            Recognized by Genko Tree Japanese Language Learning
+            Recognized by Genko Tree Japanese Language Learning Academy
           </div>
         </div>
 
@@ -514,7 +510,7 @@ function PDFCertificate({
                   marginBottom: "4px",
                   paddingBottom: "8px",
                 }}>
-                  Prof. Hiroshi Nakamura
+                  Genko Tree Academy
                 </div>
               </div>
               <div style={{
@@ -522,7 +518,7 @@ function PDFCertificate({
                 fontWeight: "500",
                 color: "#2c3e2d"
               }}>
-                Program Coordinator
+                Academic Director
               </div>
               <div style={{
                 fontSize: "10px",
@@ -540,20 +536,16 @@ function PDFCertificate({
           }}>
             <div style={{
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: "center",
               alignItems: "center",
               fontSize: "11px",
               color: "#5c6d5e"
             }}>
-              <div style={{ textAlign: "left" }}>
+              <div style={{ textAlign: "center" }}>
                 <div style={{ fontWeight: "500" }}>Certificate ID: {certificateId}</div>
                 <div style={{ color: "#6b8e6b" }}>Issued: {formatDate(new Date())}</div>
               </div>
               
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontWeight: "500" }}>Verify at:</div>
-                <div style={{ color: "#4a7c59" }}>genkotree.com/verify</div>
-              </div>
             </div>
           </div>
         </div>
@@ -703,7 +695,7 @@ export function CertificateModal({
       pdf.setProperties({
         title: `Certificate - ${certificateData.courseTitle}`,
         subject: `Certificate of Completion for ${certificateData.userName}`,
-        author: 'Genko Tree - Japanese Language Learning',
+        author: 'Genko Tree - Japanese Language Learning Academy',
         keywords: 'certificate, japanese, language, completion',
         creator: 'Genko Tree'
       })
@@ -730,8 +722,8 @@ export function CertificateModal({
         <div className="bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white">
           <div className="flex items-center justify-between py-6 px-12">
             <div>
-              <h2 className="text-2xl font-bold">Your Course Certificate of Completion</h2>
-              <p className="text-sm opacity-90 mt-1">Genko Tree - Japanese Language Learning</p>
+              <h2 className="text-2xl font-bold">Your Certificate of Completion</h2>
+              <p className="text-sm opacity-90 mt-1">Genko Tree - Japanese Language Learning Academy </p>
             </div>
             <button
               onClick={onClose}
@@ -800,17 +792,19 @@ export function CertificateModal({
                     </>
                   )}
                 </Button>
+              </div>
 
-                <Button 
-                  onClick={() => window.open('https://genkotree.com/verify', '_blank')}
-                  size="lg"
-                  variant="outline" 
-                  className="border-[#6b8e6b] text-[#6b8e6b] hover:bg-[#6b8e6b] hover:text-white px-8 py-3"
-                  disabled={downloading}
-                >
-                  <ExternalLink className="mr-2 h-5 w-5" />
-                  Verify Certificate
-                </Button>
+              {/* Profile info */}
+              <div className="text-center mb-6">
+                <p className="text-sm text-[#6b8e6b]">
+                  You can also view all your certificates anytime in your{" "}
+                  <a 
+                    href="/profile" 
+                    className="text-[#4a7c59] hover:text-[#3a6147] font-medium underline"
+                  >
+                    Profile page
+                  </a>
+                </p>
               </div>
 
               {/* Certificate info section */}
@@ -837,7 +831,7 @@ export function CertificateModal({
                   </div>
                   <div className="mt-4 pt-4 border-t border-[#4a7c59]/20">
                     <p className="text-xs text-[#6b8e6b]">
-                      This certificate is issued by Genko Tree - Japanese Language Learning and can be verified at genkotree.com/verify
+                      This certificate is issued by Genko Tree - Japanese Language Learning Academy.
                     </p>
                   </div>
                 </div>
