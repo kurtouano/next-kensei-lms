@@ -54,7 +54,7 @@ export function Header() {
   const isActive = (path) => pathname === path
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/90 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/80 backdrop-blur-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href={status === "authenticated" ? "/my-learning" : "/"} className="flex items-center gap-2">
           <BonsaiIcon className="h-8 w-8 text-[#4a7c59]" />

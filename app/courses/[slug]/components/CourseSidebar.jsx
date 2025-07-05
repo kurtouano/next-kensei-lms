@@ -261,32 +261,6 @@ export const CourseSidebar = memo(function CourseSidebar({
             <p className="text-xs text-[#5c6d5e] mb-3">
               Get full access to all content, quizzes, and certificate
             </p>
-            <Button 
-              size="sm" 
-              className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
-              onClick={() => {
-                fetch('/api/courses/stripe/create-checkout-session', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    courseId: courseData?.id,
-                    title: courseData?.title || 'Course Enrollment',
-                    description: courseData?.description || courseData?.fullDescription || 'Full course access',
-                    price: courseData?.price || 0,
-                    thumbnail: courseData?.thumbnail || '',
-                  }),
-                }).then(response => response.json())
-                .then(data => {
-                  if (data.url) {
-                    window.location.assign(data.url);
-                  }
-                }).catch(console.error);
-              }}
-            >
-              Enroll Now
-            </Button>
           </div>
         </div>
       )}

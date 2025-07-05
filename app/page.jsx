@@ -61,7 +61,7 @@ export default function Home() {
       description: "Start your journey to Japanese fluency today with our expert-led courses",
       buttonText: "Browse Courses",
       buttonLink: "/courses",
-      image: "/placeholder.svg?height=600&width=1200",
+      image: "/banner1.png",
     },
     {
       id: 2,
@@ -69,23 +69,16 @@ export default function Home() {
       description: "Experience our teaching methodology with a complimentary lesson",
       buttonText: "Get Free Access",
       buttonLink: "/demo",
-      image: "/placeholder.svg?height=600&width=1200",
+      image: "/banner2.png",
     },
     {
       id: 3,
-      title: "Bonsai Credit System",
-      description: "Grow your bonsai tree as you learn! Earn credits with every completed lesson",
-      buttonText: "Learn More",
-      buttonLink: "/credits",
-      image: "/placeholder.svg?height=600&width=1200",
-    },
-    {
-      id: 4,
       title: "Learn with Kensei Sensei",
       description: "Watch exclusive tutorials from our master teacher",
-      buttonText: "Watch Now",
-      buttonLink: "/videos",
-      image: "/placeholder.svg?height=600&width=1200",
+      buttonText: "Watch Now on Youtube",
+      buttonLink: "https://www.youtube.com/@KenseiSensei",
+      target: "_blank",
+      image: "/banner3.png",
     },
   ]
 
@@ -128,7 +121,7 @@ export default function Home() {
             <div className="mt-10 text-center">
               <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" asChild>
                 <Link href="/courses">
-                  View All Courses
+                  Browse Courses
                   <ChevronRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
@@ -181,12 +174,6 @@ export default function Home() {
                     </div>
                   </li>
                 </ul>
-                <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" asChild>
-                  <Link href="/credits">
-                    Learn About Credits
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
               </div>
               <div className="relative mx-auto max-w-md">
                 <div className="aspect-square overflow-hidden rounded-full border-8 border-white bg-[#dce4d7] shadow-lg">
@@ -227,7 +214,7 @@ function FeaturedCourseCard({ course }) {
 
   return (
     <Link href={`/courses/${course.slug}`} className="block">
-      <div className="group relative overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full cursor-pointer">
+      <div className="group relative overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full cursor-pointer">
         <div className="aspect-video w-full overflow-hidden relative">
           <img
             src={course.thumbnail || "/placeholder.svg"}

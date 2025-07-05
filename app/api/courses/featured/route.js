@@ -2,6 +2,8 @@
 import { connectDb } from "@/lib/mongodb"
 import Course from "@/models/Course"
 import User from "@/models/User"
+import Module from "@/models/Module"
+import Lesson from "@/models/Lesson"
 
 export async function GET() {
   try {

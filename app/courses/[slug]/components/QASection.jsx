@@ -272,14 +272,11 @@ export const QASection = memo(function QASection({
               Join the Discussion
             </p>
             <p className="text-sm">
-              {!isLoggedIn 
-                ? "Log in to view and participate in course discussions"
-                : "Enroll in this course to access student discussions and ask questions"
-              }
+              Enroll in this course to access student discussions and ask questions
             </p>
           </div>
           <button 
-            onClick={!isLoggedIn ? () => window.location.href = '/login' : handleEnrollClick}
+            onClick={!isLoggedIn ? () => window.location.href = '/auth/login' : handleEnrollClick}
             className="bg-[#4a7c59] text-white px-6 py-2 rounded-lg hover:bg-[#3a6147] transition-colors"
           >
             {!isLoggedIn ? "Log In to Continue" : `Enroll Now`}
