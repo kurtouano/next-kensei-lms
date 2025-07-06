@@ -8,12 +8,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
 
-const popularPosts = [
-  { id: 6, title: "Networking Fundamentals for Beginners", image: "/placeholder.svg?height=60&width=60", category: "Technology" },
-  { id: 7, title: "Web Dev for Busy Professionals", image: "/placeholder.svg?height=60&width=60", category: "Technology" },
-  { id: 8, title: "Sustainable Living Tips for Modern Life", image: "/placeholder.svg?height=60&width=60", category: "Lifestyle" },
-]
-
 export default function BlogsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
@@ -25,7 +19,8 @@ export default function BlogsPage() {
   
   // API state
   const [blogs, setBlogs] = useState([])
-  const [featuredPost, setFeaturedPost] = useState(null)
+  const [allBlogs, setAllBlogs] = useState([]) // Store all blogs for popular posts
+  const [popularPosts, setPopularPosts] = useState([]) // Static popular posts
   const [categories, setCategories] = useState([])
   const [authors, setAuthors] = useState([])
   const [loading, setLoading] = useState(true)
@@ -34,13 +29,16 @@ export default function BlogsPage() {
   // Fuse.js configuration for fuzzy search
   const fuseOptions = {
     keys: [
-      { name: 'title', weight: 0.6 },
-      { name: 'excerpt', weight: 0.3 },
-      { name: 'author.name', weight: 0.1 }
+      { name: 'title', weight: 0.4 },        // Reduced from 0.6
+      { name: 'excerpt', weight: 0.3 },      // Same
+      { name: 'tags', weight: 0.2 },         // NEW: Add tags to search
+      { name: 'author.name', weight: 0.1 }   // Same
     ],
-    threshold: 0.4,
+    threshold: 0.6,
     includeScore: true,
-    minMatchCharLength: 2
+    minMatchCharLength: 1,
+    ignoreLocation: true,
+    findAllMatches: true
   }
 
   // Initialize Fuse instance
@@ -48,54 +46,50 @@ export default function BlogsPage() {
     return new Fuse(blogs, fuseOptions)
   }, [blogs])
 
-  // Fetch blogs from API
-  const fetchBlogs = async () => {
+  // Fetch all blogs for static data (popular posts, categories)
+  const fetchAllBlogs = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      // Build API params (excluding search since we handle that client-side)
       const params = new URLSearchParams({
-        category: selectedCategory !== 'all' ? selectedCategory : '',
-        sortBy: sortBy,
-        limit: '50'
+        limit: '100',
+        sortBy: 'newest'
       })
-
-      if (dateFilter !== 'all') {
-        params.append('dateRange', dateFilter)
-      }
 
       const response = await fetch(`/api/admin/blogs?${params}`)
       const data = await response.json()
 
       if (data.success) {
-        setBlogs(data.blogs)
-        
-        // Set featured post (most recent or most popular)
-        if (data.blogs.length > 0) {
-          setFeaturedPost(data.blogs[0])
-        }
+        setAllBlogs(data.blogs)
 
-        // Extract unique categories from blogs
+        // Get popular posts based on views and likes (top 3) - static
+        const sortedByPopularity = [...data.blogs].sort((a, b) => {
+          const scoreA = (a.views || 0) + ((a.likeCount || 0) * 10)
+          const scoreB = (b.views || 0) + ((b.likeCount || 0) * 10)
+          return scoreB - scoreA
+        })
+        setPopularPosts(sortedByPopularity.slice(0, 3))
+
+        // Extract unique categories from all blogs
         const uniqueCategories = [
           { id: "all", name: "All", count: data.blogs.length },
           ...data.blogs.reduce((acc, blog) => {
-            const existingCategory = acc.find(cat => cat.id === blog.category.toLowerCase().replace(/\s+/g, "-"))
+            const categoryName = blog.category // Keep original capitalization
+            const existingCategory = acc.find(cat => cat.name === categoryName)
             if (existingCategory) {
               existingCategory.count++
             } else {
               acc.push({
-                id: blog.category.toLowerCase().replace(/\s+/g, "-"),
-                name: blog.category,
+                id: categoryName, // Use original name as ID too
+                name: categoryName,
                 count: 1
               })
             }
             return acc
           }, [])
         ]
+        console.log('Generated categories:', uniqueCategories)
         setCategories(uniqueCategories)
 
-        // Extract unique authors
+        // Extract unique authors from all blogs
         const uniqueAuthors = [
           { id: "all", name: "All Authors" },
           ...data.blogs.reduce((acc, blog) => {
@@ -113,7 +107,45 @@ export default function BlogsPage() {
           }, [])
         ]
         setAuthors(uniqueAuthors)
+      }
+    } catch (err) {
+      console.error('Error fetching all blogs:', err)
+    }
+  }
 
+  // Fetch filtered blogs for the main list
+  const fetchBlogs = async () => {
+    try {
+      // Don't show loading spinner for filter changes, only for initial load
+      if (blogs.length === 0) {
+        setLoading(true)
+      }
+      setError(null)
+      
+      // Build API params - now including search term
+      const params = new URLSearchParams({
+        category: selectedCategory !== 'all' ? selectedCategory : '',
+        sortBy: sortBy,
+        limit: '100'
+      })
+
+      if (dateFilter !== 'all') {
+        params.append('dateRange', dateFilter)
+      }
+
+      // Add search term to API call for server-side search
+      if (debouncedSearchTerm.trim()) {
+        params.append('search', debouncedSearchTerm.trim())
+      }
+
+      console.log('API call params:', params.toString())
+      console.log('Selected category:', selectedCategory)
+
+      const response = await fetch(`/api/admin/blogs?${params}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setBlogs(data.blogs) // Only affects the main blog list
       } else {
         setError(data.error || 'Failed to fetch blogs')
       }
@@ -125,10 +157,26 @@ export default function BlogsPage() {
     }
   }
 
-  // Fetch blogs when filters change (except search)
+  // Debounced search to prevent too many API calls
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 300) // 300ms delay
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Load static data once on component mount
+  useEffect(() => {
+    fetchAllBlogs()
+  }, [])
+
+  // Fetch filtered blogs when filters change (including debounced search)
   useEffect(() => {
     fetchBlogs()
-  }, [selectedCategory, selectedAuthor, dateFilter, sortBy])
+  }, [selectedCategory, selectedAuthor, dateFilter, sortBy, debouncedSearchTerm])
 
   // Calculate active filters count
   useEffect(() => {
@@ -148,17 +196,11 @@ export default function BlogsPage() {
     setSortBy("newest")
   }
 
-  // Filter and search blogs using Fuse.js
+  // Apply additional client-side filters (server handles search)
   const filteredAndSortedPosts = useMemo(() => {
     let results = blogs
 
-    // Apply search using Fuse.js if search term exists
-    if (searchTerm.trim()) {
-      const fuseResults = fuse.search(searchTerm.trim())
-      results = fuseResults.map(result => result.item)
-    }
-
-    // Apply additional filters (author and date are handled server-side via category, but we can add client-side filtering for more complex scenarios)
+    // Apply additional filters
     results = results.filter((post) => {
       // Author filter (client-side for more precise matching)
       if (selectedAuthor !== "all") {
@@ -170,7 +212,7 @@ export default function BlogsPage() {
     })
 
     return results
-  }, [blogs, searchTerm, fuse, selectedAuthor])
+  }, [blogs, selectedAuthor])
 
   if (loading && blogs.length === 0) {
     return (
@@ -218,7 +260,7 @@ export default function BlogsPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
-                placeholder="Search articles, authors, or topics..."
+                placeholder="Search articles, tags, authors, or topics..."  
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm bg-white"
@@ -376,7 +418,7 @@ export default function BlogsPage() {
 
           {/* Results Count */}
           <div className="text-sm text-gray-600 mb-6">
-            Showing {filteredAndSortedPosts.length} of {blogs.length} articles
+            Showing {filteredAndSortedPosts.length} of {allBlogs.length} articles
             {searchTerm && ` for "${searchTerm}"`}
           </div>
         </div>
@@ -384,87 +426,76 @@ export default function BlogsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-3">
-            {/* Featured Post */}
-            {featuredPost && (
-              <div className="mb-8">
-                <Card className="overflow-hidden border-0 shadow-lg">
-                  <div className="relative h-96 bg-gradient-to-r from-[#4a7c59] to-[#3a6147]">
-                    <img
-                      src={featuredPost.featuredImage || "/placeholder.svg"}
-                      alt={featuredPost.title}
-                      className="w-full h-full object-cover mix-blend-overlay"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                      <div className="mb-4">
-                        <span className="inline-block bg-[#4a7c59] text-white px-3 py-1 rounded-full text-sm font-medium">
-                          {featuredPost.category}
-                        </span>
-                      </div>
-                      <h1 className="text-3xl lg:text-4xl font-bold mb-4 leading-tight">{featuredPost.title}</h1>
-                      <p className="text-lg mb-6 text-gray-200 max-w-2xl">{featuredPost.excerpt}</p>
-                      <div className="flex items-center gap-4 mb-4">
-                        <img
-                          src={featuredPost.author?.icon || "/placeholder.svg"}
-                          alt={featuredPost.author?.name || "Author"}
-                          className="w-10 h-10 rounded-full"
-                        />
-                        <div>
-                          <p className="font-semibold">{featuredPost.author?.name || 'Unknown Author'}</p>
-                          <div className="flex items-center gap-4 text-sm text-gray-300">
-                            <span>{new Date(featuredPost.createdAt).toLocaleDateString()}</span>
-                            <span>•</span>
-                            <span>{featuredPost.readTime}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <Link href={`/blogs/${featuredPost.slug}`}>
-                        <Button className="bg-white text-[#4a7c59] hover:bg-gray-100">
-                          Read Article
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
+            {/* Static Hero Section */}
+            <div className="mb-8">
+              <Card className="overflow-hidden border-0 shadow-lg">
+                <div className="relative h-96">
+                  {/* Background image */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style={{ backgroundImage: 'url(/blogs_banner.png)' }}
+                  />
+                  {/* Enhanced overlay for better text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/50 backdrop-blur-sm"/>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-white px-8">
+                      <h1 className="text-4xl lg:text-5xl font-bold mb-4 leading-tight drop-shadow-lg">
+                        Japan Explorer: All About Japan
+                      </h1>
+                      <p className="text-xl text-gray-100 max-w-2xl mx-auto drop-shadow-md">
+                        Discover comprehensive guides, tips, and insights about Japan - from language and culture to travel and traditions.
+                      </p>
                     </div>
                   </div>
-                </Card>
-              </div>
-            )}
+                </div>
+              </Card>
+            </div>
 
             {/* Blog Posts Grid */}
             {filteredAndSortedPosts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {filteredAndSortedPosts.slice(featuredPost ? 1 : 0).map((post) => (
-                  <Card key={post._id} className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow">
-                    <div className="relative">
-                      <img src={post.featuredImage || "/placeholder.svg"} alt={post.title} className="w-full h-48 object-cover" />
-                      <div className="absolute top-3 left-3">
-                        <span className="bg-white/90 text-gray-800 px-2 py-1 rounded text-xs font-medium">
-                          {post.category}
-                        </span>
-                      </div>
-                    </div>
-                    <CardContent className="p-6">
-                      <h3 className="font-bold text-gray-900 mb-2 text-lg leading-tight hover:text-[#4a7c59] transition-colors">
-                        <Link href={`/blogs/${post.slug}`}>{post.title}</Link>
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={post.author?.icon || "/placeholder.svg"}
-                            alt={post.author?.name || "Author"}
-                            className="w-6 h-6 rounded-full"
-                          />
-                          <span className="text-sm text-gray-600">{post.author?.name || 'Unknown Author'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                          <span>•</span>
-                          <span>{post.readTime}</span>
+                {filteredAndSortedPosts.map((post) => (
+                  <Link key={post._id} href={`/blogs/${post.slug}`}>
+                    <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+                      <div className="relative">
+                        <img 
+                          src={post.featuredImage || "/placeholder.svg"} 
+                          alt={post.title} 
+                          className="w-full h-48 object-cover object-center" 
+                        />
+                        <div className="absolute top-3 left-3">
+                          <span className="bg-white/90 text-gray-800 px-2 py-1 rounded text-xs font-medium">
+                            {post.category}
+                          </span>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                      <CardContent className="p-6">
+                        <h3 className="font-bold text-gray-900 mb-2 text-lg items-center leading-tight hover:text-[#4a7c59] transition-colors line-clamp-2 min-h-[2.8rem]">
+                          {post.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={post.author?.icon || "/placeholder.svg"}
+                              alt={post.author?.name || "Author"}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                            <span className="text-sm text-gray-600">{post.author?.name || 'Unknown Author'}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{new Date(post.createdAt).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}</span>
+                            <span>•</span>
+                            <span>{post.readTime}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             ) : (
@@ -520,28 +551,30 @@ export default function BlogsPage() {
               </Card>
 
               {/* Popular Posts */}
-              <Card className="border-0 shadow-md">
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-gray-900 mb-4">Popular Posts</h3>
-                  <div className="space-y-4">
-                    {popularPosts.map((post) => (
-                      <div key={post.id} className="flex items-start gap-3">
-                        <img
-                          src={post.image || "/placeholder.svg"}
-                          alt={post.title}
-                          className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm text-gray-900 leading-tight mb-1 hover:text-[#4a7c59] transition-colors">
-                            <Link href={`/blogs/${post.id}`}>{post.title}</Link>
-                          </h4>
-                          <span className="text-xs text-gray-500">{post.category}</span>
+              {popularPosts.length > 0 && (
+                <Card className="border-0 shadow-md">
+                  <CardContent className="p-6">
+                    <h3 className="font-bold text-gray-900 mb-4">Popular Posts</h3>
+                    <div className="space-y-4">
+                      {popularPosts.map((post) => (
+                        <div key={post._id} className="flex items-start gap-3">
+                          <img
+                            src={post.featuredImage || "/placeholder.svg"}
+                            alt={post.title}
+                            className="w-16 h-16 rounded-lg object-cover object-center flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-900 leading-tight mb-1 hover:text-[#4a7c59] transition-colors">
+                              <Link href={`/blogs/${post.slug}`}>{post.title}</Link>
+                            </h4>
+                            <span className="text-xs text-gray-500">{post.category}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Categories */}
               {categories.length > 0 && (
@@ -552,15 +585,23 @@ export default function BlogsPage() {
                       {categories.map((category) => (
                         <button
                           key={category.id}
-                          onClick={() => setSelectedCategory(category.id)}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors text-sm ${
+                          onClick={() => {
+                            console.log('Clicked category:', category.id, 'Current selected:', selectedCategory)
+                            setSelectedCategory(category.id)
+                            setShowFilters(false) // Close filters if open
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors text-sm hover:bg-gray-50 ${
                             selectedCategory === category.id
-                              ? "bg-[#eef2eb] text-[#4a7c59]"
-                              : "text-gray-600 hover:bg-gray-50"
+                              ? "bg-[#eef2eb] text-[#4a7c59] font-medium"
+                              : "text-gray-600"
                           }`}
                         >
                           <span>{category.name}</span>
-                          <span className="text-xs">{category.count}</span>
+                          <span className={`text-xs ${
+                            selectedCategory === category.id ? "text-[#4a7c59]" : "text-gray-400"
+                          }`}>
+                            {category.count}
+                          </span>
                         </button>
                       ))}
                     </div>
