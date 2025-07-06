@@ -112,7 +112,7 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
           </div>
           
           <p className="text-sm text-[#5c6d5e] mb-4 sm:mb-6 leading-relaxed">
-            Get lifetime access to {course?.modules?.length || 0} modules with {course?.totalLessons || 0} lessons, 
+            Get lifetime access to the course with {course?.modules?.length || 0} modules and {course?.totalLessons || 0} lessons, 
             interactive quizzes, downloadable resources, bonsai items, {course?.creditReward || 0} credits, 
             and certificate upon completion.
           </p>
