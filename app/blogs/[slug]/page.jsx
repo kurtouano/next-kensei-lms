@@ -205,22 +205,6 @@ export default function BlogPostPage({ params }) {
                 <span>{blogPost.views.toLocaleString()} views</span>
               </div>
             </div>
-
-            {/* Author Info */}
-            {blogPost.author && (
-              <div className="flex items-center gap-4 p-6 bg-white rounded-lg shadow-sm mb-8">
-                <img
-                  src={blogPost.author.icon || "/placeholder.svg"}
-                  alt={blogPost.author.name}
-                  className="w-16 h-16 rounded-full"
-                />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{blogPost.author.name}</h3>
-                  <p className="text-sm text-gray-600 mb-1">Blog Author</p>
-                  <p className="text-sm text-gray-500">Published on {new Date(blogPost.createdAt).toLocaleDateString()}</p>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
@@ -305,10 +289,6 @@ export default function BlogPostPage({ params }) {
                         <p className="text-gray-600 mb-4">
                           Author of {blogPost.title} and other insightful articles on Japanese learning.
                         </p>
-                        <Button variant="outline" size="sm" className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]">
-                          <User className="mr-2 h-4 w-4" />
-                          View Profile
-                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -318,7 +298,7 @@ export default function BlogPostPage({ params }) {
 
             {/* Sidebar */}
             <div className="lg:col-span-2">
-              <div className="sticky top-8 space-y-6">
+              <div className="sticky top-24 space-y-6"> {/* Changed from top-8 to top-24 */}
                 {/* Table of Contents */}
                 {tableOfContents.length > 0 && (
                   <Card className="border-0 shadow-sm">
@@ -370,7 +350,7 @@ export default function BlogPostPage({ params }) {
                   </Card>
                 )}
 
-                {/* Newsletter Signup */}
+                {/* Newsletter Signup - Remove the mt-8 class */}
                 <Card className="border-0 shadow-sm bg-gradient-to-br from-[#4a7c59] to-[#3a6147]">
                   <CardContent className="p-6 text-white">
                     <h3 className="font-semibold mb-2">Stay Updated</h3>
