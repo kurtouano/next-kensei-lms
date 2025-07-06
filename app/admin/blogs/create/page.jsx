@@ -64,6 +64,7 @@ export default function CreateBlogPage() {
   const [validationErrors, setValidationErrors] = useState({})
   const [showValidation, setShowValidation] = useState(false)
 
+  // Updated to use proper case categories that match your existing data
   const categories = ["Grammar", "Vocabulary", "Culture", "Travel", "Business", "Food", "Entertainment"]
 
   // Validation function
@@ -391,8 +392,6 @@ export default function CreateBlogPage() {
                   {renderValidationError('title')}
                 </div>
 
-
-
                 <div>
                   <label htmlFor="excerpt" className="block text-sm font-medium mb-2">
                     Excerpt <span className="text-red-500">*</span>
@@ -443,7 +442,7 @@ export default function CreateBlogPage() {
                           {(formData.featuredImage.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                         {formData.featuredImageUrl && (
-                          <p className="text-xs text-green-600">✓ Uploaded to S3</p>
+                          <p className="text-xs text-green-600">✓ Uploaded</p>
                         )}
                       </div>
                     </div>

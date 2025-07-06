@@ -1,4 +1,4 @@
-// app/api/admin/blogs/route.js - Updated to handle S3 URLs
+// app/api/admin/blogs/route.js - Updated to handle S3 URLs and DELETE
 import { NextRequest, NextResponse } from "next/server"
 import { connectDb } from "@/lib/mongodb"
 import Blog from "@/models/Blog"
@@ -32,11 +32,18 @@ export async function GET(request) {
     }
     
     if (search) {
+      const matchingUsers = await User.find({
+        name: { $regex: search, $options: 'i' }
+      }).select('_id')
+      
+      const userIds = matchingUsers.map(user => user._id)
+      
       filters.$or = [
         { title: { $regex: search, $options: 'i' } },
         { excerpt: { $regex: search, $options: 'i' } },
         { content: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } }
+        { tags: { $in: [new RegExp(search, 'i')] } },
+        { author: { $in: userIds } }
       ]
     }
 
