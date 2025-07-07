@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import RichTextEditor from "@/components/richtexteditor"
 
 // Progress Bar Component
 const ProgressBar = ({ progress, className = "" }) => {
@@ -131,6 +132,23 @@ export default function CreateBlogPage() {
         ...prev,
         slug: slug,
       }))
+    }
+  }
+
+  // Handle rich text editor content change
+  const handleContentChange = (content) => {
+    setFormData((prev) => ({
+      ...prev,
+      content: content,
+    }))
+
+    // Clear content validation error
+    if (showValidation && validationErrors.content) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.content
+        return newErrors
+      })
     }
   }
 
@@ -485,28 +503,23 @@ export default function CreateBlogPage() {
               </CardContent>
             </Card>
 
-            {/* Content Editor */}
+            {/* Rich Text Editor for Content */}
             <Card>
               <CardHeader>
                 <CardTitle>Content</CardTitle>
-                <CardDescription>Write your blog post content</CardDescription>
+                <CardDescription>Write your blog post content with rich text formatting</CardDescription>
               </CardHeader>
               <CardContent>
-                <textarea
-                  name="content"
-                  value={formData.content}
-                  onChange={handleInputChange}
-                  rows={20}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent ${
-                    showValidation && validationErrors.content ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Write your blog post content here..."
-                  required
-                />
+                <div className={showValidation && validationErrors.content ? 'border-red-500 border rounded-lg' : ''}>
+                  <RichTextEditor
+                    content={formData.content}
+                    onChange={handleContentChange}
+                    placeholder="Write your blog post content here. Use the toolbar above for formatting..."
+                  />
+                </div>
                 {renderValidationError('content')}
                 <p className="text-xs text-gray-500 mt-2">
-                  You can use HTML tags for formatting. In a real application, you'd integrate a rich text editor like
-                  TinyMCE or Quill.
+                  Use the toolbar above for text formatting, adding images, lists, and headings.
                 </p>
               </CardContent>
             </Card>
