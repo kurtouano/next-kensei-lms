@@ -9,6 +9,7 @@ import OrderedList from '@tiptap/extension-ordered-list'
 import ListItem from '@tiptap/extension-list-item'
 import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, ImageIcon, Undo, Redo } from 'lucide-react'
 import { useCallback, useState } from 'react'
+import imageCompression from 'browser-image-compression'
 
 const RichTextEditor = ({ content, onChange, placeholder = "Write your content here..." }) => {
   const [isUploading, setIsUploading] = useState(false)
@@ -75,19 +76,68 @@ const RichTextEditor = ({ content, onChange, placeholder = "Write your content h
         return
       }
       
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB')
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit before compression
+        alert('File size must be less than 10MB')
         return
       }
 
       setIsUploading(true)
 
       try {
+        // Compression options to achieve ~100-130kb for optimal SEO
+        const options = {
+          maxSizeMB: 0.13, // 130KB maximum
+          maxWidthOrHeight: 1600, // Reduced max dimension
+          useWebWorker: true,
+          fileType: 'image/jpeg', // Convert to JPEG for better compression
+          initialQuality: 0.7, // Lower initial quality
+          alwaysKeepResolution: false
+        }
+
+        console.log('Original file size:', (file.size / 1024 / 1024).toFixed(2), 'MB')
+        
+        // Compress the image
+        const compressedFile = await imageCompression(file, options)
+        
+        console.log('Compressed file size:', (compressedFile.size / 1024).toFixed(2), 'KB')
+
+        // If still too large, compress more aggressively
+        let finalFile = compressedFile
+        if (compressedFile.size > 130 * 1024) { // If still > 130KB
+          const aggressiveOptions = {
+            maxSizeMB: 0.11, // 110KB maximum
+            maxWidthOrHeight: 1400,
+            useWebWorker: true,
+            fileType: 'image/jpeg',
+            initialQuality: 0.5, // Lower quality
+            alwaysKeepResolution: false
+          }
+          finalFile = await imageCompression(compressedFile, aggressiveOptions)
+          console.log('Aggressive compressed size:', (finalFile.size / 1024).toFixed(2), 'KB')
+        }
+
+        // Ultra compression if still too large
+        if (finalFile.size > 130 * 1024) {
+          const ultraOptions = {
+            maxSizeMB: 0.1, // 100KB maximum
+            maxWidthOrHeight: 1200,
+            useWebWorker: true,
+            fileType: 'image/jpeg',
+            initialQuality: 0.3, // Very low quality but acceptable
+            alwaysKeepResolution: false
+          }
+          finalFile = await imageCompression(finalFile, ultraOptions)
+          console.log('Ultra compressed size:', (finalFile.size / 1024).toFixed(2), 'KB')
+        }
+
         // Get presigned URL for S3 upload
         const response = await fetch('/api/admin/blogs/s3-upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: file.name, type: file.type })
+          body: JSON.stringify({ 
+            name: `compressed_${finalFile.name || file.name}`, 
+            type: finalFile.type 
+          })
         })
 
         if (!response.ok) {
@@ -96,11 +146,11 @@ const RichTextEditor = ({ content, onChange, placeholder = "Write your content h
 
         const { uploadUrl, fileUrl } = await response.json()
 
-        // Upload to S3
+        // Upload compressed file to S3
         const uploadResponse = await fetch(uploadUrl, {
           method: 'PUT',
-          headers: { 'Content-Type': file.type },
-          body: file
+          headers: { 'Content-Type': finalFile.type },
+          body: finalFile
         })
 
         if (!uploadResponse.ok) {
@@ -111,6 +161,14 @@ const RichTextEditor = ({ content, onChange, placeholder = "Write your content h
         if (editor) {
           editor.chain().focus().setImage({ src: fileUrl }).run()
         }
+
+        // Show compression results
+        const originalSizeKB = (file.size / 1024).toFixed(2)
+        const compressedSizeKB = (finalFile.size / 1024).toFixed(2)
+        const compressionRatio = ((1 - finalFile.size / file.size) * 100).toFixed(1)
+        const seoOptimized = finalFile.size <= 130 * 1024
+        
+        console.log(`🎯 SEO Image: ${originalSizeKB}KB → ${compressedSizeKB}KB (${compressionRatio}% reduction) ${seoOptimized ? '✅' : '⚠️'}`)
 
       } catch (error) {
         console.error('Upload error:', error)

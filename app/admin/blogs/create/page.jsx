@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import RichTextEditor from "@/components/richtexteditor"
+import RichTextEditor from "@/components/RichTextEditor"
+import imageCompression from 'browser-image-compression'
 
 // Progress Bar Component
 const ProgressBar = ({ progress, className = "" }) => {
@@ -187,8 +188,8 @@ export default function CreateBlogPage() {
       return
     }
     
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB')
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit before compression
+      alert('File size must be less than 10MB')
       return
     }
 
@@ -196,11 +197,69 @@ export default function CreateBlogPage() {
     setUploadProgress(0)
 
     try {
+      // Show initial progress
+      setUploadProgress(10)
+
+      // Compression options to achieve ~100-130kb for optimal SEO
+      const options = {
+        maxSizeMB: 0.13, // 130KB maximum
+        maxWidthOrHeight: 1600, // Reduced max dimension
+        useWebWorker: true,
+        fileType: 'image/jpeg', // Convert to JPEG for better compression
+        initialQuality: 0.7, // Lower initial quality
+        alwaysKeepResolution: false
+      }
+
+      console.log('Original file size:', (file.size / 1024 / 1024).toFixed(2), 'MB')
+      
+      setUploadProgress(30)
+
+      // Compress the image
+      const compressedFile = await imageCompression(file, options)
+      
+      console.log('Compressed file size:', (compressedFile.size / 1024).toFixed(2), 'KB')
+
+      setUploadProgress(50)
+
+      // If still too large, compress more aggressively
+      let finalFile = compressedFile
+      if (compressedFile.size > 130 * 1024) { // If still > 130KB
+        const aggressiveOptions = {
+          maxSizeMB: 0.11, // 110KB maximum
+          maxWidthOrHeight: 1400,
+          useWebWorker: true,
+          fileType: 'image/jpeg',
+          initialQuality: 0.5, // Lower quality
+          alwaysKeepResolution: false
+        }
+        finalFile = await imageCompression(compressedFile, aggressiveOptions)
+        console.log('Aggressive compressed size:', (finalFile.size / 1024).toFixed(2), 'KB')
+      }
+
+      // Ultra compression if still too large
+      if (finalFile.size > 130 * 1024) {
+        const ultraOptions = {
+          maxSizeMB: 0.1, // 100KB maximum
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+          fileType: 'image/jpeg',
+          initialQuality: 0.3, // Very low quality but acceptable
+          alwaysKeepResolution: false
+        }
+        finalFile = await imageCompression(finalFile, ultraOptions)
+        console.log('Ultra compressed size:', (finalFile.size / 1024).toFixed(2), 'KB')
+      }
+
+      setUploadProgress(70)
+
       // Get presigned URL
       const response = await fetch('/api/admin/blogs/s3-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: file.name, type: file.type })
+        body: JSON.stringify({ 
+          name: `featured_${finalFile.name || file.name}`, 
+          type: finalFile.type 
+        })
       })
 
       if (!response.ok) {
@@ -209,13 +268,15 @@ export default function CreateBlogPage() {
 
       const { uploadUrl, fileUrl } = await response.json()
 
+      setUploadProgress(80)
+
       // Upload to S3 with progress tracking
       const uploadPromise = new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         
         xhr.upload.addEventListener('progress', (event) => {
           if (event.lengthComputable) {
-            const percentComplete = Math.round((event.loaded / event.total) * 100)
+            const percentComplete = Math.round(80 + (event.loaded / event.total) * 20) // 80-100%
             setUploadProgress(percentComplete)
           }
         })
@@ -233,17 +294,29 @@ export default function CreateBlogPage() {
         })
 
         xhr.open('PUT', uploadUrl)
-        xhr.setRequestHeader('Content-Type', file.type)
-        xhr.send(file)
+        xhr.setRequestHeader('Content-Type', finalFile.type)
+        xhr.send(finalFile)
       })
 
       const uploadedUrl = await uploadPromise
 
+      // Create a display file object for UI
+      const displayFile = new File([finalFile], file.name, { type: finalFile.type })
+      Object.defineProperty(displayFile, 'size', { value: finalFile.size })
+
       setFormData(prev => ({
         ...prev,
-        featuredImage: file,
+        featuredImage: displayFile,
         featuredImageUrl: uploadedUrl
       }))
+
+      // Show compression results
+      const originalSizeKB = (file.size / 1024).toFixed(2)
+      const compressedSizeKB = (finalFile.size / 1024).toFixed(2)
+      const compressionRatio = ((1 - finalFile.size / file.size) * 100).toFixed(1)
+      const seoOptimized = finalFile.size <= 130 * 1024
+      
+      console.log(`🚀 SEO Featured Image: ${originalSizeKB}KB → ${compressedSizeKB}KB (${compressionRatio}% reduction) ${seoOptimized ? '✅ Optimized' : '⚠️ Large'}`)
 
     } catch (error) {
       console.error('Upload error:', error)
@@ -469,14 +542,17 @@ export default function CreateBlogPage() {
                       {isUploading ? (
                         <div className="space-y-4">
                           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4a7c59] mx-auto"></div>
-                          <p className="text-gray-600">Uploading to S3...</p>
+                          <p className="text-gray-600">Compressing and uploading to S3...</p>
+                          <div className="text-sm text-gray-500">
+                            This may take a moment for large images
+                          </div>
                         </div>
                       ) : (
                         <>
                           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                           <p className="text-gray-600 mb-2">Upload a featured image</p>
                           <p className="text-sm text-gray-500 mb-4">Drag and drop or click to browse</p>
-                          <p className="text-xs text-gray-400">Supports: JPG, PNG, WebP (Max 5MB)</p>
+                          <p className="text-xs text-gray-400">Supports: JPG, PNG, WebP (Max 10MB - will be compressed to ~130KB for SEO)</p>
                         </>
                       )}
                     </div>
@@ -487,7 +563,9 @@ export default function CreateBlogPage() {
                     <div className="space-y-1">
                       <ProgressBar progress={uploadProgress} />
                       <div className="text-xs text-gray-500 text-center">
-                        Uploading... {uploadProgress}%
+                        {uploadProgress < 30 ? 'Compressing image...' :
+                         uploadProgress < 80 ? 'Preparing upload...' :
+                         'Uploading...'} {uploadProgress}%
                       </div>
                     </div>
                   )}
