@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, Calendar, Clock, Eye, Heart, Share2, BookOpen, User, LoaderCircle } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, Eye, Heart, Share2, User, LoaderCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
@@ -104,17 +104,7 @@ export default function BlogPostPage({ params }) {
     }
   }
 
-  // Generate table of contents from content
-  const generateTableOfContents = (content) => {
-    if (!content) return []
-    
-    const headings = content.match(/<h[2-6][^>]*>(.*?)<\/h[2-6]>/g) || []
-    return headings.map((heading, index) => {
-      const text = heading.replace(/<[^>]*>/g, '')
-      const id = text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
-      return { id, text, index }
-    })
-  }
+
 
   if (loading) {
     return (
@@ -156,7 +146,7 @@ export default function BlogPostPage({ params }) {
     )
   }
 
-  const tableOfContents = generateTableOfContents(blogPost.content)
+
 
   return (
     <>
@@ -225,14 +215,115 @@ export default function BlogPostPage({ params }) {
               <Card className="border-0 shadow-sm mb-8">
                 <CardContent className="p-8">
                   <div
-                    className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-[#4a7c59] prose-strong:text-gray-900"
+                    className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-[#4a7c59] prose-strong:text-gray-900 rich-text-content"
                     dangerouslySetInnerHTML={{ __html: blogPost.content }}
-                    style={{
-                      lineHeight: "1.8",
-                      fontSize: "1.1rem",
-                      whiteSpace: "pre-wrap", // This preserves whitespace and line breaks
-                    }}
                   />
+                  
+                  {/* Custom CSS for rich text editor content */}
+                  <style jsx>{`
+                    :global(.rich-text-content h1) {
+                      font-size: 2em;
+                      font-weight: 600;
+                      margin: 0.67em 0;
+                      line-height: 1.2;
+                      color: #111827;
+                    }
+                    
+                    :global(.rich-text-content h2) {
+                      font-size: 1.5em;
+                      font-weight: 600;
+                      margin: 0.83em 0;
+                      line-height: 1.3;
+                      color: #111827;
+                    }
+                    
+                    :global(.rich-text-content h3) {
+                      font-size: 1.17em;
+                      font-weight: 600;
+                      margin: 1em 0;
+                      line-height: 1.4;
+                      color: #111827;
+                    }
+                    
+                    :global(.rich-text-content .bullet-list) {
+                      list-style-type: disc !important;
+                      margin: 1em 0;
+                      padding-left: 1.5em;
+                    }
+                    
+                    :global(.rich-text-content .ordered-list) {
+                      list-style-type: decimal !important;
+                      margin: 1em 0;
+                      padding-left: 1.5em;
+                    }
+                    
+                    :global(.rich-text-content .list-item) {
+                      margin: 0.5em 0;
+                      line-height: 1.5;
+                      display: list-item;
+                    }
+                    
+                    :global(.rich-text-content .list-item p) {
+                      margin: 0;
+                      display: inline;
+                    }
+                    
+                    :global(.rich-text-content .editor-image) {
+                      max-width: 70%;
+                      height: auto;
+                      border-radius: 8px;
+                      margin: 1.5em auto;
+                      display: block;
+                      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    }
+                    
+                    :global(.rich-text-content p) {
+                      margin: 1em 0;
+                      line-height: 1.7;
+                      font-weight: normal;
+                      color: #374151;
+                    }
+                    
+                    :global(.rich-text-content p:first-child) {
+                      margin-top: 0;
+                    }
+                    
+                    :global(.rich-text-content p:last-child) {
+                      margin-bottom: 0;
+                    }
+
+                    :global(.rich-text-content strong) {
+                      font-weight: bold;
+                      color: #111827;
+                    }
+
+                    :global(.rich-text-content em) {
+                      font-style: italic;
+                    }
+
+                    /* Override default prose styles for our custom classes */
+                    :global(.rich-text-content ul.bullet-list) {
+                      list-style-type: disc !important;
+                    }
+                    
+                    :global(.rich-text-content ol.ordered-list) {
+                      list-style-type: decimal !important;
+                    }
+                    
+                    :global(.rich-text-content li.list-item) {
+                      margin: 0.5em 0 !important;
+                      display: list-item !important;
+                    }
+
+                    /* Ensure proper spacing and formatting */
+                    :global(.rich-text-content > *:first-child) {
+                      margin-top: 0;
+                    }
+                    
+                    :global(.rich-text-content > *:last-child) {
+                      margin-bottom: 0;
+                    }
+                  `}</style>
                 </CardContent>
               </Card>
 
@@ -298,30 +389,7 @@ export default function BlogPostPage({ params }) {
 
             {/* Sidebar */}
             <div className="lg:col-span-2">
-              <div className="sticky top-24 space-y-6"> {/* Changed from top-8 to top-24 */}
-                {/* Table of Contents */}
-                {tableOfContents.length > 0 && (
-                  <Card className="border-0 shadow-sm">
-                    <CardContent className="p-6">
-                      <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <BookOpen className="h-4 w-4" />
-                        Table of Contents
-                      </h3>
-                      <nav className="space-y-3 text-sm">
-                        {tableOfContents.map((item) => (
-                          <a
-                            key={item.index}
-                            href={`#${item.id}`}
-                            className="block text-gray-600 hover:text-[#4a7c59] transition-colors py-1"
-                          >
-                            {item.text}
-                          </a>
-                        ))}
-                      </nav>
-                    </CardContent>
-                  </Card>
-                )}
-
+              <div className="sticky top-24 space-y-6">
                 {/* Related Posts */}
                 {relatedPosts.length > 0 && (
                   <Card className="border-0 shadow-sm">
@@ -350,7 +418,7 @@ export default function BlogPostPage({ params }) {
                   </Card>
                 )}
 
-                {/* Newsletter Signup - Remove the mt-8 class */}
+                {/* Newsletter Signup */}
                 <Card className="border-0 shadow-sm bg-gradient-to-br from-[#4a7c59] to-[#3a6147]">
                   <CardContent className="p-6 text-white">
                     <h3 className="font-semibold mb-2">Stay Updated</h3>
