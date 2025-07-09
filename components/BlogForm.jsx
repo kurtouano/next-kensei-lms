@@ -74,8 +74,6 @@ export default function BlogForm({
   // Load initial data for edit mode
   useEffect(() => {
     if (mode === "edit" && initialData) {
-      console.log('Loading initial data:', initialData) // Debug log
-      
       const newFormData = {
         title: initialData.title || "",
         slug: initialData.slug || "",
@@ -89,10 +87,26 @@ export default function BlogForm({
         metaKeywords: initialData.metaKeywords || "",
       }
       
-      console.log('Setting form data with content:', newFormData.content) // Debug log
       setFormData(newFormData)
     }
   }, [mode, initialData])
+
+  // Handle rich text editor content change
+  const handleContentChange = (content) => {
+    setFormData((prev) => ({
+      ...prev,
+      content: content,
+    }))
+
+    // Clear content validation error
+    if (showValidation && validationErrors.content) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors.content
+        return newErrors
+      })
+    }
+  }
 
   // Validation function
   const validateForm = () => {
@@ -158,23 +172,6 @@ export default function BlogForm({
         ...prev,
         slug: slug,
       }))
-    }
-  }
-
-  // Handle rich text editor content change
-  const handleContentChange = (content) => {
-    setFormData((prev) => ({
-      ...prev,
-      content: content,
-    }))
-
-    // Clear content validation error
-    if (showValidation && validationErrors.content) {
-      setValidationErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors.content
-        return newErrors
-      })
     }
   }
 
@@ -556,14 +553,8 @@ export default function BlogForm({
             </CardHeader>
             <CardContent>
               <div className={showValidation && validationErrors.content ? 'border-red-500 border rounded-lg' : ''}>
-                {/* Add debug info */}
-                {mode === "edit" && (
-                  <div className="text-xs text-gray-500 mb-2">
-                    Debug: Content length: {formData.content?.length || 0} | Mode: {mode}
-                  </div>
-                )}
                 <RichTextEditor
-                  key={`editor-${mode}-${initialData?._id || 'new'}-${formData.content?.length || 0}`}
+                  key={`editor-${mode}-${initialData?._id || 'new'}-${initialData?.updatedAt || ''}`}
                   content={formData.content}
                   onChange={handleContentChange}
                   placeholder="Write your blog post content here. Use the toolbar above for formatting..."

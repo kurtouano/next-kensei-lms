@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Fuse from "fuse.js"
-import { Plus, Search, Edit, Trash2, Eye, LoaderCircle, RefreshCcw } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Eye, LoaderCircle, RefreshCcw, ChevronDown } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
@@ -21,7 +21,14 @@ export default function AdminBlogPage() {
     totalViews: 0
   })
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState(null)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMorePages, setHasMorePages] = useState(false)
+  const [totalBlogs, setTotalBlogs] = useState(0)
+  const BLOGS_PER_PAGE = 10
 
   // Fuse.js configuration for fuzzy search
   const fuseOptions = {
@@ -30,7 +37,7 @@ export default function AdminBlogPage() {
       { name: 'excerpt', weight: 0.3 },
       { name: 'author.name', weight: 0.1 }
     ],
-    threshold: 0.4, // Lower = more strict, Higher = more fuzzy
+    threshold: 0.4,
     includeScore: true,
   }
 
@@ -40,32 +47,49 @@ export default function AdminBlogPage() {
   }, [blogs])
 
   // Fetch blogs from API
-  const fetchBlogs = async () => {
+  const fetchBlogs = async (page = 1, append = false) => {
     try {
-      setLoading(true)
+      if (page === 1) {
+        setLoading(true)
+        setCurrentPage(1)
+      } else {
+        setLoadingMore(true)
+      }
       setError(null)
       
-      // Only send category and sort filters to API, handle search client-side
       const params = new URLSearchParams({
         category: categoryFilter !== 'all' ? categoryFilter : '',
         sortBy: sortBy,
-        limit: '50' // Get more blogs for admin view
+        page: page.toString(),
+        limit: BLOGS_PER_PAGE.toString()
       })
 
       const response = await fetch(`/api/admin/blogs?${params}`)
       const data = await response.json()
 
       if (data.success) {
-        setBlogs(data.blogs)
+        if (append && page > 1) {
+          // Append new blogs to existing list
+          setBlogs(prevBlogs => [...prevBlogs, ...data.blogs])
+        } else {
+          // Replace blogs list (first load or filter change)
+          setBlogs(data.blogs)
+        }
         
-        // Calculate stats from fetched data
-        const totalViews = data.blogs.reduce((sum, blog) => sum + blog.views, 0)
-        setStats({
-          totalPosts: data.blogs.length,
-          published: data.blogs.length,
-          drafts: 0,
-          totalViews: totalViews
-        })
+        // Update pagination info
+        setCurrentPage(page)
+        setHasMorePages(data.pagination.hasNextPage)
+        setTotalBlogs(data.pagination.totalBlogs)
+        
+        // Calculate stats from total data (not just current page)
+        if (page === 1) {
+          setStats({
+            totalPosts: data.pagination.totalBlogs,
+            published: data.pagination.totalBlogs,
+            drafts: 0,
+            totalViews: data.blogs.reduce((sum, blog) => sum + blog.views, 0)
+          })
+        }
       } else {
         setError(data.error || 'Failed to fetch blogs')
       }
@@ -74,13 +98,27 @@ export default function AdminBlogPage() {
       setError('Failed to fetch blogs')
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }
 
-  // Fetch blogs when category or sort changes (not search)
+  // Load more blogs
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMorePages) {
+      fetchBlogs(currentPage + 1, true)
+    }
+  }
+
+  // Reset and fetch blogs when filters change
   useEffect(() => {
-    fetchBlogs()
+    setBlogs([]) // Clear existing blogs
+    fetchBlogs(1, false) // Fetch first page
   }, [categoryFilter, sortBy])
+
+  // Initial load
+  useEffect(() => {
+    fetchBlogs(1, false)
+  }, [])
 
   // Handle blog deletion
   const handleDelete = async (blogId, blogTitle) => {
@@ -97,7 +135,10 @@ export default function AdminBlogPage() {
 
       if (result.success) {
         alert('Blog deleted successfully!')
-        fetchBlogs() // Refresh the list
+        // Remove deleted blog from current list
+        setBlogs(prevBlogs => prevBlogs.filter(blog => blog._id !== blogId))
+        setTotalBlogs(prev => prev - 1)
+        setStats(prev => ({ ...prev, totalPosts: prev.totalPosts - 1, published: prev.published - 1 }))
       } else {
         alert(result.error || 'Failed to delete blog')
       }
@@ -107,7 +148,7 @@ export default function AdminBlogPage() {
     }
   }
 
-  // Filter and search blogs using Fuse.js
+  // Filter and search blogs using Fuse.js (client-side for loaded blogs)
   const filteredBlogs = useMemo(() => {
     let results = blogs
 
@@ -119,6 +160,11 @@ export default function AdminBlogPage() {
 
     return results
   }, [blogs, searchTerm, fuse])
+
+  // Reset search when filters change
+  useEffect(() => {
+    setSearchTerm("")
+  }, [categoryFilter, sortBy])
 
   if (loading && blogs.length === 0) {
     return (
@@ -149,7 +195,7 @@ export default function AdminBlogPage() {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
-            onClick={fetchBlogs}
+            onClick={() => fetchBlogs(1, false)}
             disabled={loading}
             className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
           >
@@ -262,14 +308,19 @@ export default function AdminBlogPage() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Blog Posts ({filteredBlogs.length})
+            Blog Posts ({filteredBlogs.length}{searchTerm && ` filtered`} of {totalBlogs} total)
             {searchTerm && (
               <span className="text-sm font-normal text-gray-500 ml-2">
                 • Searching for "{searchTerm}"
               </span>
             )}
           </CardTitle>
-          <CardDescription>Manage your blog posts and their content</CardDescription>
+          <CardDescription>
+            Manage your blog posts and their content
+            {!searchTerm && hasMorePages && (
+              <span className="ml-2 text-[#4a7c59]">• Showing {blogs.length} of {totalBlogs} posts</span>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {filteredBlogs.length === 0 ? (
@@ -298,73 +349,106 @@ export default function AdminBlogPage() {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="pb-3 text-left font-medium">Title</th>
-                    <th className="pb-3 text-left font-medium">Author</th>
-                    <th className="pb-3 text-left font-medium">Category</th>
-                    <th className="pb-3 text-left font-medium">Read Time</th>
-                    <th className="pb-3 text-left font-medium">Published</th>
-                    <th className="pb-3 text-left font-medium">Views</th>
-                    <th className="pb-3 text-left font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredBlogs.map((blog) => (
-                    <tr key={blog._id} className="border-b hover:bg-gray-50">
-                      <td className="py-4">
-                        <div className="max-w-xs">
-                          <div className="font-medium text-[#2c3e2d] truncate">{blog.title}</div>
-                          <div className="text-sm text-gray-500 truncate">{blog.excerpt}</div>
-                        </div>
-                      </td>
-                      <td className="py-4 text-gray-600">
-                        {blog.author?.name || 'Unknown Author'}
-                      </td>
-                      <td className="py-4">
-                        <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-[#eef2eb] text-[#4a7c59]">
-                          {blog.category}
-                        </span>
-                      </td>
-                      <td className="py-4 text-gray-600 text-sm">
-                        {blog.readTime}
-                      </td>
-                      <td className="py-4 text-gray-600 text-sm">
-                        {new Date(blog.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-4 text-gray-600">
-                        {blog.views.toLocaleString()}
-                      </td>
-                      <td className="py-4">
-                        <div className="flex items-center gap-2">
-                          <Link href={`/blogs/${blog.slug}`} target="_blank">
-                            <Button variant="ghost" size="sm" title="View Post">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/admin/blogs/edit/${blog._id}`}>
-                            <Button variant="ghost" size="sm" title="Edit Post">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-red-600 hover:text-red-700"
-                            title="Delete Post"
-                            onClick={() => handleDelete(blog._id, blog.title)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="pb-3 text-left font-medium">Title</th>
+                      <th className="pb-3 text-left font-medium">Author</th>
+                      <th className="pb-3 text-left font-medium">Category</th>
+                      <th className="pb-3 text-left font-medium">Read Time</th>
+                      <th className="pb-3 text-left font-medium">Published</th>
+                      <th className="pb-3 text-left font-medium">Views</th>
+                      <th className="pb-3 text-left font-medium">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredBlogs.map((blog) => (
+                      <tr key={blog._id} className="border-b hover:bg-gray-50">
+                        <td className="py-4">
+                          <div className="max-w-xs">
+                            <div className="font-medium text-[#2c3e2d] truncate">{blog.title}</div>
+                            <div className="text-sm text-gray-500 truncate">{blog.excerpt}</div>
+                          </div>
+                        </td>
+                        <td className="py-4 text-gray-600">
+                          {blog.author?.name || 'Unknown Author'}
+                        </td>
+                        <td className="py-4">
+                          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-[#eef2eb] text-[#4a7c59]">
+                            {blog.category}
+                          </span>
+                        </td>
+                        <td className="py-4 text-gray-600 text-sm">
+                          {blog.readTime}
+                        </td>
+                        <td className="py-4 text-gray-600 text-sm">
+                          {new Date(blog.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-4 text-gray-600">
+                          {blog.views.toLocaleString()}
+                        </td>
+                        <td className="py-4">
+                          <div className="flex items-center gap-2">
+                            <Link href={`/blogs/${blog.slug}`} target="_blank">
+                              <Button variant="ghost" size="sm" title="View Post">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Link href={`/admin/blogs/edit/${blog._id}`}>
+                              <Button variant="ghost" size="sm" title="Edit Post">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-600 hover:text-red-700"
+                              title="Delete Post"
+                              onClick={() => handleDelete(blog._id, blog.title)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Load More Button */}
+              {!searchTerm && hasMorePages && (
+                <div className="mt-6 text-center">
+                  <Button
+                    variant="outline"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                  >
+                    {loadingMore ? (
+                      <>
+                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="mr-2 h-4 w-4" />
+                        Load More Posts ({totalBlogs - blogs.length} remaining)
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {/* Pagination Info */}
+              {!searchTerm && !hasMorePages && blogs.length < totalBlogs && (
+                <div className="mt-6 text-center text-sm text-gray-500">
+                  Showing all {blogs.length} loaded posts of {totalBlogs} total
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
