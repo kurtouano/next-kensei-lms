@@ -113,37 +113,41 @@ const RichTextEditor = ({ content, onChange, placeholder = "Write your content h
       setIsUploading(true)
 
       try {
+        // Compression options to achieve ~100-130kb for optimal SEO (same as featured image)
         const options = {
-          maxSizeMB: 0.13,
-          maxWidthOrHeight: 1600,
+          maxSizeMB: 0.13, // 130KB maximum
+          maxWidthOrHeight: 1600, // Reduced max dimension
           useWebWorker: true,
-          fileType: 'image/jpeg',
-          initialQuality: 0.7,
+          fileType: 'image/jpeg', // Convert to JPEG for better compression
+          initialQuality: 0.7, // Lower initial quality
           alwaysKeepResolution: false
         }
 
+        // Compress the image
         const compressedFile = await imageCompression(file, options)
 
+        // If still too large, compress more aggressively
         let finalFile = compressedFile
-        if (compressedFile.size > 130 * 1024) {
+        if (compressedFile.size > 130 * 1024) { // If still > 130KB
           const aggressiveOptions = {
-            maxSizeMB: 0.11,
+            maxSizeMB: 0.11, // 110KB maximum
             maxWidthOrHeight: 1400,
             useWebWorker: true,
             fileType: 'image/jpeg',
-            initialQuality: 0.5,
+            initialQuality: 0.5, // Lower quality
             alwaysKeepResolution: false
           }
           finalFile = await imageCompression(compressedFile, aggressiveOptions)
         }
 
+        // Ultra compression if still too large
         if (finalFile.size > 130 * 1024) {
           const ultraOptions = {
-            maxSizeMB: 0.1,
+            maxSizeMB: 0.1, // 100KB maximum
             maxWidthOrHeight: 1200,
             useWebWorker: true,
             fileType: 'image/jpeg',
-            initialQuality: 0.3,
+            initialQuality: 0.3, // Very low quality but acceptable
             alwaysKeepResolution: false
           }
           finalFile = await imageCompression(finalFile, ultraOptions)

@@ -356,11 +356,6 @@ export default function BlogForm({
     onSubmit(formData)
   }
 
-  const handlePreview = () => {
-    console.log("Preview blog post:", formData)
-    alert('Preview functionality would show a preview of your blog post')
-  }
-
   const isEdit = mode === "edit"
 
   return (
@@ -372,29 +367,6 @@ export default function BlogForm({
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Blog Management
           </Link>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handlePreview} disabled={!formData.title.trim()}>
-            <Eye className="mr-2 h-4 w-4" />
-            Preview
-          </Button>
-          <Button 
-            className="bg-[#4a7c59] hover:bg-[#3a6147]" 
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {isEdit ? 'Updating...' : 'Creating...'}
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                {isEdit ? 'Update Blog Post' : 'Create Blog Post'}
-              </>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -687,15 +659,6 @@ export default function BlogForm({
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0 space-y-3">
-              <Button 
-                variant="outline" 
-                className="w-full py-3 border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb] hover:border-[#3a6147]" 
-                onClick={handlePreview}
-                disabled={!formData.title.trim()}
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                Preview Post
-              </Button>
               <Button 
                 className="w-full py-3 bg-[#4a7c59] hover:bg-[#3a6147] text-white" 
                 onClick={handleSubmit}
