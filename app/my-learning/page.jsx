@@ -5,7 +5,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { BookOpen, Clock, Search, Loader2, Award } from "lucide-react"
+import         { BookOpen, Clock, Search, Loader2, Award, CheckCircle } from "lucide-react"
 import { useMyLearning } from './useMyLearningHook'
 import { CourseCard } from './CourseCard'
 import { useMemo } from "react"
@@ -13,10 +13,20 @@ import { useMemo } from "react"
 export default function MyLearning() {
   const { user, enrolledCourses, loading, error, refetch } = useMyLearning();
 
-  const hasEnrolledCourses = useMemo(() => {
-    return enrolledCourses && enrolledCourses.length > 0;
+  const { inProgressCourses, completedCourses } = useMemo(() => {
+    if (!enrolledCourses || enrolledCourses.length === 0) {
+      return { inProgressCourses: [], completedCourses: [] };
+    }
+
+    const inProgress = enrolledCourses.filter(course => course.progress < 100);
+    const completed = enrolledCourses.filter(course => course.progress >= 100);
+
+    return { inProgressCourses: inProgress, completedCourses: completed };
   }, [enrolledCourses]);
 
+  const hasAnyCourses = useMemo(() => {
+    return enrolledCourses && enrolledCourses.length > 0;
+  }, [enrolledCourses]);
 
   if (loading) return <LoadingSkeleton />;
   if (error) return <ErrorState error={error} onRetry={refetch} />;
@@ -28,11 +38,28 @@ export default function MyLearning() {
         <div className="container mx-auto px-4">
           <WelcomeHeader userName={user?.name} />
           
-          {!hasEnrolledCourses ? (
+          {!hasAnyCourses ? (
             <EmptyState />
           ) : (
             <>
-              <CourseGrid courses={enrolledCourses} totalCourses={user?.totalCourses} />
+              {inProgressCourses.length > 0 && (
+                <CourseGrid 
+                  courses={inProgressCourses} 
+                  totalCourses={inProgressCourses.length}
+                  title="In Progress"
+                  icon={<Clock className="h-5 w-5 text-gray-600" />}
+                />
+              )}
+              
+              {completedCourses.length > 0 && (
+                <CourseGrid 
+                  courses={completedCourses} 
+                  totalCourses={completedCourses.length}
+                  title="Completed"
+                  icon={<CheckCircle className="h-5 w-5 text-gray-600" />}
+                />
+              )}
+              
               <QuickActions />
             </>
           )}
@@ -55,14 +82,16 @@ function WelcomeHeader({ userName }) {
   );
 }
 
-function CourseGrid({ courses, totalCourses }) {
+function CourseGrid({ courses, totalCourses, title, icon }) {
+  const isCompleted = title === "Completed";
+  
   return (
-    <div className="mb-12">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">In Progress</h2>
-        <span className="text-sm text-gray-500">
-          {totalCourses || 0} course{totalCourses !== 1 ? 's' : ''}
-        </span>
+    <div className={`mb-12 ${isCompleted ? 'mt-8 pt-8 border-t border-gray-100' : ''}`}>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {icon}
+          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -125,7 +154,6 @@ function EmptyState() {
     </div>
   );
 }
-
 
 function ErrorState({ error, onRetry }) {
   return (
