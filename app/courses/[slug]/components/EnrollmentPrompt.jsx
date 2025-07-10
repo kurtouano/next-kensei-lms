@@ -1,4 +1,4 @@
-// components/EnrollmentPrompt.jsx - Enhanced with authentication check
+// components/EnrollmentPrompt.jsx - FREE COURSE SUPPORT
 import { memo, useCallback, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Lock, ArrowRight, Shield } from "lucide-react"
@@ -7,6 +7,9 @@ import { useSession } from "next-auth/react"
 export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
   const { data: session } = useSession()
   const [isLoading, setIsLoading] = useState(false)
+
+  // 🆕 Check if course is free
+  const isFree = course?.price === 0
 
   const handleEnrollClick = useCallback(async () => {
     // Check if user is logged in first
@@ -18,7 +21,7 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
 
     try {
       setIsLoading(true)
-      console.log('🛒 Starting enrollment checkout for course:', course?.id || course?._id)
+      console.log('🛒 Starting enrollment for course:', course?.id || course?._id, 'Free:', isFree)
       
       const response = await fetch('/api/courses/stripe/create-checkout-session', {
         method: 'POST',
@@ -48,22 +51,24 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
       }
 
       const data = await response.json();
-      console.log('✅ Checkout session response:', data);
+      console.log('✅ Enrollment response:', data);
       
       if (data.url) {
-        console.log('🔗 Redirecting to checkout:', data.url)
+        console.log('🔗 Redirecting to:', data.url)
+        // For free courses, this goes directly to success page
+        // For paid courses, this goes to Stripe checkout
         window.location.assign(data.url);
       } else {
-        console.error('❌ No checkout URL received:', data)
-        alert('Failed to create checkout session. Please try again.');
+        console.error('❌ No URL received:', data)
+        alert('Failed to process enrollment. Please try again.');
         setIsLoading(false)
       }
     } catch (error) {
-      console.error('💥 Error creating checkout session:', error);
-      alert('Failed to create checkout session. Please try again.');
+      console.error('💥 Error during enrollment:', error);
+      alert('Failed to process enrollment. Please try again.');
       setIsLoading(false)
     }
-  }, [course, session])
+  }, [course, session, isFree])
 
   const handleBrowseCourses = () => {
     window.location.href = `/courses`
@@ -73,13 +78,23 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
     return (
       <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg p-6 shadow-2xl flex flex-col sm:flex-row items-center gap-4 max-w-sm w-full mx-4 border border-[#dce4d7]">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 border-3 border-[#4a7c59] border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+          <div className={`w-6 h-6 sm:w-8 sm:h-8 border-3 border-[#4a7c59] border-t-transparent rounded-full animate-spin flex-shrink-0`}></div>
           <div className="text-center sm:text-left space-y-1">
             <div className="text-sm sm:text-base font-medium text-[#2c3e2d]">
-              {!session?.user ? 'Redirecting to login...' : 'Redirecting to checkout...'}
+              {!session?.user 
+                ? 'Redirecting to login...' 
+                : isFree 
+                  ? 'Enrolling you for free...'
+                  : 'Redirecting to checkout...'
+              }
             </div>
             <div className="text-xs sm:text-sm text-[#5c6d5e]">
-              {!session?.user ? 'Please wait while we redirect you to login' : 'Please wait while we prepare your payment'}
+              {!session?.user 
+                ? 'Please wait while we redirect you to login' 
+                : isFree
+                  ? 'Please wait while we set up your free access'
+                  : 'Please wait while we prepare your payment'
+              }
             </div>
           </div>
         </div>
@@ -101,20 +116,30 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
         <div className="flex-1 text-center sm:text-left">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-2">
             <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">
-              Unlock Full Access
+              {isFree ? 'Get Free Access' : 'Unlock Full Access'}
             </h2>
             <div className="text-center sm:text-right">
               <div className="text-xl sm:text-lg font-bold text-[#4a7c59]">
-                ${Number(course?.price) || 0}
+                {isFree ? 'Free' : `$ ${Number(course?.price) || 0}`}
               </div>
-              <div className="text-xs text-[#5c6d5e]">one-time</div>
+              {!isFree && <div className="text-xs text-[#5c6d5e]">one-time</div>}
             </div>
           </div>
           
           <p className="text-sm text-[#5c6d5e] mb-4 sm:mb-6 leading-relaxed">
-            Get lifetime access to the course with {course?.modules?.length || 0} modules and {course?.totalLessons || 0} lessons, 
-            interactive quizzes, downloadable resources, bonsai items, {course?.creditReward || 0} credits, 
-            and certificate upon completion.
+            {isFree ? (
+              <>
+                Get instant free access to the course with {course?.modules?.length || 0} modules and {course?.totalLessons || 0} lessons, 
+                interactive quizzes, downloadable resources, bonsai items, {course?.creditReward || 0} credits, 
+                and certificate upon completion.
+              </>
+            ) : (
+              <>
+                Get lifetime access to the course with {course?.modules?.length || 0} modules and {course?.totalLessons || 0} lessons, 
+                interactive quizzes, downloadable resources, bonsai items, {course?.creditReward || 0} credits, 
+                and certificate upon completion.
+              </>
+            )}
           </p>
 
           {/* Action Buttons */}
@@ -127,11 +152,16 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
               {isLoading ? (
                 <span className="flex items-center justify-center sm:justify-start">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Processing...
+                  {isFree ? 'Enrolling...' : 'Processing...'}
                 </span>
               ) : (
                 <span className="flex items-center justify-center sm:justify-start">
-                  {!session?.user ? 'Sign Up to Enroll' : (Number(course?.price) || 0) === 0 ? 'Get Free Access' : 'Get Started'}
+                  {!session?.user 
+                    ? 'Sign Up to Enroll' 
+                    : isFree 
+                      ? 'Get Free Access'
+                      : 'Get Started'
+                  }
                   <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
                 </span>
               )}
@@ -152,8 +182,8 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
             <Shield className="h-4 w-4 text-[#4a7c59]" />
             <span className="text-xs text-[#5c6d5e] text-center sm:text-left">
               {!session?.user 
-                ? `Create account • Secure payment • ${course?.level || 'All'} level`
-                : `Secure payment • Instant access • ${course?.level || 'All'} level`
+                ? `Create account • ${isFree ? 'Free access' : 'Secure payment'} • ${course?.level || 'All'} level`
+                : `${isFree ? 'Free access' : 'Secure payment'} • Instant access • ${course?.level || 'All'} level`
               }
             </span>
           </div>

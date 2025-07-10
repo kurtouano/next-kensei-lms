@@ -12,7 +12,8 @@ function PaymentSuccessContent() {
   const router = useRouter()
   const [orderData, setOrderData] = useState({
     courseName: 'Loading...',
-    amount: 'Loading...'
+    amount: 'Loading...',
+    isFree: false
   })
   const [loading, setLoading] = useState(true)
 
@@ -20,28 +21,35 @@ function PaymentSuccessContent() {
     const fetchSessionData = async () => {
       const sessionId = searchParams.get('session_id')
       const courseId = searchParams.get('courseId')
+      const isFree = searchParams.get('free') === 'true' // 🆕 Check if this is a free course
       
-      if (!sessionId) {
+      if (!sessionId && !isFree) {
         setLoading(false)
         return
       }
 
       try {
-        // Fetch session data from your API
-        const response = await fetch(`/api/courses/stripe/enroll-success?session_id=${sessionId}&courseId=${courseId}`)
+        // 🆕 Build URL with free parameter
+        let url = `/api/courses/stripe/enroll-success?courseId=${courseId}`
+        if (sessionId) url += `&session_id=${sessionId}`
+        if (isFree) url += `&free=true`
+        
+        const response = await fetch(url)
         const data = await response.json()
         
         if (data.success) {
           setOrderData({
             courseName: data.courseName,
-            amount: `$${(data.amount / 100).toFixed(2)}` // Convert from cents
+            amount: data.isFree || isFree ? 'Free' : `$${(data.amount / 100).toFixed(2)}`, // 🆕 Handle free courses
+            isFree: data.isFree || isFree
           })
         }
       } catch (error) {
         console.error('Error fetching session data:', error)
         setOrderData({
           courseName: 'Course Purchase',
-          amount: 'N/A'
+          amount: 'N/A',
+          isFree: false
         })
       } finally {
         setLoading(false)
@@ -68,18 +76,36 @@ function PaymentSuccessContent() {
           {/* Success Icon */}
           <div className="pt-8 pb-6">
             <CheckCircle className="mx-auto mb-4 h-14 w-14 text-[#4a7c59]" />
-            <h1 className="mb-4 text-2xl font-bold text-[#2c3e2d]">Payment Successful!</h1>
+            <h1 className="mb-4 text-2xl font-bold text-[#2c3e2d]">
+              {orderData.isFree ? 'Enrollment Successful!' : 'Payment Successful!'}
+            </h1>
             
             <p className="text-[#5c6d5e] px-6">
-              Thank you for subscribing to{' '}
-              <span className="font-semibold text-[#2c3e2d]">
-                {loading ? (
-                  <span className="inline-block w-32 h-4 bg-[#dce4d7] rounded animate-pulse"></span>
-                ) : (
-                  orderData.courseName
-                )}
-              </span>
-              . You now have full access to the course.
+              {orderData.isFree ? (
+                <>
+                  You now have free access to{' '}
+                  <span className="font-semibold text-[#2c3e2d]">
+                    {loading ? (
+                      <span className="inline-block w-32 h-4 bg-[#dce4d7] rounded animate-pulse"></span>
+                    ) : (
+                      orderData.courseName
+                    )}
+                  </span>
+                  . Start learning immediately!
+                </>
+              ) : (
+                <>
+                  Thank you for subscribing to{' '}
+                  <span className="font-semibold text-[#2c3e2d]">
+                    {loading ? (
+                      <span className="inline-block w-32 h-4 bg-[#dce4d7] rounded animate-pulse"></span>
+                    ) : (
+                      orderData.courseName
+                    )}
+                  </span>
+                  . You now have full access to the course.
+                </>
+              )}
             </p>
           </div>
 
@@ -87,10 +113,12 @@ function PaymentSuccessContent() {
           <div className="px-6 pb-6">
             <div className="bg-[#eef2eb] rounded-xl p-6">
               
-              {/* Price Paid*/}
+              {/* Price Paid/Free Access */}
               <div className="bg-[#eef2eb] rounded-lg text-center pb-3">
-                <p className="text-sm text-[#5c6d5e] mb-1">Total Paid</p>
-                <p className="text-2xl font-bold text-[#2c3e2d]">
+                <p className="text-sm text-[#5c6d5e] mb-1">
+                  {orderData.isFree ? 'Access Type' : 'Total Paid'}
+                </p>
+                <p className="text-2xl font-bold text-[#4a7c59]">
                   {loading ? (
                     <span className="inline-block w-16 h-6 bg-[#dce4d7] rounded animate-pulse"></span>
                   ) : (
@@ -100,7 +128,10 @@ function PaymentSuccessContent() {
               </div>
 
               <p className="text-sm text-[#5c6d5e] text-center mb-6">
-                You now have lifetime access to all course content
+                {orderData.isFree 
+                  ? 'You have free lifetime access to all course content'
+                  : 'You now have lifetime access to all course content'
+                }
               </p>
               
               <div className="space-y-3 text-sm text-[#5c6d5e]">

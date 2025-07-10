@@ -92,7 +92,9 @@ export const useValidation = (courseData, modules) => {
       if (!courseData.level || courseData.level === "") errors.level = "Level is required"
       if (!courseData.thumbnail) errors.thumbnail = "Course thumbnail is required"
       if (!courseData.previewVideoUrl) errors.previewVideoUrl = "Preview video is required"
-      if (courseData.price <= 0) errors.price = "Price must be greater than 0"
+      
+      // ✅ FIXED: Allow price to be 0 (free courses) or greater
+      if (courseData.price < 0) errors.price = "Price cannot be negative"
       
       // Check highlights
       const validHighlights = courseData.highlights.filter(h => h.description.trim())

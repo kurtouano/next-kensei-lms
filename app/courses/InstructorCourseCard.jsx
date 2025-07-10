@@ -222,6 +222,9 @@ export const InstructorCourseCard = memo(function InstructorCourseCard({ course,
   )
 })
 
+// InstructorCourseCard.jsx - FREE COURSE SUPPORT (key changes only)
+// The main changes are in the InstructorCourseActions component
+
 const InstructorCourseActions = memo(function InstructorCourseActions({ 
   checkingEnrollment, 
   isEnrolled, 
@@ -235,6 +238,9 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
   onContinueLearning,
   onPreview
 }) {
+  // 🆕 Check if course is free
+  const isFree = coursePrice === 0
+
   if (checkingEnrollment) {
     return <EnrollmentCheckingSkeleton />
   }
@@ -245,7 +251,7 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
         {/* Edit Course Button - Modern Gradient Design */}
         <Button 
           asChild
-          className="flex-1 rounded-md bg-gradient-to-r from-[#4a7c59] to-[#5d9e75] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-[#3a6147] hover:to-[#4a7c59] hover:shadow-lg hover:shadow-[#4a7c59]/25"
+          className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#3a6147] hover:shadow-[#4a7c59]/25"
         >
           <Link href={`/instructor/courses/${courseId}/edit`} className="flex items-center justify-center">
             <Settings className="mr-2 h-4 w-4" />
@@ -255,16 +261,14 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
 
         {/* Preview Course Button */}
         <div
-          className={`flex-1 flex-row rounded-md border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200 ease-out backdrop-blur-sm group px-4 py-2 text-center text-sm font-medium cursor-pointer ${
+          className={`flex-1 flex-row rounded-md border border-[#4a7c59] text-[#4a7c59] transition-all duration-200 ease-out backdrop-blur-sm group px-4 py-2 text-center text-sm font-medium cursor-pointer ${
             isLoading ? 'pointer-events-none opacity-50' : ''
           }`}
         >
           <Link href={`/courses/${courseSlug}?instructor-preview=true`} onClick={onPreview} className="flex items-center justify-center">
             Preview   
-            <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+            <ChevronRight className="ml-[10px] h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
-                     
-
         </div>
       </div>
     )
@@ -285,19 +289,19 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
 
   return (
     <div className="flex gap-3">
-      {/* Enroll Now Button - Modern Gradient Design */}
+      {/* 🆕 Updated Enroll Now Button with free course styling */}
       <Button 
         onClick={onSubscribe} 
-        className="flex-1 rounded-md bg-gradient-to-r from-[#4a7c59] to-[#5d9e75] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-[#3a6147] hover:to-[#4a7c59] hover:shadow-lg hover:shadow-[#4a7c59]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
+        className={`flex-1 rounded-md px-6 py-3 text-sm font-semibold transition-all bg-[#4a7c59] duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none`}
         disabled={coursePublished === false || isLoading}
       >
         {isLoading ? (
           <span className="flex items-center">
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-            Processing...
+            {isFree ? 'Enrolling...' : 'Processing...'}
           </span>
         ) : (
-          coursePrice === 0 ? 'Get Free Access' : 'Enroll Now'
+          isFree ? 'Get Free Access' : 'Enroll Now'
         )}
       </Button>
 

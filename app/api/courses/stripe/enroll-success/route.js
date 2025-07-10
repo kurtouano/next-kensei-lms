@@ -1,11 +1,11 @@
-// app/api/courses/stripe/enroll-success/route.js
+// app/api/courses/stripe/enroll-success/route.js - FREE COURSE SUPPORT
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe/stripe';
 import { connectDb } from '@/lib/mongodb';
 import User from '@/models/User';
 import Course from '@/models/Course';
 import Progress from '@/models/Progress';
-import Activity from '@/models/Activity'; // Import Activity model
+import Activity from '@/models/Activity';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
@@ -14,29 +14,19 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('session_id');
     const courseId = searchParams.get('courseId');
+    const isFree = searchParams.get('free') === 'true'; // 🆕 Check if this is a free course
 
-    console.log('Enroll Success API called with:', { sessionId, courseId });
+    console.log('Enroll Success API called with:', { sessionId, courseId, isFree });
 
-    if (!sessionId) {
+    if (!courseId) {
       return NextResponse.json(
-        { error: 'Session ID is required' },
+        { error: 'Course ID is required' },
         { status: 400 }
       );
     }
 
     // Connect to MongoDB
     await connectDb();
-
-    // Retrieve the Stripe session
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    console.log('Stripe session payment status:', session.payment_status);
-
-    if (session.payment_status !== 'paid') {
-      return NextResponse.json(
-        { error: 'Payment not completed' },
-        { status: 400 }
-      );
-    }
 
     // Get the current user session
     const userSession = await getServerSession(authOptions);
@@ -50,14 +40,57 @@ export async function GET(request) {
 
     console.log('User session email:', userSession.user.email);
 
-    // Find the user and course
-    const user = await User.findOne({ email: userSession.user.email });
+    // Find the course
     const course = await Course.findById(courseId);
 
-    if (!user || !course) {
-      console.log('User or course not found:', { user: !!user, course: !!course });
+    if (!course) {
+      console.log('Course not found:', courseId);
       return NextResponse.json(
-        { error: 'User or course not found' },
+        { error: 'Course not found' },
+        { status: 404 }
+      );
+    }
+
+    // 🆕 Handle FREE COURSE success
+    if (isFree || course.price === 0) {
+      console.log('🆓 Processing free course success page...');
+      
+      return NextResponse.json({
+        success: true,
+        courseName: course.title,
+        amount: 0, // Free course
+        creditsEarned: course.creditReward || 0,
+        message: 'Free course enrollment successful',
+        isFree: true
+      });
+    }
+
+    // 💳 Handle PAID COURSE success (existing Stripe logic)
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID is required for paid courses' },
+        { status: 400 }
+      );
+    }
+
+    // Retrieve the Stripe session
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log('Stripe session payment status:', session.payment_status);
+
+    if (session.payment_status !== 'paid') {
+      return NextResponse.json(
+        { error: 'Payment not completed' },
+        { status: 400 }
+      );
+    }
+
+    // Find the user
+    const user = await User.findOne({ email: userSession.user.email });
+
+    if (!user) {
+      console.log('User not found:', userSession.user.email);
+      return NextResponse.json(
+        { error: 'User not found' },
         { status: 404 }
       );
     }
@@ -118,7 +151,7 @@ export async function GET(request) {
       await course.save();
       console.log('Course statistics updated');
 
-      // ✅ NEW: Create activity record for instructor
+      // Create activity record for instructor
       try {
         const enrollmentActivity = new Activity({
           instructor: course.instructor,
@@ -138,13 +171,14 @@ export async function GET(request) {
       }
     }
 
-    // Return success response
+    // Return success response for paid course
     return NextResponse.json({
       success: true,
       courseName: course.title,
       amount: session.amount_total,
-      creditsEarned: course.creditReward,
-      message: 'Course enrollment successful'
+      creditsEarned: course.creditReward || 0,
+      message: 'Course enrollment successful',
+      isFree: false
     });
 
   } catch (error) {
