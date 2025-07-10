@@ -146,12 +146,11 @@ function DisplayCertificate({
 
           {/* Footer */}
           <div className="border-t-2 border-[#4a7c59] pt-3">
-            <div className="flex justify-between items-center text-xs text-[#5c6d5e] px-4">
-              <div className="text-left">
+            <div className="flex justify-center items-center text-xs text-[#5c6d5e] px-4">
+              <div className="text-center">
                 <div className="font-medium">Certificate ID: {certificateId}</div>
                 <div className="text-[#6b8e6b]">Issued: {formatDate(new Date())}</div>
               </div>
-              
             </div>
           </div>
         </div>
