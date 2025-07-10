@@ -5,7 +5,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { BookOpen, Clock, Search, Loader2 } from "lucide-react"
+import { BookOpen, Clock, Search, Loader2, Award } from "lucide-react"
 import { useMyLearning } from './useMyLearningHook'
 import { CourseCard } from './CourseCard'
 import { useMemo } from "react"
@@ -96,9 +96,9 @@ function QuickActions() {
           className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white"
           asChild
         >
-          <Link href="/profile">
-            <BookOpen className="mr-2 h-4 w-4" />
-            View Progress
+          <Link href="/profile?tab=certifications">
+            <Award className="mr-2 h-4 w-4" />
+            View Certificates
           </Link>
         </Button>
       </div>
