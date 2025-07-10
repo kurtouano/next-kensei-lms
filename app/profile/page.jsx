@@ -34,11 +34,15 @@ export default function ProfilePage() {
   // FIXED: Define isLoggedIn properly
   const isLoggedIn = status === "authenticated" && !!session?.user
 
-  // Predefined avatar options
-  const avatarOptions = [
-    "🌸", "🌿", "🎋", "🌱", "🍃", "🌊", "⛩️", "🎌", 
-    "🗾", "🌙", "☀️", "🎨", "📚", "✨", "🌺", "🎭"
-  ]
+  useEffect(() => {
+    // Get the current URL search params
+    const searchParams = new URLSearchParams(window.location.search);
+    const tab = searchParams.get('tab');
+    
+    if (tab === 'certifications') {
+      setActiveTab('certifications');
+    }
+  }, []);
 
   // Fetch user profile data
   useEffect(() => {
@@ -639,60 +643,40 @@ export default function ProfilePage() {
                     <p className="text-[#5c6d5e]">Loading certificates...</p>
                     </div>
                ) : certificates && certificates.length > 0 ? (
-                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                   {certificates.map((cert) => (
-                     <div key={cert.id} className="rounded-lg border border-[#dce4d7] bg-[#eef2eb] p-4">
-                       <div className="mb-2 flex items-center">
-                         <span className="text-xs text-[#5c6d5e]">
-                           {new Date(cert.completionDate).toLocaleDateString('en-US', {
-                             year: 'numeric',
-                             month: 'long',
-                             day: 'numeric'
-                           })}
-                         </span>
-                       </div>
-                       <div className="mb-4 flex items-center">
-                         <Award className="mr-3 h-8 w-8 text-[#4a7c59]" />
-                         <h3 className="text-lg font-semibold text-[#2c3e2d]">{cert.courseTitle}</h3>
-                       </div>
-                       <div className="flex justify-between">
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           className="border-[#4a7c59] text-[#4a7c59]"
-                           onClick={() => handleViewCertificate(cert)}
-                         >
-                           View Certificate
-                         </Button>
-                         <Button 
-                           variant="outline" 
-                           size="sm" 
-                           className="border-[#4a7c59] text-[#4a7c59]"
-                           onClick={() => {
-                             const shareText = `I just completed "${cert.courseTitle}" on Bonsai Learning! 🌿🎓`
-                             const shareUrl = window.location.origin
-                             
-                             if (navigator.share) {
-                               navigator.share({
-                                 title: 'My Certificate',
-                                 text: shareText,
-                                 url: shareUrl
-                               })
-                             } else {
-                               navigator.clipboard.writeText(`${shareText} ${shareUrl}`)
-                               alert('Certificate shared to clipboard!')
-                             }
-                           }}
-                         >
-                           Share
-                         </Button>
-                       </div>
-                       <div className="mt-2 text-xs text-[#5c6d5e]">
-                         ID: {cert.certificateId}
-                       </div>
-                     </div>
-                   ))}
-                 </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {certificates.map((cert) => (
+                    <div key={cert.id} className="rounded-lg border border-[#dce4d7] bg-[#eef2eb] p-4">
+                      <div className="flex items-center">
+                        <span className="text-xs text-[#5c6d5e]">
+                          {new Date(cert.completionDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                      <div className="mb-2 flex items-center min-h-[4rem]">
+                        <Award className="mr-3 h-8 w-8 text-[#4a7c59] flex-shrink-0" />
+                        <h3 className="text-lg font-semibold text-[#2c3e2d] line-clamp-2 leading-tight self-center">
+                          {cert.courseTitle}
+                        </h3>
+                      </div>
+                      <div className="flex justify-start">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mb-2 border-[#4a7c59] text-[#4a7c59]"
+                          onClick={() => handleViewCertificate(cert)}
+                        >
+                          View Certificate
+                        </Button>
+                      </div>
+                      <div className="mt-2 text-xs text-[#5c6d5e]">
+                        ID: {cert.certificateId}
+                      </div>
+                    </div>
+                  ))}
+                </div>
                ) : (
                  <div className="rounded-lg border border-dashed border-[#dce4d7] bg-[#f8f7f4] p-8 text-center">
                    <Award className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e] opacity-50" />

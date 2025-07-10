@@ -799,7 +799,7 @@ export function CertificateModal({
                 <p className="text-sm text-[#6b8e6b]">
                   You can also view all your certificates anytime in your{" "}
                   <a 
-                    href="/profile" 
+                    href="/profile?tab=certifications" 
                     className="text-[#4a7c59] hover:text-[#3a6147] font-medium underline"
                   >
                     Profile page
