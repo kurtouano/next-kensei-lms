@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowLeft, Save, Eye, Upload, X, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import RichTextEditor from "@/components/RichTextEditor"
+import RichTextEditor from "@/components/richtexteditor"
 import imageCompression from 'browser-image-compression'
 
 // Progress Bar Component
