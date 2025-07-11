@@ -11,6 +11,17 @@ export const InstructorCourseCard = memo(function InstructorCourseCard({ course,
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [checkingEnrollment, setCheckingEnrollment] = useState(false)
 
+  // 🔧 FIX: Calculate the correct link for the whole card
+  const cardLink = useMemo(() => {
+    if (isInstructorOwned) {
+      // If instructor owns the course, always go to instructor preview mode
+      return `/courses/${course.slug}?instructor-preview=true`
+    } else {
+      // Regular course link for non-owners
+      return `/courses/${course.slug}`
+    }
+  }, [course.slug, isInstructorOwned])
+
   // useCallback: Memoize handleSubscribe function
   const handleSubscribe = useCallback(async (e) => {
     e.stopPropagation(); // Prevent card click
@@ -123,7 +134,7 @@ export const InstructorCourseCard = memo(function InstructorCourseCard({ course,
   if (isLoading) return <LoadingState />
 
   return (
-    <Link href={`/courses/${course.slug}`} className="block">
+    <Link href={cardLink} className="block">
       <div className="group relative overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full cursor-pointer">
         {/* Image with overlay gradient */}
         <div className="relative aspect-[16/10] w-full overflow-hidden">
@@ -144,7 +155,11 @@ export const InstructorCourseCard = memo(function InstructorCourseCard({ course,
             
             {/* Price Badge - only show if not enrolled and has price */}
             {!isEnrolled && !checkingEnrollment && priceDisplay && (
-              <span className="rounded-full bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
+              <span className={`rounded-full px-3 py-1 text-xs font-medium shadow-sm ${
+                courseData.price === 0
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-[#eef2eb] text-[#4a7c59]'
+              }`}>
                 {priceDisplay}
               </span>
             )}
@@ -222,9 +237,6 @@ export const InstructorCourseCard = memo(function InstructorCourseCard({ course,
   )
 })
 
-// InstructorCourseCard.jsx - FREE COURSE SUPPORT (key changes only)
-// The main changes are in the InstructorCourseActions component
-
 const InstructorCourseActions = memo(function InstructorCourseActions({ 
   checkingEnrollment, 
   isEnrolled, 
@@ -238,7 +250,7 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
   onContinueLearning,
   onPreview
 }) {
-  // 🆕 Check if course is free
+  // Check if course is free
   const isFree = coursePrice === 0
 
   if (checkingEnrollment) {
@@ -259,17 +271,16 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
           </Link>
         </Button>
 
-        {/* Preview Course Button */}
-        <div
-          className={`flex-1 flex-row rounded-md border border-[#4a7c59] text-[#4a7c59] transition-all duration-200 ease-out backdrop-blur-sm group px-4 py-2 text-center text-sm font-medium cursor-pointer ${
-            isLoading ? 'pointer-events-none opacity-50' : ''
-          }`}
+        {/* Preview Mode Button - Just shows the mode, no navigation */}
+        <Button
+          variant="outline"
+          className="flex-1 rounded-md border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200"
+          onClick={onPreview}
+          disabled={isLoading}
         >
-          <Link href={`/courses/${courseSlug}?instructor-preview=true`} onClick={onPreview} className="flex items-center justify-center">
-            Preview   
-            <ChevronRight className="ml-[10px] h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-          </Link>
-        </div>
+          <Eye className="mr-2 h-4 w-4" />
+          Preview Mode
+        </Button>
       </div>
     )
   }
@@ -289,7 +300,7 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
 
   return (
     <div className="flex gap-3">
-      {/* 🆕 Updated Enroll Now Button with free course styling */}
+      {/* Updated Enroll Now Button with free course styling */}
       <Button 
         onClick={onSubscribe} 
         className={`flex-1 rounded-md px-6 py-3 text-sm font-semibold transition-all bg-[#4a7c59] duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none`}

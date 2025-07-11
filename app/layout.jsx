@@ -15,7 +15,7 @@ const poppins = Poppins({
 })
 
 export const metadata = {
-  title: "Genko Tree Academy | Japanese E-Learning Platform",
+  title: "Genko Tree Academy",
   description: "Learn Japanese online with our Bonsai-themed e-learning platform"
 }
 

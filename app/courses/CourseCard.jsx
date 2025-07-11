@@ -1,6 +1,6 @@
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Check, PlayCircle, Star, LoaderCircle, ChevronRight } from "lucide-react"
+import { BookOpen, Check, PlayCircle, Star, LoaderCircle, Eye, ShoppingCart, Gift } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useCallback, useMemo, useEffect, useState, memo } from "react"
@@ -11,7 +11,7 @@ export const CourseCard = memo(function CourseCard({ course }) {
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [checkingEnrollment, setCheckingEnrollment] = useState(false)
 
-  // 🆕 Check if course is free
+  // Check if course is free
   const isFree = course.price === 0
 
   // useCallback: Memoize handleSubscribe function
@@ -91,7 +91,7 @@ export const CourseCard = memo(function CourseCard({ course }) {
       : ['Certificate', 'Resources']
   }), [course])
 
-  // 🆕 Updated price display logic
+  // Updated price display logic
   const priceDisplay = useMemo(() => {
     if (checkingEnrollment) {
       return "";
@@ -126,7 +126,7 @@ export const CourseCard = memo(function CourseCard({ course }) {
     checkEnrollment()
   }, [session, course.id])
 
-  // 🆕 Updated loading state message
+  // Updated loading state message
   if (isLoading) return <LoadingState isFree={isFree} />
 
   return (
@@ -149,7 +149,7 @@ export const CourseCard = memo(function CourseCard({ course }) {
               JLPT {course.level}
             </span>
             
-            {/* 🆕 Price Badge - show "Free" or price */}
+            {/* Price Badge - show "Free" or price */}
             {!isEnrolled && !checkingEnrollment && priceDisplay && (
               <span className={`rounded-full px-3 py-1 text-xs font-medium shadow-sm ${
                 isFree 
@@ -232,7 +232,7 @@ const CourseActions = memo(function CourseActions({
   coursePrice, 
   courseSlug, 
   coursePublished,
-  isFree, // 🆕 New prop
+  isFree,
   onSubscribe,
   onContinueLearning,
   onPreview
@@ -256,7 +256,7 @@ const CourseActions = memo(function CourseActions({
 
   return (
     <div className="flex gap-3">
-      {/* 🆕 Updated Enroll Now Button - consistent brand colors */}
+      {/* Updated Enroll Now Button with icon */}
       <Button 
         onClick={onSubscribe} 
         className="flex-1 rounded-md bg-[#4a7c59] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:from-[#3a6147] hover:to-[#4a7c59] hover:shadow-lg hover:shadow-[#4a7c59]/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
@@ -268,11 +268,14 @@ const CourseActions = memo(function CourseActions({
             {isFree ? 'Enrolling...' : 'Processing...'}
           </span>
         ) : (
-          isFree ? 'Get Free Access' : 'Enroll Now'
+          <span className="flex items-center">
+            {isFree ? <Gift className="mr-4 h-4 w-4" /> : <ShoppingCart className="mr-4 h-4 w-4" />}
+            {isFree ? 'Get Free Access' : 'Enroll Now'}
+          </span>
         )}
       </Button>
 
-      {/* Preview Button - Same as before */}
+      {/* Learn More Button with Eye icon on the left */}
       <div
         onClick={onPreview}
         className={`flex-1 rounded-md border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200 ease-out backdrop-blur-sm group px-4 py-2 text-center text-sm font-medium cursor-pointer ${
@@ -280,8 +283,8 @@ const CourseActions = memo(function CourseActions({
         }`}
       >
         <Link href={`/courses/${courseSlug}`} className="flex items-center justify-center">
+          <Eye className="mr-4 h-4 w-4" />
           Learn More
-          <ChevronRight className="ml-[10px] h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
         </Link>
       </div>
     </div>
@@ -365,7 +368,7 @@ const EnrollmentCheckingSkeleton = memo(function EnrollmentCheckingSkeleton() {
   )
 })
 
-// 🆕 Updated loading state with free course messaging
+// Updated loading state with free course messaging
 function LoadingState({ isFree }) {
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">

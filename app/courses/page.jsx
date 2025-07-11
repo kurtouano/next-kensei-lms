@@ -167,7 +167,7 @@ export default function CoursesPage() {
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
+            className="flex items-center gap-2 py-1 border-gray-300 hover:bg-gray-50"
           >
             <Filter className="h-4 w-4" />
             Filters
