@@ -1,22 +1,22 @@
-// CoursesPage.jsx - Updated with instructor course detection
+// CoursesPage.jsx - Updated with better design matching blogs
 "use client"
 
 import { useState, useEffect, memo } from "react"
-import { BookOpen, AlertCircle, Search, X } from "lucide-react"
+import { BookOpen, AlertCircle, Search, X, Filter, ChevronDown } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { useSession } from "next-auth/react"
-import { CourseCard } from "./CourseCard" // Updated import path
-import { InstructorCourseCard } from "./InstructorCourseCard" // Import the new component
+import { CourseCard } from "./CourseCard"
+import { InstructorCourseCard } from "./InstructorCourseCard"
 import { useCourses } from "./useCoursesHook"
 
 export default function CoursesPage() {
   const { data: session, status } = useSession()
   
-  // One hook handles all course logic including pagination
   const {
     courses,
     loading,
@@ -35,10 +35,12 @@ export default function CoursesPage() {
     handleRetry
   } = useCourses()
 
-  // Local state for search input (for immediate UI feedback)
+  // Local state for search input and filters
   const [searchInput, setSearchInput] = useState("")
+  const [showFilters, setShowFilters] = useState(false)
+  const [activeFiltersCount, setActiveFiltersCount] = useState(0)
 
-  // Keep user profile logic as-is (simple enough)
+  // Keep user profile logic as-is
   useEffect(() => {
     const fetchUserDetails = async () => {
       if (status !== "authenticated") return
@@ -74,12 +76,22 @@ export default function CoursesPage() {
     handleClearSearch()
   }
 
+  // Calculate active filters count
+  useEffect(() => {
+    let count = 0
+    if (selectedCategory !== "all") count++
+    setActiveFiltersCount(count)
+  }, [selectedCategory])
+
+  const clearAllFilters = () => {
+    setSearchInput("")
+    setSelectedCategory("all")
+  }
+
   // Helper function to check if user is the instructor of a course
   const isInstructorOwnedCourse = (course) => {
     if (!session?.user) return false
     
-    // Check if the current user is the instructor of this course
-    // This assumes the course has instructor data populated
     return course.instructor?.email === session.user.email || 
            course.instructor?.id === session.user.id ||
            course.instructorId === session.user.id
@@ -103,61 +115,160 @@ export default function CoursesPage() {
 
   return (
     <PageLayout session={session}>
+      {/* Hero Section */}
       <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold text-[#2c3e2d]">Course Catalog</h1>
-        <p className="text-[#5c6d5e]">
-          Discover and enroll in professional Japanese language courses
-        </p>
+        <Card className="overflow-hidden border-0 shadow-lg ">
+          <div className="relative h-64 md:h-72 ">
+            {/* Background image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: 'url(/courses_banner.png)' }}
+            />
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/70 to-black/50"/>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-white px-8">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight drop-shadow-lg ">
+                  Your Japanese Adventure Begins Here
+                </h1>
+                <p className="text-lg md:text-xl text-gray-100 max-w-3xl mx-auto drop-shadow-md">
+                  Build confidence and fluency with our comprehensive course library
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      {/* Search and Filter Bar */}
-      <div className="mb-3">
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch justify-between">
-          {/* Search Input */}
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#5c6d5e] h-4 w-4" />
-            <Input
+      {/* Search and Filter Section */}
+      <div className="mb-8">
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          {/* Search Bar */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <input
               type="text"
-              placeholder="Search courses..."
+              placeholder="Search courses by title, instructor, or level..."
               value={searchInput}
               onChange={handleSearchInputChange}
-              className="pl-10 pr-10 py-2 w-full border-[#dce4d7] bg-white focus:border-[#4a7c59] focus:ring-[#4a7c59] rounded-lg text-[#2c3e2d] placeholder:text-[#5c6d5e] h-10"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm bg-white"
             />
             {searchInput && (
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={handleClearSearchClick}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 h-5 w-5 hover:bg-[#eef2eb] rounded-full"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <X className="h-3 w-3 text-[#5c6d5e]" />
-              </Button>
+                <X className="h-4 w-4" />
+              </button>
             )}
           </div>
 
-          {/* Level Filter */}
-          <div className="w-full sm:w-[230px]">
-            <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-full h-10 border-[#dce4d7] bg-white text-[#2c3e2d] hover:bg-[#f8f9fa]">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem 
-                    key={category.id} 
-                    value={category.id}
-                    className="hover:bg-[#eef2eb] min-w-48 pl-3 mt-1 cursor-pointer data-[highlighted]:bg-[#eef2eb] data-[state=checked]:bg-[#4a7c59] data-[state=checked]:text-white"
-                  >
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Filter Toggle Button */}
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+            {activeFiltersCount > 0 && (
+              <span className="bg-[#4a7c59] text-white text-xs rounded-full px-2 py-1 min-w-[1.25rem] h-5 flex items-center justify-center">
+                {activeFiltersCount}
+              </span>
+            )}
+            <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          </Button>
         </div>
 
-        {/* horizontal line */}
-        <div className="mt-5 pt-4 border-t border-[#dce4d7]"></div>
+        {/* Filter Panel */}
+        {showFilters && (
+          <Card className="border-0 shadow-sm mb-6">
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Category Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">JLPT Level</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
+                  >
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Additional filters can be added here */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Price</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
+                  >
+                    <option value="all">All Prices</option>
+                    <option value="free">Free Courses</option>
+                    <option value="paid">Paid Courses</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
+                  >
+                    <option value="rating">Highest Rated</option>
+                    <option value="newest">Newest First</option>
+                    <option value="popular">Most Popular</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Clear Filters */}
+              {activeFiltersCount > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <Button
+                    variant="ghost"
+                    onClick={clearAllFilters}
+                    className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Clear All Filters
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Active Filters Display */}
+        {(activeFiltersCount > 0 || searchInput) && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {searchInput && (
+              <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
+                Search: "{searchInput}"
+                <button onClick={handleClearSearchClick} className="hover:text-[#3a6147]">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+            {selectedCategory !== "all" && (
+              <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
+                {categories.find(c => c.id === selectedCategory)?.name}
+                <button onClick={() => handleCategoryChange("all")} className="hover:text-[#3a6147]">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Results Count */}
+        <div className="text-sm text-gray-600 mb-6">
+          Showing {courseStats.pagination.startIndex}-{courseStats.pagination.endIndex} of {courseStats.filtered} courses
+          {searchInput && ` for "${searchInput}"`}
+        </div>
       </div>
 
       {/* Results Section */}
@@ -167,7 +278,7 @@ export default function CoursesPage() {
         selectedCategory={selectedCategory}
         pagination={pagination}
         onPageChange={handlePageChange}
-        isInstructorOwnedCourse={isInstructorOwnedCourse} // Pass the helper function
+        isInstructorOwnedCourse={isInstructorOwnedCourse}
         session={session}
       />
     </PageLayout>
@@ -176,7 +287,7 @@ export default function CoursesPage() {
 
 const PageLayout = memo(function PageLayout({ session, children }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[#f9fafb]">
+    <div className="flex min-h-screen flex-col bg-gray-50">
       <Header isLoggedIn={!!session?.user} />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
@@ -193,11 +304,11 @@ const EmptyState = memo(function EmptyState({ selectedCategory, categoryName, se
   
   return (
     <div className="text-center py-12">
-      <BookOpen className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e]" />
-      <h3 className="text-lg font-medium text-[#2c3e2d] mb-2">
+      <BookOpen className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+      <h3 className="text-lg font-medium text-gray-900 mb-2">
         {isSearchEmpty ? 'No courses found' : 'No courses found'}
       </h3>
-      <p className="text-[#5c6d5e] mb-4">
+      <p className="text-gray-600 mb-4">
         {isSearchEmpty 
           ? `No courses match "${searchQuery}". Try adjusting your search terms.`
           : selectedCategory === "all" 
@@ -215,7 +326,7 @@ const ErrorDisplay = memo(function ErrorDisplay({ error, onRetry }) {
       <div className="text-center">
         <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
         <p className="text-red-500 mb-2">Error loading courses</p>
-        <p className="text-[#5c6d5e]">{error}</p>
+        <p className="text-gray-600">{error}</p>
         <Button 
           onClick={onRetry} 
           className="mt-4 bg-[#4a7c59] text-white hover:bg-[#3a6147]"
@@ -230,25 +341,19 @@ const ErrorDisplay = memo(function ErrorDisplay({ error, onRetry }) {
 const LoadingSkeleton = memo(function LoadingSkeleton() {
   return (
     <>
-      <div className="mb-8 space-y-3">
-        <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
-        <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
+      {/* Hero Skeleton */}
+      <div className="mb-8">
+        <div className="h-64 md:h-80 bg-gray-200 rounded-lg animate-pulse"></div>
       </div>
 
       {/* Search and filter skeleton */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-3 justify-between">
-          <div className="w-full sm:max-w-md h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-          <div className="w-full sm:w-[200px] h-10 bg-gray-200 rounded animate-pulse"></div>
+      <div className="mb-8">
+        <div className="flex flex-col lg:flex-row gap-4 mb-6">
+          <div className="flex-1 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="w-32 h-12 bg-gray-200 rounded animate-pulse"></div>
         </div>
         
-        {/* Always visible line skeleton */}
-        <div className="mt-4 pt-4 border-t border-[#dce4d7]"></div>
-      </div>
-
-      <div className="mb-4 flex justify-between">
-        <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
+        <div className="h-4 bg-gray-200 rounded w-64 animate-pulse mb-6"></div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -262,9 +367,9 @@ const LoadingSkeleton = memo(function LoadingSkeleton() {
 
 const CourseSkeleton = memo(function CourseSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm">
-      <div className="aspect-video w-full bg-gray-200 animate-pulse"></div>
-      <div className="p-5 space-y-4">
+    <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+      <div className="aspect-[16/10] w-full bg-gray-200 animate-pulse"></div>
+      <div className="p-6 space-y-4">
         <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
         <div className="space-y-2">
           <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
@@ -301,13 +406,10 @@ const CourseGrid = memo(function CourseGrid({
 
   return (
     <>
-      <CourseGridInfo courseStats={courseStats} selectedCategory={selectedCategory} />
-      
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
         {courses.map((course) => {
           const isOwned = isInstructorOwnedCourse(course)
           
-          // Use different components based on ownership
           return isOwned ? (
             <InstructorCourseCard 
               key={course._id || course.id} 
@@ -331,32 +433,6 @@ const CourseGrid = memo(function CourseGrid({
         />
       )}
     </>
-  )
-})
-
-const CourseGridInfo = memo(function CourseGridInfo({ courseStats, selectedCategory }) {
-  return (
-    <div className="mb-4 space-y-2 mt-6 lg:mt-0">
-      <div className="flex flex-row justify-between space-y-1 sm:space-y-0 sm:flex-row items-center">
-        <div className="text-xs text-[#5c6d5e]">
-                      <span className="flex sm:inline">
-            {courseStats.searchQuery ? (
-              <>Showing {courseStats.pagination.startIndex}-{courseStats.pagination.endIndex} of {courseStats.filtered} result{courseStats.filtered !== 1 ? 's' : ''}</>
-            ) : (
-              <>Showing {courseStats.pagination.startIndex}-{courseStats.pagination.endIndex} of {courseStats.filtered} course{courseStats.filtered !== 1 ? 's' : ''}</>
-            )}
-          </span>
-          {selectedCategory !== "all" && !courseStats.searchQuery && (
-            <span className="block sm:inline sm:ml-1">
-              in {courseStats.selectedCategoryName}
-            </span>
-          )}
-        </div>
-        <div className="text-xs text-[#5c6d5e] sm:text-right">
-          {courseStats.searchQuery ? 'Sorted by relevance' : 'Sorted by rating and date'}
-        </div>
-      </div>
-    </div>
   )
 })
 
@@ -387,7 +463,7 @@ const ModernPagination = memo(function ModernPagination({ pagination, onPageChan
   return (
     <div className="mt-12 flex flex-col items-center gap-6">
       {/* Page Info */}
-      <div className="text-sm text-[#5c6d5e]">
+      <div className="text-sm text-gray-600">
         Page {currentPage} of {totalPages}
       </div>
 
@@ -399,7 +475,7 @@ const ModernPagination = memo(function ModernPagination({ pagination, onPageChan
           disabled={currentPage === 1}
           variant="outline"
           size="sm"
-          className="border-[#dce4d7] text-[#2c3e2d] hover:bg-[#eef2eb] disabled:opacity-50"
+          className="border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
           Previous
         </Button>
@@ -408,7 +484,7 @@ const ModernPagination = memo(function ModernPagination({ pagination, onPageChan
         <div className="hidden sm:flex items-center gap-1 mx-4">
           {getPageNumbers().map((page, index) => (
             page === '...' ? (
-              <span key={index} className="px-2 py-1 text-[#5c6d5e]">...</span>
+              <span key={index} className="px-2 py-1 text-gray-500">...</span>
             ) : (
               <Button
                 key={page}
@@ -418,7 +494,7 @@ const ModernPagination = memo(function ModernPagination({ pagination, onPageChan
                 className={
                   currentPage === page
                     ? "bg-[#4a7c59] text-white hover:bg-[#3a6147] border-[#4a7c59]"
-                    : "border-[#dce4d7] text-[#2c3e2d] hover:bg-[#eef2eb]"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
                 }
               >
                 {page}
@@ -428,7 +504,7 @@ const ModernPagination = memo(function ModernPagination({ pagination, onPageChan
         </div>
 
         {/* Mobile page indicator */}
-        <div className="sm:hidden mx-4 px-3 py-1 bg-[#eef2eb] rounded-md text-sm text-[#2c3e2d]">
+        <div className="sm:hidden mx-4 px-3 py-1 bg-gray-100 rounded-md text-sm text-gray-700">
           {currentPage} / {totalPages}
         </div>
 
@@ -438,7 +514,7 @@ const ModernPagination = memo(function ModernPagination({ pagination, onPageChan
           disabled={currentPage === totalPages}
           variant="outline"
           size="sm"
-          className="border-[#dce4d7] text-[#2c3e2d] hover:bg-[#eef2eb] disabled:opacity-50"
+          className="border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
           Next
         </Button>
