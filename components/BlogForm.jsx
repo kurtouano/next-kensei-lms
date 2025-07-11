@@ -599,7 +599,7 @@ export default function BlogForm({
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-semibold">Tags</CardTitle>
-              <CardDescription className="text-sm text-gray-600">Add relevant tags to help categorize your post</CardDescription>
+              <CardDescription className="text-sm text-gray-600">Add relevant tags to help users search your post</CardDescription>
             </CardHeader>
             <CardContent className="pt-0 space-y-4">
               <div className="flex gap-2">
@@ -642,7 +642,7 @@ export default function BlogForm({
                   </div>
                 ) : (
                   <div className="text-gray-500 text-sm italic py-4">
-                    No tags added yet. Add some tags to help categorize your blog post.
+                    No tags added yet. Add some tags to help users search your blog post.
                   </div>
                 )}
               </div>
