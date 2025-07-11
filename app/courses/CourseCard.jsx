@@ -145,13 +145,13 @@ export const CourseCard = memo(function CourseCard({ course }) {
           {/* JLPT Level and Price badges in same row */}
           <div className="absolute top-4 right-4 flex flex-row gap-2 items-center">
             {/* JLPT Level Badge */}
-            <span className="rounded-full bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
+            <span className="rounded-sm bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
               JLPT {course.level}
             </span>
             
             {/* Price Badge - show "Free" or price */}
             {!isEnrolled && !checkingEnrollment && priceDisplay && (
-              <span className={`rounded-full px-3 py-1 text-xs font-medium shadow-sm ${
+              <span className={`rounded-sm px-3 py-1 text-xs font-medium shadow-sm ${
                 isFree 
                   ? 'bg-green-100 text-green-700'
                   : 'bg-[#eef2eb] text-[#4a7c59]'

@@ -149,13 +149,13 @@ export const InstructorCourseCard = memo(function InstructorCourseCard({ course,
           {/* JLPT Level and Price badges in same row */}
           <div className="absolute top-4 right-4 flex flex-row gap-2 items-center">
             {/* JLPT Level Badge */}
-            <span className="rounded-full bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
+            <span className="rounded-sm bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
               JLPT {course.level}
             </span>
             
             {/* Price Badge - only show if not enrolled and has price */}
             {!isEnrolled && !checkingEnrollment && priceDisplay && (
-              <span className={`rounded-full px-3 py-1 text-xs font-medium shadow-sm ${
+              <span className={`rounded-sm px-3 py-1 text-xs font-medium shadow-sm ${
                 courseData.price === 0
                   ? 'bg-green-100 text-green-700'
                   : 'bg-[#eef2eb] text-[#4a7c59]'
@@ -173,13 +173,13 @@ export const InstructorCourseCard = memo(function InstructorCourseCard({ course,
             <div className="flex items-center gap-2">
               <StarRating rating={courseData.averageRating} totalReviews={courseData.totalReviews} />
               {isInstructorOwned ? (
-                <span className="inline-flex items-center rounded-full bg-[#4a7c59] px-3 py-1 text-xs font-medium text-white backdrop-blur-sm ml-2">
+                <span className="inline-flex items-center rounded-full text-[#4a7c59] px-3 py-1 text-xs border font-medium ml-2">
                   <Settings className="mr-1 h-3 w-3" />
                   Owner
                 </span>
               ) : (
                 isEnrolled && (
-                  <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800 backdrop-blur-sm ml-2">
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-[#4a7c59] backdrop-blur-sm ml-2">
                     <Check className="mr-1 h-3 w-3" />
                     Enrolled
                   </span>

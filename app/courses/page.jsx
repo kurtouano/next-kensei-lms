@@ -1,7 +1,7 @@
-// CoursesPage.jsx - Updated with better design matching blogs
+// CoursesPage.jsx - Fixed with working price filter, sort by, and proper empty state
 "use client"
 
-import { useState, useEffect, memo } from "react"
+import { useState, useEffect, memo, useMemo } from "react"
 import { BookOpen, AlertCircle, Search, X, Filter, ChevronDown } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -39,6 +39,10 @@ export default function CoursesPage() {
   const [searchInput, setSearchInput] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [activeFiltersCount, setActiveFiltersCount] = useState(0)
+  
+  // 🔧 NEW: Additional filter states
+  const [priceFilter, setPriceFilter] = useState("all") // "all", "free", "paid"
+  const [sortBy, setSortBy] = useState("rating") // "rating", "newest", "popular"
 
   // Keep user profile logic as-is
   useEffect(() => {
@@ -76,16 +80,56 @@ export default function CoursesPage() {
     handleClearSearch()
   }
 
+  // 🔧 NEW: Apply additional filters to courses
+  const filteredCourses = useMemo(() => {
+    let filtered = [...courses]
+
+    // Apply price filter
+    if (priceFilter === "free") {
+      filtered = filtered.filter(course => course.price === 0)
+    } else if (priceFilter === "paid") {
+      filtered = filtered.filter(course => course.price > 0)
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case "newest":
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        break
+      case "popular":
+        filtered.sort((a, b) => (b.enrolledStudents || 0) - (a.enrolledStudents || 0))
+        break
+      case "rating":
+      default:
+        filtered.sort((a, b) => {
+          const aRating = a.ratingStats?.averageRating || a.averageRating || 0
+          const bRating = b.ratingStats?.averageRating || b.averageRating || 0
+          if (aRating !== bRating) {
+            return bRating - aRating
+          }
+          return (b.enrolledStudents || 0) - (a.enrolledStudents || 0)
+        })
+        break
+    }
+
+    return filtered
+  }, [courses, priceFilter, sortBy])
+
   // Calculate active filters count
   useEffect(() => {
     let count = 0
     if (selectedCategory !== "all") count++
+    if (priceFilter !== "all") count++
+    if (sortBy !== "rating") count++
     setActiveFiltersCount(count)
-  }, [selectedCategory])
+  }, [selectedCategory, priceFilter, sortBy])
 
   const clearAllFilters = () => {
     setSearchInput("")
-    setSelectedCategory("all")
+    handleClearSearch()
+    handleCategoryChange("all")
+    setPriceFilter("all")
+    setSortBy("rating")
   }
 
   // Helper function to check if user is the instructor of a course
@@ -115,31 +159,11 @@ export default function CoursesPage() {
 
   return (
     <PageLayout session={session}>
-      {/* Hero Section */}
-      <div className="mb-8">
-        <Card className="overflow-hidden border-0 shadow-lg ">
-          <div className="relative h-64 md:h-72 ">
-            {/* Background image */}
-            <div 
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: 'url(/courses_banner.png)' }}
-            />
-            {/* Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-black/70 to-black/50"/>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-white px-8">
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight drop-shadow-lg ">
-                  Your Japanese Adventure Begins Here
-                </h1>
-                <p className="text-lg md:text-xl text-gray-100 max-w-3xl mx-auto drop-shadow-md">
-                  Build confidence and fluency with our comprehensive course library
-                </p>
-              </div>
-            </div>
+    <div className="mb-8">
+            <h1 className="mb-2 text-3xl font-bold text-[#2c3e2d]">Course Catalog</h1>
+            <p className="text-[#5c6d5e]">Browse our comprehensive selection of Japanese language courses</p>
           </div>
-        </Card>
-      </div>
-
+          
       {/* Search and Filter Section */}
       <div className="mb-8">
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
@@ -201,10 +225,12 @@ export default function CoursesPage() {
                   </select>
                 </div>
 
-                {/* Additional filters can be added here */}
+                {/* 🔧 FIXED: Price Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Price</label>
                   <select
+                    value={priceFilter}
+                    onChange={(e) => setPriceFilter(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
                   >
                     <option value="all">All Prices</option>
@@ -213,9 +239,12 @@ export default function CoursesPage() {
                   </select>
                 </div>
 
+                {/* 🔧 FIXED: Sort By Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
                   <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
                   >
                     <option value="rating">Highest Rated</option>
@@ -261,19 +290,35 @@ export default function CoursesPage() {
                 </button>
               </span>
             )}
+            {priceFilter !== "all" && (
+              <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
+                {priceFilter === "free" ? "Free Courses" : "Paid Courses"}
+                <button onClick={() => setPriceFilter("all")} className="hover:text-[#3a6147]">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+            {sortBy !== "rating" && (
+              <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
+                Sort: {sortBy === "newest" ? "Newest First" : "Most Popular"}
+                <button onClick={() => setSortBy("rating")} className="hover:text-[#3a6147]">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
           </div>
         )}
 
         {/* Results Count */}
         <div className="text-sm text-gray-600 mb-6">
-          Showing {courseStats.pagination.startIndex}-{courseStats.pagination.endIndex} of {courseStats.filtered} courses
+          Showing {filteredCourses.length} of {courseStats.total} courses
           {searchInput && ` for "${searchInput}"`}
         </div>
       </div>
 
       {/* Results Section */}
       <CourseGrid 
-        courses={courses}
+        courses={filteredCourses}
         courseStats={courseStats}
         selectedCategory={selectedCategory}
         pagination={pagination}
@@ -299,23 +344,27 @@ const PageLayout = memo(function PageLayout({ session, children }) {
   )
 })
 
+// 🔧 FIXED: Empty State with consistent height but centered message
 const EmptyState = memo(function EmptyState({ selectedCategory, categoryName, searchQuery }) {
   const isSearchEmpty = searchQuery && searchQuery.trim()
   
   return (
-    <div className="text-center py-12">
-      <BookOpen className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-      <h3 className="text-lg font-medium text-gray-900 mb-2">
-        {isSearchEmpty ? 'No courses found' : 'No courses found'}
-      </h3>
-      <p className="text-gray-600 mb-4">
-        {isSearchEmpty 
-          ? `No courses match "${searchQuery}". Try adjusting your search terms.`
-          : selectedCategory === "all" 
-            ? "No courses are currently available." 
-            : `No courses found in the ${categoryName} category.`
-        }
-      </p>
+    // Container with minimum height matching course grid
+    <div className="min-h-[500px] flex justify-center mb-8">
+      <div className="text-center py-12">
+        <BookOpen className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          {isSearchEmpty ? 'No courses found' : 'No courses found'}
+        </h3>
+        <p className="text-gray-600 mb-4">
+          {isSearchEmpty 
+            ? `No courses match "${searchQuery}". Try adjusting your search terms.`
+            : selectedCategory === "all" 
+              ? "No courses are currently available." 
+              : `No courses found in the ${categoryName} category.`
+          }
+        </p>
+      </div>
     </div>
   )
 })
