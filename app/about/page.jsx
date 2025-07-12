@@ -10,7 +10,7 @@ export default function AboutPage() {
   const stats = [
     {
       icon: Users,
-      value: "10,000+",
+      value: "1000+",
       label: "Active Students",
     },
     {
@@ -59,13 +59,13 @@ export default function AboutPage() {
 
   const team = [
     {
-      name: "Yamada Kenji",
+      name: "Kensei Sensei",
       role: "Founder & Lead Instructor",
       bio: "Former university professor with 15+ years of Japanese language teaching experience.",
       image: "/placeholder.svg?height=300&width=300",
     },
     {
-      name: "Sarah Johnson",
+      name: "Spencer Chun",
       role: "Curriculum Director",
       bio: "Linguistics PhD with expertise in language acquisition and educational technology.",
       image: "/placeholder.svg?height=300&width=300",

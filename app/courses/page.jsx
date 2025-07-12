@@ -390,9 +390,10 @@ const ErrorDisplay = memo(function ErrorDisplay({ error, onRetry }) {
 const LoadingSkeleton = memo(function LoadingSkeleton() {
   return (
     <>
-      {/* Hero Skeleton */}
+      {/* Page Title Skeleton */}
       <div className="mb-8">
-        <div className="h-64 md:h-80 bg-gray-200 rounded-lg animate-pulse"></div>
+        <div className="h-8 bg-gray-200 rounded w-80 animate-pulse mb-2"></div>
+        <div className="h-5 bg-gray-200 rounded w-96 animate-pulse"></div>
       </div>
 
       {/* Search and filter skeleton */}
@@ -405,6 +406,7 @@ const LoadingSkeleton = memo(function LoadingSkeleton() {
         <div className="h-4 bg-gray-200 rounded w-64 animate-pulse mb-6"></div>
       </div>
 
+      {/* Course Grid Skeleton */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <CourseSkeleton key={i} />
