@@ -1,4 +1,4 @@
-// models/Blog.js - UPDATED VERSION
+// models/Blog.js - SIMPLIFIED VERSION (Remove Featured Priority)
 import mongoose from "mongoose";
 
 const BlogSchema = new mongoose.Schema(
@@ -30,6 +30,11 @@ const BlogSchema = new mongoose.Schema(
       type: String,
       required: false, 
     },
+    // SIMPLIFIED: Only featured flag, no priority
+    isFeatured: {
+      type: Boolean,
+      default: false,
+    },
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -53,7 +58,7 @@ const BlogSchema = new mongoose.Schema(
       trim: true,
     }],
     readTime: {
-      type: String, // e.g., "8 min read" - will be calculated automatically
+      type: String,
     },
     views: {
       type: Number,
@@ -72,10 +77,6 @@ const BlogSchema = new mongoose.Schema(
       maxlength: [160, "Meta description cannot exceed 160 characters"],
       trim: true,
     },
-    metaKeywords: {
-      type: String,
-      trim: true,
-    },
   },
   { 
     timestamps: true
@@ -88,22 +89,21 @@ BlogSchema.index({ category: 1, createdAt: -1 });
 BlogSchema.index({ author: 1, createdAt: -1 });
 BlogSchema.index({ views: -1 });
 BlogSchema.index({ likeCount: -1 });
+BlogSchema.index({ isFeatured: -1, createdAt: -1 }); // SIMPLIFIED: Sort by newest featured
 
 // Pre-save middleware to auto-generate slug and calculate read time
 BlogSchema.pre('save', function(next) {
-  // Auto-generate slug from title if not provided
   if (!this.slug && this.title) {
     this.slug = this.title
       .toLowerCase()
-      .replace(/[^\w\s-]/g, '') // Remove special characters
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single
-      .trim('-'); // Remove leading/trailing hyphens
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim('-');
   }
 
-  // Calculate read time based on content length
   if (!this.readTime && this.content) {
-    const wordsPerMinute = 200; // Average reading speed
+    const wordsPerMinute = 200;
     const wordCount = this.content.split(/\s+/).length;
     const minutes = Math.ceil(wordCount / wordsPerMinute);
     this.readTime = `${minutes} min read`;
@@ -111,6 +111,22 @@ BlogSchema.pre('save', function(next) {
 
   next();
 });
+
+// SIMPLIFIED: Featured blogs sorted by newest first
+BlogSchema.statics.getFeaturedBlogs = function(limit = 3) {
+  return this.find({ isFeatured: true })
+    .populate('author', 'name icon')
+    .sort({ createdAt: -1 }) // Newest featured first
+    .limit(limit);
+};
+
+// Recent blogs (non-featured)
+BlogSchema.statics.getRecentBlogs = function(limit = 6) {
+  return this.find({ isFeatured: false })
+    .populate('author', 'name icon')
+    .sort({ createdAt: -1 })
+    .limit(limit);
+};
 
 // Static method to get all blogs with filters
 BlogSchema.statics.getBlogs = function(filters = {}) {
@@ -122,6 +138,12 @@ BlogSchema.statics.getBlogs = function(filters = {}) {
   
   if (filters.author && filters.author !== 'all') {
     query.author = filters.author;
+  }
+
+  if (filters.featured === 'true') {
+    query.isFeatured = true;
+  } else if (filters.featured === 'false') {
+    query.isFeatured = false;
   }
 
   // Date filters
@@ -160,6 +182,9 @@ BlogSchema.statics.getBlogs = function(filters = {}) {
       case 'popular':
         sortBy = { views: -1, likeCount: -1 };
         break;
+      case 'featured':
+        sortBy = { isFeatured: -1, createdAt: -1 }; // SIMPLIFIED: Featured first, then newest
+        break;
       case 'newest':
       default:
         sortBy = { createdAt: -1 };
@@ -172,19 +197,7 @@ BlogSchema.statics.getBlogs = function(filters = {}) {
     .sort(sortBy);
 };
 
-// Static method to get featured blog (most popular recent blog)
-BlogSchema.statics.getFeaturedBlog = function() {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  return this.findOne({ 
-    createdAt: { $gte: thirtyDaysAgo }
-  })
-  .populate('author', 'name icon')
-  .sort({ views: -1, likeCount: -1, createdAt: -1 });
-};
-
-// Static method to increment view count
+// Keep all other existing methods...
 BlogSchema.statics.incrementViews = function(blogId) {
   return this.findByIdAndUpdate(
     blogId, 
@@ -193,7 +206,6 @@ BlogSchema.statics.incrementViews = function(blogId) {
   );
 };
 
-// Method to toggle like
 BlogSchema.methods.toggleLike = function(userId) {
   const isLiked = this.likedBy.includes(userId);
   
@@ -208,7 +220,6 @@ BlogSchema.methods.toggleLike = function(userId) {
   return this.save();
 };
 
-// Static method to get popular posts (for sidebar)
 BlogSchema.statics.getPopularPosts = function(limit = 3) {
   return this.find({})
     .sort({ views: -1, likeCount: -1 })
@@ -217,7 +228,6 @@ BlogSchema.statics.getPopularPosts = function(limit = 3) {
     .populate('author', 'name');
 };
 
-// Static method to get related posts
 BlogSchema.statics.getRelatedPosts = function(blogId, category, limit = 3) {
   return this.find({ 
     _id: { $ne: blogId },
@@ -229,7 +239,6 @@ BlogSchema.statics.getRelatedPosts = function(blogId, category, limit = 3) {
   .populate('author', 'name');
 };
 
-// Static method to get latest posts
 BlogSchema.statics.getLatestPosts = function(limit = 6) {
   return this.find({})
     .sort({ createdAt: -1 })
@@ -238,7 +247,6 @@ BlogSchema.statics.getLatestPosts = function(limit = 6) {
     .select('title slug excerpt featuredImage category readTime views likeCount createdAt');
 };
 
-// Static method to get category statistics
 BlogSchema.statics.getCategoryStats = function() {
   return this.aggregate([
     {
