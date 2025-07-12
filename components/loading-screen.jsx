@@ -28,7 +28,7 @@ export function LoadingScreen() {
         >
           <AnimatedBonsaiIcon />
         </motion.div>
-        <h1 className="mb-2 text-2xl font-bold text-[#2c3e2d]">日本語ガーデン</h1>
+        <h1 className="mb-2 text-2xl font-bold text-[#2c3e2d]">Genko Tree</h1>
         <p className="mb-6 text-[#5c6d5e]">Your Japanese learning journey begins...</p>
         <div className="h-2 w-64 overflow-hidden rounded-full bg-[#dce4d7]">
           <motion.div

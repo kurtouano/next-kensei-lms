@@ -167,7 +167,7 @@ export default function AboutPage() {
                   <Link href="/courses">Explore Courses</Link>
                 </Button>
                 <Button className="bg-white text-[#4a7c59] hover:bg-[#eef2eb]" size="lg" asChild>
-                  <Link href="/signup">Sign Up Now</Link>
+                  <Link href="/auth/signup">Sign Up Now</Link>
                 </Button>
               </div>
             </div>
