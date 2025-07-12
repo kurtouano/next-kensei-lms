@@ -6,7 +6,6 @@ import GoogleProvider from "next-auth/providers/google"
 import User from "@/models/User"
 import { connectDb } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
-import { signIn } from "next-auth/react"
 
 export const authOptions = {
   providers: [
@@ -55,11 +54,17 @@ export const authOptions = {
     }),
   ],
   
-  callbacks: { // For Google Login ONLY
+  callbacks: { // All callbacks in ONE object
     async signIn({ user, account }) {
       if (account.provider === "google") {  
         try {
-          const res = await fetch("http://localhost:3000/api/auth/signup", {
+          // Dynamically determine the base URL
+          const baseUrl = process.env.NEXTAUTH_URL || 
+                        (process.env.NODE_ENV === 'production' 
+                          ? 'https://genkotree.vercel.app' 
+                          : 'http://localhost:3000')
+          
+          const res = await fetch(`${baseUrl}/api/auth/signup`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
