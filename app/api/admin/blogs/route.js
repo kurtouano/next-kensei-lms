@@ -1,4 +1,4 @@
-// app/api/admin/blogs/route.js - Updated to handle S3 URLs and DELETE
+// app/api/admin/blogs/route.js - SIMPLIFIED (Remove Featured Priority)
 import { NextRequest, NextResponse } from "next/server"
 import { connectDb } from "@/lib/mongodb"
 import Blog from "@/models/Blog"
@@ -6,115 +6,57 @@ import User from "@/models/User"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
-// GET /api/admin/blogs - Get all blogs with filtering
+// GET /api/admin/blogs - Get all blogs with filters and pagination
 export async function GET(request) {
   try {
     await connectDb()
     
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
-    const author = searchParams.get('author')
-    const search = searchParams.get('search')
     const sortBy = searchParams.get('sortBy') || 'newest'
-    const dateRange = searchParams.get('dateRange')
     const page = parseInt(searchParams.get('page')) || 1
-    const limit = parseInt(searchParams.get('limit')) || 10
+    const limit = parseInt(searchParams.get('limit')) || 50
+    const search = searchParams.get('search')
+    const dateRange = searchParams.get('dateRange')
+    const featured = searchParams.get('featured')
 
     // Build filters object
-    const filters = {}
+    const filters = {
+      category: category || 'all',
+      sortBy,
+      search,
+      dateRange: dateRange || 'all',
+      featured
+    }
+
+    // Get blogs using the model's static method
+    let blogsQuery = Blog.getBlogs(filters)
     
-    if (category && category !== 'all') {
-      filters.category = category
-    }
-    
-    if (author && author !== 'all') {
-      filters.author = author
-    }
-    
-    if (search) {
-      const matchingUsers = await User.find({
-        name: { $regex: search, $options: 'i' }
-      }).select('_id')
-      
-      const userIds = matchingUsers.map(user => user._id)
-      
-      filters.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { excerpt: { $regex: search, $options: 'i' } },
-        { content: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } },
-        { author: { $in: userIds } }
-      ]
-    }
-
-    // Date range filter
-    if (dateRange && dateRange !== 'all') {
-      const now = new Date()
-      switch (dateRange) {
-        case 'last-month':
-          filters.createdAt = { $gte: new Date(now.setMonth(now.getMonth() - 1)) }
-          break
-        case 'last-3-months':
-          filters.createdAt = { $gte: new Date(now.setMonth(now.getMonth() - 3)) }
-          break
-        case 'last-year':
-          filters.createdAt = { $gte: new Date(now.setFullYear(now.getFullYear() - 1)) }
-          break
-      }
-    }
-
-    // Sort options
-    let sortOptions = { createdAt: -1 } // Default: newest first
-    switch (sortBy) {
-      case 'oldest':
-        sortOptions = { createdAt: 1 }
-        break
-      case 'popular':
-        sortOptions = { views: -1, likeCount: -1 }
-        break
-      case 'newest':
-      default:
-        sortOptions = { createdAt: -1 }
-        break
-    }
-
-    // Calculate pagination
-    const skip = (page - 1) * limit
-
-    // Get blogs with pagination
-    const blogs = await Blog.find(filters)
-      .populate('author', 'name icon')
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit)
-      .lean()
-
     // Get total count for pagination
-    const totalBlogs = await Blog.countDocuments(filters)
-    const totalPages = Math.ceil(totalBlogs / limit)
+    const totalBlogs = await Blog.countDocuments(blogsQuery.getQuery())
+    
+    // Apply pagination
+    const skip = (page - 1) * limit
+    const blogs = await blogsQuery.skip(skip).limit(limit)
 
-    // Get category statistics
-    const categoryStats = await Blog.aggregate([
-      {
-        $group: {
-          _id: "$category",
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } }
-    ])
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalBlogs / limit)
+    const hasNextPage = page < totalPages
+    const hasPrevPage = page > 1
 
     return NextResponse.json({
       success: true,
       blogs,
+      count: blogs.length,
       pagination: {
         currentPage: page,
         totalPages,
         totalBlogs,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
+        hasNextPage,
+        hasPrevPage,
+        limit
       },
-      categoryStats
+      filters: filters
     })
 
   } catch (error) {
@@ -126,25 +68,25 @@ export async function GET(request) {
   }
 }
 
-// POST /api/admin/blogs - Create new blog with S3 support
+// POST /api/admin/blogs - Create new blog
 export async function POST(request) {
   try {
     await connectDb()
     
-    // Check authentication
+    // Check authentication and admin role
     const session = await getServerSession(authOptions)
-    if (!session) {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: "Authentication required" },
         { status: 401 }
       )
     }
 
-    // Check if user has permission to create blogs (instructor or admin)
+    // Check if user is admin or instructor
     const user = await User.findById(session.user.id)
-    if (!user || !['instructor', 'admin'].includes(user.role)) {
+    if (!user || !['admin', 'instructor'].includes(user.role)) {
       return NextResponse.json(
-        { success: false, error: "Insufficient permissions" },
+        { success: false, error: "Admin or instructor access required" },
         { status: 403 }
       )
     }
@@ -152,82 +94,81 @@ export async function POST(request) {
     const formData = await request.formData()
     
     // Extract form data
-    const blogData = {
-      title: formData.get('title'),
-      slug: formData.get('slug'),
-      excerpt: formData.get('excerpt'),
-      content: formData.get('content'),
-      category: formData.get('category'),
-      tags: JSON.parse(formData.get('tags') || '[]'),
-      metaDescription: formData.get('metaDescription'),
-      author: session.user.id
-    }
-
-    // Handle S3 featured image URL (updated to handle S3 URLs instead of file uploads)
+    const title = formData.get('title')
+    const slug = formData.get('slug')
+    const excerpt = formData.get('excerpt')
+    const content = formData.get('content')
+    const category = formData.get('category')
+    const tagsString = formData.get('tags')
+    const metaDescription = formData.get('metaDescription')
     const featuredImageUrl = formData.get('featuredImageUrl')
-    if (featuredImageUrl) {
-      blogData.featuredImage = featuredImageUrl
+    
+    // SIMPLIFIED: Only featured flag, no priority
+    const isFeatured = formData.get('isFeatured') === 'true'
+
+    // Parse tags
+    let tags = []
+    if (tagsString) {
+      try {
+        tags = JSON.parse(tagsString)
+      } catch (e) {
+        tags = tagsString.split(',').map(tag => tag.trim()).filter(Boolean)
+      }
     }
 
-    // Validate required fields
-    if (!blogData.title || !blogData.excerpt || !blogData.content || !blogData.category) {
+    // Validation
+    if (!title || !excerpt || !content || !category) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 }
       )
     }
 
-    // Auto-generate slug if not provided
-    if (!blogData.slug) {
-      blogData.slug = blogData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim('-')
-    }
-
-    // Check for slug uniqueness
-    const existingBlog = await Blog.findOne({ slug: blogData.slug })
+    // Check for duplicate slug
+    const existingBlog = await Blog.findOne({ slug })
     if (existingBlog) {
-      // Auto-generate a unique slug
-      const baseSlug = blogData.slug
-      let counter = 1
-      let newSlug = `${baseSlug}-${counter}`
-      
-      while (await Blog.findOne({ slug: newSlug })) {
-        counter++
-        newSlug = `${baseSlug}-${counter}`
-      }
-      
-      blogData.slug = newSlug
-    }
-
-    // Create the blog post
-    const blog = new Blog(blogData)
-    await blog.save()
-
-    // Populate author data for response
-    await blog.populate('author', 'name icon')
-
-    return NextResponse.json({
-      success: true,
-      message: "Blog post created successfully",
-      blog
-    }, { status: 201 })
-
-  } catch (error) {
-    console.error("Error creating blog:", error)
-    
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message)
       return NextResponse.json(
-        { success: false, error: "Validation failed", details: errors },
+        { success: false, error: "A blog with this slug already exists" },
         { status: 400 }
       )
     }
 
+    // Create blog post
+    const blogData = {
+      title,
+      slug,
+      excerpt,
+      content,
+      category,
+      tags,
+      metaDescription,
+      featuredImage: featuredImageUrl,
+      author: session.user.id,
+      isFeatured // SIMPLIFIED: Only featured flag
+    }
+
+    const blog = new Blog(blogData)
+    await blog.save()
+
+    // Populate author info for response
+    await blog.populate('author', 'name icon')
+
+    return NextResponse.json({
+      success: true,
+      blog,
+      message: "Blog post created successfully"
+    })
+
+  } catch (error) {
+    console.error("Error creating blog:", error)
+    
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { success: false, error: "A blog with this slug already exists" },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
       { success: false, error: "Failed to create blog post" },
       { status: 500 }

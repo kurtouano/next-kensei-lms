@@ -1,3 +1,4 @@
+// BlogForm Component - SIMPLIFIED VERSION (Remove Featured Priority)
 "use client"
 
 import { useState, useEffect } from "react"
@@ -5,6 +6,7 @@ import Link from "next/link"
 import { ArrowLeft, Save, Eye, Upload, X, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import RichTextEditor from "@/components/richtexteditor"
 import imageCompression from 'browser-image-compression'
 
@@ -44,7 +46,7 @@ const ErrorSummary = ({ showValidation, validationErrors }) => {
 }
 
 export default function BlogForm({ 
-  mode = "create", // "create" or "edit"
+  mode = "create",
   initialData = null,
   blogId = null,
   onSubmit,
@@ -60,7 +62,8 @@ export default function BlogForm({
     featuredImage: null,
     featuredImageUrl: "",
     metaDescription: "",
-    metaKeywords: "",
+    // SIMPLIFIED: Only featured flag, no priority
+    isFeatured: false,
   })
 
   const [newTag, setNewTag] = useState("")
@@ -84,7 +87,8 @@ export default function BlogForm({
         featuredImage: null,
         featuredImageUrl: initialData.featuredImage || "",
         metaDescription: initialData.metaDescription || "",
-        metaKeywords: initialData.metaKeywords || "",
+        // SIMPLIFIED: Only featured flag
+        isFeatured: initialData.isFeatured || false,
       }
       
       setFormData(newFormData)
@@ -98,7 +102,6 @@ export default function BlogForm({
       content: content,
     }))
 
-    // Clear content validation error
     if (showValidation && validationErrors.content) {
       setValidationErrors(prev => {
         const newErrors = { ...prev }
@@ -151,7 +154,6 @@ export default function BlogForm({
       [name]: value,
     }))
 
-    // Clear validation error when user starts typing
     if (showValidation && validationErrors[name]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev }
@@ -160,7 +162,6 @@ export default function BlogForm({
       })
     }
 
-    // Auto-generate slug from title (only for create mode or when title changes)
     if (name === "title" && (mode === "create" || !formData.slug)) {
       const slug = value
         .toLowerCase()
@@ -183,7 +184,6 @@ export default function BlogForm({
       }))
       setNewTag("")
 
-      // Clear tags validation error
       if (showValidation && validationErrors.tags) {
         setValidationErrors(prev => {
           const newErrors = { ...prev }
@@ -221,7 +221,6 @@ export default function BlogForm({
     try {
       setUploadProgress(10)
 
-      // Compression options
       const options = {
         maxSizeMB: 0.13,
         maxWidthOrHeight: 1600,
@@ -235,7 +234,6 @@ export default function BlogForm({
       const compressedFile = await imageCompression(file, options)
       setUploadProgress(50)
 
-      // Further compression if needed
       let finalFile = compressedFile
       if (compressedFile.size > 130 * 1024) {
         const aggressiveOptions = {
@@ -263,7 +261,6 @@ export default function BlogForm({
 
       setUploadProgress(70)
 
-      // Get presigned URL
       const response = await fetch('/api/admin/blogs/s3-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -280,7 +277,6 @@ export default function BlogForm({
       const { uploadUrl, fileUrl } = await response.json()
       setUploadProgress(80)
 
-      // Upload to S3
       const uploadPromise = new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         
@@ -310,7 +306,6 @@ export default function BlogForm({
 
       const uploadedUrl = await uploadPromise
 
-      // Create display file object for UI
       const displayFile = new File([finalFile], file.name, { type: finalFile.type })
       Object.defineProperty(displayFile, 'size', { value: finalFile.size })
 
@@ -338,7 +333,6 @@ export default function BlogForm({
   }
 
   const handleSubmit = async () => {
-    // Validate form
     const errors = validateForm()
     
     if (Object.keys(errors).length > 0) {
@@ -348,11 +342,9 @@ export default function BlogForm({
       return
     }
 
-    // Clear validation if form is valid
     setValidationErrors({})
     setShowValidation(false)
 
-    // Call parent submit handler
     onSubmit(formData)
   }
 
@@ -648,6 +640,41 @@ export default function BlogForm({
               </div>
               {renderValidationError('tags')}
             </CardContent>
+          </Card>
+
+          {/* SIMPLIFIED: Featured Toggle - Moved to bottom */}
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-lg font-semibold">Featured Article</CardTitle>
+                  <CardDescription className="text-sm text-gray-600 mt-1">
+                    Mark this article as featured to appear in the featured section
+                  </CardDescription>
+                </div>
+                <div className="flex-shrink-0">
+                  {/* Simple custom toggle that will definitely work */}
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      isFeatured: !prev.isFeatured
+                    }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:ring-offset-2 ${
+                      formData.isFeatured ? 'bg-[#4a7c59]' : 'bg-gray-300'
+                    }`}
+                    role="switch"
+                    aria-checked={formData.isFeatured}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform duration-200 ease-in-out ${
+                        formData.isFeatured ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </CardHeader>
           </Card>
 
           {/* Quick Actions */}

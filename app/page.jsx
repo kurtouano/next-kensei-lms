@@ -281,7 +281,7 @@ function FeaturedCourseCard({ course }) {
           />
           {/* JLPT Level Badge on Image */}
           <div className="absolute top-4 right-4">
-            <span className="rounded-full bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
+            <span className="rounded-sm bg-[#eef2eb] px-3 py-1 text-xs font-medium text-[#4a7c59] shadow-sm">
               JLPT {course.level}
             </span>
           </div>
@@ -322,7 +322,7 @@ function FeaturedCourseCard({ course }) {
             <div className="w-full border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200 ease-out backdrop-blur-sm group rounded-md px-4 py-2 text-center text-sm font-medium">
               <span className="flex items-center justify-center">
                 View Course
-                <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                <ChevronRight className="ml-4 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </span>
             </div>
           </div>

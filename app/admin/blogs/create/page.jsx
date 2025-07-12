@@ -22,6 +22,9 @@ export default function CreateBlogPage() {
       formDataToSend.append('tags', JSON.stringify(formData.tags.filter(tag => tag.trim())))
       formDataToSend.append('metaDescription', formData.metaDescription)
       
+      // SIMPLIFIED: Only featured flag, no priority
+      formDataToSend.append('isFeatured', formData.isFeatured.toString())
+      
       // Send S3 URL instead of file
       if (formData.featuredImageUrl) {
         formDataToSend.append('featuredImageUrl', formData.featuredImageUrl)

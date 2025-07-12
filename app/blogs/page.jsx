@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import Link from "next/link"
 import Fuse from "fuse.js"
-import { ArrowRight, Search, Filter, Calendar, User, X, ChevronDown, LoaderCircle } from "lucide-react"
+import { ArrowRight, Search, X, LoaderCircle, Star, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
@@ -11,28 +11,25 @@ import { Header } from "@/components/header"
 export default function BlogsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedAuthor, setSelectedAuthor] = useState("all")
-  const [dateFilter, setDateFilter] = useState("all")
   const [sortBy, setSortBy] = useState("newest")
-  const [showFilters, setShowFilters] = useState(false)
-  const [activeFiltersCount, setActiveFiltersCount] = useState(0)
   
   // API state
-  const [blogs, setBlogs] = useState([])
-  const [allBlogs, setAllBlogs] = useState([]) // Store all blogs for popular posts
-  const [popularPosts, setPopularPosts] = useState([]) // Static popular posts
+  const [allBlogs, setAllBlogs] = useState([])
+  const [popularPosts, setPopularPosts] = useState([])
   const [categories, setCategories] = useState([])
-  const [authors, setAuthors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Search input ref to maintain focus
+  const searchInputRef = useRef(null)
 
   // Fuse.js configuration for fuzzy search
   const fuseOptions = {
     keys: [
-      { name: 'title', weight: 0.4 },        // Reduced from 0.6
-      { name: 'excerpt', weight: 0.3 },      // Same
-      { name: 'tags', weight: 0.2 },         // NEW: Add tags to search
-      { name: 'author.name', weight: 0.1 }   // Same
+      { name: 'title', weight: 0.4 },
+      { name: 'excerpt', weight: 0.3 },
+      { name: 'tags', weight: 0.2 },
+      { name: 'author.name', weight: 0.1 }
     ],
     threshold: 0.6,
     includeScore: true,
@@ -41,14 +38,28 @@ export default function BlogsPage() {
     findAllMatches: true
   }
 
-  // Initialize Fuse instance
+  // Initialize Fuse instance with all blogs
   const fuse = useMemo(() => {
-    return new Fuse(blogs, fuseOptions)
-  }, [blogs])
+    return new Fuse(allBlogs, fuseOptions)
+  }, [allBlogs])
 
-  // Fetch all blogs for static data (popular posts, categories)
+  // Debounced search to prevent too many re-renders
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Fetch all blogs once on component mount
   const fetchAllBlogs = async () => {
     try {
+      setLoading(true)
+      setError(null)
+      
       const params = new URLSearchParams({
         limit: '100',
         sortBy: 'newest'
@@ -60,7 +71,7 @@ export default function BlogsPage() {
       if (data.success) {
         setAllBlogs(data.blogs)
 
-        // Get popular posts based on views and likes (top 3) - static
+        // Get popular posts based on views and likes (top 3)
         const sortedByPopularity = [...data.blogs].sort((a, b) => {
           const scoreA = (a.views || 0) + ((a.likeCount || 0) * 10)
           const scoreB = (b.views || 0) + ((b.likeCount || 0) * 10)
@@ -70,15 +81,15 @@ export default function BlogsPage() {
 
         // Extract unique categories from all blogs
         const uniqueCategories = [
-          { id: "all", name: "All", count: data.blogs.length },
+          { id: "all", name: "All Categories", count: data.blogs.length },
           ...data.blogs.reduce((acc, blog) => {
-            const categoryName = blog.category // Keep original capitalization
+            const categoryName = blog.category
             const existingCategory = acc.find(cat => cat.name === categoryName)
             if (existingCategory) {
               existingCategory.count++
             } else {
               acc.push({
-                id: categoryName, // Use original name as ID too
+                id: categoryName,
                 name: categoryName,
                 count: 1
               })
@@ -86,135 +97,90 @@ export default function BlogsPage() {
             return acc
           }, [])
         ]
-        console.log('Generated categories:', uniqueCategories)
         setCategories(uniqueCategories)
-
-        // Extract unique authors from all blogs
-        const uniqueAuthors = [
-          { id: "all", name: "All Authors" },
-          ...data.blogs.reduce((acc, blog) => {
-            if (blog.author && blog.author.name) {
-              const authorId = blog.author.name.toLowerCase().replace(/\s+/g, "-").replace(/\./g, "")
-              const existingAuthor = acc.find(author => author.id === authorId)
-              if (!existingAuthor) {
-                acc.push({
-                  id: authorId,
-                  name: blog.author.name
-                })
-              }
-            }
-            return acc
-          }, [])
-        ]
-        setAuthors(uniqueAuthors)
-      }
-    } catch (err) {
-      console.error('Error fetching all blogs:', err)
-    }
-  }
-
-  // Fetch filtered blogs for the main list
-  const fetchBlogs = async () => {
-    try {
-      // Don't show loading spinner for filter changes, only for initial load
-      if (blogs.length === 0) {
-        setLoading(true)
-      }
-      setError(null)
-      
-      // Build API params - now including search term
-      const params = new URLSearchParams({
-        category: selectedCategory !== 'all' ? selectedCategory : '',
-        sortBy: sortBy,
-        limit: '100'
-      })
-
-      if (dateFilter !== 'all') {
-        params.append('dateRange', dateFilter)
-      }
-
-      // Add search term to API call for server-side search
-      if (debouncedSearchTerm.trim()) {
-        params.append('search', debouncedSearchTerm.trim())
-      }
-
-      console.log('API call params:', params.toString())
-      console.log('Selected category:', selectedCategory)
-
-      const response = await fetch(`/api/admin/blogs?${params}`)
-      const data = await response.json()
-
-      if (data.success) {
-        setBlogs(data.blogs) // Only affects the main blog list
       } else {
         setError(data.error || 'Failed to fetch blogs')
       }
     } catch (err) {
-      console.error('Error fetching blogs:', err)
+      console.error('Error fetching all blogs:', err)
       setError('Failed to fetch blogs')
     } finally {
       setLoading(false)
     }
   }
 
-  // Debounced search to prevent too many API calls
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
-  
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-    }, 300) // 300ms delay
-
-    return () => clearTimeout(timer)
-  }, [searchTerm])
-
-  // Load static data once on component mount
+  // Load data once on component mount
   useEffect(() => {
     fetchAllBlogs()
   }, [])
 
-  // Fetch filtered blogs when filters change (including debounced search)
-  useEffect(() => {
-    fetchBlogs()
-  }, [selectedCategory, selectedAuthor, dateFilter, sortBy, debouncedSearchTerm])
-
-  // Calculate active filters count
-  useEffect(() => {
-    let count = 0
-    if (selectedCategory !== "all") count++
-    if (selectedAuthor !== "all") count++
-    if (dateFilter !== "all") count++
-    if (sortBy !== "newest") count++
-    setActiveFiltersCount(count)
-  }, [selectedCategory, selectedAuthor, dateFilter, sortBy])
-
   const clearAllFilters = () => {
     setSearchTerm("")
     setSelectedCategory("all")
-    setSelectedAuthor("all")
-    setDateFilter("all")
     setSortBy("newest")
   }
 
-  // Apply additional client-side filters (server handles search)
-  const filteredAndSortedPosts = useMemo(() => {
-    let results = blogs
+  // Filter and sort all blogs based on current filters
+  const filteredBlogs = useMemo(() => {
+    let results = allBlogs
 
-    // Apply additional filters
-    results = results.filter((post) => {
-      // Author filter (client-side for more precise matching)
-      if (selectedAuthor !== "all") {
-        const authorMatches = post.author?.name?.toLowerCase().replace(/\s+/g, "-").replace(/\./g, "") === selectedAuthor
-        if (!authorMatches) return false
+    // Apply search filter using Fuse.js if search term exists
+    if (debouncedSearchTerm.trim()) {
+      const searchResults = fuse.search(debouncedSearchTerm.trim())
+      results = searchResults.map(result => result.item)
+    }
+
+    // Apply category filter
+    if (selectedCategory !== "all") {
+      results = results.filter(blog => blog.category === selectedCategory)
+    }
+
+    // Apply sorting
+    results = [...results].sort((a, b) => {
+      switch (sortBy) {
+        case 'oldest':
+          return new Date(a.createdAt) - new Date(b.createdAt)
+        case 'popular':
+          const scoreA = (a.views || 0) + ((a.likeCount || 0) * 10)
+          const scoreB = (b.views || 0) + ((b.likeCount || 0) * 10)
+          return scoreB - scoreA
+        case 'newest':
+        default:
+          return new Date(b.createdAt) - new Date(a.createdAt)
       }
-
-      return true
     })
 
     return results
-  }, [blogs, selectedAuthor])
+  }, [allBlogs, debouncedSearchTerm, selectedCategory, sortBy, fuse])
 
-  if (loading && blogs.length === 0) {
+  // Separate filtered blogs into featured and recent
+  const { featuredBlogs, recentBlogs } = useMemo(() => {
+    const featured = filteredBlogs.filter(blog => blog.isFeatured).slice(0, 3)
+    const recent = filteredBlogs.filter(blog => !blog.isFeatured).slice(0, 6)
+    
+    return {
+      featuredBlogs: featured,
+      recentBlogs: recent
+    }
+  }, [filteredBlogs])
+
+  // Handle search input change with focus preservation
+  const handleSearchChange = (e) => {
+    const value = e.target.value
+    setSearchTerm(value)
+    
+    // Preserve focus after state update
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus()
+      }
+    }, 0)
+  }
+
+  // Check if any filters are active
+  const hasActiveFilters = debouncedSearchTerm.trim() || selectedCategory !== "all" || sortBy !== "newest"
+
+  if (loading) {
     return (
       <>
         <Header/>
@@ -252,22 +218,28 @@ export default function BlogsPage() {
           </Card>
         )}
 
-        {/* Search and Filter Section */}
+        {/* Simple Search and Sort Bar */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row gap-4 mb-6">
             {/* Search Bar */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search articles, tags, authors, or topics..."  
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm bg-white"
               />
               {searchTerm && (
                 <button
-                  onClick={() => setSearchTerm("")}
+                  onClick={() => {
+                    setSearchTerm("")
+                    if (searchInputRef.current) {
+                      searchInputRef.current.focus()
+                    }
+                  }}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <X className="h-4 w-4" />
@@ -275,118 +247,34 @@ export default function BlogsPage() {
               )}
             </div>
 
-            {/* Filter Toggle Button */}
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {activeFiltersCount > 0 && (
-                <span className="bg-[#4a7c59] text-white text-xs rounded-full px-2 py-1 min-w-[1.25rem] h-5 flex items-center justify-center">
-                  {activeFiltersCount}
-                </span>
-              )}
-              <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </Button>
+            {/* Sort Dropdown */}
+            <div className="lg:w-48">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm bg-white"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="popular">Most Popular</option>
+              </select>
+            </div>
           </div>
 
-          {/* Filter Panel */}
-          {showFilters && (
-            <Card className="border-0 shadow-sm mb-6">
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Category Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
-                    >
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name} ({category.count})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Author Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Author</label>
-                    <select
-                      value={selectedAuthor}
-                      onChange={(e) => setSelectedAuthor(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
-                    >
-                      {authors.map((author) => (
-                        <option key={author.id} value={author.id}>
-                          {author.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Date Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                    <select
-                      value={dateFilter}
-                      onChange={(e) => setDateFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
-                    >
-                      <option value="all">All Time</option>
-                      <option value="last-month">Last Month</option>
-                      <option value="last-3-months">Last 3 Months</option>
-                      <option value="last-year">Last Year</option>
-                    </select>
-                  </div>
-
-                  {/* Sort Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
-                    >
-                      <option value="newest">Newest First</option>
-                      <option value="oldest">Oldest First</option>
-                      <option value="popular">Most Popular</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Clear Filters */}
-                {activeFiltersCount > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <Button
-                      variant="ghost"
-                      onClick={clearAllFilters}
-                      className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Clear All Filters
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {/* Active Filters Display */}
-          {(activeFiltersCount > 0 || searchTerm) && (
-            <div className="flex flex-wrap gap-2 mb-6">
-              {searchTerm && (
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 mb-6">
+              <span className="text-sm text-gray-600">Active filters:</span>
+              
+              {debouncedSearchTerm && (
                 <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
-                  Search: "{searchTerm}"
+                  Search: "{debouncedSearchTerm}"
                   <button onClick={() => setSearchTerm("")} className="hover:text-[#3a6147]">
                     <X className="h-3 w-3" />
                   </button>
                 </span>
               )}
+              
               {selectedCategory !== "all" && (
                 <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
                   {categories.find(c => c.id === selectedCategory)?.name}
@@ -395,31 +283,31 @@ export default function BlogsPage() {
                   </button>
                 </span>
               )}
-              {selectedAuthor !== "all" && (
+              
+              {sortBy !== "newest" && (
                 <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
-                  {authors.find(a => a.id === selectedAuthor)?.name}
-                  <button onClick={() => setSelectedAuthor("all")} className="hover:text-[#3a6147]">
+                  Sort: {sortBy === "oldest" ? "Oldest First" : "Most Popular"}
+                  <button onClick={() => setSortBy("newest")} className="hover:text-[#3a6147]">
                     <X className="h-3 w-3" />
                   </button>
                 </span>
               )}
-              {dateFilter !== "all" && (
-                <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
-                  {dateFilter === "last-month" ? "Last Month" :
-                   dateFilter === "last-3-months" ? "Last 3 Months" :
-                   dateFilter === "last-year" ? "Last Year" : dateFilter}
-                  <button onClick={() => setDateFilter("all")} className="hover:text-[#3a6147]">
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              )}
+
+              <Button
+                variant="ghost"
+                onClick={clearAllFilters}
+                className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb] text-sm h-auto py-1"
+              >
+                Clear All
+              </Button>
             </div>
           )}
 
           {/* Results Count */}
           <div className="text-sm text-gray-600 mb-6">
-            Showing {filteredAndSortedPosts.length} of {allBlogs.length} articles
-            {searchTerm && ` for "${searchTerm}"`}
+            Showing {filteredBlogs.length} articles
+            {debouncedSearchTerm && ` for "${debouncedSearchTerm}"`}
+            {selectedCategory !== "all" && ` in ${categories.find(c => c.id === selectedCategory)?.name}`}
           </div>
         </div>
 
@@ -430,13 +318,11 @@ export default function BlogsPage() {
             <div className="mb-8">
               <Card className="overflow-hidden border-0 shadow-lg">
                 <div className="relative h-96">
-                  {/* Background image */}
                   <div 
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                     style={{ backgroundImage: 'url(/blogs_banner.png)' }}
                   />
-                  {/* Enhanced overlay for better text readability */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/50 backdrop-blur-sm"/>
+                  <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/50 to-black/60 backdrop-blur-sm"/>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center text-white px-8">
                       <h1 className="text-4xl lg:text-5xl font-bold mb-4 leading-tight drop-shadow-lg">
@@ -451,64 +337,124 @@ export default function BlogsPage() {
               </Card>
             </div>
 
-            {/* Blog Posts Grid */}
-            {filteredAndSortedPosts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {filteredAndSortedPosts.map((post) => (
-                  <Link key={post._id} href={`/blogs/${post.slug}`}>
-                    <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-                      <div className="relative">
-                        <img 
-                          src={post.featuredImage || "/placeholder.svg"} 
-                          alt={post.title} 
-                          className="w-full h-48 object-cover object-center" 
-                        />
-                        <div className="absolute top-3 left-3">
-                          <span className="bg-white/90 text-gray-800 px-2 py-1 rounded text-xs font-medium">
-                            {post.category}
-                          </span>
-                        </div>
-                      </div>
-                      <CardContent className="p-6">
-                        <h3 className="font-bold text-gray-900 mb-2 text-lg items-center leading-tight hover:text-[#4a7c59] transition-colors line-clamp-2 min-h-[2.8rem]">
-                          {post.title}
-                        </h3>
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={post.author?.icon || "/placeholder.svg"}
-                              alt={post.author?.name || "Author"}
-                              className="w-6 h-6 rounded-full object-cover"
-                            />
-                            <span className="text-sm text-gray-600">{post.author?.name || 'Unknown Author'}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>{new Date(post.createdAt).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}</span>
-                            <span>•</span>
-                            <span>{post.readTime}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
-                  <Search className="h-16 w-16 mx-auto" />
+            {/* Featured Articles Section */}
+            {featuredBlogs.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-6">
+                  <Star className="h-6 w-6 text-[#4a7c59]" />
+                  <h2 className="text-2xl font-bold text-gray-900">Featured Articles</h2>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles found</h3>
-                <p className="text-gray-500 mb-4">
-                  {searchTerm 
-                    ? `No posts match your search for "${searchTerm}". Try a different search term.`
-                    : "Try adjusting your search or filter criteria to find what you're looking for."
-                  }
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  {featuredBlogs.map((post) => (
+                    <Link key={post._id} href={`/blogs/${post.slug}`}>
+                      <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group">
+                        <div className="relative">
+                          <img 
+                            src={post.featuredImage || "/placeholder.svg"} 
+                            alt={post.title} 
+                            className="w-full h-48 object-cover object-center group-hover:scale-105 transition-transform duration-300" 
+                          />
+                          <div className="absolute top-3 right-3">
+                            <span className="bg-white/90 text-gray-800 px-2 py-1 rounded text-xs font-medium">
+                              {post.category}
+                            </span>
+                          </div>
+                        </div>
+                        <CardContent className="p-6">
+                          <h3 className="font-bold text-gray-900 mb-2 text-lg leading-tight group-hover:text-[#4a7c59] transition-colors line-clamp-2 min-h-[2.8rem]">
+                            {post.title}
+                          </h3>
+                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={post.author?.icon || "/placeholder.svg"}
+                                alt={post.author?.name || "Author"}
+                                className="w-6 h-6 rounded-full object-cover"
+                              />
+                              <span className="text-sm text-gray-600">{post.author?.name || 'Unknown Author'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <span>{new Date(post.createdAt).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}</span>
+                              <span>•</span>
+                              <span>{post.readTime}</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Articles Section */}
+            {recentBlogs.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-6">
+                  <TrendingUp className="h-6 w-6 text-[#4a7c59]" />
+                  <h2 className="text-2xl font-bold text-gray-900">Recent Articles</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  {recentBlogs.map((post) => (
+                    <Link key={post._id} href={`/blogs/${post.slug}`}>
+                      <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+                        <div className="relative">
+                          <img 
+                            src={post.featuredImage || "/placeholder.svg"} 
+                            alt={post.title} 
+                            className="w-full h-48 object-cover object-center" 
+                          />
+                          <div className="absolute top-3 right-3">
+                            <span className="bg-white/90 text-gray-800 px-2 py-1 rounded text-xs font-medium">
+                              {post.category}
+                            </span>
+                          </div>
+                        </div>
+                        <CardContent className="p-6">
+                          <h3 className="font-bold text-gray-900 mb-2 text-lg leading-tight hover:text-[#4a7c59] transition-colors line-clamp-2 min-h-[2.8rem]">
+                            {post.title}
+                          </h3>
+                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={post.author?.icon || "/placeholder.svg"}
+                                alt={post.author?.name || "Author"}
+                                className="w-6 h-6 rounded-full object-cover"
+                              />
+                              <span className="text-sm text-gray-600">{post.author?.name || 'Unknown Author'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <span>{new Date(post.createdAt).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}</span>
+                              <span>•</span>
+                              <span>{post.readTime}</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No Results Message */}
+            {filteredBlogs.length === 0 && !loading && (
+              <div className="text-center py-16">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No articles found</h3>
+                <p className="text-gray-600 mb-6">
+                  Try adjusting your search terms or category to find what you're looking for.
                 </p>
                 <Button
                   onClick={clearAllFilters}
@@ -521,7 +467,7 @@ export default function BlogsPage() {
             )}
 
             {/* Load More Button */}
-            {filteredAndSortedPosts.length > 6 && (
+            {filteredBlogs.length > 0 && (
               <div className="text-center">
                 <Button className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-8 py-3">
                   Load More Articles
@@ -533,8 +479,8 @@ export default function BlogsPage() {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-8 space-y-6">
-              {/* Stay Updated */}
+            <div className="top-[70px] space-y-6">
+              {/* Newsletter Signup */}
               <Card className="border-0 shadow-md">
                 <CardContent className="p-6">
                   <h3 className="font-bold text-gray-900 mb-2">Stay Updated</h3>
@@ -576,38 +522,33 @@ export default function BlogsPage() {
                 </Card>
               )}
 
-              {/* Categories */}
-              {categories.length > 0 && (
-                <Card className="border-0 shadow-md">
-                  <CardContent className="p-6">
-                    <h3 className="font-bold text-gray-900 mb-4">Categories</h3>
-                    <div className="space-y-2">
-                      {categories.map((category) => (
-                        <button
-                          key={category.id}
-                          onClick={() => {
-                            console.log('Clicked category:', category.id, 'Current selected:', selectedCategory)
-                            setSelectedCategory(category.id)
-                            setShowFilters(false) // Close filters if open
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors text-sm hover:bg-gray-50 ${
-                            selectedCategory === category.id
-                              ? "bg-[#eef2eb] text-[#4a7c59] font-medium"
-                              : "text-gray-600"
-                          }`}
-                        >
-                          <span>{category.name}</span>
-                          <span className={`text-xs ${
-                            selectedCategory === category.id ? "text-[#4a7c59]" : "text-gray-400"
-                          }`}>
-                            {category.count}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Quick Category Filter */}
+              <Card className="border-0 shadow-md">
+                <CardContent className="p-6">
+                  <h3 className="font-bold text-gray-900 mb-4">Browse by Category</h3>
+                  <div className="space-y-2">
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => setSelectedCategory(category.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors text-sm hover:bg-gray-50 ${
+                          selectedCategory === category.id
+                            ? "bg-[#eef2eb] text-[#4a7c59] font-medium"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        <span>{category.name}</span>
+                        <span className={`text-xs ${
+                          selectedCategory === category.id ? "text-[#4a7c59]" : "text-gray-400"
+                        }`}>
+                          {category.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-// app/api/admin/blogs/[id]/route.js
+// app/api/admin/blogs/[id]/route.js - SIMPLIFIED (Remove Featured Priority)
 import { NextRequest, NextResponse } from "next/server"
 import { connectDb } from "@/lib/mongodb"
 import Blog from "@/models/Blog"
@@ -6,17 +6,15 @@ import User from "@/models/User"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
-// GET /api/admin/blogs/[id] - Get single blog by ID
+// GET /api/admin/blogs/[id] - Get single blog for editing
 export async function GET(request, { params }) {
   try {
     await connectDb()
     
     const { id } = await params
     
-    // Find blog by ID and populate author
     const blog = await Blog.findById(id)
       .populate('author', 'name icon')
-      .lean()
     
     if (!blog) {
       return NextResponse.json(
@@ -39,25 +37,25 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT /api/admin/blogs/[id] - Update blog by ID
+// PUT /api/admin/blogs/[id] - Update blog
 export async function PUT(request, { params }) {
   try {
     await connectDb()
     
     // Check authentication
     const session = await getServerSession(authOptions)
-    if (!session) {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: "Authentication required" },
         { status: 401 }
       )
     }
 
-    // Check if user has permission to edit blogs (instructor or admin)
+    // Check if user is admin or instructor
     const user = await User.findById(session.user.id)
-    if (!user || !['instructor', 'admin'].includes(user.role)) {
+    if (!user || !['admin', 'instructor'].includes(user.role)) {
       return NextResponse.json(
-        { success: false, error: "Insufficient permissions" },
+        { success: false, error: "Admin or instructor access required" },
         { status: 403 }
       )
     }
@@ -65,79 +63,100 @@ export async function PUT(request, { params }) {
     const { id } = await params
     const formData = await request.formData()
     
-    // Extract form data
-    const updateData = {
-      title: formData.get('title'),
-      slug: formData.get('slug'),
-      excerpt: formData.get('excerpt'),
-      content: formData.get('content'),
-      category: formData.get('category'),
-      tags: JSON.parse(formData.get('tags') || '[]'),
-      metaDescription: formData.get('metaDescription'),
-      updatedAt: new Date()
-    }
-
-    // Handle S3 featured image URL
-    const featuredImageUrl = formData.get('featuredImageUrl')
-    if (featuredImageUrl) {
-      updateData.featuredImage = featuredImageUrl
-    }
-
-    // Validate required fields
-    if (!updateData.title || !updateData.excerpt || !updateData.content || !updateData.category) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 }
-      )
-    }
-
-    // Check if slug is unique (excluding current blog)
-    if (updateData.slug) {
-      const existingBlog = await Blog.findOne({ 
-        slug: updateData.slug, 
-        _id: { $ne: id } 
-      })
-      
-      if (existingBlog) {
-        return NextResponse.json(
-          { success: false, error: "Slug already exists" },
-          { status: 400 }
-        )
-      }
-    }
-
-    // Update the blog post
-    const updatedBlog = await Blog.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate('author', 'name icon')
-
-    if (!updatedBlog) {
+    // Find existing blog
+    const existingBlog = await Blog.findById(id)
+    if (!existingBlog) {
       return NextResponse.json(
         { success: false, error: "Blog not found" },
         { status: 404 }
       )
     }
 
+    // Check if user owns the blog or is admin
+    if (existingBlog.author.toString() !== session.user.id && user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: "You can only edit your own blog posts" },
+        { status: 403 }
+      )
+    }
+
+    // Extract form data
+    const title = formData.get('title')
+    const slug = formData.get('slug')
+    const excerpt = formData.get('excerpt')
+    const content = formData.get('content')
+    const category = formData.get('category')
+    const tagsString = formData.get('tags')
+    const metaDescription = formData.get('metaDescription')
+    const featuredImageUrl = formData.get('featuredImageUrl')
+    
+    // SIMPLIFIED: Only featured flag, no priority
+    const isFeatured = formData.get('isFeatured') === 'true'
+
+    // Parse tags
+    let tags = []
+    if (tagsString) {
+      try {
+        tags = JSON.parse(tagsString)
+      } catch (e) {
+        tags = tagsString.split(',').map(tag => tag.trim()).filter(Boolean)
+      }
+    }
+
+    // Validation
+    if (!title || !excerpt || !content || !category) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      )
+    }
+
+    // Check for duplicate slug (excluding current blog)
+    if (slug !== existingBlog.slug) {
+      const duplicateSlug = await Blog.findOne({ slug, _id: { $ne: id } })
+      if (duplicateSlug) {
+        return NextResponse.json(
+          { success: false, error: "A blog with this slug already exists" },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Update blog data
+    const updateData = {
+      title,
+      slug,
+      excerpt,
+      content,
+      category,
+      tags,
+      metaDescription,
+      featuredImage: featuredImageUrl,
+      isFeatured // SIMPLIFIED: Only featured flag
+    }
+
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('author', 'name icon')
+
     return NextResponse.json({
       success: true,
-      message: "Blog post updated successfully",
-      blog: updatedBlog
+      blog: updatedBlog,
+      message: "Blog post updated successfully"
     })
 
   } catch (error) {
     console.error("Error updating blog:", error)
     
-    // Handle validation errors
-    if (error.name === 'ValidationError') {
-      const errors = Object.values(error.errors).map(err => err.message)
+    if (error.code === 11000) {
       return NextResponse.json(
-        { success: false, error: "Validation failed", details: errors },
+        { success: false, error: "A blog with this slug already exists" },
         { status: 400 }
       )
     }
-
+    
     return NextResponse.json(
       { success: false, error: "Failed to update blog post" },
       { status: 500 }
@@ -145,51 +164,53 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE /api/admin/blogs/[id] - Delete blog by ID
+// DELETE /api/admin/blogs/[id] - Delete blog
 export async function DELETE(request, { params }) {
   try {
     await connectDb()
     
     // Check authentication
     const session = await getServerSession(authOptions)
-    if (!session) {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: "Authentication required" },
         { status: 401 }
       )
     }
 
-    // Check if user has permission to delete blogs (instructor or admin)
+    // Check if user is admin or instructor
     const user = await User.findById(session.user.id)
-    if (!user || !['instructor', 'admin'].includes(user.role)) {
+    if (!user || !['admin', 'instructor'].includes(user.role)) {
       return NextResponse.json(
-        { success: false, error: "Insufficient permissions" },
+        { success: false, error: "Admin or instructor access required" },
         { status: 403 }
       )
     }
 
     const { id } = await params
-
-    // Find and delete the blog post
-    const deletedBlog = await Blog.findByIdAndDelete(id)
-
-    if (!deletedBlog) {
+    
+    // Find existing blog
+    const existingBlog = await Blog.findById(id)
+    if (!existingBlog) {
       return NextResponse.json(
         { success: false, error: "Blog not found" },
         { status: 404 }
       )
     }
 
-    // Optional: Delete the featured image from S3 if needed
-    // You can add S3 deletion logic here if you want to clean up images
+    // Check if user owns the blog or is admin
+    if (existingBlog.author.toString() !== session.user.id && user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: "You can only delete your own blog posts" },
+        { status: 403 }
+      )
+    }
+
+    await Blog.findByIdAndDelete(id)
 
     return NextResponse.json({
       success: true,
-      message: "Blog post deleted successfully",
-      deletedBlog: {
-        id: deletedBlog._id,
-        title: deletedBlog.title
-      }
+      message: "Blog post deleted successfully"
     })
 
   } catch (error) {
