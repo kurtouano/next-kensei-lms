@@ -10,8 +10,15 @@ export async function POST(request, { params }) {
   try {
     await connectDb()
     
-    // Check authentication (optional - you can allow anonymous likes)
+    // Check authentication - now required
     const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required to like posts" },
+        { status: 401 }
+      )
+    }
     
     const { slug } = await params // Await params for Next.js 15
     
@@ -25,34 +32,16 @@ export async function POST(request, { params }) {
       )
     }
 
-    // For anonymous users, we'll just increment the count
-    // For authenticated users, we can track individual likes
-    if (session?.user?.id) {
-      // Authenticated user - use the toggleLike method
-      const updatedBlog = await blog.toggleLike(session.user.id)
-      const isLiked = updatedBlog.likedBy.includes(session.user.id)
+    // Authenticated user - use the toggleLike method
+    const updatedBlog = await blog.toggleLike(session.user.id)
+    const isLiked = updatedBlog.likedBy.includes(session.user.id)
 
-      return NextResponse.json({
-        success: true,
-        isLiked,
-        likeCount: updatedBlog.likeCount,
-        message: isLiked ? "Blog liked" : "Blog unliked"
-      })
-    } else {
-      // Anonymous user - just increment the count
-      const updatedBlog = await Blog.findByIdAndUpdate(
-        blog._id,
-        { $inc: { likeCount: 1 } },
-        { new: true }
-      )
-
-      return NextResponse.json({
-        success: true,
-        isLiked: true,
-        likeCount: updatedBlog.likeCount,
-        message: "Blog liked"
-      })
-    }
+    return NextResponse.json({
+      success: true,
+      isLiked,
+      likeCount: updatedBlog.likeCount,
+      message: isLiked ? "Blog liked" : "Blog unliked"
+    })
 
   } catch (error) {
     console.error("Error toggling like:", error)

@@ -78,11 +78,10 @@ export function Header() {
             </>
           ) : (
             <>
-              <Link href="/blogs" className={`text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Blogs</Link>
+              <Link href="/" className={`text-sm font-medium ${isActive("/") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Home</Link>
               <Link href="/courses" className={`text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Courses</Link>
-              <Link href="/subscription" className={`text-sm font-medium ${isActive("/subscription") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Plans</Link>
+              <Link href="/blogs" className={`text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Blogs</Link>
               <Link href="/about" className={`text-sm font-medium ${isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>About</Link>
-              <Link href="/teachers" className={`text-sm font-medium ${isActive("/teachers") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Teachers</Link>
             </>
           )}
         </nav>
@@ -175,11 +174,10 @@ export function Header() {
               </>
             ) : (
               <>
-                <Link href="/blogs" className={`block text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Blogs</Link>
+                <Link href="/" className={`text-sm font-medium ${isActive("/") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Home</Link>
                 <Link href="/courses" className={`block text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Courses</Link>
-                <Link href="/subscription" className={`block text-sm font-medium ${isActive("/subscription") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Plans</Link>
+                <Link href="/blogs" className={`block text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Blogs</Link>
                 <Link href="/about" className={`block text-sm font-medium ${isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>About</Link>
-                <Link href="/teachers" className={`block text-sm font-medium ${isActive("/teachers") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Teachers</Link>
                 
                 {/* Mobile Auth Buttons */}
                 <div className="pt-4 border-t border-[#dce4d7] space-y-2">

@@ -252,7 +252,7 @@ export default function Home() {
         {/* Floating Sign Up Button (visible on scroll) */}
         <div className="fixed bottom-6 right-6 z-50 md:hidden">
           <Button className="rounded-full bg-[#4a7c59] px-6 py-6 text-white shadow-lg hover:bg-[#3a6147]" asChild>
-            <Link href="/signup">Get Started</Link>
+            <Link href="/auth/signup">Get Started</Link>
           </Button>
         </div>
       </main>

@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { ArrowLeft, Calendar, Clock, Eye, Heart, Share2, User, LoaderCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
 
 export default function BlogPostPage({ params }) {
+  const { data: session, status } = useSession()
   const [blogPost, setBlogPost] = useState(null)
   const [relatedPosts, setRelatedPosts] = useState([])
   const [isLiked, setIsLiked] = useState(false)
@@ -15,6 +17,7 @@ export default function BlogPostPage({ params }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [slug, setSlug] = useState(null)
+  const [showLoginMessage, setShowLoginMessage] = useState(false)
 
   // Resolve params first
   useEffect(() => {
@@ -41,10 +44,11 @@ export default function BlogPostPage({ params }) {
           setRelatedPosts(data.relatedPosts || [])
           setLikes(data.blog.likeCount || 0)
           
-          // Check if user has liked this post (you can implement this based on your auth system)
-          // For now, we'll check localStorage
-          const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]')
-          setIsLiked(likedPosts.includes(data.blog._id))
+          // Check if user has liked this post (only for authenticated users)
+          if (session?.user?.id) {
+            const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]')
+            setIsLiked(likedPosts.includes(data.blog._id))
+          }
         } else {
           setError(data.error || 'Blog post not found')
         }
@@ -59,10 +63,17 @@ export default function BlogPostPage({ params }) {
     if (slug) {
       fetchBlogPost()
     }
-  }, [slug])
+  }, [slug, session])
 
   const handleLike = async () => {
     if (!blogPost) return
+
+    // Check if user is authenticated
+    if (!session?.user?.id) {
+      setShowLoginMessage(true)
+      setTimeout(() => setShowLoginMessage(false), 3000) // Hide message after 3 seconds
+      return
+    }
 
     try {
       const response = await fetch(`/api/blogs/${blogPost.slug}/like`, {
@@ -86,7 +97,7 @@ export default function BlogPostPage({ params }) {
       }
     } catch (error) {
       console.error('Error toggling like:', error)
-      // Optimistic update fallback
+      // For authenticated users, still allow optimistic update
       setIsLiked(!isLiked)
       setLikes(prev => isLiked ? prev - 1 : prev + 1)
     }
@@ -104,9 +115,7 @@ export default function BlogPostPage({ params }) {
     }
   }
 
-
-
-  if (loading) {
+  if (loading || status === "loading") {
     return (
       <>
         <Header/>
@@ -146,8 +155,6 @@ export default function BlogPostPage({ params }) {
     )
   }
 
-
-
   return (
     <>
     <Header/>
@@ -164,6 +171,18 @@ export default function BlogPostPage({ params }) {
               Back to Blogs
             </Link>
           </div>
+
+          {/* Login Message Toast */}
+          {showLoginMessage && (
+            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 max-w-sm">
+              <div className="text-center">
+                <p className="font-medium text-gray-900 text-sm">Login Required</p>
+                <p className="text-gray-600 text-sm mt-1">
+                  Please <Link href="/auth/signin" className="text-[#4a7c59] hover:underline">log in</Link> to like this article.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Article Header */}
           <div className="mb-8">
