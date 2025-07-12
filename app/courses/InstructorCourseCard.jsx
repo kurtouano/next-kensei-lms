@@ -250,7 +250,6 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
   onContinueLearning,
   onPreview
 }) {
-  // Check if course is free
   const isFree = coursePrice === 0
 
   if (checkingEnrollment) {
@@ -259,27 +258,33 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
 
   if (isInstructorOwned) {
     return (
-      <div className="flex gap-3">
-        {/* Edit Course Button - Modern Gradient Design */}
+      <div className="flex gap-2 sm:gap-3">
+        {/* Edit Course Button - Keep normal text size */}
         <Button 
           asChild
-          className="flex-1 rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#3a6147] hover:shadow-[#4a7c59]/25"
+          className="flex-1 min-w-0 rounded-md bg-[#4a7c59] px-3 sm:px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#3a6147] hover:shadow-[#4a7c59]/25"
         >
           <Link href={`/instructor/courses/${courseId}/edit`} className="flex items-center justify-center">
-            <Settings className="mr-2 h-4 w-4" />
-            Edit Course
+            <Settings className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="truncate">
+              <span className="hidden sm:inline">Edit Course</span>
+              <span className="sm:hidden">Edit</span>
+            </span>
           </Link>
         </Button>
 
-        {/* Preview Mode Button - Just shows the mode, no navigation */}
+        {/* Preview Mode Button - Keep normal text size */}
         <Button
           variant="outline"
-          className="flex-1 rounded-md border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200"
+          className="flex-1 min-w-0 rounded-md border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200 px-3 sm:px-4 py-2 text-sm"
           onClick={onPreview}
           disabled={isLoading}
         >
-          <Eye className="mr-2 h-4 w-4" />
-          Preview Mode
+          <Eye className="mr-2 h-4 w-4 flex-shrink-0" />
+          <span className="truncate">
+            <span className="hidden sm:inline">Preview Mode</span>
+            <span className="sm:hidden">Preview</span>
+          </span>
         </Button>
       </div>
     )
@@ -299,33 +304,40 @@ const InstructorCourseActions = memo(function InstructorCourseActions({
   }
 
   return (
-    <div className="flex gap-3">
-      {/* Updated Enroll Now Button with free course styling */}
+    <div className="flex gap-2 sm:gap-3">
+      {/* Updated Enroll Now Button - Keep normal text size */}
       <Button 
         onClick={onSubscribe} 
-        className={`flex-1 rounded-md px-6 py-3 text-sm font-semibold transition-all bg-[#4a7c59] duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none`}
+        className="flex-1 min-w-0 rounded-md px-3 sm:px-6 py-3 text-sm font-semibold transition-all bg-[#4a7c59] duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
         disabled={coursePublished === false || isLoading}
       >
         {isLoading ? (
-          <span className="flex items-center">
+          <span className="flex items-center justify-center">
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-            {isFree ? 'Enrolling...' : 'Processing...'}
+            <span className="hidden sm:inline">{isFree ? 'Enrolling...' : 'Processing...'}</span>
+            <span className="sm:hidden">...</span>
           </span>
         ) : (
-          isFree ? 'Get Free Access' : 'Enroll Now'
+          <span className="truncate">
+            <span className="hidden sm:inline">{isFree ? 'Get Free Access' : 'Enroll Now'}</span>
+            <span className="sm:hidden">{isFree ? 'Free' : 'Enroll'}</span>
+          </span>
         )}
       </Button>
 
-      {/* Preview Button - Same as Homepage */}
+      {/* Preview Button - Keep normal text size */}
       <div
         onClick={onPreview}
-        className={`flex-1 rounded-md border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200 ease-out backdrop-blur-sm group px-4 py-2 text-center text-sm font-medium cursor-pointer ${
+        className={`flex-1 min-w-0 rounded-md border border-[#4a7c59] text-[#4a7c59] hover:border-[#3a6147] hover:bg-[#4a7c59]/12 hover:text-[#3a6147] transition-all duration-200 ease-out backdrop-blur-sm group px-3 sm:px-4 py-2 text-center text-sm font-medium cursor-pointer ${
           isLoading ? 'pointer-events-none opacity-50' : ''
         }`}
       >
         <Link href={`/courses/${courseSlug}`} className="flex items-center justify-center">
-          Learn More
-          <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+          <span className="truncate">
+            <span className="hidden sm:inline">Learn More</span>
+            <span className="sm:hidden">Preview</span>
+          </span>
+          <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 flex-shrink-0" />
         </Link>
       </div>
     </div>
