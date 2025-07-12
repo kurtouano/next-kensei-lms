@@ -15,14 +15,10 @@ export default function Home() {
   const [coursesLoading, setCoursesLoading] = useState(true)
   const [coursesError, setCourseError] = useState(null)
 
-  useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 2000)
-
-    return () => clearTimeout(timer)
-  }, [])
+  // Handle loading completion
+  const handleLoadingComplete = () => {
+    setIsLoading(false)
+  }
 
   // Fetch featured courses
   useEffect(() => {
@@ -45,13 +41,15 @@ export default function Home() {
       }
     }
 
+    // Only fetch courses after loading is complete
     if (!isLoading) {
       fetchFeaturedCourses()
     }
   }, [isLoading])
 
+  // Show loading screen until images are loaded
   if (isLoading) {
-    return <LoadingScreen />
+    return <LoadingScreen onLoadingComplete={handleLoadingComplete} />
   }
 
   const banners = [
@@ -145,8 +143,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-
-
           </div>
         </section>
 
