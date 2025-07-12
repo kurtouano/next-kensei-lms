@@ -345,7 +345,7 @@ export default function BlogsPage() {
                   <h2 className="text-2xl font-bold text-gray-900">Featured Articles</h2>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   {featuredBlogs.map((post) => (
                     <Link key={post._id} href={`/blogs/${post.slug}`}>
                       <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group">
@@ -401,7 +401,7 @@ export default function BlogsPage() {
                   <h2 className="text-2xl font-bold text-gray-900">Recent Articles</h2>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   {recentBlogs.map((post) => (
                     <Link key={post._id} href={`/blogs/${post.slug}`}>
                       <Card className="overflow-hidden border-0 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
@@ -548,7 +548,7 @@ export default function BlogsPage() {
                   </div>
                 </CardContent>
               </Card>
-              
+
             </div>
           </div>
         </div>

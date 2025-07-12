@@ -8,6 +8,7 @@ import BlogForm from "@/components/BlogForm"
 export default function CreateBlogPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Fixed handleSubmit function for your create page
   const handleSubmit = async (formData) => {
     setIsSubmitting(true)
 
@@ -22,7 +23,7 @@ export default function CreateBlogPage() {
       formDataToSend.append('tags', JSON.stringify(formData.tags.filter(tag => tag.trim())))
       formDataToSend.append('metaDescription', formData.metaDescription)
       
-      // SIMPLIFIED: Only featured flag, no priority
+      // ADD THIS LINE - This was missing!
       formDataToSend.append('isFeatured', formData.isFeatured.toString())
       
       // Send S3 URL instead of file

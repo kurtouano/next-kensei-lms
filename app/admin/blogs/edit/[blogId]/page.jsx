@@ -56,6 +56,9 @@ export default function EditBlogPage({ params }) {
       formDataToSend.append('tags', JSON.stringify(formData.tags.filter(tag => tag.trim())))
       formDataToSend.append('metaDescription', formData.metaDescription)
       
+      // ADD THIS LINE - This was missing!
+      formDataToSend.append('isFeatured', formData.isFeatured.toString())
+      
       // Send S3 URL instead of file
       if (formData.featuredImageUrl) {
         formDataToSend.append('featuredImageUrl', formData.featuredImageUrl)
