@@ -6,7 +6,6 @@ import Fuse from "fuse.js"
 import { ArrowRight, Search, X, LoaderCircle, Star, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Header } from "@/components/header"
 
 export default function BlogsPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -183,7 +182,6 @@ export default function BlogsPage() {
   if (loading) {
     return (
       <>
-        <Header/>
         <div className="min-h-screen bg-gray-50">
           <div className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-center min-h-[400px]">
@@ -200,7 +198,6 @@ export default function BlogsPage() {
 
   return (
     <>
-    <Header/>
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Error Display */}

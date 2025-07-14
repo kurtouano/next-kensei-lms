@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Users, BookOpen, Award, Globe, MessageSquare, Heart } from "lucide-react"
-import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
 export default function AboutPage() {
@@ -80,8 +79,6 @@ export default function AboutPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      {/* Header - Reused from homepage */}
-      <Header />
 
       <main className="flex-1">
         {/* Hero Section */}
@@ -174,9 +171,6 @@ export default function AboutPage() {
           </div>
         </section>
       </main>
-
-      {/* Footer - Simplified version */}
-      <Footer />
     </div>
   )
 }

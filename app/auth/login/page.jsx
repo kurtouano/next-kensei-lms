@@ -6,8 +6,6 @@ import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { GoogleIcon } from "@/components/google-icon"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
@@ -79,7 +77,6 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      <Header />
       <div className="container mx-auto flex min-h-[calc(100vh-8.5rem)] flex-col items-center justify-center px-4 py-12">
         <Link href="/" className="mb-8 flex items-center gap-2">
           <BonsaiIcon className="h-10 w-10 text-[#4a7c59]" />
@@ -181,7 +178,6 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-      <Footer />
     </div>
   )
 }

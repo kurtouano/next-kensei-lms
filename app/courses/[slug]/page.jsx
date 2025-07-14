@@ -27,14 +27,12 @@ import { InstructorPreviewToggle } from "./components/InstructorPreviewToggle"
 const LoadingLayout = memo(function LoadingLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      <Header isLoggedIn={false} />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4a7c59] mx-auto mb-4"></div>
           <p className="text-[#5c6d5e]">Loading lesson data...</p>
         </div>
       </main>
-      <Footer />
     </div>
   )
 })
@@ -42,14 +40,12 @@ const LoadingLayout = memo(function LoadingLayout() {
 const ErrorLayout = memo(function ErrorLayout({ error }) {
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      <Header isLoggedIn={false} />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 text-lg mb-4">⚠️ Error</div>
           <p className="text-[#5c6d5e]">{error}</p>
         </div>
       </main>
-      <Footer />
     </div>
   )
 })
@@ -470,7 +466,6 @@ export default function LessonPage() {
   // ============ MAIN RENDER ============
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      <Header isLoggedIn={isLoggedIn} />
 
       <main className="flex-1">
         <div className="container mx-auto px-4 py-8">
@@ -601,7 +596,6 @@ export default function LessonPage() {
         </div>
       </main>
 
-      <Footer />
     </div>
   )
 }

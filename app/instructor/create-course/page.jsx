@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-import { Header } from "@/components/header"
 import { useRouter } from "next/navigation"
 
 // Components - Direct imports
@@ -90,9 +89,7 @@ export default function CreateCourse() {
 
   return (
     <>
-      <Header/>
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8">
           {isEditMode && (
             <div className="flex items-center gap-4 mb-4">

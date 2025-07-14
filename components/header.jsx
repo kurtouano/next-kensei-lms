@@ -17,6 +17,9 @@ export function Header() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
 
+  // Determine if user is logged in based on session
+  const isLoggedIn = status === "authenticated" && !!session?.user;
+
   // Fetch user profile data to get the icon
   useEffect(() => {
     const fetchUserIcon = async () => {
@@ -110,14 +113,14 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/90 backdrop-blur-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href={status === "authenticated" ? "/my-learning" : "/"} className="flex items-center gap-2">
+        <Link href={isLoggedIn ? "/my-learning" : "/"} className="flex items-center gap-2">
           <BonsaiIcon className="h-8 w-8 text-[#4a7c59]" />
           <span className="text-xl font-semibold text-[#2c3e2d]">Genko Tree</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-6 md:flex">
-          {status == "authenticated" ? (
+          {isLoggedIn ? (
             <>
               <Link href="/my-learning" className={`text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>My Learning</Link>
               <Link href="/courses" className={`text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"}`}>Courses</Link>
@@ -142,7 +145,7 @@ export function Header() {
 
         {/* Auth Buttons */}
         <div className="hidden items-center gap-2 md:flex">
-          {status == "authenticated" ? (
+          {isLoggedIn ? (
             <>
             <Link href="/profile" className="flex flex-row items-center gap-2">
               <div className="h-9 w-9 mr-6 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden hover:bg-[#eef2eb] transition-colors">
@@ -173,7 +176,7 @@ export function Header() {
         <div className="border-t border-[#dce4d7] bg-white md:hidden">
           <div className="px-4 py-4 space-y-4">
             {/* Mobile Navigation Links */}
-            {status === "authenticated" ? (
+            {isLoggedIn ? (
               <>
                 <Link href="/my-learning" className={`block text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>My Learning</Link>
                 <Link href="/courses" className={`block text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Courses</Link>

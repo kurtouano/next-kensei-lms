@@ -33,7 +33,6 @@ export default function MyLearning() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <Header isLoggedIn={true} />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <WelcomeHeader userName={user?.name} />
@@ -65,7 +64,6 @@ export default function MyLearning() {
           )}
         </div>
       </main>
-      <Footer />
     </div>
   );
 }
@@ -158,7 +156,6 @@ function EmptyState() {
 function ErrorState({ error, onRetry }) {
   return (
     <div className="flex min-h-screen flex-col bg-[#f9fafb]">
-      <Header isLoggedIn={true} />
       <main className="flex-1 py-8 ">
         <div className="container mx-auto px-4">
           <div className="text-center py-12">
@@ -176,7 +173,6 @@ function ErrorState({ error, onRetry }) {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }
@@ -184,7 +180,6 @@ function ErrorState({ error, onRetry }) {
 function LoadingSkeleton() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <Header isLoggedIn={true} />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <div className="mb-8">
@@ -219,7 +214,6 @@ function LoadingSkeleton() {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

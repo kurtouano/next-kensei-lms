@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import BlogForm from "@/components/BlogForm"
 
 export default function CreateBlogPage() {
@@ -56,7 +55,6 @@ export default function CreateBlogPage() {
 
   return (
     <>
-      <Header/>
       <div className="container mx-auto px-4 py-8">
         <BlogForm 
           mode="create"
@@ -64,7 +62,6 @@ export default function CreateBlogPage() {
           isSubmitting={isSubmitting}
         />
       </div>
-      <Footer/>
     </>
   )
 }

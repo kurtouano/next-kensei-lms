@@ -6,8 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { Award, Check, Palette, Flower, Sparkles, ShoppingBag, Eye } from "lucide-react"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 
 export default function BonsaiPage() {
   const [selectedTree, setSelectedTree] = useState("maple")
@@ -185,8 +183,6 @@ export default function BonsaiPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f9fafb]">
-      {/* Header */}
-      <Header isLoggedIn={true} />
 
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
@@ -729,7 +725,6 @@ export default function BonsaiPage() {
           </Tabs>
         </div>
       </main>
-      <Footer />
     </div>
   )
 }

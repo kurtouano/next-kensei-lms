@@ -158,7 +158,6 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <>
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-[#4a7c59]" />
@@ -173,7 +172,6 @@ export default function AdminDashboard() {
   if (error) {
     return (
       <>
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
@@ -195,7 +193,6 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <Header/>
       <div className="container mx-auto px-4 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>

@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button"
 import { BannerSlider } from "@/components/banner-slider"
 import { LoadingScreen } from "@/components/loading-screen"
 import { ChevronRight, BookOpen, PlayCircle, Star, Award, ShoppingBag, Palette } from "lucide-react"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
@@ -109,8 +107,6 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      {/* Header */}
-      <Header />
 
       <main className="flex-1">
         {/* Banner Slider */}
@@ -252,9 +248,6 @@ export default function Home() {
           </Button>
         </div>
       </main>
-
-      {/* Footer */}
-      <Footer />
     </div>
   )
 }

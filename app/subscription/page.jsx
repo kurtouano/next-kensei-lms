@@ -106,8 +106,6 @@ export default function SubscriptionPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      {/* Header - Reused from homepage */}
-      <Header />
 
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
@@ -255,9 +253,6 @@ export default function SubscriptionPage() {
           </div>
         </div>
       </main>
-
-      {/* Footer - Simplified version */}
-      <Footer />
     </div>
   )
 }

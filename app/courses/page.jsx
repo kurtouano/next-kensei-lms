@@ -3,12 +3,8 @@
 
 import { useState, useEffect, memo, useMemo } from "react"
 import { BookOpen, AlertCircle, Search, X, Filter, ChevronDown } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { useSession } from "next-auth/react"
 import { CourseCard } from "./CourseCard"
 import { InstructorCourseCard } from "./InstructorCourseCard"
@@ -333,13 +329,11 @@ export default function CoursesPage() {
 const PageLayout = memo(function PageLayout({ session, children }) {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <Header isLoggedIn={!!session?.user} />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           {children}
         </div>
       </main>
-      <Footer />
     </div>
   )
 })

@@ -2,6 +2,8 @@ import "@/app/globals.css"
 import { Noto_Sans_JP, Poppins } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "./providers"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
@@ -25,7 +27,13 @@ export default async function RootLayout({ children }) {
       <body className={`${notoSansJP.variable} ${poppins.variable} font-sans`}>
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light">
-            {children}
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+            </div>
           </ThemeProvider>
         </AuthProvider>
       </body>

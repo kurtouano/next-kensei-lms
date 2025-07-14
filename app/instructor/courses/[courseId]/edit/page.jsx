@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
-import { Header } from "@/components/header"
 import { useParams, useRouter } from "next/navigation"
 
 // Import components from the create-course page directly
@@ -57,7 +56,6 @@ export default function EditCourse() {
   if (isLoading) {
     return (
       <>
-        <Header/>
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-[#4a7c59]" />
@@ -72,7 +70,6 @@ export default function EditCourse() {
   if (loadError) {
     return (
       <>
-        <Header/>
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Course</h2>
@@ -102,7 +99,6 @@ export default function EditCourse() {
     // Later we can build a proper edit interface
     return (
       <>
-        <Header/>
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-[#2c3e2d] mb-4">Course Data Loaded</h1>

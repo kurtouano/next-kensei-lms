@@ -242,14 +242,12 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-        <Header isLoggedIn={true} />
         <main className="flex-1 flex items-center justify-center">
           <div className="flex items-center gap-2">
             <Loader2 className="h-6 w-6 animate-spin text-[#4a7c59]" />
             <span className="text-[#2c3e2d]">Loading profile...</span>
           </div>
         </main>
-        <Footer />
       </div>
     )
   }
@@ -257,7 +255,6 @@ export default function ProfilePage() {
   if (error && !userData) {
     return (
       <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-        <Header isLoggedIn={true} />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-red-600 mb-4">{error}</p>
@@ -266,7 +263,6 @@ export default function ProfilePage() {
             </Button>
           </div>
         </main>
-        <Footer />
       </div>
     )
   }
@@ -277,9 +273,6 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      {/* Header */}
-      <Header isLoggedIn={true} />
-
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           {/* Error Display */}
@@ -701,8 +694,6 @@ export default function ProfilePage() {
          </Tabs>
        </div>
      </main>
-
-     <Footer />
    </div>
  )
 }

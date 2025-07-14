@@ -91,7 +91,6 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      <Header />
       <div className="container mx-auto flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 py-12">
         <Link href="/" className="mb-8 flex items-center gap-2">
           <BonsaiIcon className="h-10 w-10 text-[#4a7c59]" />
@@ -232,7 +231,6 @@ export default function SignUpPage() {
           </p>
         </div>
       </div>
-      <Footer />
     </div>
   )
 }

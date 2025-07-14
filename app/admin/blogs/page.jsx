@@ -169,7 +169,6 @@ export default function AdminBlogPage() {
   if (loading && blogs.length === 0) {
     return (
       <>
-        <Header/>
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -178,14 +177,12 @@ export default function AdminBlogPage() {
             </div>
           </div>
         </div>
-        <Footer/>
       </>
     )
   }
 
   return (
     <>
-    <Header/>
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
@@ -453,7 +450,6 @@ export default function AdminBlogPage() {
         </CardContent>
       </Card>
     </div>
-    <Footer/>
     </>
   )
 }
