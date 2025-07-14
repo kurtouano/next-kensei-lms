@@ -1,7 +1,7 @@
-// Updated CourseSidebar.jsx - FIXED with missing variables
+// Updated CourseSidebar.jsx - FIXED certificate logic to require all module quizzes
 import { memo, useCallback, useMemo, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { CertificateModal } from "@/components/certificate-modal" // ADDED: Import modal
+import { CertificateModal } from "@/components/certificate-modal"
 import { 
   CheckCircle2, 
   PlayCircle, 
@@ -34,8 +34,8 @@ export const CourseSidebar = memo(function CourseSidebar({
   progress
 }) {
   const [claimingCertificate, setClaimingCertificate] = useState(false)
-  const [showCertificateModal, setShowCertificateModal] = useState(false) // ADDED: Modal state
-  const [hasCertificate, setHasCertificate] = useState(false) // ADDED: Certificate status
+  const [showCertificateModal, setShowCertificateModal] = useState(false)
+  const [hasCertificate, setHasCertificate] = useState(false)
 
   const totalItems = useMemo(() => 
     modules.flatMap(m => m.items).length,
@@ -55,10 +55,39 @@ export const CourseSidebar = memo(function CourseSidebar({
     return isPrevModuleComplete && isPrevQuizPassed
   }, [modules, completedItems, moduleQuizCompleted, isEnrolled])
 
-  // Check if course is 100% completed
-  const isCourseCompleted = isEnrolled && progress && progress.courseProgress === 100
+  // FIXED: Proper course completion logic
+  const isCourseCompleted = useMemo(() => {
+    if (!isEnrolled || !modules || modules.length === 0) return false
+    
+    // Check if ALL lessons are completed
+    const allLessonsCompleted = modules.every(module => 
+      module.items.every(item => completedItems.includes(item.id))
+    )
+    
+    // Check if ALL module quizzes are passed (70%+)
+    const allQuizzesPassed = modules.every((module, index) => {
+      // If module has no quiz, consider it passed
+      if (!module.quiz || !module.quiz.questions || module.quiz.questions.length === 0) {
+        return true
+      }
+      
+      // Check if this module quiz is completed with passing score
+      return moduleQuizCompleted.includes(index)
+    })
+    
+    console.log('🎓 Certificate Check:', {
+      totalModules: modules.length,
+      allLessonsCompleted,
+      allQuizzesPassed,
+      completedQuizzes: moduleQuizCompleted,
+      totalLessons: totalItems,
+      completedLessons: completedItems.length
+    })
+    
+    return allLessonsCompleted && allQuizzesPassed
+  }, [isEnrolled, modules, completedItems, moduleQuizCompleted, totalItems])
 
-  // ADDED: Check if certificate already exists when course is completed
+  // Check if certificate already exists when course is completed
   useEffect(() => {
     if (isCourseCompleted && courseData?.id) {
       checkExistingCertificate()
@@ -90,7 +119,6 @@ export const CourseSidebar = memo(function CourseSidebar({
     try {
       setClaimingCertificate(true)
       
-      // Change from: `/api/certificates/${courseData.id}`
       const response = await fetch(`/api/certificates/${courseData.id}`, {
         method: 'POST',
         headers: {
@@ -119,7 +147,6 @@ export const CourseSidebar = memo(function CourseSidebar({
     }
   }
 
-  // ADDED: Handle viewing existing certificate
   const handleViewCertificate = () => {
     setShowCertificateModal(true)
   }
@@ -191,11 +218,12 @@ export const CourseSidebar = memo(function CourseSidebar({
             onToggleCompletion={onToggleCompletion}
             onTakeQuiz={onTakeQuiz}
             isEnrolled={isEnrolled}
+            moduleQuizCompleted={moduleQuizCompleted}
           />
         ))}
       </div>
 
-      {/* Certificate claim section - show when course is completed */}
+      {/* FIXED: Certificate claim section - only show when course is TRULY completed */}
       {isCourseCompleted && (
         <div className="border-t border-[#dce4d7] p-4 bg-gradient-to-r from-[#eef2eb] to-white">
           <div className="text-center">
@@ -268,7 +296,7 @@ export const CourseSidebar = memo(function CourseSidebar({
   )
 })
 
-// ModuleSection component remains the same...
+// UPDATED: ModuleSection with quiz completion indicator
 const ModuleSection = memo(function ModuleSection({
   module,
   moduleIndex,
@@ -281,7 +309,8 @@ const ModuleSection = memo(function ModuleSection({
   onSelectItem,
   onToggleCompletion,
   onTakeQuiz,
-  isEnrolled
+  isEnrolled,
+  moduleQuizCompleted
 }) {
   const isModuleComplete = useMemo(() =>
     module.items.every(item => completedItems.includes(item.id)),
@@ -291,6 +320,12 @@ const ModuleSection = memo(function ModuleSection({
   const completedCount = useMemo(() =>
     module.items.filter(item => completedItems.includes(item.id)).length,
     [module.items, completedItems]
+  )
+
+  // Check if this specific module's quiz is completed
+  const isQuizCompleted = useMemo(() => 
+    moduleQuizCompleted.includes(moduleIndex),
+    [moduleQuizCompleted, moduleIndex]
   )
 
   const moduleAccessible = isEnrolled ? isAccessible : false
@@ -304,9 +339,9 @@ const ModuleSection = memo(function ModuleSection({
             {module.title}
           </h3>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-2">
           {isModuleComplete && isEnrolled && (
-            <CheckCircle2 className="mr-2 h-4 w-4 text-[#4a7c59]" />
+            <CheckCircle2 className="h-4 w-4 text-[#4a7c59]" />
           )}
           <span className="text-xs text-[#5c6d5e]">
             {isEnrolled ? `${completedCount}/${module.items.length}` : module.items.length}
@@ -371,6 +406,7 @@ const ModuleSection = memo(function ModuleSection({
           </div>
         ))}
 
+        {/* Quiz section without completion status */}
         {isEnrolled && isActive && currentModuleCompleted && !showModuleQuiz && (
           <div className="rounded-md bg-[#eef2eb] p-2">
             <div className="flex items-center justify-between">
@@ -380,10 +416,10 @@ const ModuleSection = memo(function ModuleSection({
               </div>
               <Button
                 size="sm"
-                className="bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+                className="bg-[#4a7c59] hover:bg-[#3a6147] text-white"
                 onClick={onTakeQuiz}
               >
-                Take Quiz
+                {isQuizCompleted ? 'Retake Quiz' : 'Take Quiz'}
               </Button>
             </div>
           </div>
@@ -393,7 +429,6 @@ const ModuleSection = memo(function ModuleSection({
   )
 })
 
-// LessonItem and ResourceItem components remain the same as in your original code...
 const LessonItem = memo(function LessonItem({
   item,
   moduleIndex,

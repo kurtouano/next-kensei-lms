@@ -6,7 +6,15 @@ export const VideoPlayer = memo(function VideoPlayer({
   activeItem, 
   currentTime = 0, 
   onProgressUpdate,
-  isEnrolled = false
+  isEnrolled = false,
+  // NEW: Props for auto-completion and auto-next
+  onAutoComplete,
+  onAutoNext,
+  hasNextAction = false,
+  nextActionTitle = "",
+  nextActionType = null,
+  moduleData = null,
+  activeModule = 0
 }) {
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -14,6 +22,7 @@ export const VideoPlayer = memo(function VideoPlayer({
   const [isVideoLoaded, setIsVideoLoaded] = useState(false)
   const lastSavedTimeRef = useRef(0)
   const hasSetInitialTimeRef = useRef(false)
+  const hasAutoCompletedRef = useRef(false) // Prevent multiple auto-completions
 
   // Video event handlers
   useEffect(() => {
@@ -48,18 +57,42 @@ export const VideoPlayer = memo(function VideoPlayer({
       }
     }
 
+    // NEW: Handle video end
+    const handleVideoEnd = () => {
+      console.log('🎬 Video ended')
+      setIsPlaying(false)
+      
+      // Auto-complete the lesson if enrolled and not preview
+      if (isEnrolled && !activeItem.isPreview && onAutoComplete && !hasAutoCompletedRef.current) {
+        console.log('✅ Auto-completing lesson')
+        hasAutoCompletedRef.current = true
+        onAutoComplete(activeItem.id)
+      }
+      
+      // Auto-advance to next video immediately if there's a next video and user is enrolled
+      if (hasNextAction && isEnrolled && !activeItem.isPreview && onAutoNext) {
+        console.log('⏭️ Auto-advancing to next action immediately')
+        // Small delay to allow auto-complete to process
+        setTimeout(() => {
+          onAutoNext()
+        }, 1500)
+      }
+    }
+
     video.addEventListener('play', handlePlay)
     video.addEventListener('pause', handlePause)
     video.addEventListener('loadeddata', handleLoadedData)
     video.addEventListener('canplay', handleCanPlay)
+    video.addEventListener('ended', handleVideoEnd)
     
     return () => {
       video.removeEventListener('play', handlePlay)
       video.removeEventListener('pause', handlePause)
       video.removeEventListener('loadeddata', handleLoadedData)
       video.removeEventListener('canplay', handleCanPlay)
+      video.removeEventListener('ended', handleVideoEnd)
     }
-  }, [currentTime, activeItem?.type, activeItem?.isPreview, isEnrolled])
+  }, [currentTime, activeItem?.type, activeItem?.isPreview, activeItem?.id, isEnrolled, onAutoComplete, hasNextAction, onAutoNext])
 
   // Reset video loaded state when activeItem changes
   useEffect(() => {
@@ -67,6 +100,7 @@ export const VideoPlayer = memo(function VideoPlayer({
     setVideoProgress(0)
     lastSavedTimeRef.current = 0
     hasSetInitialTimeRef.current = false
+    hasAutoCompletedRef.current = false
   }, [activeItem?.id])
 
   // Progress tracking and saving (only for enrolled users)
@@ -80,10 +114,26 @@ export const VideoPlayer = memo(function VideoPlayer({
         const progressPercent = (video.currentTime / video.duration) * 100
         setVideoProgress(progressPercent)
         
-        // Only save if we've moved significantly (more than 10 seconds from last save)
+        // NEW: Auto-complete at 90% progress and auto-advance
+        if (progressPercent >= 90 && onAutoComplete && !hasAutoCompletedRef.current) {
+          console.log('🎯 Auto-completing lesson at 90% progress')
+          hasAutoCompletedRef.current = true
+          onAutoComplete(activeItem.id)
+          
+          // If video reaches 90%, also auto-advance to next video
+          if (hasNextAction && onAutoNext) {
+            console.log('⏭️ Auto-advancing to next action at 90%')
+            // Small delay to allow auto-complete to process
+            setTimeout(() => {
+              onAutoNext()
+            }, 2000)
+          }
+        }
+        
+        // Only save if we've moved significantly (more than 30 seconds from last save)
         const timeDiff = Math.abs(video.currentTime - lastSavedTimeRef.current)
         
-        if (timeDiff >= 30) { // Save every 10 seconds of actual progress
+        if (timeDiff >= 30) { // Save every 30 seconds of actual progress
           if (onProgressUpdate && activeItem?.id) {
             onProgressUpdate(activeItem.id, video.currentTime)
             lastSavedTimeRef.current = video.currentTime
@@ -97,7 +147,7 @@ export const VideoPlayer = memo(function VideoPlayer({
     return () => {
       video.removeEventListener('timeupdate', updateProgress)
     }
-  }, [isVideoLoaded, activeItem?.id, activeItem?.type, activeItem?.isPreview, onProgressUpdate, isEnrolled])
+  }, [isVideoLoaded, activeItem?.id, activeItem?.type, activeItem?.isPreview, onProgressUpdate, onAutoComplete, isEnrolled])
 
   // Save progress when video is paused or seeked (only for enrolled users)
   useEffect(() => {
@@ -133,6 +183,25 @@ export const VideoPlayer = memo(function VideoPlayer({
     }
   }, [activeItem?.id, activeItem?.type, activeItem?.isPreview, onProgressUpdate, isEnrolled])
 
+  // Auto-next handlers
+  const handleSkipToNext = useCallback(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+    }
+    setShowAutoNext(false)
+    if (onAutoNext) {
+      onAutoNext()
+    }
+  }, [onAutoNext])
+
+  const handleCancelAutoNext = useCallback(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+    }
+    setShowAutoNext(false)
+    setAutoNextCountdown(10)
+  }, [])
+
   return (
     <div className="mb-4 overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm">
       <div className="relative aspect-video bg-black">
@@ -167,7 +236,7 @@ export const VideoPlayer = memo(function VideoPlayer({
           <div className="flex justify-between items-center text-sm text-[#5c6d5e]">
             <div className="flex items-center">
               <span className="font-medium text-[#2c3e2d]">{activeItem.title}</span>
-              {/* FIXED: Only show preview badge for non-enrolled users */}
+              {/* Only show preview badge for non-enrolled users */}
               {activeItem.isPreview && !isEnrolled && (
                 <span className="ml-2 bg-[#4a7c59] text-white px-2 py-0.5 rounded-full text-xs">
                   Preview
@@ -194,7 +263,7 @@ export const VideoPlayer = memo(function VideoPlayer({
             </div>
           )}
 
-          {/* FIXED: Preview notice - only show for non-enrolled users */}
+          {/* Preview notice - only show for non-enrolled users */}
           {activeItem.isPreview && !isEnrolled && (
             <div className="mt-2 text-xs text-[#4a7c59] font-medium">
               This is a preview. Enroll to access all course content and features.

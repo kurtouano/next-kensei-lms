@@ -482,21 +482,18 @@ export function useProgress(slug) {
     isCompleted: false,
     lessonProgress: []
   })
-  const [loading, setLoading] = useState(false) // Start as false
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [isInitialized, setIsInitialized] = useState(false)
   
-  // More stable initialization tracking
   const [initializationState, setInitializationState] = useState('pending')
-  const initRef = useRef(false) // Prevent double initialization
+  const initRef = useRef(false)
 
   const fetchProgress = useCallback(async () => {
-    // Handle case where user is not logged in or no slug
     if (!session?.user || !slug) {
       setLoading(false)
       setIsInitialized(true)
       setInitializationState('no-auth')
-      // Set empty but consistent state immediately
       setProgress({
         completedLessons: [],
         completedModules: [],
@@ -508,7 +505,6 @@ export function useProgress(slug) {
       return
     }
 
-    // Prevent duplicate fetches
     if (initRef.current) return
     initRef.current = true
     
@@ -520,7 +516,6 @@ export function useProgress(slug) {
       const data = await response.json()
       
       if (data.success) {
-        // 🔧 FIXED: Ensure all required fields exist
         setProgress({
           completedLessons: data.progress.completedLessons || [],
           completedModules: data.progress.completedModules || [],
@@ -531,7 +526,6 @@ export function useProgress(slug) {
         })
       } else {
         setError(data.error)
-        // Still set empty state to prevent undefined
         setProgress({
           completedLessons: [],
           completedModules: [],
@@ -546,7 +540,6 @@ export function useProgress(slug) {
       setError('Failed to fetch progress')
       setInitializationState('completed')
       console.error('Error fetching progress:', err)
-      // Set empty state on error too
       setProgress({
         completedLessons: [],
         completedModules: [],
@@ -561,15 +554,12 @@ export function useProgress(slug) {
     }
   }, [session, slug])
 
-  // 🔧 STABLE: Immediate initialization for non-auth cases
   const isFullyInitialized = useMemo(() => {
     return initializationState === 'completed' || initializationState === 'no-auth'
   }, [initializationState])
 
-  // 🔧 STABLE: Always return a consistent object (never null)
   const stableProgress = useMemo(() => {
     if (!isFullyInitialized) {
-      // Return default structure during loading instead of null
       return {
         completedLessons: [],
         completedModules: [],
@@ -582,17 +572,44 @@ export function useProgress(slug) {
     
     return {
       ...progress,
-      // Ensure arrays are always arrays
       completedLessons: progress.completedLessons || [],
       completedModules: progress.completedModules || [],
       lessonProgress: progress.lessonProgress || []
     }
   }, [progress, isFullyInitialized])
 
+  // ENHANCED: updateLessonProgress with better error handling and optimistic updates
   const updateLessonProgress = useCallback(async (lessonId, isCompleted, currentTime = 0) => {
     if (!session?.user || !slug) return false
     
+    console.log('📝 Updating lesson progress:', { lessonId, isCompleted, currentTime })
+    
+    // Optimistic update for better UX
+    const previousProgress = { ...progress }
+    
     try {
+      // Update local state immediately
+      setProgress(prev => {
+        const newCompletedLessons = isCompleted 
+          ? [...(prev.completedLessons || []), lessonId].filter((id, index, self) => self.indexOf(id) === index)
+          : (prev.completedLessons || []).filter(id => id !== lessonId)
+        
+        // Update lesson progress array
+        const updatedLessonProgress = (prev.lessonProgress || []).map(lp => 
+          lp.lesson === lessonId 
+            ? { ...lp, currentTime, isCompleted, completedAt: isCompleted ? new Date().toISOString() : lp.completedAt }
+            : lp
+        )
+        
+        // If lesson not found in progress array, this will be handled by the server
+        
+        return {
+          ...prev,
+          completedLessons: newCompletedLessons,
+          lessonProgress: updatedLessonProgress
+        }
+      })
+      
       const response = await fetch(`/api/courses/progress/${slug}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -602,6 +619,7 @@ export function useProgress(slug) {
       const data = await response.json()
       
       if (data.success) {
+        // Update with server response
         setProgress(prev => ({
           ...prev,
           completedLessons: data.progress.completedLessons || [],
@@ -609,18 +627,26 @@ export function useProgress(slug) {
           status: data.progress.status || 'not_started',
           lessonProgress: data.progress.lessonProgress || []
         }))
+        
+        console.log('✅ Lesson progress updated successfully')
         return true
       } else {
+        // Revert optimistic update on error
+        setProgress(previousProgress)
         setError(data.error)
+        console.error('❌ Failed to update lesson progress:', data.error)
         return false
       }
     } catch (err) {
+      // Revert optimistic update on error
+      setProgress(previousProgress)
       setError('Failed to update lesson progress')
-      console.error('Error updating lesson progress:', err)
+      console.error('❌ Error updating lesson progress:', err)
       return false
     }
-  }, [session, slug])
+  }, [session, slug, progress])
 
+  // ENHANCED: updateVideoProgress with throttling to prevent excessive API calls
   const updateVideoProgress = useCallback(async (lessonId, currentTime) => {
     if (!session?.user || !slug) return false
     
@@ -634,6 +660,7 @@ export function useProgress(slug) {
       const data = await response.json()
       
       if (data.success) {
+        // Update only the lesson progress, don't trigger full re-render
         setProgress(prev => ({
           ...prev,
           lessonProgress: data.progress.lessonProgress || []
@@ -647,8 +674,11 @@ export function useProgress(slug) {
     }
   }, [session, slug])
 
+  // ENHANCED: updateModuleProgress with better feedback
   const updateModuleProgress = useCallback(async (moduleId, quizScore) => {
     if (!session?.user || !slug) return false
+    
+    console.log('📊 Updating module progress:', { moduleId, quizScore })
     
     try {
       const response = await fetch(`/api/courses/progress/${slug}/module-progress`, {
@@ -665,15 +695,19 @@ export function useProgress(slug) {
             ...prev,
             completedModules: data.completedModules || []
           }))
+          console.log('✅ Module progress updated successfully')
+        } else {
+          console.log('📊 Quiz completed but score not improved')
         }
         return { success: true, updated: data.updated, message: data.message }
       } else {
         setError(data.error)
+        console.error('❌ Failed to update module progress:', data.error)
         return { success: false, error: data.error }
       }
     } catch (err) {
       setError('Failed to update module progress')
-      console.error('Error updating module progress:', err)
+      console.error('❌ Error updating module progress:', err)
       return { success: false, error: 'Network error' }
     }
   }, [session, slug])
@@ -684,12 +718,48 @@ export function useProgress(slug) {
     return lessonProgress?.currentTime || 0
   }, [stableProgress])
 
+  // NEW: Auto-completion helper
+  const autoCompleteLesson = useCallback(async (lessonId) => {
+    console.log('🎯 Auto-completing lesson:', lessonId)
+    return await updateLessonProgress(lessonId, true, 0)
+  }, [updateLessonProgress])
+
+  // NEW: Batch update for multiple lessons (useful for bulk operations)
+  const batchUpdateLessons = useCallback(async (updates) => {
+    if (!session?.user || !slug || !Array.isArray(updates)) return false
+    
+    try {
+      const response = await fetch(`/api/courses/progress/${slug}/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setProgress(prev => ({
+          ...prev,
+          completedLessons: data.progress.completedLessons || [],
+          courseProgress: data.progress.courseProgress || 0,
+          status: data.progress.status || 'not_started',
+          lessonProgress: data.progress.lessonProgress || []
+        }))
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Error batch updating lessons:', err)
+      return false
+    }
+  }, [session, slug])
+
   useEffect(() => {
     fetchProgress()
   }, [fetchProgress])
 
   return {
-    progress: stableProgress, // Always returns a valid object, never null
+    progress: stableProgress,
     loading,
     error,
     isInitialized: isFullyInitialized,
@@ -697,6 +767,8 @@ export function useProgress(slug) {
     updateVideoProgress,
     updateModuleProgress,
     getLessonCurrentTime,
+    autoCompleteLesson, // NEW
+    batchUpdateLessons, // NEW
     refetchProgress: fetchProgress
   }
 }

@@ -1,7 +1,5 @@
 'use client'
 
-import { Footer } from '@/components/footer'
-import { Header } from '@/components/header'
 import { CheckCircle, ArrowRight, Award, BookOpen, Video, Download } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
@@ -235,11 +233,9 @@ function PaymentSuccessLoading() {
 export default function PaymentSuccessPage() {
   return (
     <>
-      <Header />
       <Suspense fallback={<PaymentSuccessLoading />}>
         <PaymentSuccessContent />
       </Suspense>
-      <Footer />
     </>
   )
 }

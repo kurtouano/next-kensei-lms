@@ -1,4 +1,4 @@
-// Fixed page.jsx - Prevents loading flickering with debounced loading state
+// Updated page.jsx - Added auto-completion and auto-next functionality
 "use client"
 
 import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react"
@@ -56,16 +56,13 @@ function useDebouncedLoading(isLoading, delay = 150) {
   const timeoutRef = useRef(null)
 
   useEffect(() => {
-    // Clear existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
 
     if (isLoading) {
-      // Show loading immediately when starting
       setDebouncedLoading(true)
     } else {
-      // Delay hiding loading to prevent flickering
       timeoutRef.current = setTimeout(() => {
         setDebouncedLoading(false)
       }, delay)
@@ -94,22 +91,20 @@ export default function LessonPage() {
   const isInstructorPreview = searchParams.get('instructor-preview') === 'true'
   
   // Instructor preview mode state
-  const [instructorPreviewMode, setInstructorPreviewMode] = useState('enrolled') // 'enrolled' or 'guest'
+  const [instructorPreviewMode, setInstructorPreviewMode] = useState('enrolled')
   
   const isLoggedIn = status === "authenticated" && !!session?.user
   const isSessionLoading = status === "loading"
   
-  // Core hooks - these should work regardless of login status
+  // Core hooks
   const { lessonData, loading: lessonLoading, error: lessonError } = useLessonData(lessonSlug)
   
   // Helper function to check if user is instructor of this course
   const isInstructorOwned = useMemo(() => {
     if (!isLoggedIn || !lessonData) return false
     
-    // Check if user is admin
     if (session?.user?.role === 'admin') return true
     
-    // Check if user owns this course
     return lessonData.instructor?.email === session.user.email || 
           lessonData.instructorId === session.user.id
   }, [isLoggedIn, lessonData, session])
@@ -130,12 +125,12 @@ export default function LessonPage() {
   // Determine effective login status
   const effectiveIsLoggedIn = useMemo(() => {
     if (isInstructorPreview && isInstructorOwned) {
-      return instructorPreviewMode === 'enrolled' // Guest mode simulates logged out
+      return instructorPreviewMode === 'enrolled'
     }
     return isLoggedIn
   }, [isInstructorPreview, isInstructorOwned, instructorPreviewMode, isLoggedIn])
   
-  // Progress hook with initialization tracking - Only run if user is logged in and enrolled
+  // Progress hook with initialization tracking
   const { 
     progress, 
     loading: progressLoading, 
@@ -172,7 +167,7 @@ export default function LessonPage() {
     effectiveIsLoggedIn ? session : null
   )
   
-  // Navigation state - Initialize properly to prevent flickering
+  // Navigation state
   const [activeModule, setActiveModule] = useState(0)
   const [activeVideoId, setActiveVideoId] = useState(null)
   const [completedItems, setCompletedItems] = useState([])
@@ -196,6 +191,114 @@ export default function LessonPage() {
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [activeTab, setActiveTab] = useState('reviews')
   const [hasInitializedQA, setHasInitializedQA] = useState(false)
+
+  // NEW: Auto-completion and auto-next functionality
+  const handleAutoComplete = useCallback(async (lessonId) => {
+    if (!effectiveIsLoggedIn || !effectiveIsEnrolled || isInstructorPreview) return
+    
+    console.log('🎯 Auto-completing lesson:', lessonId)
+    
+    // Update UI immediately for better UX
+    setCompletedItems(prev => {
+      if (!prev.includes(lessonId)) {
+        return [...prev, lessonId]
+      }
+      return prev
+    })
+    
+    // Update database
+    const success = await updateLessonProgress(lessonId, true)
+    
+    if (!success) {
+      // Revert UI update if database update failed
+      setCompletedItems(prev => prev.filter(id => id !== lessonId))
+      console.error('Failed to auto-complete lesson')
+    }
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, isInstructorPreview, updateLessonProgress])
+
+  // NEW: Find next video in the course or check if quiz should be shown
+  const getNextAction = useCallback(() => {
+    if (!lessonData?.modules || !activeVideoId || activeVideoId === "preview") return null
+    
+    // Find current video position
+    let currentModuleIndex = -1
+    let currentItemIndex = -1
+    
+    for (let modIndex = 0; modIndex < lessonData.modules.length; modIndex++) {
+      const module = lessonData.modules[modIndex]
+      for (let itemIndex = 0; itemIndex < module.items.length; itemIndex++) {
+        const item = module.items[itemIndex]
+        if (item.id === activeVideoId && item.type === "video") {
+          currentModuleIndex = modIndex
+          currentItemIndex = itemIndex
+          break
+        }
+      }
+      if (currentModuleIndex !== -1) break
+    }
+    
+    if (currentModuleIndex === -1) return null
+    
+    // Look for next video in current module
+    const currentModule = lessonData.modules[currentModuleIndex]
+    for (let i = currentItemIndex + 1; i < currentModule.items.length; i++) {
+      if (currentModule.items[i].type === "video") {
+        return {
+          type: 'video',
+          video: currentModule.items[i],
+          moduleIndex: currentModuleIndex
+        }
+      }
+    }
+    
+    // If no more videos in current module, check if quiz should be shown
+    const allModuleItemsCompleted = currentModule.items.every(item => 
+      completedItems.includes(item.id) || item.id === activeVideoId
+    )
+    
+    // Check if current module has a quiz and if it should be triggered
+    if (allModuleItemsCompleted && currentModule.quiz && currentModule.quiz.questions && currentModule.quiz.questions.length > 0) {
+      return {
+        type: 'quiz',
+        moduleIndex: currentModuleIndex,
+        module: currentModule
+      }
+    }
+    
+    // Look for first video in next modules
+    for (let modIndex = currentModuleIndex + 1; modIndex < lessonData.modules.length; modIndex++) {
+      const module = lessonData.modules[modIndex]
+      for (let itemIndex = 0; itemIndex < module.items.length; itemIndex++) {
+        const item = module.items[itemIndex]
+        if (item.type === "video") {
+          return {
+            type: 'video',
+            video: item,
+            moduleIndex: modIndex
+          }
+        }
+      }
+    }
+    
+    return null
+  }, [lessonData, activeVideoId, completedItems])
+
+  const nextAction = getNextAction()
+
+  // NEW: Auto-next handler - handles both videos and quizzes
+  const handleAutoNext = useCallback(() => {
+    if (!nextAction) return
+    
+    if (nextAction.type === 'video') {
+      console.log('⏭️ Auto-advancing to next video:', nextAction.video.title)
+      setActiveVideoId(nextAction.video.id)
+      setActiveModule(nextAction.moduleIndex)
+    } else if (nextAction.type === 'quiz') {
+      console.log('📝 Auto-triggering module quiz for module:', nextAction.moduleIndex + 1)
+      setActiveModule(nextAction.moduleIndex)
+      showQuiz() // Automatically show the quiz
+    }
+  }, [nextAction, showQuiz])
 
   // Handle instructor preview mode toggle
   const handleTogglePreviewMode = useCallback((mode) => {
@@ -227,13 +330,11 @@ export default function LessonPage() {
     }
   }, [lessonData?.id, isLoggedIn, isInstructorPreview, checkEnrollment])
 
-  // Sync progress data immediately when available - prevents flickering
+  // Sync progress data immediately when available
   useEffect(() => {
     if (effectiveIsLoggedIn && effectiveIsEnrolled && progressInitialized && progress) {
-      // Update completed items immediately when progress is initialized
       setCompletedItems(progress.completedLessons || [])
       
-      // Update completed modules immediately when progress is initialized
       if (progress.completedModules && lessonData?.modules) {
         const completedModuleData = progress.completedModules
           .map(completedModule => {
@@ -247,10 +348,9 @@ export default function LessonPage() {
           })
           .filter(Boolean)
         
-        setModuleQuizCompleted(completedModuleData)
+        setModuleQuizCompleted(completedModuleData.map(m => m.moduleIndex))
       }
     } else if (!effectiveIsLoggedIn || !effectiveIsEnrolled) {
-      // Clear progress for non-enrolled users
       setCompletedItems([])
       setModuleQuizCompleted([])
     }
@@ -260,19 +360,15 @@ export default function LessonPage() {
   useEffect(() => {
     if (lessonData && !activeVideoId) {
       if (!effectiveIsLoggedIn && lessonData.previewVideoUrl) {
-        // Non-logged users can only see preview
         setActiveVideoId("preview")
       } else if (!effectiveIsLoggedIn && !lessonData.previewVideoUrl) {
-        // No preview available for non-logged users, show first video but locked
         if (lessonData.modules?.length > 0) {
           const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
           if (firstVideo) setActiveVideoId(firstVideo.id)
         }
       } else if (effectiveIsLoggedIn && !effectiveIsEnrolled && lessonData.previewVideoUrl) {
-        // Logged in but not enrolled, show preview
         setActiveVideoId("preview")
       } else if (effectiveIsLoggedIn && effectiveIsEnrolled && lessonData.modules?.length > 0) {
-        // Logged in and enrolled, show first actual video
         const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
         if (firstVideo) setActiveVideoId(firstVideo.id)
       }
@@ -282,10 +378,8 @@ export default function LessonPage() {
   // Fetch reviews and questions when lesson data loads
   useEffect(() => {
     if (lessonData && !hasInitializedQA) {
-      // Always fetch reviews
       fetchReviews()
       
-      // Only fetch questions if user is effectively logged in
       if (effectiveIsLoggedIn) {
         fetchQuestions()
       }
@@ -347,26 +441,21 @@ export default function LessonPage() {
 
   const currentModuleQuizCompleted = useMemo(() => {
     if (!effectiveIsLoggedIn || !effectiveIsEnrolled) return false
-    return moduleQuizCompleted.some(completed => completed.moduleIndex === activeModule)
+    return moduleQuizCompleted.includes(activeModule)
   }, [effectiveIsLoggedIn, effectiveIsEnrolled, moduleQuizCompleted, activeModule])
 
-  // ============ ENHANCED LOADING STATE - PREVENTS FLICKERING ============
+  // ============ ENHANCED LOADING STATE ============
 
-  // Calculate raw loading state
   const rawIsDataLoading = useMemo(() => {
-    // Always wait for session and lesson data
     if (isSessionLoading || lessonLoading) return true
     
-    // Wait for enrollment check if needed (but only briefly)
     if (effectiveIsLoggedIn && !isInstructorPreview && enrollmentLoading) return true
     
-    // Wait for progress if user is enrolled (this is the main cause of flickering)
     if (effectiveIsLoggedIn && effectiveIsEnrolled && !progressInitialized) return true
     
     return false
   }, [isSessionLoading, lessonLoading, effectiveIsLoggedIn, effectiveIsEnrolled, enrollmentLoading, progressInitialized, isInstructorPreview])
 
-  // 🔧 FIX: Use debounced loading to prevent flickering
   const isDataLoading = useDebouncedLoading(rawIsDataLoading, 100)
 
   // ============ EVENT HANDLERS ============
@@ -503,11 +592,19 @@ export default function LessonPage() {
                 )
               ) : (
                 <>
+                  {/* NEW: Enhanced VideoPlayer with auto-completion and auto-next */}
                   <VideoPlayer 
                     activeItem={activeItem} 
                     currentTime={effectiveIsLoggedIn && effectiveIsEnrolled && !isInstructorPreview && progress ? getLessonCurrentTime(activeItem?.id) : 0}
                     onProgressUpdate={effectiveIsLoggedIn && effectiveIsEnrolled && !isInstructorPreview ? updateVideoProgress : null}
                     isEnrolled={effectiveIsEnrolled}
+                    onAutoComplete={handleAutoComplete}
+                    onAutoNext={handleAutoNext}
+                    hasNextAction={!!nextAction}
+                    nextActionTitle={nextAction?.type === 'video' ? nextAction.video.title : nextAction?.type === 'quiz' ? 'Module Quiz' : ""}
+                    nextActionType={nextAction?.type}
+                    moduleData={lessonData?.modules?.[activeModule]}
+                    activeModule={activeModule}
                   />
                   
                   {/* Show enrollment prompt for non-enrolled users */}
@@ -579,7 +676,7 @@ export default function LessonPage() {
                 activeModule={activeModule}
                 activeVideoId={activeVideoId}
                 completedItems={completedItems}
-                moduleQuizCompleted={moduleQuizCompleted.map(m => m.moduleIndex)}
+                moduleQuizCompleted={moduleQuizCompleted}
                 currentModuleCompleted={currentModuleCompleted}
                 showModuleQuiz={quizState.showModuleQuiz}
                 onSelectItem={handleSelectItem}
