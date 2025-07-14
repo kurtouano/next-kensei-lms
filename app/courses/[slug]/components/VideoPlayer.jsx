@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, memo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { FileText, Download, User, Lock, Play } from "lucide-react"
+import { FileText, Download, User, Lock, Play, CheckCircle } from "lucide-react"
 
 export const VideoPlayer = memo(function VideoPlayer({ 
   activeItem, 
@@ -14,7 +14,9 @@ export const VideoPlayer = memo(function VideoPlayer({
   nextActionTitle = "",
   nextActionType = null,
   moduleData = null,
-  activeModule = 0
+  activeModule = 0,
+  // NEW: Add completed items to check completion status
+  completedItems = []
 }) {
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -147,7 +149,7 @@ export const VideoPlayer = memo(function VideoPlayer({
     return () => {
       video.removeEventListener('timeupdate', updateProgress)
     }
-  }, [isVideoLoaded, activeItem?.id, activeItem?.type, activeItem?.isPreview, onProgressUpdate, onAutoComplete, isEnrolled])
+  }, [isVideoLoaded, activeItem?.id, activeItem?.type, activeItem?.isPreview, onProgressUpdate, onAutoComplete, hasNextAction, onAutoNext, isEnrolled])
 
   // Save progress when video is paused or seeked (only for enrolled users)
   useEffect(() => {
@@ -183,25 +185,6 @@ export const VideoPlayer = memo(function VideoPlayer({
     }
   }, [activeItem?.id, activeItem?.type, activeItem?.isPreview, onProgressUpdate, isEnrolled])
 
-  // Auto-next handlers
-  const handleSkipToNext = useCallback(() => {
-    if (countdownIntervalRef.current) {
-      clearInterval(countdownIntervalRef.current)
-    }
-    setShowAutoNext(false)
-    if (onAutoNext) {
-      onAutoNext()
-    }
-  }, [onAutoNext])
-
-  const handleCancelAutoNext = useCallback(() => {
-    if (countdownIntervalRef.current) {
-      clearInterval(countdownIntervalRef.current)
-    }
-    setShowAutoNext(false)
-    setAutoNextCountdown(10)
-  }, [])
-
   return (
     <div className="mb-4 overflow-hidden rounded-lg border border-[#dce4d7] bg-white shadow-sm">
       <div className="relative aspect-video bg-black">
@@ -232,10 +215,11 @@ export const VideoPlayer = memo(function VideoPlayer({
       
       {/* Video info bar */}
       {activeItem?.type === "video" && (
-        <div className="border-t border-[#dce4d7] p-3 bg-[#f8f7f4]">
-          <div className="flex justify-between items-center text-sm text-[#5c6d5e]">
+        <div className="border-t border-[#dce4d7] p-4 bg-[#f8f7f4]">
+          {/* Mobile: 2 rows, Desktop: 1 row */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <div className="flex items-center">
-              <span className="font-medium text-[#2c3e2d]">{activeItem.title}</span>
+              <span className="font-medium text-[#2c3e2d] text-sm">{activeItem.title}</span>
               {/* Only show preview badge for non-enrolled users */}
               {activeItem.isPreview && !isEnrolled && (
                 <span className="ml-2 bg-[#4a7c59] text-white px-2 py-0.5 rounded-full text-xs">
@@ -246,22 +230,33 @@ export const VideoPlayer = memo(function VideoPlayer({
                 <Lock className="ml-2 h-4 w-4 text-[#e67e22]" />
               )}
             </div>
-            <div className="flex items-center gap-4">
-              {activeItem.videoDuration && (
-                <span>Duration: {formatTime(activeItem.videoDuration)}</span>
-              )}
-            </div>
+            
+            {/* Mark as Complete / Completed Button - only for enrolled users on actual lessons */}
+            {isEnrolled && !activeItem.isPreview && (() => {
+              const isCompleted = completedItems.includes(activeItem.id)
+              
+              return (
+                <Button
+                  size="sm"
+                  variant={isCompleted ? "default" : "outline"}
+                  className={
+                    isCompleted
+                      ? "bg-[#4a7c59] text-white hover:bg-[#3a6147] border-[#4a7c59] w-full sm:w-auto"
+                      : "border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-colors w-full sm:w-auto"
+                  }
+                  onClick={() => {
+                    if (!isCompleted && onAutoComplete) {
+                      onAutoComplete(activeItem.id)
+                    }
+                  }}
+                  disabled={isCompleted}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  {isCompleted ? "Completed" : "Mark as Complete"}
+                </Button>
+              )
+            })()}
           </div>
-          
-          {/* Progress bar - only show for enrolled users on non-preview videos */}
-          {videoProgress > 0 && isEnrolled && !activeItem.isPreview && (
-            <div className="mt-2 bg-[#dce4d7] rounded-full h-1">
-              <div 
-                className="bg-[#4a7c59] h-1 rounded-full transition-all duration-300"
-                style={{ width: `${videoProgress}%` }}
-              />
-            </div>
-          )}
 
           {/* Preview notice - only show for non-enrolled users */}
           {activeItem.isPreview && !isEnrolled && (

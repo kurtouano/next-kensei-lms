@@ -173,6 +173,86 @@ export default function LessonPage() {
   const [completedItems, setCompletedItems] = useState([])
   const [moduleQuizCompleted, setModuleQuizCompleted] = useState([])
 
+  // NEW: Check if a module is accessible based on previous module completion
+  const isModuleAccessible = useCallback((moduleIndex) => {
+    if (!effectiveIsLoggedIn || !effectiveIsEnrolled) return false
+    
+    if (moduleIndex === 0) return true
+    
+    const prevModuleIndex = moduleIndex - 1
+    const prevModule = lessonData?.modules?.[prevModuleIndex]
+    if (!prevModule) return false
+    
+    const isPrevModuleComplete = prevModule.items.every(item => completedItems.includes(item.id))
+    const isPrevQuizPassed = moduleQuizCompleted.includes(prevModuleIndex)
+    
+    return isPrevModuleComplete && isPrevQuizPassed
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, lessonData?.modules, completedItems, moduleQuizCompleted])
+
+  // NEW: Auto-cleanup locked module completions
+  useEffect(() => {
+    if (!lessonData?.modules || !effectiveIsLoggedIn || !effectiveIsEnrolled) return
+    
+    let needsCleanup = false
+    const cleanedCompletedItems = [...completedItems]
+    const cleanedModuleQuizCompleted = [...moduleQuizCompleted]
+    
+    // Check each module and clean up if it becomes inaccessible
+    lessonData.modules.forEach((module, moduleIndex) => {
+      const isAccessible = isModuleAccessible(moduleIndex)
+      
+      if (!isAccessible && moduleIndex > 0) {
+        // Remove completed items from this locked module
+        module.items.forEach(item => {
+          const itemIndex = cleanedCompletedItems.indexOf(item.id)
+          if (itemIndex > -1) {
+            cleanedCompletedItems.splice(itemIndex, 1)
+            needsCleanup = true
+            console.log('🧹 Cleaning up completed item from locked module:', item.title)
+          }
+        })
+        
+        // Remove quiz completion from this locked module
+        const quizIndex = cleanedModuleQuizCompleted.indexOf(moduleIndex)
+        if (quizIndex > -1) {
+          cleanedModuleQuizCompleted.splice(quizIndex, 1)
+          needsCleanup = true
+          console.log('🧹 Cleaning up quiz completion from locked module:', moduleIndex + 1)
+        }
+      }
+    })
+    
+    if (needsCleanup) {
+      console.log('🔧 Auto-cleaning locked module progress')
+      setCompletedItems(cleanedCompletedItems)
+      setModuleQuizCompleted(cleanedModuleQuizCompleted)
+      
+      // Sync cleanup with backend
+      const cleanupBackend = async () => {
+        try {
+          const response = await fetch(`/api/courses/progress/${lessonSlug}/cleanup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              allowedLessons: cleanedCompletedItems,
+              allowedModules: cleanedModuleQuizCompleted
+            })
+          })
+          
+          const data = await response.json()
+          if (data.success && data.cleaned) {
+            console.log('✅ Backend progress cleanup completed')
+          }
+        } catch (error) {
+          console.error('❌ Failed to sync cleanup with backend:', error)
+        }
+      }
+      
+      // Delay backend sync to avoid race conditions
+      setTimeout(cleanupBackend, 1000)
+    }
+  }, [completedItems, moduleQuizCompleted, lessonData?.modules, effectiveIsLoggedIn, effectiveIsEnrolled, isModuleAccessible, updateLessonProgress])
+
   // Only run quiz hook if user is logged in and enrolled
   const { quizState, currentQuiz, existingScore, startQuiz, selectAnswer, submitQuiz, retryQuiz, showQuiz, hideQuiz } = useQuiz(
     lessonData, 
@@ -605,6 +685,7 @@ export default function LessonPage() {
                     nextActionType={nextAction?.type}
                     moduleData={lessonData?.modules?.[activeModule]}
                     activeModule={activeModule}
+                    completedItems={completedItems}
                   />
                   
                   {/* Show enrollment prompt for non-enrolled users */}
@@ -687,6 +768,7 @@ export default function LessonPage() {
                 previewVideoUrl={lessonData.previewVideoUrl}
                 courseData={lessonData}
                 progress={progress || { courseProgress: 0 }}
+                isModuleAccessible={isModuleAccessible}
               />
             </div>
           </div>
