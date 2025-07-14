@@ -7,9 +7,12 @@ import { Menu, X, User } from "lucide-react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { useSession } from "next-auth/react"
 
+// Cache for user icon to persist across navigation
+let cachedUserIcon = null;
+
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [userIcon, setUserIcon] = useState(null);
+  const [userIcon, setUserIcon] = useState(cachedUserIcon); // Initialize with cached value
   const [iconLoading, setIconLoading] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -18,21 +21,29 @@ export function Header() {
   useEffect(() => {
     const fetchUserIcon = async () => {
       if (status === "authenticated") {
-        setIconLoading(true);
+        // Only show loading if we don't have a cached icon
+        if (!cachedUserIcon) {
+          setIconLoading(true);
+        }
+        
         try {
           const response = await fetch("/api/profile");
           const data = await response.json();
           if (data.success) {
-            setUserIcon(data.user.icon || null);
+            const newIcon = data.user.icon || null;
+            setUserIcon(newIcon);
+            cachedUserIcon = newIcon; // Cache the icon
           }
         } catch (error) {
           console.error("Failed to fetch user icon:", error);
           setUserIcon(null);
+          cachedUserIcon = null;
         } finally {
           setIconLoading(false);
         }
       } else {
         setUserIcon(null);
+        cachedUserIcon = null;
         setIconLoading(false);
       }
     };
@@ -41,6 +52,7 @@ export function Header() {
 
     // Listen for profile updates
     const handleProfileUpdate = () => {
+      cachedUserIcon = null; // Clear cache when profile updates
       fetchUserIcon();
     };
 
@@ -52,6 +64,48 @@ export function Header() {
   }, [status]);
 
   const isActive = (path) => pathname === path
+
+  const renderUserIcon = () => {
+    // Show default User icon during loading instead of gray background
+    if (iconLoading && !userIcon) {
+      return <User size={18} className="text-[#4a7c59]" />;
+    }
+    
+    if (userIcon) {
+      return userIcon.startsWith('http') ? (
+        <img 
+          src={userIcon} 
+          alt="Profile" 
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span className="text-lg">{userIcon}</span>
+      );
+    }
+    
+    return <User size={18} className="text-[#4a7c59]" />;
+  };
+
+  const renderMobileUserIcon = () => {
+    // Show default User icon during loading instead of gray background
+    if (iconLoading && !userIcon) {
+      return <User size={16} className="text-[#4a7c59]" />;
+    }
+    
+    if (userIcon) {
+      return userIcon.startsWith('http') ? (
+        <img 
+          src={userIcon} 
+          alt="Profile" 
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span className="text-sm">{userIcon}</span>
+      );
+    }
+    
+    return <User size={16} className="text-[#4a7c59]" />;
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/90 backdrop-blur-sm">
@@ -92,22 +146,7 @@ export function Header() {
             <>
             <Link href="/profile" className="flex flex-row items-center gap-2">
               <div className="h-9 w-9 mr-6 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden hover:bg-[#eef2eb] transition-colors">
-                {iconLoading ? (
-                  // Loading skeleton
-                  <div className="h-full w-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse rounded-full"></div>
-                ) : userIcon ? (
-                  userIcon.startsWith('http') ? (
-                    <img 
-                      src={userIcon} 
-                      alt="Profile" 
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-lg">{userIcon}</span>
-                  )
-                ) : (
-                  <User size={18} className="text-[#4a7c59]" />
-                )}
+                {renderUserIcon()}
               </div>  
             </Link>
             </>
@@ -151,22 +190,7 @@ export function Header() {
                 <div className="pt-4 border-t border-[#dce4d7]">
                   <Link href="/profile" className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden">
-                      {iconLoading ? (
-                        // Loading skeleton for mobile
-                        <div className="h-full w-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse rounded-full"></div>
-                      ) : userIcon ? (
-                        userIcon.startsWith('http') ? (
-                          <img 
-                            src={userIcon} 
-                            alt="Profile" 
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-sm">{userIcon}</span>
-                        )
-                      ) : (
-                        <User size={16} className="text-[#4a7c59]" />
-                      )}
+                      {renderMobileUserIcon()}
                     </div>
                     <span className="text-sm font-medium text-[#2c3e2d]">My Profile</span>
                   </Link>
