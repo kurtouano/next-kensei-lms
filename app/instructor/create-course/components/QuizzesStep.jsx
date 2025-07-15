@@ -1,4 +1,4 @@
-// components/QuizzesStep.jsx - Enhanced version with automated points calculation
+// components/QuizzesStep.jsx - Enhanced version with automated quiz titles
 import { memo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,16 @@ const QuizzesStep = memo(({
     removeFillInBlank,
     updateFillInBlank
   } = moduleHandlers
+
+  // Auto-update quiz titles when module titles change
+  useEffect(() => {
+    modules.forEach((module, moduleIndex) => {
+      const expectedQuizTitle = module.title ? `${module.title} Quiz` : ""
+      if (module.quiz.title !== expectedQuizTitle) {
+        updateModule(moduleIndex, "quiz", { ...module.quiz, title: expectedQuizTitle })
+      }
+    })
+  }, [modules.map(m => m.title).join(','), updateModule]) // Only re-run when module titles change
 
   // Auto-calculate points when question data changes
   const calculateAndUpdatePoints = (moduleIndex, questionIndex, question) => {
@@ -56,43 +66,12 @@ const QuizzesStep = memo(({
           <CardHeader>
             <div>
               <CardTitle>Quiz for Module {moduleIndex + 1}: {module.title}</CardTitle>
-              {showValidation && validationErrors[`quiz_${moduleIndex}_title`] && (
-                <div className="flex items-center mt-1 text-red-600 text-sm">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  Quiz title is required
-                </div>
-              )}
+              <p className="text-sm text-gray-600 mt-1">
+                Quiz Title: <span className="font-medium">{module.title ? `${module.title} Quiz` : "Quiz title will auto-generate"}</span>
+              </p>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Quiz Title */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Quiz Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                className={`w-full rounded-md border p-2 ${showValidation && validationErrors[`quiz_${moduleIndex}_title`] ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="e.g., Hiragana Basics Quiz"
-                value={module.quiz.title}
-                onChange={(e) => updateModule(moduleIndex, "quiz", { ...module.quiz, title: e.target.value })}
-              />
-            </div>
-
-            {/* Points Calculation Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-800">
-                  <strong>Points Auto-Calculation:</strong>
-                  <ul className="mt-1 space-y-1 text-xs">
-                    <li>• <strong>Multiple Choice:</strong> 1 point per question</li>
-                    <li>• <strong>Fill in Blanks:</strong> 1 point per blank (e.g., 3 blanks = 3 points)</li>
-                    <li>• <strong>Matching:</strong> 1 point per pair (e.g., 5 pairs = 5 points)</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
             {/* Questions */}
             {module.quiz.questions.map((question, questionIndex) => (
               <QuestionCard

@@ -1,4 +1,4 @@
-// hooks/useValidation.js - Enhanced version with multiple question types validation
+// hooks/useValidation.js - Enhanced version with multiple question types validation (no quiz title validation)
 import { useState, useCallback } from "react"
 import { AlertCircle } from "lucide-react"
 
@@ -134,11 +134,10 @@ export const useValidation = (courseData, modules) => {
     }
     
     if (step === 2) {
-      // Enhanced Quiz validation with multiple question types
+      // Enhanced Quiz validation with multiple question types (NO QUIZ TITLE VALIDATION)
       modules.forEach((module, moduleIndex) => {
-        if (!module.quiz.title.trim()) {
-          errors[`quiz_${moduleIndex}_title`] = `Quiz title for Module ${moduleIndex + 1} is required`
-        }
+        // ✅ REMOVED: Quiz title validation since it's automated
+        // Quiz title is now auto-generated from module title + " Quiz"
         
         module.quiz.questions.forEach((question, questionIndex) => {
           // Validate based on question type
