@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "./providers"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Analytics } from "@vercel/analytics/next"
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default async function RootLayout({ children }) {
             </div>
           </ThemeProvider>
         </AuthProvider>
+        <Analytics/> {/* Vercel Analytics */}
       </body>
     </html>
   )
