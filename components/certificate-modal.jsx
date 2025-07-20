@@ -1,163 +1,8 @@
 // components/certificate-modal.jsx
 "use client"
-import { X, Download, Loader2, ExternalLink, Share2 } from "lucide-react"
+import { X, Download, Loader2, ExternalLink, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
-
-function DisplayCertificate({
-  userName = "SakuraBonsai",
-  courseTitle = "Japanese Basics",
-  completionDate = new Date(),
-  certificateId = "BONSAI-CERT-12345",
-  instructorName = "Instructor", 
-}) {
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
-
-  return (
-    <div
-      className="relative w-full bg-white shadow-2xl"
-      style={{ 
-        width: "800px", 
-        height: "680px",
-        maxWidth: "100%",
-        margin: "0 auto",
-      }}
-    >
-      {/* Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#f8f9fa] via-white to-[#f1f7f1]"></div>
-      
-      {/* Decorative Corner Elements */}
-      <div className="absolute top-0 left-0 w-20 h-20">
-        <div className="absolute top-4 left-4 w-12 h-12 border-2 border-[#4a7c59] opacity-20 rotate-45"></div>
-      </div>
-      
-      <div className="absolute top-0 right-0 w-20 h-20">
-        <div className="absolute top-4 right-4 w-12 h-12 border-2 border-[#4a7c59] opacity-20 rotate-45"></div>
-      </div>
-      
-      <div className="absolute bottom-0 left-0 w-20 h-20">
-        <div className="absolute bottom-4 left-4 w-12 h-12 border-2 border-[#4a7c59] opacity-20 rotate-45"></div>
-      </div>
-      
-      <div className="absolute bottom-0 right-0 w-20 h-20">
-        <div className="absolute bottom-4 right-4 w-12 h-12 border-2 border-[#4a7c59] opacity-20 rotate-45"></div>
-      </div>
-
-      {/* Main Border Design */}
-      <div className="absolute inset-0 border-4 border-[#4a7c59]"></div>
-      <div className="absolute inset-2 border-2 border-[#6b8e6b] opacity-50"></div>
-      <div className="absolute inset-4 border border-[#8ba68b] opacity-30"></div>
-
-      {/* Certificate Content */}
-      <div className="relative flex h-full flex-col items-center justify-between p-6 text-center">
-        {/* Header */}
-        <div className="w-full">
-          {/* Academy Logo and Name */}
-          <div className="flex items-center justify-center gap-4 mb-2">
-            <div className="flex items-center justify-center w-12 h-12 bg-[#4a7c59] rounded-full">
-              <span className="text-white text-lg font-bold">日</span>
-            </div>
-            <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-wide text-[#2c3e2d] mb-1">GENKO TREE</h1>
-              <div className="text-xs font-medium text-[#6b8e6b] tracking-widest">
-                JAPANESE LANGUAGE LEARNING ACADEMY
-              </div>
-            </div>
-            <div className="flex items-center justify-center w-12 h-12 bg-[#4a7c59] rounded-full">
-              <span className="text-white text-lg font-bold">日</span>
-            </div>
-          </div>
-          
-          {/* Certificate Title */}
-          <div className="border-t border-[#4a7c59] py-2 my-2">
-            <h2 className="text-lg font-bold uppercase tracking-[0.2em] text-[#4a7c59]">
-              Certificate of Completion
-            </h2>
-            <div className="text-xs text-[#6b8e6b] mt-1 tracking-wide">
-              Japanese Language Proficiency Program
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col justify-center w-full max-w-[600px] py-1">
-          <div className="p-4 rounded-lg">
-            <p className="mb-3 text-lg text-[#5c6d5e] font-light">This is to certify that</p>
-            
-            <div className="border-b-2 border-[#4a7c59] pb-2 mb-3 max-w-[77%] mx-auto">
-              <h3 className="font-serif text-3xl font-bold text-[#2c3e2d] tracking-wide italic">
-                {userName}
-              </h3>
-            </div>
-            
-            <p className="mb-4 text-lg text-[#5c6d5e] font-light">
-              has successfully completed the comprehensive course
-            </p>
-            
-            {/* Green Course Box */}
-            <div className="bg-[#4a7c59] text-white p-3 rounded-lg mb-4 mx-auto max-w-[560px]">
-              <h4 className="font-serif text-xl font-bold">
-                "{courseTitle}"
-              </h4>
-              <div className="text-sm opacity-90 mt-1 mb-4">
-                Japanese Language Mastery Program
-              </div>
-            </div>
-            
-            {/* Completion Date */}
-            <div className="mb-2">
-              <p className="text-lg text-[#5c6d5e] font-medium">
-                Completed on {formatDate(completionDate)}
-              </p>
-            </div>
-            
-            <div className="text-sm text-[#6b8e6b]">
-              Recognized by Genko Tree Japanese Language Learning Academy
-            </div>
-          </div>
-        </div>
-
-        {/* Authority and Validation - FIXED: Use real instructor name */}
-        <div className="w-full">
-          {/* Signatures */}
-          <div className="flex justify-between items-end mb-4 px-8">
-            <div className="flex flex-col items-center">
-              <div className="w-32 border-b-2 border-[#2c3e2d] mb-2 h-8 flex items-end justify-center pb-1">
-                <div className="text-xs text-[#6b8e6b] font-medium">{instructorName}</div>
-              </div>
-              <p className="text-xs font-medium text-[#2c3e2d]">Course Instructor</p>
-              <p className="text-xs text-[#6b8e6b]">Japanese Language Expert</p>
-            </div>
-
-            <div className="flex flex-col items-center">
-              <div className="w-32 border-b-2 border-[#2c3e2d] mb-2 h-6 flex items-end justify-center">
-                <div className="text-xs text-[#6b8e6b] mb-1">Genko Tree Academy</div>
-              </div>
-              <p className="text-xs font-medium text-[#2c3e2d]">Academic Director</p>
-              <p className="text-xs text-[#6b8e6b]">Curriculum Specialist</p>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="border-t-2 border-[#4a7c59] pt-3">
-            <div className="flex justify-center items-center text-xs text-[#5c6d5e] px-4">
-              <div className="text-center">
-                <div className="font-medium">Certificate ID: {certificateId}</div>
-                <div className="text-[#6b8e6b]">Issued: {formatDate(new Date())}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // FIXED: PDF Certificate component with real instructor name
 function PDFCertificate({
@@ -578,6 +423,7 @@ export function CertificateModal({
   const [certificateData, setCertificateData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
+  const [viewing, setViewing] = useState(false)
   const [error, setError] = useState(null)
 
   // Fetch real certificate data when modal opens
@@ -614,91 +460,118 @@ export function CertificateModal({
     }
   }
 
-  const handleDownload = async () => {
+  const generatePDF = async () => {
     if (!certificateData?.certificateId) {
-      alert("Certificate ID not found")
-      return
+      throw new Error("Certificate ID not found")
     }
 
+    // Dynamic import to avoid SSR issues
+    const [
+      { default: html2canvas }, 
+      { default: jsPDF }
+    ] = await Promise.all([
+      import('html2canvas'),
+      import('jspdf')
+    ])
+    
+    // Get the PDF-optimized certificate element
+    const certificateElement = document.getElementById('pdf-certificate-to-download')
+    
+    if (!certificateElement) {
+      throw new Error('Certificate element not found')
+    }
+
+    // Optimized html2canvas settings for inline styles
+    const canvas = await html2canvas(certificateElement, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      width: 800,
+      height: 650,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: 800,
+      windowHeight: 650,
+      logging: false,
+      imageTimeout: 0,
+      removeContainer: false,
+      foreignObjectRendering: false
+    })
+
+    // Create PDF in landscape mode
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    })
+
+    // Calculate dimensions for A4 landscape
+    const pdfWidth = pdf.internal.pageSize.getWidth() // 297mm
+    const pdfHeight = pdf.internal.pageSize.getHeight() // 210mm
+    
+    // Add margins
+    const margin = 10
+    const availableWidth = pdfWidth - (margin * 2)
+    const availableHeight = pdfHeight - (margin * 2)
+    
+    // Calculate scaling to fit A4 with aspect ratio
+    const scaleX = availableWidth / (800 * 0.264583) // Convert px to mm
+    const scaleY = availableHeight / (650 * 0.264583)
+    const scale = Math.min(scaleX, scaleY)
+    
+    const finalWidth = 800 * 0.264583 * scale
+    const finalHeight = 650 * 0.264583 * scale
+    
+    // Center the certificate
+    const x = (pdfWidth - finalWidth) / 2
+    const y = (pdfHeight - finalHeight) / 2
+
+    // Convert canvas to high-quality image
+    const imgData = canvas.toDataURL('image/jpeg', 0.95)
+    pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight)
+
+    // Add metadata
+    pdf.setProperties({
+      title: `Certificate - ${certificateData.courseTitle}`,
+      subject: `Certificate of Completion for ${certificateData.userName}`,
+      author: 'Genko Tree - Japanese Language Learning Academy',
+      keywords: 'certificate, japanese, language, completion',
+      creator: 'Genko Tree'
+    })
+
+    return pdf
+  }
+
+  const handleView = async () => {
+    try {
+      setViewing(true)
+      
+      const pdf = await generatePDF()
+      
+      // Create blob URL and open in new tab
+      const pdfBlob = pdf.output('blob')
+      const url = URL.createObjectURL(pdfBlob)
+      window.open(url, '_blank')
+      
+      // Clean up the URL after a delay
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+
+    } catch (error) {
+      console.error('View error:', error)
+      alert(`Failed to view certificate: ${error.message}`)
+    } finally {
+      setViewing(false)
+    }
+  }
+
+  const handleDownload = async () => {
     try {
       setDownloading(true)
       
-      // Dynamic import to avoid SSR issues
-      const [
-        { default: html2canvas }, 
-        { default: jsPDF }
-      ] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf')
-      ])
+      const pdf = await generatePDF()
       
-      // Get the PDF-optimized certificate element
-      const certificateElement = document.getElementById('pdf-certificate-to-download')
-      
-      if (!certificateElement) {
-        throw new Error('Certificate element not found')
-      }
-
-      // Optimized html2canvas settings for inline styles
-      const canvas = await html2canvas(certificateElement, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: 800,
-        height: 650,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: 800,
-        windowHeight: 650,
-        logging: false,
-        imageTimeout: 0,
-        removeContainer: false,
-        foreignObjectRendering: false
-      })
-
-      // Create PDF in landscape mode
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      })
-
-      // Calculate dimensions for A4 landscape
-      const pdfWidth = pdf.internal.pageSize.getWidth() // 297mm
-      const pdfHeight = pdf.internal.pageSize.getHeight() // 210mm
-      
-      // Add margins
-      const margin = 10
-      const availableWidth = pdfWidth - (margin * 2)
-      const availableHeight = pdfHeight - (margin * 2)
-      
-      // Calculate scaling to fit A4 with aspect ratio
-      const scaleX = availableWidth / (800 * 0.264583) // Convert px to mm
-      const scaleY = availableHeight / (650 * 0.264583)
-      const scale = Math.min(scaleX, scaleY)
-      
-      const finalWidth = 800 * 0.264583 * scale
-      const finalHeight = 650 * 0.264583 * scale
-      
-      // Center the certificate
-      const x = (pdfWidth - finalWidth) / 2
-      const y = (pdfHeight - finalHeight) / 2
-
-      // Convert canvas to high-quality image
-      const imgData = canvas.toDataURL('image/jpeg', 0.95)
-      pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight)
-
-      // Add metadata
-      pdf.setProperties({
-        title: `Certificate - ${certificateData.courseTitle}`,
-        subject: `Certificate of Completion for ${certificateData.userName}`,
-        author: 'Genko Tree - Japanese Language Learning Academy',
-        keywords: 'certificate, japanese, language, completion',
-        creator: 'Genko Tree'
-      })
-
       // Download with descriptive filename
       const fileName = `GenkoTree_Certificate_${certificateData.userName.replace(/[^a-zA-Z0-9]/g, '_')}_${certificateData.certificateId}.pdf`
       pdf.save(fileName)
@@ -715,26 +588,26 @@ export function CertificateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-6xl max-h-[85vh] overflow-auto rounded-xl bg-white shadow-2xl" style={{ marginTop: '2vh' }}>
+      <div className="relative w-full max-w-2xl max-h-[85vh] overflow-auto rounded-xl bg-white shadow-2xl">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white">
-          <div className="flex items-center justify-between py-6 px-12">
+          <div className="flex items-center justify-between py-6 px-8">
             <div>
-              <h2 className="text-2xl font-bold">Your Certificate of Completion</h2>
-              <p className="text-sm opacity-90 mt-1">Genko Tree - Japanese Language Learning Academy </p>
+              <h2 className="text-xl font-bold">Certificate of Completion</h2>
+              <p className="text-sm opacity-90 mt-1">Genko Tree - Japanese Language Learning Academy</p>
             </div>
             <button
               onClick={onClose}
-              className="rounded-full bg-white/20 p-3 text-white hover:bg-white/30 transition-colors"
-              disabled={downloading}
+              className="rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-colors"
+              disabled={downloading || viewing}
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-8">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
               <Loader2 className="h-12 w-12 animate-spin text-[#4a7c59] mb-4" />
@@ -752,37 +625,44 @@ export function CertificateModal({
             </div>
           ) : certificateData ? (
             <>
-              {/* Certificate display */}
-              <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg">
-                <div className="flex justify-center">
-                  <div 
-                    className="inline-block shadow-xl rounded-lg overflow-hidden"
-                    style={{ transform: 'scale(0.85)' }}
-                  >
-                    <DisplayCertificate {...certificateData} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Hidden PDF-optimized certificate for download */}
-              <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-                <div id="pdf-certificate-to-download">
-                  <PDFCertificate {...certificateData} />
-                </div>
+              {/* Certificate Success Message */}
+              <div className="text-center mb-6">
+                <p className="text-[#5c6d5e] mb-1">You have successfully completed</p>
+                <p className="text-lg font-semibold text-[#4a7c59]">"{certificateData.courseTitle}"</p>
               </div>
 
               {/* Action buttons */}
-              <div className="flex flex-wrap gap-4 justify-center mb-6">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+                <Button 
+                  onClick={handleView} 
+                  size="lg"
+                  variant="outline"
+                  className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb] px-8 py-3"
+                  disabled={viewing || downloading}
+                >
+                  {viewing ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Opening...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="mr-2 h-5 w-5" />
+                      View Certificate
+                    </>
+                  )}
+                </Button>
+
                 <Button 
                   onClick={handleDownload} 
                   size="lg"
                   className="bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white hover:from-[#3a6147] hover:to-[#5a7a5a] px-8 py-3"
-                  disabled={downloading}
+                  disabled={downloading || viewing}
                 >
                   {downloading ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Generating PDF...
+                      Downloading...
                     </>
                   ) : (
                     <>
@@ -793,8 +673,16 @@ export function CertificateModal({
                 </Button>
               </div>
 
-              {/* Profile info */}
-              <div className="text-center mb-6">
+              {/* Hidden PDF-optimized certificate for generation */}
+              <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+                <div id="pdf-certificate-to-download">
+                  <PDFCertificate {...certificateData} />
+                </div>
+              </div>
+
+
+              {/* Profile link */}
+              <div className="text-center">
                 <p className="text-sm text-[#6b8e6b]">
                   You can also view all your certificates anytime in your{" "}
                   <a 
@@ -805,36 +693,6 @@ export function CertificateModal({
                   </a>
                 </p>
               </div>
-
-              {/* Certificate info section */}
-              {certificateData && (
-                <div className="bg-gradient-to-r from-[#f8f9fa] to-[#f1f7f1] rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-[#2c3e2d] mb-4">Certificate Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-[#4a7c59]">Course:</span>
-                      <span className="ml-2 text-[#2c3e2d]">{certificateData.courseTitle}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-[#4a7c59]">Instructor:</span>
-                      <span className="ml-2 text-[#2c3e2d]">{certificateData.instructorName}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-[#4a7c59]">Completion Date:</span>
-                      <span className="ml-2 text-[#2c3e2d]">{certificateData.completionDate.toLocaleDateString()}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-[#4a7c59]">Certificate ID:</span>
-                      <span className="ml-2 text-[#2c3e2d] font-mono text-xs">{certificateData.certificateId}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-[#4a7c59]/20">
-                    <p className="text-xs text-[#6b8e6b]">
-                      This certificate is issued by Genko Tree - Japanese Language Learning Academy.
-                    </p>
-                  </div>
-                </div>
-              )}
             </>
           ) : null}
         </div>
