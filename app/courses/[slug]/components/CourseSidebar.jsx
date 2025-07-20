@@ -223,49 +223,70 @@ export const CourseSidebar = memo(function CourseSidebar({
         ))}
       </div>
 
-      {/* FIXED: Certificate claim section - only show when course is TRULY completed */}
-      {isCourseCompleted && (
+      {/* Certificate Section - Only show for logged in users */}
+      {isEnrolled && (
         <div className="border-t border-[#dce4d7] p-4 bg-gradient-to-r from-[#eef2eb] to-white">
           <div className="text-center">
-            <Award className="mx-auto mb-2 h-6 w-6 text-[#4a7c59]" />
-            <p className="text-sm font-medium text-[#2c3e2d] mb-2">
-              🎉 Course Completed!
-            </p>
-            <p className="text-xs text-[#5c6d5e] mb-3">
-              {hasCertificate 
-                ? "Your certificate is ready for download!"
-                : "Congratulations! You've finished all lessons and quizzes."
-              }
-            </p>
+            <Award className={`mx-auto mb-2 h-6 w-6 ${
+              isCourseCompleted ? 'text-[#4a7c59]' : 'text-[#5c6d5e]'
+            }`} />
             
-            {hasCertificate ? (
-              <Button 
-                size="sm" 
-                className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
-                onClick={handleViewCertificate}
-              >
-                <Award className="mr-2 h-4 w-4" />
-                View Certificate
-              </Button>
-            ) : (
-              <Button 
-                size="sm" 
-                className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
-                onClick={handleClaimCertificate}
-                disabled={claimingCertificate}
-              >
-                {claimingCertificate ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
+            {isCourseCompleted ? (
+              <>
+                <p className="text-sm font-medium text-[#2c3e2d] mb-2">
+                  Course Completed!
+                </p>
+                <p className="text-xs text-[#5c6d5e] mb-3">
+                  {hasCertificate 
+                    ? "Your certificate is ready for download!"
+                    : "Congratulations! You've finished all lessons and quizzes."
+                  }
+                </p>
+                
+                {hasCertificate ? (
+                  <Button 
+                    size="sm" 
+                    className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+                    onClick={handleViewCertificate}
+                  >
                     <Award className="mr-2 h-4 w-4" />
-                    Claim Certificate
-                  </>
+                    View Certificate
+                  </Button>
+                ) : (
+                  <Button 
+                    size="sm" 
+                    className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+                    onClick={handleClaimCertificate}
+                    disabled={claimingCertificate}
+                  >
+                    {claimingCertificate ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Award className="mr-2 h-4 w-4" />
+                        Claim Certificate
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-[#2c3e2d] mb-2">
+                  Course Certificate
+                </p>
+                <p className="text-xs text-[#5c6d5e] mb-3">
+                  Complete all modules and pass all quizzes to get your certificate
+                </p>
+                
+                <div className="flex items-center justify-center py-2 px-3 bg-white border border-[#dce4d7] rounded-md">
+                  <Lock className="mr-4 h-3 w-3 text-[#5c6d5e]" />
+                  <span className="text-sm text-[#5c6d5e]">Locked</span>
+                </div>
+              </>
             )}
           </div>
         </div>

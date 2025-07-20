@@ -24,7 +24,7 @@ function DisplayCertificate({
       className="relative w-full bg-white shadow-2xl"
       style={{ 
         width: "800px", 
-        height: "650px",
+        height: "680px",
         maxWidth: "100%",
         margin: "0 auto",
       }}
