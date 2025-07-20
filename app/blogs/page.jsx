@@ -64,7 +64,7 @@ export default function BlogsPage() {
         sortBy: 'newest'
       })
 
-      const response = await fetch(`/api/admin/blogs?${params}`)
+      const response = await fetch(`/api/blogs?${params}`)
       const data = await response.json()
 
       if (data.success) {

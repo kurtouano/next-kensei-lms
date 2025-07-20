@@ -6,7 +6,6 @@ import { useSession } from "next-auth/react"
 import { ArrowLeft, Calendar, Clock, Eye, Heart, Share2, User, LoaderCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Header } from "@/components/header"
 
 export default function BlogPostPage({ params }) {
   const { data: session, status } = useSession()
@@ -118,7 +117,6 @@ export default function BlogPostPage({ params }) {
   if (loading || status === "loading") {
     return (
       <>
-        <Header/>
         <div className="min-h-screen bg-gray-50">
           <div className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-center min-h-[400px]">
@@ -136,7 +134,6 @@ export default function BlogPostPage({ params }) {
   if (error || !blogPost) {
     return (
       <>
-        <Header/>
         <div className="min-h-screen bg-gray-50">
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-2xl mx-auto text-center py-16">
@@ -157,7 +154,6 @@ export default function BlogPostPage({ params }) {
 
   return (
     <>
-    <Header/>
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-5xl mx-auto">

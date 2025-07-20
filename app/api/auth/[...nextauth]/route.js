@@ -1,5 +1,4 @@
-// For Logging In Only
-
+// app/api/auth/[...nextauth]/route.js - Updated with Role Protection
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
@@ -35,12 +34,14 @@ export const authOptions = {
             throw new Error("Invalid password.")
           }
 
-          // If everything is good - INCLUDE ROLE HERE
+          // Return user data including role and additional fields
           return {
             id: user._id.toString(),
             name: user.name,
             email: user.email,
-            role: user.role || "student", // ADD THIS
+            role: user.role || "student",
+            icon: user.icon,
+            country: user.country || "Bonsai Garden Resident",
           }
           
         } catch (error) {
@@ -59,19 +60,20 @@ export const authOptions = {
     async signIn({ user, account }) {
       if (account.provider === "google") {  
         try {
-          await connectDb(); // CONNECT TO DB DIRECTLY INSTEAD OF FETCH
+          await connectDb();
           
           // Check if user exists
           const existingUser = await User.findOne({ email: user.email });
           
           if (!existingUser) {
-            // Create user directly in callback
+            // Create user directly in callback with role
             const newUser = await User.create({
               name: user.name,
               email: user.email,
               provider: account.provider,
               providerId: account.providerAccountId,
-              role: "student"
+              role: "student", // Default role for new Google users
+              country: "Bonsai Garden Resident"
             });
             
             // Create bonsai for new user
@@ -80,25 +82,27 @@ export const authOptions = {
             newUser.bonsai = bonsai._id;
             await newUser.save();
             
-            console.log("Created new Google user:", newUser.email);
+            console.log("Created new Google user:", newUser.email, "with role:", newUser.role);
           } else {
-            console.log("Google user already exists:", existingUser.email);
+            console.log("Google user already exists:", existingUser.email, "role:", existingUser.role);
           }
           
         } catch (error){ 
           console.error("Error in signIn callback:", error)
-          return false; // BLOCK LOGIN ON ERROR
+          return false; // Block login on error
         }
       }
       return true; 
     },
 
     async jwt({ token, user, account }) {
-      // HANDLE BOTH GOOGLE AND CREDENTIALS
+      // Handle both Google and Credentials - INCLUDE ALL USER DATA
       if (user) {
         // First time login - set user data in token
         token.role = user.role || "student";
         token.id = user.id;
+        token.icon = user.icon;
+        token.country = user.country;
       }
       
       // For Google login, get additional data from DB
@@ -110,9 +114,13 @@ export const authOptions = {
           if (dbUser) {
             token.role = dbUser.role;
             token.id = dbUser._id.toString();
+            token.icon = dbUser.icon;
+            token.country = dbUser.country;
           }
         } catch (error) {
           console.error("JWT callback error:", error);
+          // Fallback values
+          token.role = token.role || "student";
         }
       }
       
@@ -120,20 +128,27 @@ export const authOptions = {
     },
 
     async session({ session, token }) {
-      // ALWAYS SET THESE VALUES
+      // Always set these values in session for role protection
       session.user.role = token.role || "student";
       session.user.id = token.id;
+      session.user.icon = token.icon;
+      session.user.country = token.country;
+      
       return session;
     },
 
-    // ADD REDIRECT CALLBACK FOR BETTER CONTROL
+    // Redirect based on user role after login
     async redirect({ url, baseUrl }) {
-      // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
-      // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
-      // Default redirect
-      return `${baseUrl}/my-learning`
+      // If it's a relative URL, prepend baseUrl
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      // If it's the same origin, allow it
+      else if (new URL(url).origin === baseUrl) {
+        return url;
+      }
+      // Default redirect to role-based dashboard
+      return `${baseUrl}/dashboard`; // Middleware will redirect based on role
     },
   },
 
@@ -142,17 +157,17 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   
-  // MAKE SURE SECRET IS SET
+  // Make sure secret is set
   secret: process.env.NEXTAUTH_SECRET,
   
   pages: {
-    signIn: "/auth/login",
+    signIn: "/auth/login", // Your existing login page
   },
   
-  // ADD DEBUG LOGGING FOR PRODUCTION
+  // Debug logging for development
   debug: process.env.NODE_ENV === "development",
   
-  // ADD THESE FOR VERCEL COMPATIBILITY
+  // Vercel compatibility settings
   useSecureCookies: process.env.NODE_ENV === "production",
   cookies: {
     sessionToken: {
