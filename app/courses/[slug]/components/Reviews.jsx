@@ -130,52 +130,52 @@ const ReviewHeader = memo(function ReviewHeader({
 }) {
   return (
     <div className="border-b border-[#dce4d7] pb-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 min-w-0"> {/* FIXED: Added min-w-0 */}
-          <h3 className="font-medium text-[#2c3e2d]">Reviews & Ratings</h3>
-          <div className="flex items-center gap-2 min-w-0"> {/* FIXED: Added min-w-0 */}
-            <StarRating rating={Math.round(averageRating)} />
-            <span className="text-sm text-[#5c6d5e] whitespace-nowrap"> {/* FIXED: Added whitespace-nowrap */}
+      <div className="flex items-center justify-between flex-col sm:flex-row">
+        <div className="flex items-center gap-4 min-w-0 pb-4 sm:pb-0"> 
+          <h3 className="text-sm sm:text-base font-medium text-[#2c3e2d]">Reviews & Ratings</h3>
+          <div className="flex items-center gap-2 min-w-0">
+            <StarRating rating={Math.round(averageRating)} size="h-3.5 w-3.5 sm:h-4 sm:w-4"  />
+            <span className="text-xs sm:text-sm text-[#5c6d5e] whitespace-nowrap"> {/* FIXED: Added whitespace-nowrap */}
               {averageRating} ({totalReviews} reviews)
             </span>
           </div>
         </div>
         
-        {isLoggedIn && isEnrolled && !showForm && (
-          <div className="flex gap-2 flex-shrink-0"> {/* FIXED: Added flex-shrink-0 */}
-            {userHasReviewed ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-[#4a7c59] text-[#4a7c59]"
-                  onClick={onEditReview}
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Review
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-red-500 text-red-500 hover:bg-red-50"
-                  onClick={onDeleteReview}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="outline"
-                className="border-[#4a7c59] text-[#4a7c59]"
-                onClick={onShowForm}
-              >
-                <Star className="mr-2 h-4 w-4" />
-                Write Review
-              </Button>
-            )}
-          </div>
-        )}
+{isLoggedIn && isEnrolled && !showForm && (
+  <div className="flex gap-2 w-full sm:w-auto sm:flex-shrink-0">
+    {userHasReviewed ? (
+      <>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 sm:flex-none border-[#4a7c59] text-[#4a7c59]"
+          onClick={onEditReview}
+        >
+          <Edit className="mr-2 h-4 w-4" />
+          Edit Review
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1 sm:flex-none border-red-500 text-red-500 hover:bg-red-50"
+          onClick={onDeleteReview}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </Button>
+      </>
+    ) : (
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto border-[#4a7c59] text-[#4a7c59]"
+        onClick={onShowForm}
+      >
+        <Star className="mr-2 h-4 w-4" />
+        Write Review
+      </Button>
+    )}
+  </div>
+)}
       </div>
     </div>
   )
