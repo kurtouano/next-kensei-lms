@@ -42,7 +42,7 @@ export const CourseSidebar = memo(function CourseSidebar({
     [modules]
   )
 
-  const isModuleAccessible = useCallback((moduleIndex) => {
+const isModuleAccessible = useCallback((moduleIndex) => {
     if (!isEnrolled) return false
     
     if (moduleIndex === 0) return true
@@ -50,7 +50,8 @@ export const CourseSidebar = memo(function CourseSidebar({
     const prevModuleIndex = moduleIndex - 1
     const prevModule = modules[prevModuleIndex]
     const isPrevModuleComplete = prevModule?.items.every(item => completedItems.includes(item.id))
-    const isPrevQuizPassed = moduleQuizCompleted.includes(prevModuleIndex)
+    
+    const isPrevQuizPassed = moduleQuizCompleted.some(cm => cm.moduleIndex === prevModuleIndex)
     
     return isPrevModuleComplete && isPrevQuizPassed
   }, [modules, completedItems, moduleQuizCompleted, isEnrolled])

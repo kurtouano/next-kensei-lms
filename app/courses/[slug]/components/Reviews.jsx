@@ -131,11 +131,11 @@ const ReviewHeader = memo(function ReviewHeader({
   return (
     <div className="border-b border-[#dce4d7] pb-4">
       <div className="flex items-center justify-between flex-col sm:flex-row">
-        <div className="flex items-center gap-4 min-w-0 pb-4 sm:pb-0"> 
+        <div className="flex w-full sm:w-max justify-between gap-4 min-w-0 pb-4 sm:pb-0"> 
           <h3 className="text-sm sm:text-base font-medium text-[#2c3e2d]">Reviews & Ratings</h3>
           <div className="flex items-center gap-2 min-w-0">
             <StarRating rating={Math.round(averageRating)} size="h-3.5 w-3.5 sm:h-4 sm:w-4"  />
-            <span className="text-xs sm:text-sm text-[#5c6d5e] whitespace-nowrap"> {/* FIXED: Added whitespace-nowrap */}
+            <span className="text-xs sm:text-sm text-[#5c6d5e] whitespace-nowrap">
               {averageRating} ({totalReviews} reviews)
             </span>
           </div>
@@ -362,24 +362,23 @@ const ReviewItem = memo(function ReviewItem({ review }) {
           {renderAvatar()}
         </div>
 
-        <div className="flex-1 min-w-0"> {/* FIXED: Added min-w-0 for proper flex shrinking */}
+        <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">
-            <div className="min-w-0"> {/* FIXED: Added min-w-0 */}
-              <h5 className="font-medium text-[#2c3e2d] truncate">{review.user.name}</h5> {/* FIXED: Added truncate */}
+            <div className="min-w-0">
+              <h5 className="text-sm sm:text-base font-medium text-[#2c3e2d] truncate">{review.user.name}</h5>
               <div className="flex items-center gap-2">
                 <StarRating rating={review.rating} />
-                <span className="text-xs text-[#5c6d5e] whitespace-nowrap">{review.createdAt}</span> {/* FIXED: Added whitespace-nowrap */}
+                <span className="text-xs sm:text-sm text-[#5c6d5e] whitespace-nowrap">{review.createdAt}</span>
               </div>
             </div>
             {review.isLiked && (
-              <div className="flex items-center text-red-500 flex-shrink-0"> {/* FIXED: Added flex-shrink-0 */}
+              <div className="flex items-center text-red-500 flex-shrink-0">
                 <Heart className="h-4 w-4 fill-current" />
               </div>
             )}
           </div>
           
-          {/* FIXED: Review comment with proper text wrapping */}
-          <p className="text-sm text-[#5c6d5e] break-words overflow-wrap-anywhere">
+          <p className="text-sm sm:text-base text-[#5c6d5e] break-words overflow-wrap-anywhere">
             {review.comment}
           </p>
         </div>
