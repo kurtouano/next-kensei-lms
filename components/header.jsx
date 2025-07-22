@@ -1,4 +1,4 @@
-// components/header.jsx - Updated with Role-Based Access
+// components/header.jsx - Updated with Auto-Close Mobile Menu
 "use client"
 
 import Link from "next/link"
@@ -24,6 +24,11 @@ export function Header() {
     canAccessAdmin,
     getDashboardRoute
   } = useRoleAccess();
+
+  // Close mobile menu when pathname changes
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
 
   // Fetch user profile data to get the icon
   useEffect(() => {
@@ -70,6 +75,11 @@ export function Header() {
   }, [status]);
 
   const isActive = (path) => pathname === path || pathname.startsWith(path + '/')
+
+  // Helper function to close mobile menu when clicking links
+  const closeMobileMenu = () => {
+    setIsMenuOpen(false);
+  };
 
   const renderUserIcon = () => {
     if (iconLoading && !userIcon) {
@@ -255,24 +265,64 @@ export function Header() {
             {/* Mobile Navigation Links */}
             {isAuthenticated ? (
               <>
-                <Link href="/my-learning" className={`block text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>My Learning</Link>
-                <Link href="/courses" className={`block text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Courses</Link>
-                <Link href="/blogs" className={`block text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Blogs</Link>
-                <Link href="/bonsai" className={`block text-sm font-medium ${isActive("/bonsai") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>My Bonsai</Link>
+                <Link 
+                  href="/my-learning" 
+                  className={`block text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  My Learning
+                </Link>
+                <Link 
+                  href="/courses" 
+                  className={`block text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  Courses
+                </Link>
+                <Link 
+                  href="/blogs" 
+                  className={`block text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  Blogs
+                </Link>
+                <Link 
+                  href="/bonsai" 
+                  className={`block text-sm font-medium ${isActive("/bonsai") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  My Bonsai
+                </Link>
                 
                 {/* Mobile Instructor routes */}
                 <RoleGuard allowedRoles={['instructor', 'admin']}>
-                  <Link href="/instructor/dashboard" className={`block text-sm font-medium ${isActive("/instructor") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Instructor</Link>
+                  <Link 
+                    href="/instructor/dashboard" 
+                    className={`block text-sm font-medium ${isActive("/instructor") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                    onClick={closeMobileMenu}
+                  >
+                    Instructor
+                  </Link>
                 </RoleGuard>
 
                 {/* Mobile Admin routes */}
                 <RoleGuard allowedRoles={['admin']}>
-                  <Link href="/admin/blogs" className={`block text-sm font-medium ${isActive("/admin") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Admin</Link>
+                  <Link 
+                    href="/admin/blogs" 
+                    className={`block text-sm font-medium ${isActive("/admin") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                    onClick={closeMobileMenu}
+                  >
+                    Admin
+                  </Link>
                 </RoleGuard>
                 
                 {/* Mobile Profile Link */}
                 <div className="pt-4 border-t border-[#dce4d7]">
-                  <Link href="/profile" className="flex items-center gap-3">
+                  <Link 
+                    href="/profile" 
+                    className="flex items-center gap-3"
+                    onClick={closeMobileMenu}
+                  >
                     <div className="h-8 w-8 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden">
                       {renderMobileUserIcon()}
                     </div>
@@ -282,15 +332,51 @@ export function Header() {
               </>
             ) : (
               <>
-                <Link href="/" className={`block text-sm font-medium ${isActive("/") && pathname === "/" ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Home</Link>
-                <Link href="/courses" className={`block text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Courses</Link>
-                <Link href="/blogs" className={`block text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>Blogs</Link>
-                <Link href="/about" className={`block text-sm font-medium ${isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}>About</Link>
+                <Link 
+                  href="/" 
+                  className={`block text-sm font-medium ${isActive("/") && pathname === "/" ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  Home
+                </Link>
+                <Link 
+                  href="/courses" 
+                  className={`block text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  Courses
+                </Link>
+                <Link 
+                  href="/blogs" 
+                  className={`block text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  Blogs
+                </Link>
+                <Link 
+                  href="/about" 
+                  className={`block text-sm font-medium ${isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  About
+                </Link>
                 
                 {/* Mobile Auth Buttons */}
                 <div className="pt-4 border-t border-[#dce4d7] space-y-2">
-                  <Link href="/auth/login" className="block w-full rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-sm font-medium text-[#4a7c59] text-center transition-colors hover:bg-[#eef2eb]">Log In</Link>
-                  <Link href="/auth/signup" className="block w-full rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white text-center transition-colors hover:bg-[#3a6147]">Get Started</Link>
+                  <Link 
+                    href="/auth/login" 
+                    className="block w-full rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-sm font-medium text-[#4a7c59] text-center transition-colors hover:bg-[#eef2eb]"
+                    onClick={closeMobileMenu}
+                  >
+                    Log In
+                  </Link>
+                  <Link 
+                    href="/auth/signup" 
+                    className="block w-full rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white text-center transition-colors hover:bg-[#3a6147]"
+                    onClick={closeMobileMenu}
+                  >
+                    Get Started
+                  </Link>
                 </div>
               </>
             )}
