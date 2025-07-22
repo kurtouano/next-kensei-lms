@@ -1,5 +1,5 @@
-// components/Quiz.jsx - Enhanced with answer review and improved retake logic
-import { memo, useCallback, useMemo, useState } from "react"
+// components/Quiz.jsx - Enhanced with mobile-friendly results and auto-scroll
+import { memo, useCallback, useMemo, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { BookOpen, Award, AlertCircle, ChevronLeft, RotateCcw, Eye, EyeOff, CheckCircle, XCircle } from "lucide-react"
 
@@ -13,7 +13,7 @@ export const QuizSection = memo(function QuizSection({
   onProceed,
   onBack,
   isLastModule,
-  existingScore = null // Add existing score prop
+  existingScore = null
 }) {
   const { started, completed, score, selectedAnswers, showReview } = quizState
   const [showAnswerReview, setShowAnswerReview] = useState(false)
@@ -69,12 +69,31 @@ export const QuizSection = memo(function QuizSection({
     setShowAnswerReview(prev => !prev)
   }, [])
 
+  // 🔧 NEW: Enhanced submit handler with auto-scroll (always declare to avoid hook order issues)
+  const handleSubmitQuiz = useCallback(() => {
+    onSubmitQuiz()
+    // Auto-scroll will happen via useEffect when completed becomes true
+  }, [onSubmitQuiz])
+
+  // 🔧 NEW: Auto-scroll to top when quiz completes
+  useEffect(() => {
+    if (completed) {
+      // Small delay to ensure the results are rendered
+      setTimeout(() => {
+        window.scrollTo({ 
+          top: 0, 
+          behavior: 'smooth' 
+        })
+      }, 100)
+    }
+  }, [completed])
+
   if (!started) {
     return (
-      <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
-        <BookOpen className="mx-auto mb-4 h-16 w-16 text-[#4a7c59]" />
-        <h2 className="mb-2 text-2xl font-bold text-[#2c3e2d]">{quiz?.title}</h2>
-        <p className="mb-4 text-[#5c6d5e]">
+      <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 shadow-sm text-center">
+        <BookOpen className="mx-auto mb-4 h-12 w-12 sm:h-16 sm:w-16 text-[#4a7c59]" />
+        <h2 className="mb-2 text-xl sm:text-2xl font-bold text-[#2c3e2d]">{quiz?.title}</h2>
+        <p className="mb-4 text-sm sm:text-base text-[#5c6d5e]">
           Complete this quiz with a score of 70% or higher to proceed.
         </p>
         {existingScore && existingScore >= 70 && (
@@ -87,16 +106,19 @@ export const QuizSection = memo(function QuizSection({
             </p>
           </div>
         )}
-        <div className="flex justify-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
           <Button
             variant="outline"
-            className="border-[#4a7c59] text-[#4a7c59]"
+            className="border-[#4a7c59] text-[#4a7c59] w-full sm:w-auto"
             onClick={onBack}
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
             Back to Module
           </Button>
-          <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" onClick={onStartQuiz}>
+          <Button 
+            className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full sm:w-auto" 
+            onClick={onStartQuiz}
+          >
             {existingScore && existingScore >= 70 ? "Retake Quiz" : "Start Quiz"}
           </Button>
         </div>
@@ -110,108 +132,171 @@ export const QuizSection = memo(function QuizSection({
     const canProceed = score >= 70 || (existingScore && existingScore >= 70)
     
     return (
-      <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
-        {isPassed ? (
-          <Award className="mx-auto mb-4 h-16 w-16 text-[#4a7c59]" />
-        ) : (
-          <AlertCircle className="mx-auto mb-4 h-16 w-16 text-[#e67e22]" />
-        )}
-        <h2 className="mb-2 text-2xl font-bold text-[#2c3e2d]">Quiz Results</h2>
-        <div className="mb-4 inline-block rounded-full bg-[#eef2eb] px-6 py-3">
-          <span className={`text-2xl font-bold ${isPassed ? 'text-[#4a7c59]' : 'text-[#e67e22]'}`}>
-            {score}%
-          </span>
-        </div>
-        
-        {/* Score status messages */}
-        {isPassed && isImprovement && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-700 font-medium">🎉 New Best Score!</p>
-            <p className="text-sm text-green-600">
-              Improved from {existingScore}% to {score}%
-            </p>
-          </div>
-        )}
-        
-        {isPassed && existingScore && !isImprovement && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-700 font-medium">Good job!</p>
-            <p className="text-sm text-blue-600">
-              Your best score remains {Math.max(existingScore, score)}%
-            </p>
-          </div>
-        )}
-        
-        {!isPassed && existingScore && existingScore >= 70 && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-700 font-medium">You can still proceed</p>
-            <p className="text-sm text-yellow-600">
-              Your previous score of {existingScore}% allows you to continue
-            </p>
-          </div>
-        )}
-
-        <p className="mb-4 text-[#5c6d5e]">
-          {isPassed
-            ? "Congratulations! You've passed the quiz."
-            : canProceed
-              ? "You didn't improve your score this time, but you can still proceed."
-              : "You need to score at least 70% to proceed. Don't worry, you can try again!"}
-        </p>
-
-        {/* Answer Review Section */}
-        <div className="mb-6">
-          <Button
-            variant="outline"
-            className="border-[#4a7c59] text-[#4a7c59] mb-4"
-            onClick={toggleAnswerReview}
-          >
-            {showAnswerReview ? (
-              <>
-                <EyeOff className="mr-2 h-4 w-4" />
-                Hide Answer Review
-              </>
-            ) : (
-              <>
-                <Eye className="mr-2 h-4 w-4" />
-                Review Answers
-              </>
-            )}
-          </Button>
-
-          {showAnswerReview && (
-            <AnswerReview 
-              quiz={quiz} 
-              selectedAnswers={selectedAnswers}
-            />
+      <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 shadow-sm">
+        {/* 🔧 MOBILE-FRIENDLY: Responsive layout for quiz results */}
+        <div className="text-center">
+          {/* Icon */}
+          {isPassed ? (
+            <Award className="mx-auto mb-3 sm:mb-4 h-12 w-12 sm:h-16 sm:w-16 text-[#4a7c59]" />
+          ) : (
+            <AlertCircle className="mx-auto mb-3 sm:mb-4 h-12 w-12 sm:h-16 sm:w-16 text-[#e67e22]" />
           )}
-        </div>
+          
+          {/* Title */}
+          <h2 className="mb-3 sm:mb-2 text-lg sm:text-2xl font-bold text-[#2c3e2d]">Quiz Results</h2>
+          
+          {/* Score Display */}
+          <div className="mb-4 sm:mb-4 inline-block rounded-full bg-[#eef2eb] px-4 py-2 sm:px-6 sm:py-3">
+            <span className={`text-xl sm:text-2xl font-bold ${isPassed ? 'text-[#4a7c59]' : 'text-[#e67e22]'}`}>
+              {score}%
+            </span>
+          </div>
+          
+          {/* Status Messages - Mobile optimized */}
+          <div className="space-y-3 mb-4 sm:mb-6">
+            {isPassed && isImprovement && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-green-700 font-medium text-sm sm:text-base">🎉 New Best Score!</p>
+                <p className="text-xs sm:text-sm text-green-600">
+                  Improved from {existingScore}% to {score}%
+                </p>
+              </div>
+            )}
+            
+            {isPassed && existingScore && !isImprovement && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-700 font-medium text-sm sm:text-base">Good job!</p>
+                <p className="text-xs sm:text-sm text-blue-600">
+                  Your best score remains {Math.max(existingScore, score)}%
+                </p>
+              </div>
+            )}
+            
+            {!isPassed && existingScore && existingScore >= 70 && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-700 font-medium text-sm sm:text-base">You can still proceed</p>
+                <p className="text-xs sm:text-sm text-yellow-600">
+                  Your previous score of {existingScore}% allows you to continue
+                </p>
+              </div>
+            )}
+          </div>
 
-        <div className="flex justify-center gap-4">
-          <Button
-            variant="outline"
-            className="border-[#4a7c59] text-[#4a7c59]"
-            onClick={onBack}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Back to Module
-          </Button>
+          {/* Description */}
+          <p className="mb-4 sm:mb-4 text-sm sm:text-base text-[#5c6d5e] px-2">
+            {isPassed
+              ? "Congratulations! You've passed the quiz."
+              : canProceed
+                ? "You didn't improve your score this time, but you can still proceed."
+                : "You need to score at least 70% to proceed. Don't worry, you can try again!"}
+          </p>
+
+          {/* 🔧 MOBILE vs DESKTOP Action Buttons */}
           
-          {/* Always show Try Again in the middle */}
-          <Button 
-            variant="outline"
-            className="border-[#4a7c59] text-[#4a7c59]" 
-            onClick={onRetryQuiz}
-          >
-            <RotateCcw className="mr-1 h-4 w-4" />
-            Try Again
-          </Button>
-          
-          {/* Show Next/Complete button only if they can proceed */}
-          {canProceed && (
-            <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" onClick={onProceed}>
-              {isLastModule ? "Complete Course" : "Next Module"}
+          {/* Mobile Layout: Single button per row */}
+          <div className="sm:hidden space-y-2">
+            {/* Next/Complete Module - Highest Priority */}
+            {canProceed && (
+              <Button 
+                className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full py-2 text-sm" 
+                onClick={onProceed}
+              >
+                {isLastModule ? "Complete Course" : "Next Module"}
+              </Button>
+            )}
+            
+            {/* Try Again */}
+            <Button 
+              variant="outline"
+              className="border-[#4a7c59] text-[#4a7c59] w-full py-2 text-sm" 
+              onClick={onRetryQuiz}
+            >
+              <RotateCcw className="mr-1 h-3 w-3" />
+              Try Again
             </Button>
+            
+            {/* Review Answers */}
+            <Button
+              variant="outline"
+              className="border-[#4a7c59] text-[#4a7c59] w-full py-2 text-sm"
+              onClick={toggleAnswerReview}
+            >
+              {showAnswerReview ? (
+                <>
+                  <EyeOff className="mr-1 h-3 w-3" />
+                  Hide Answers
+                </>
+              ) : (
+                <>
+                  <Eye className="mr-1 h-3 w-3" />
+                  Review Answers
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Desktop Layout: Original design */}
+          <div className="hidden sm:block">
+            {/* Answer Review Section */}
+            <div className="mb-6">
+              <Button
+                variant="outline"
+                className="border-[#4a7c59] text-[#4a7c59] mb-4"
+                onClick={toggleAnswerReview}
+              >
+                {showAnswerReview ? (
+                  <>
+                    <EyeOff className="mr-2 h-4 w-4" />
+                    Hide Answer Review
+                  </>
+                ) : (
+                  <>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Review Answers
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-4">
+              <Button
+                variant="outline"
+                className="border-[#4a7c59] text-[#4a7c59]"
+                onClick={onBack}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Back to Module
+              </Button>
+              
+              <Button 
+                variant="outline"
+                className="border-[#4a7c59] text-[#4a7c59]" 
+                onClick={onRetryQuiz}
+              >
+                <RotateCcw className="mr-1 h-4 w-4" />
+                Try Again
+              </Button>
+              
+              {canProceed && (
+                <Button 
+                  className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" 
+                  onClick={onProceed}
+                >
+                  {isLastModule ? "Complete Course" : "Next Module"}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Show Answer Review if toggled */}
+          {showAnswerReview && (
+            <div className="mt-4">
+              <AnswerReview 
+                quiz={quiz} 
+                selectedAnswers={selectedAnswers}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -220,21 +305,20 @@ export const QuizSection = memo(function QuizSection({
 
   if (!quiz) {
     return (
-      <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm text-center">
+      <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 shadow-sm text-center">
         <p>Loading quiz...</p>
       </div>
     )
   }
 
   return (
-    <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm">
+    <div className="mb-4 rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[#2c3e2d]">{quiz.title}</h2>
       
-      {/* Progress Section */}
-      <div className="mb-6 bg-[#eef2eb] rounded-lg py-3 px-5">
-        <div className="flex items-center gap-3 w-full">
+      {/* Progress Section - Mobile optimized */}
+      <div className="mb-6 bg-[#eef2eb] rounded-lg py-3 px-3 sm:px-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full">
           <span className="text-sm text-[#5c6d5e] whitespace-nowrap">Progress:</span>
-          {/* Progress bar container */}
           <div className="flex-1 bg-gray-200 rounded-full h-2">
             <div 
               className="bg-[#4a7c59] h-2 rounded-full transition-all duration-300"
@@ -261,18 +345,19 @@ export const QuizSection = memo(function QuizSection({
         ))}
       </div>
 
-      <div className="mt-6 flex justify-between">
+      {/* Submit Section - Mobile optimized */}
+      <div className="mt-6 flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
         <Button
           variant="outline"
-          className="border-[#4a7c59] text-[#4a7c59]"
+          className="border-[#4a7c59] text-[#4a7c59] w-full sm:w-auto order-2 sm:order-1"
           onClick={onBack}
         >
           <ChevronLeft className="mr-1 h-4 w-4" />
           Back to Module
         </Button>
         <Button
-          className="bg-[#4a7c59] text-white hover:bg-[#3a6147]"
-          onClick={onSubmitQuiz}
+          className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full sm:w-auto order-1 sm:order-2"
+          onClick={handleSubmitQuiz}
           disabled={!isAllAnswered}
         >
           Submit Quiz
@@ -371,16 +456,16 @@ const AnswerReview = memo(function AnswerReview({ quiz, selectedAnswers }) {
   }, [selectedAnswers])
 
   return (
-    <div className="bg-[#f8f7f4] border border-[#dce4d7] rounded-lg p-4 text-left">
-      <h3 className="font-semibold text-[#2c3e2d] mb-4 text-center">Answer Review</h3>
-      <div className="space-y-4">
+    <div className="bg-[#f8f7f4] border border-[#dce4d7] rounded-lg p-3 sm:p-4 text-left">
+      <h3 className="font-semibold text-[#2c3e2d] mb-4 text-center text-sm sm:text-base">Answer Review</h3>
+      <div className="space-y-3 sm:space-y-4">
         {quiz.questions.map((question, index) => {
           const result = getQuestionResult(question)
           
           return (
             <div
               key={question.id}
-              className={`p-4 rounded-lg border-2 ${
+              className={`p-3 sm:p-4 rounded-lg border-2 ${
                 result.isCorrect
                   ? "border-green-300 bg-green-50"
                   : result.partialCredit
@@ -391,23 +476,23 @@ const AnswerReview = memo(function AnswerReview({ quiz, selectedAnswers }) {
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-1">
                   {result.isCorrect ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                   ) : result.partialCredit ? (
-                    <div className="h-5 w-5 rounded-full bg-yellow-500 flex items-center justify-center">
+                    <div className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-yellow-500 flex items-center justify-center">
                       <span className="text-white text-xs font-bold">?</span>
                     </div>
                   ) : (
-                    <XCircle className="h-5 w-5 text-red-600" />
+                    <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                   )}
                 </div>
                 
-                <div className="flex-1">
-                  <div className="font-medium text-[#2c3e2d] mb-2">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-[#2c3e2d] mb-2 text-sm sm:text-base">
                     <span className="text-[#4a7c59] font-bold">{index + 1}.</span> {question.question}
                   </div>
                   
                   {question.type === "multiple_choice" && (
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-2 text-xs sm:text-sm">
                       <div className={`p-2 rounded ${
                         result.userAnswer === result.correctAnswer 
                           ? "bg-green-100 text-green-800" 
@@ -424,7 +509,7 @@ const AnswerReview = memo(function AnswerReview({ quiz, selectedAnswers }) {
                   )}
                   
                   {question.type === "fill_in_blanks" && result.details && (
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-2 text-xs sm:text-sm">
                       <div className="font-medium text-[#2c3e2d]">
                         Score: {result.score} 
                         {result.partialCredit && !result.isCorrect && " (Partial Credit)"}
@@ -448,7 +533,7 @@ const AnswerReview = memo(function AnswerReview({ quiz, selectedAnswers }) {
                   )}
                   
                   {question.type === "matching" && result.details && (
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-2 text-xs sm:text-sm">
                       <div className="font-medium text-[#2c3e2d]">
                         Score: {result.score}
                         {result.partialCredit && !result.isCorrect && " (Partial Credit)"}
@@ -489,9 +574,9 @@ const QuizQuestion = memo(function QuizQuestion({ question, qIndex, selectedAnsw
   const questionType = question.type
 
   return (
-    <div className="rounded-lg border border-[#dce4d7] p-4">
+    <div className="rounded-lg border border-[#dce4d7] p-3 sm:p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-md font-medium text-[#2c3e2d] flex-1 pr-3">
+        <h3 className="text-sm sm:text-md font-medium text-[#2c3e2d] flex-1 pr-3">
           <span className="mr-2 font-bold text-[#4a7c59]">{qIndex + 1}.</span>
           {question.question}
         </h3>
@@ -513,7 +598,7 @@ const QuizQuestion = memo(function QuizQuestion({ question, qIndex, selectedAnsw
 
       {questionType === "fill_in_blanks" && (
         <div>
-          <p className="text-sm text-[#5c6d5e] mb-2 italic">Fill in the blanks:</p>
+          <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2 italic">Fill in the blanks:</p>
           <FillInBlanksQuestion
             question={question}
             questionId={questionId}
@@ -525,7 +610,7 @@ const QuizQuestion = memo(function QuizQuestion({ question, qIndex, selectedAnsw
 
       {questionType === "matching" && (
         <div>
-          <p className="text-sm text-[#5c6d5e] mb-2 italic">Match the items:</p>
+          <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2 italic">Match the items:</p>
           <MatchingQuestion
             question={question}
             questionId={questionId}
@@ -584,7 +669,7 @@ const MultipleChoiceQuestion = memo(function MultipleChoiceQuestion({ question, 
               >
                 {String.fromCharCode(65 + oIndex)}
               </div>
-              <span className="text-[#2c3e2d]">{optionText}</span>
+              <span className="text-[#2c3e2d] text-sm sm:text-base">{optionText}</span>
             </div>
           </div>
         )
@@ -606,7 +691,7 @@ const FillInBlanksQuestion = memo(function FillInBlanksQuestion({ question, ques
     
     parts.forEach((part, index) => {
       elements.push(
-        <span key={`text-${index}`} className="text-[#2c3e2d]">
+        <span key={`text-${index}`} className="text-[#2c3e2d] text-sm sm:text-base">
           {part}
         </span>
       )
@@ -619,7 +704,7 @@ const FillInBlanksQuestion = memo(function FillInBlanksQuestion({ question, ques
             placeholder="fill in"
             value={selectedAnswer?.[index] || ''}
             onChange={(e) => handleBlankChange(index, e.target.value)}
-            className="mx-1 px-2 border-b-[2px] border-[#4a7c59] bg-transparent focus:outline-none focus:border-[#2c3e2d] w-32 text-center"
+            className="mx-1 px-2 border-b-[2px] border-[#4a7c59] bg-transparent focus:outline-none focus:border-[#2c3e2d] w-24 sm:w-32 text-center text-sm sm:text-base"
           />
         )
       }
@@ -644,15 +729,12 @@ const MatchingQuestion = memo(function MatchingQuestion({ question, questionId, 
     onSelectAnswer(questionId, newAnswer)
   }, [questionId, selectedAnswer, onSelectAnswer])
 
-  // Randomize the right-side options
   const shuffledRightOptions = useMemo(() => {
     if (!question.pairs || question.pairs.length === 0) return []
     
-    // Extract all right-side values and shuffle them
     const rightValues = question.pairs.map(pair => pair.right)
     const shuffled = [...rightValues]
     
-    // Fisher-Yates shuffle algorithm
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
@@ -671,26 +753,26 @@ const MatchingQuestion = memo(function MatchingQuestion({ question, questionId, 
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <h4 className="font-medium text-[#2c3e2d] text-center">Items</h4>
+          <h4 className="font-medium text-[#2c3e2d] text-center text-sm sm:text-base">Items</h4>
           {question.pairs.map((pair, index) => (
             <div
               key={index}
-              className="p-3 border-[1.5px] border-[#dce4d7] rounded-md text-center font-medium text-lg bg-white h-[48px] hover:border-[#4a7c59] flex items-center justify-center transition-all"
+              className="p-2 sm:p-3 border-[1.5px] border-[#dce4d7] rounded-md text-center font-medium text-sm sm:text-lg bg-white h-10 sm:h-[48px] hover:border-[#4a7c59] flex items-center justify-center transition-all"
             >
               {pair.left}
             </div>
           ))}
         </div>
         <div className="space-y-2">
-          <h4 className="font-medium text-[#2c3e2d] text-center">Match with</h4>
+          <h4 className="font-medium text-[#2c3e2d] text-center text-sm sm:text-base">Match with</h4>
           {question.pairs.map((pair, index) => (
             <select
               key={index}
               value={selectedAnswer?.[index] || ""}
               onChange={(e) => handleMatchingAnswer(index, e.target.value)}
-              className="w-full p-3 border-[1.5px] border-[#dce4d7] rounded-md focus:outline-none hover:border-[#4a7c59]  bg-white text-center h-[48px] flex items-center justify-center"
+              className="w-full p-2 sm:p-3 border-[1.5px] border-[#dce4d7] rounded-md focus:outline-none hover:border-[#4a7c59] bg-white text-center h-10 sm:h-[48px] flex items-center justify-center text-sm sm:text-base"
             >
               <option value="">Select match...</option>
               {shuffledRightOptions.map((rightValue, optionIndex) => (
