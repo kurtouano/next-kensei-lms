@@ -12,7 +12,13 @@ export const ModuleCompleteNotif = memo(function ModuleCompleteNotif({ onTakeQui
       </p>
       <Button
         className="bg-[#4a7c59] text-white hover:bg-[#3a6147]"
-        onClick={onTakeQuiz}
+        onClick={() => {
+          onTakeQuiz()
+          // Smooth scroll to top after small delay to ensure content is rendered
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }, 100)
+        }}
       >
         Take Module Quiz Now
       </Button>

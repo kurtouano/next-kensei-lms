@@ -173,7 +173,6 @@ export default function LessonPage() {
   const [completedItems, setCompletedItems] = useState([])
   const [moduleQuizCompleted, setModuleQuizCompleted] = useState([])
 
-  // NEW: Check if a module is accessible based on previous module completion
   const isModuleAccessible = useCallback((moduleIndex) => {
     if (!effectiveIsLoggedIn || !effectiveIsEnrolled) return false
     
@@ -184,7 +183,8 @@ export default function LessonPage() {
     if (!prevModule) return false
     
     const isPrevModuleComplete = prevModule.items.every(item => completedItems.includes(item.id))
-    const isPrevQuizPassed = moduleQuizCompleted.includes(prevModuleIndex)
+    // 🔧 FIX: Check if any completed module has this index
+    const isPrevQuizPassed = moduleQuizCompleted.some(cm => cm.moduleIndex === prevModuleIndex)
     
     return isPrevModuleComplete && isPrevQuizPassed
   }, [effectiveIsLoggedIn, effectiveIsEnrolled, lessonData?.modules, completedItems, moduleQuizCompleted])
@@ -428,7 +428,8 @@ export default function LessonPage() {
           })
           .filter(Boolean)
         
-        setModuleQuizCompleted(completedModuleData.map(m => m.moduleIndex))
+        // 🔧 FIX: Store the full objects instead of just indices
+        setModuleQuizCompleted(completedModuleData)
       }
     } else if (!effectiveIsLoggedIn || !effectiveIsEnrolled) {
       setCompletedItems([])
@@ -521,11 +522,10 @@ export default function LessonPage() {
 
   const currentModuleQuizCompleted = useMemo(() => {
     if (!effectiveIsLoggedIn || !effectiveIsEnrolled) return false
-    return moduleQuizCompleted.includes(activeModule)
+    return moduleQuizCompleted.some(cm => cm.moduleIndex === activeModule)
   }, [effectiveIsLoggedIn, effectiveIsEnrolled, moduleQuizCompleted, activeModule])
 
   // ============ ENHANCED LOADING STATE ============
-
   const rawIsDataLoading = useMemo(() => {
     if (isSessionLoading || lessonLoading) return true
     

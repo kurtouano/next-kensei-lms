@@ -820,7 +820,7 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQu
     [lessonData, activeModule]
   )
 
-  // FIXED: Get existing quiz score properly
+  // Get existing quiz score 
   const existingScore = useMemo(() => {
     if (!lessonData?.modules?.[activeModule] || !Array.isArray(moduleQuizCompleted)) return null
     

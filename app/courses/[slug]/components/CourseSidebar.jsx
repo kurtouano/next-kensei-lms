@@ -55,7 +55,7 @@ export const CourseSidebar = memo(function CourseSidebar({
     return isPrevModuleComplete && isPrevQuizPassed
   }, [modules, completedItems, moduleQuizCompleted, isEnrolled])
 
-  // FIXED: Proper course completion logic
+  // Course completion logic
   const isCourseCompleted = useMemo(() => {
     if (!isEnrolled || !modules || modules.length === 0) return false
     
@@ -71,17 +71,7 @@ export const CourseSidebar = memo(function CourseSidebar({
         return true
       }
       
-      // Check if this module quiz is completed with passing score
-      return moduleQuizCompleted.includes(index)
-    })
-    
-    console.log('🎓 Certificate Check:', {
-      totalModules: modules.length,
-      allLessonsCompleted,
-      allQuizzesPassed,
-      completedQuizzes: moduleQuizCompleted,
-      totalLessons: totalItems,
-      completedLessons: completedItems.length
+      return moduleQuizCompleted.some(cm => cm.moduleIndex === index)
     })
     
     return allLessonsCompleted && allQuizzesPassed
@@ -345,7 +335,7 @@ const ModuleSection = memo(function ModuleSection({
 
   // Check if this specific module's quiz is completed
   const isQuizCompleted = useMemo(() => 
-    moduleQuizCompleted.includes(moduleIndex),
+    moduleQuizCompleted.some(cm => cm.moduleIndex === moduleIndex),
     [moduleQuizCompleted, moduleIndex]
   )
 
@@ -438,7 +428,13 @@ const ModuleSection = memo(function ModuleSection({
               <Button
                 size="sm"
                 className="bg-[#4a7c59] hover:bg-[#3a6147] text-white"
-                onClick={onTakeQuiz}
+                onClick={() => {
+                  onTakeQuiz()
+                  // Smooth scroll to top after small delay to ensure content is rendered
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }, 100)
+                }}
               >
                 {isQuizCompleted ? 'Retake Quiz' : 'Take Quiz'}
               </Button>
