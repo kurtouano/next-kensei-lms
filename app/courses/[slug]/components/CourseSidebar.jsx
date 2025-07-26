@@ -308,7 +308,7 @@ const isModuleAccessible = useCallback((moduleIndex) => {
   )
 })
 
-// UPDATED: ModuleSection with quiz completion indicator
+// ModuleSection with quiz completion indicator
 const ModuleSection = memo(function ModuleSection({
   module,
   moduleIndex,
