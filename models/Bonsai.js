@@ -51,6 +51,7 @@ const BonsaiSchema = new mongoose.Schema(
       foliageColor: { type: String, default: '#6fb58a' }, // hex color
       potStyle: { type: String, default: 'clay' }, // key to SVG or style
       potColor: { type: String, default: '#8B4513' }, // hex color for pot
+      foundation: { type: String, default: 'shadow' }, // key to foundation/base SVG (shadow, lilypad, stone, etc)
       decorations: [{ type: String }], // array of keys to SVGs
     },
     // --- Owned items (unlocked part keys) ---
