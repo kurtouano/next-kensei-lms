@@ -11,64 +11,13 @@ const BonsaiSchema = new mongoose.Schema(
     level: {
       type: Number,
       default: 1,
+      min: 1,
+      max: 3,
     },
     totalCredits: {
       type: Number,
       default: 0,
     },
-    tree: {
-      level: {
-        type: Number,
-        default: 1,
-        max: 10,
-        min: 1,
-      },
-      type: {
-        type: String,
-        enum: ["maple", "pine", "cherry", "juniper"],
-        default: "maple",
-      },
-      color: {
-        type: String,
-        default: "#6fb58a",
-      },
-    },
-    pot: {
-      type: {
-        type: String,
-        enum: ["clay", "ceramic", "plastic", "stone"],
-        default: "clay",
-      },
-      size: {
-        type: String,
-        enum: ["small", "medium", "large"],
-        default: "medium",
-      },
-    },
-    decoration: {
-      type: {
-        type: String,
-        enum: ["stone", "figurine", "lantern", "waterfall"],
-        default: "stone",
-      },
-      style: {
-        type: String,
-        enum: ["traditional", "modern", "rustic"],
-        default: "traditional",
-      },
-    },
-    inventory: [
-      {
-        itemId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "ShopItem"
-        },
-        acquiredAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
     milestones: [
       {
         level: {
@@ -95,6 +44,17 @@ const BonsaiSchema = new mongoose.Schema(
         },
       },
     ],
+    // --- Customization fields for user-selected bonsai parts ---
+    customization: {
+      eyes: { type: String, default: 'default' }, // key to SVG
+      mouth: { type: String, default: 'default' }, // key to SVG
+      foliageColor: { type: String, default: '#6fb58a' }, // hex color
+      potStyle: { type: String, default: 'clay' }, // key to SVG or style
+      potColor: { type: String, default: '#8B4513' }, // hex color for pot
+      decorations: [{ type: String }], // array of keys to SVGs
+    },
+    // --- Owned items (unlocked part keys) ---
+    ownedItems: [{ type: String }], // keys of items the user owns
     createdAt: {
       type: Date,
       default: Date.now,

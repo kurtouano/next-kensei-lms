@@ -6,20 +6,19 @@ const ShopItemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    key: {
+      type: String,
+      required: true,
+      unique: true, // unique identifier for SVG mapping
+    },
     category: {
       type: String,
-      enum: ["tree", "face", "pot", "decoration"],
+      enum: ["eyes", "mouth", "pot", "decoration", "foliage"],
       required: true,
     },
     creditsRequired: {
       type: Number,
       required: true,
-    },
-    image: {
-      type: String,
-    },
-    color: {
-      type: String,
     },
     isLimited: {
       type: Boolean,
