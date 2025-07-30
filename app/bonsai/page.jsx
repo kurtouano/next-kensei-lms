@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Award, Check, Palette, Flower, Sparkles, ShoppingBag, Eye } from "lucide-react"
-import { useBonsaiPositioning } from "./hooks/useBonsaiPositioning"
+import { useBonsaiPositioning } from "./components/useBonsaiPositioning"
 import { getEyeSvg, getMouthSvg } from "./components/bonsaiSvgData"
 
 // Custom Bonsai SVG Component
