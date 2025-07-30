@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Award, Check, Palette, Flower, Sparkles, ShoppingBag, Eye } from "lucide-react"
+import { useBonsaiPositioning } from "./hooks/useBonsaiPositioning"
+import { getEyeSvg, getMouthSvg } from "./components/bonsaiSvgData"
 
 // Custom Bonsai SVG Component
 const BonsaiSVG = ({ treeColor = "#77DD82", potColor = "#FD9475", decorations = [], selectedEyes = "default_eyes", selectedMouth = "default_mouth" }) => {
@@ -20,89 +22,12 @@ const BonsaiSVG = ({ treeColor = "#77DD82", potColor = "#FD9475", decorations = 
   const shadowColor = darkenColor(treeColor, 35);
   const potShadowColor = darkenColor(potColor, 40);
 
-  // SVG content maps using YOUR actual SVG path data
-  const eyeSvgMap = {
-    default_eyes: `<ellipse cx="5.89758" cy="8.25661" rx="5.89758" ry="8.25661" fill="black"/>
-                   <ellipse cx="68.4119" cy="8.25661" rx="5.89758" ry="8.25661" fill="black"/>`,
-    cry_eyes: `<svg width="87" height="29" viewBox="0 0 87 29" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M71 28V3H79V28H71Z" fill="#95D2E8" stroke="#95D2E8" stroke-linecap="round"/>
-<line x1="62" y1="2.5" x2="87" y2="2.5" stroke="black" stroke-width="5"/>
-<path d="M9 28V3H17V28H9Z" fill="#95D2E8" stroke="#95D2E8" stroke-linecap="round"/>
-<line x1="0.0199991" y1="2.50008" x2="25.02" y2="2.70008" stroke="black" stroke-width="5"/>
-</svg>
-
-
-`,
-    happy_eyes: `<svg width="77" height="15" viewBox="0 0 77 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M2 2L12.4734 6.23452C13.1825 6.52123 13.1996 7.51904 12.5007 7.82988L2 12.5" stroke="black" stroke-width="4" stroke-linecap="round"/>
-<path d="M74.3667 12.5L63.8933 8.26548C63.1842 7.97877 63.1671 6.98096 63.866 6.67012L74.3667 2" stroke="black" stroke-width="4" stroke-linecap="round"/>
-</svg>
-`,
-    flat_eyes: `<line x1="61" y1="2.5" x2="86" y2="2.5" stroke="black" stroke-width="5"/>
-                <line y1="2.5" x2="25" y2="2.5" stroke="black" stroke-width="5"/>`,
-    wink_eyes: `<svg width="75" height="17" viewBox="0 0 75 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-<ellipse cx="68.8976" cy="8.25661" rx="5.89758" ry="8.25661" fill="black"/>
-<path d="M2 4L12.4734 8.23452C13.1825 8.52123 13.1996 9.51904 12.5007 9.82988L2 14.5" stroke="black" stroke-width="4" stroke-linecap="round"/>
-</svg>
-
-                `,
-    puppy_eyes: `<ellipse cx="6.84051" cy="9.39304" rx="8.84051" ry="9.39304" fill="black"/>
-                <path d="M13.2608 7.3933C13.2608 8.98711 11.1581 11.0898 8.56426 11.0898C5.97044 11.0898 3.86774 8.98711 3.86774 6.3933C3.86774 3.79948 5.97044 1.69678 8.56426 1.69678C11.1581 1.69678 13.2608 3.79948 13.2608 6.3933Z" fill="#D9D9D9"/>
-                <ellipse cx="5.1557" cy="13.6291" rx="2.21013" ry="1.47342" fill="#D9D9D9"/>
-                <ellipse cx="66.8405" cy="9.39304" rx="8.84051" ry="9.39304" fill="black"/>
-                <path d="M69.2607 6.3933C69.2607 8.98711 67.158 11.0898 64.5642 11.0898C61.9704 11.0898 59.8677 8.98711 59.8677 6.3933C59.8677 3.79948 61.9704 1.69678 64.5642 1.69678C67.158 1.69678 69.2607 3.79948 69.2607 6.3933Z" fill="#D9D9D9"/>
-                <ellipse cx="68.1557" cy="13.6291" rx="2.21013" ry="1.47342" fill="#D9D9D9"/>
-                `,
-    female_eyes: `<svg width="87" height="22" viewBox="0 0 87 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M21.1264 7.90066C21.1264 12.2641 18.5998 15.8013 15.4831 15.8013C12.3664 15.8013 9.83976 12.2641 9.83976 7.90066C9.83976 3.53725 -14.5 0 15.4831 0C18.5998 0 21.1264 3.53725 21.1264 7.90066Z" fill="black"/>
-<path d="M77.2867 7.90066C77.2867 12.2641 74.7601 15.8013 71.6433 15.8013C68.5266 15.8013 66 12.2641 66 7.90066C66 3.53725 68.5266 0 71.6433 0C101 0 77.2867 3.53725 77.2867 7.90066Z" fill="black"/>
-<ellipse cx="74.2358" cy="18.1179" rx="6.23582" ry="3.11791" fill="#FFCECF"/>
-<ellipse cx="13.2358" cy="18.1179" rx="6.23582" ry="3.11791" fill="#FFCECF"/>
-</svg>
-`
-  }
-
-  const mouthSvgMap = {
-    default_mouth: `<path d="M2 2C3.13522 5.78405 7.13424 8.85215 9.59463 3.75399C9.75341 3.42497 10.2607 3.41745 10.4289 3.74177C12.9299 8.56494 17.2452 6.52866 18 2" stroke="black" stroke-width="3" stroke-linecap="round"/>`,
-    smile_mouth: `<path d="M2 2V2C3.76305 9.45519 14.4903 9.51059 16 2V2" stroke="black" stroke-width="4" stroke-linecap="round"/>`,
-    kiss_mouth: `<path d="M2 2.19736C4.77021 1.27396 12.6565 4.87195 4.79366 6.37134C3.93428 6.53522 3.7488 7.385 4.5499 7.73663C7.71308 9.12506 12.1003 11.1016 2 13.1974" stroke="black" stroke-width="3" stroke-linecap="round"/>`,
-    surprised_mouth: `<path d="M7.86452 1H3C1.89543 1 1 1.89543 1 3V19H15V3C15 1.89543 14.1046 1 13 1H7.86452Z" fill="#010101" stroke="black" stroke-width="2"/>
-                      <ellipse cx="6" cy="16" rx="6" ry="3" fill="#FF0000"/>`,
-    bone_mouth: `<path d="M4.77551 4.625H16.2245M4.77551 4.625L2 2M4.77551 4.625L2 8M16.2245 4.625L19 2M16.2245 4.625L19 8" stroke="black" stroke-width="3" stroke-linecap="round"/>`
-  }
-
-  const eyeSvg = eyeSvgMap[selectedEyes] || eyeSvgMap['default_eyes'];
-  const mouthSvg = mouthSvgMap[selectedMouth] || mouthSvgMap['default_mouth'];
-
-  // Eye width mappings for different eye types
-  const eyeWidthMap = {
-    default_eyes: 74,    // spans from cx="5.89758" to cx="68.4119" ≈ 74
-    cry_eyes: 85,        // defined width="77" in SVG
-    happy_eyes: 76,   // spans from x="2" to x="69.8667" ≈ 72
-    flat_eyes: 84,       // spans from x="0" to x="86"
-    wink_eyes: 75,       // similar to default but slightly different positioning
-    puppy_eyes: 77,      // spans from leftmost ellipse to rightmost ≈ 77
-    female_eyes: 90      // defined width="80" in SVG
-  };
-
-  // Mouth width mappings for different mouth types
-  const mouthWidthMap = {
-    default_mouth: 20,    // spans from x="2" to x="18" ≈ 20
-    smile_mouth: 18,      // spans from x="2" to x="16" ≈ 18
-    kiss_mouth: 11,       // spans from x="2" to x="12.6565" ≈ 14
-    surprised_mouth: 16,  // spans from x="1" to x="15" ≈ 16
-    bone_mouth: 21        // spans from x="2" to x="19" ≈ 21
-  };
-
-  // Get the width of the current eye and mouth types
-  const currentEyeWidth = eyeWidthMap[selectedEyes] || eyeWidthMap['default_eyes'];
-  const currentMouthWidth = mouthWidthMap[selectedMouth] || mouthWidthMap['default_mouth'];
+  // Use custom hook for positioning logic
+  const { positions } = useBonsaiPositioning(selectedEyes, selectedMouth);
   
-  // Calculate centered position for eyes and mouth
-  // The pot area center is roughly at x=230, so we'll center both there
-  const potCenterX = 230;
-  const eyeCenterX = potCenterX - (currentEyeWidth / 2);
-  const mouthCenterX = potCenterX - (currentMouthWidth / 2);
+  // Get SVG content using utility functions with memoization for performance
+  const eyeSvg = useMemo(() => getEyeSvg(selectedEyes), [selectedEyes]);
+  const mouthSvg = useMemo(() => getMouthSvg(selectedMouth), [selectedMouth]);
 
   return (
     <svg width="300" height="300" viewBox="0 0 442 415" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -114,8 +39,8 @@ const BonsaiSVG = ({ treeColor = "#77DD82", potColor = "#FD9475", decorations = 
       <path d="M123.648 330.495L137.213 381.804C138.785 386.129 144.172 394.661 153.136 394.189H156.085M123.648 330.495H334.782M123.648 330.495C114.684 331.439 112.05 325.384 111.853 322.238V308.084C111.381 299.592 119.52 298.255 123.648 298.648H336.551C345.043 299.12 346.773 304.742 346.577 307.494V321.649C347.049 330.141 338.91 331.085 334.782 330.495M334.782 330.495L321.807 381.804C318.858 390.061 310.995 393.599 306.473 394.189H301.165M156.085 394.189C157.068 397.531 161.157 404.097 169.649 403.625C178.142 403.153 183.214 397.138 183.214 394.189M156.085 394.189H183.214M183.214 394.189H272.267M272.267 394.189C273.25 398.121 276.514 404.569 286.421 403.625C290.157 403.625 297.863 402.681 301.165 394.189M272.267 394.189H301.165" stroke="black" strokeWidth="3.53855" strokeLinecap="round"/>
       
       {/* Dynamic Eyes and Mouth */}
-      <g transform={`translate(${eyeCenterX}, 352)`} dangerouslySetInnerHTML={{ __html: eyeSvg }} />
-      <g transform={`translate(${mouthCenterX}, 365)`} dangerouslySetInnerHTML={{ __html: mouthSvg }} />
+      <g transform={`translate(${positions.eyeCenterX}, 352)`} dangerouslySetInnerHTML={{ __html: eyeSvg }} />
+      <g transform={`translate(${positions.mouthCenterX}, 365)`} dangerouslySetInnerHTML={{ __html: mouthSvg }} />
       
       {/* Pot Details and Shading */}
       <path d="M138.624 378.237L129.546 344.059H131.905L137.213 364.701C140.162 376.311 143.409 387.701 150.777 391.83C146.405 390.955 143.329 388.136 141.31 385.054C139.963 382.999 139.255 380.612 138.624 378.237Z" fill="#FBF3CC" stroke="#FBF3CC" strokeWidth="1.17952"/>
