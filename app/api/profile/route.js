@@ -97,22 +97,32 @@ export async function GET() {
                 },
                 certifications: certifications,
                 bonsai: bonsai ? {
-                    level: bonsai.level,
-                    totalCredits: bonsai.totalCredits,
-                    tree: {
-                        level: bonsai.tree.level,
-                        type: bonsai.tree.type,
-                        color: bonsai.tree.color
+                    level: bonsai.level || 1,
+                    totalCredits: bonsai.totalCredits || 0,
+                    customization: {
+                        eyes: bonsai.customization?.eyes || 'default_eyes',
+                        mouth: bonsai.customization?.mouth || 'default_mouth',
+                        foliageColor: bonsai.customization?.foliageColor || '#6fb58a',
+                        potStyle: bonsai.customization?.potStyle || 'clay',
+                        potColor: bonsai.customization?.potColor || '#8B4513',
+                        foundation: bonsai.customization?.foundation || 'shadow',
+                        decorations: bonsai.customization?.decorations || []
                     },
-                    pot: {
-                        type: bonsai.pot.type,
-                        size: bonsai.pot.size
+                    ownedItems: bonsai.ownedItems || []
+                } : {
+                    level: 1,
+                    totalCredits: 0,
+                    customization: {
+                        eyes: 'default_eyes',
+                        mouth: 'default_mouth',
+                        foliageColor: '#6fb58a',
+                        potStyle: 'clay',
+                        potColor: '#8B4513',
+                        foundation: 'shadow',
+                        decorations: []
                     },
-                    decoration: {
-                        type: bonsai.decoration.type,
-                        style: bonsai.decoration.style
-                    }
-                } : null,
+                    ownedItems: []
+                },
                 enrolledCourses: user.enrolledCourses,
                 progressRecords: progressRecords
             }
