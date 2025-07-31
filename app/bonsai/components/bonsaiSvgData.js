@@ -8,24 +8,24 @@ export const eyeSvgMap = {
                  <ellipse cx="68.4119" cy="8.25661" rx="5.89758" ry="8.25661" fill="black"/>`,
   
   cry_eyes: `<svg width="87" height="29" viewBox="0 0 87 29" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M71 28V3H79V28H71Z" fill="#95D2E8" stroke="#95D2E8" stroke-linecap="round"/>
-<line x1="62" y1="2.5" x2="87" y2="2.5" stroke="black" stroke-width="5"/>
-<path d="M9 28V3H17V28H9Z" fill="#95D2E8" stroke="#95D2E8" stroke-linecap="round"/>
-<line x1="0.0199991" y1="2.50008" x2="25.02" y2="2.70008" stroke="black" stroke-width="5"/>
-</svg>`,
+            <path d="M71 28V3H79V28H71Z" fill="#95D2E8" stroke="#95D2E8" stroke-linecap="round"/>
+            <line x1="62" y1="2.5" x2="87" y2="2.5" stroke="black" stroke-width="5"/>
+            <path d="M9 28V3H17V28H9Z" fill="#95D2E8" stroke="#95D2E8" stroke-linecap="round"/>
+            <line x1="0.0199991" y1="2.50008" x2="25.02" y2="2.70008" stroke="black" stroke-width="5"/>
+            </svg>`,
 
   happy_eyes: `<svg width="77" height="15" viewBox="0 0 77 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M2 2L12.4734 6.23452C13.1825 6.52123 13.1996 7.51904 12.5007 7.82988L2 12.5" stroke="black" stroke-width="4" stroke-linecap="round"/>
-<path d="M74.3667 12.5L63.8933 8.26548C63.1842 7.97877 63.1671 6.98096 63.866 6.67012L74.3667 2" stroke="black" stroke-width="4" stroke-linecap="round"/>
-</svg>`,
+              <path d="M2 2L12.4734 6.23452C13.1825 6.52123 13.1996 7.51904 12.5007 7.82988L2 12.5" stroke="black" stroke-width="4" stroke-linecap="round"/>
+              <path d="M74.3667 12.5L63.8933 8.26548C63.1842 7.97877 63.1671 6.98096 63.866 6.67012L74.3667 2" stroke="black" stroke-width="4" stroke-linecap="round"/>
+              </svg>`,
 
   flat_eyes: `<line x1="61" y1="2.5" x2="86" y2="2.5" stroke="black" stroke-width="5"/>
               <line y1="2.5" x2="25" y2="2.5" stroke="black" stroke-width="5"/>`,
 
   wink_eyes: `<svg width="75" height="17" viewBox="0 0 75 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-<ellipse cx="68.8976" cy="8.25661" rx="5.89758" ry="8.25661" fill="black"/>
-<path d="M2 4L12.4734 8.23452C13.1825 8.52123 13.1996 9.51904 12.5007 9.82988L2 14.5" stroke="black" stroke-width="4" stroke-linecap="round"/>
-</svg>`,
+              <ellipse cx="68.8976" cy="8.25661" rx="5.89758" ry="8.25661" fill="black"/>
+              <path d="M2 4L12.4734 8.23452C13.1825 8.52123 13.1996 9.51904 12.5007 9.82988L2 14.5" stroke="black" stroke-width="4" stroke-linecap="round"/>
+              </svg>`,
 
   puppy_eyes: `<ellipse cx="6.84051" cy="9.39304" rx="8.84051" ry="9.39304" fill="black"/>
                <path d="M13.2608 7.3933C13.2608 8.98711 11.1581 11.0898 8.56426 11.0898C5.97044 11.0898 3.86774 8.98711 3.86774 6.3933C3.86774 3.79948 5.97044 1.69678 8.56426 1.69678C11.1581 1.69678 13.2608 3.79948 13.2608 6.3933Z" fill="#D9D9D9"/>
@@ -35,12 +35,12 @@ export const eyeSvgMap = {
                <ellipse cx="68.1557" cy="13.6291" rx="2.21013" ry="1.47342" fill="#D9D9D9"/>`,
 
   female_eyes: `<svg width="87" height="22" viewBox="0 0 87 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M21.1264 7.90066C21.1264 12.2641 18.5998 15.8013 15.4831 15.8013C12.3664 15.8013 9.83976 12.2641 9.83976 7.90066C9.83976 3.53725 -14.5 0 15.4831 0C18.5998 0 21.1264 3.53725 21.1264 7.90066Z" fill="black"/>
-<path d="M77.2867 7.90066C77.2867 12.2641 74.7601 15.8013 71.6433 15.8013C68.5266 15.8013 66 12.2641 66 7.90066C66 3.53725 68.5266 0 71.6433 0C101 0 77.2867 3.53725 77.2867 7.90066Z" fill="black"/>
-<ellipse cx="74.2358" cy="18.1179" rx="6.23582" ry="3.11791" fill="#FFCECF"/>
-<ellipse cx="13.2358" cy="18.1179" rx="6.23582" ry="3.11791" fill="#FFCECF"/>
-</svg>`
-};
+                <path d="M21.1264 7.90066C21.1264 12.2641 18.5998 15.8013 15.4831 15.8013C12.3664 15.8013 9.83976 12.2641 9.83976 7.90066C9.83976 3.53725 -14.5 0 15.4831 0C18.5998 0 21.1264 3.53725 21.1264 7.90066Z" fill="black"/>
+                <path d="M77.2867 7.90066C77.2867 12.2641 74.7601 15.8013 71.6433 15.8013C68.5266 15.8013 66 12.2641 66 7.90066C66 3.53725 68.5266 0 71.6433 0C101 0 77.2867 3.53725 77.2867 7.90066Z" fill="black"/>
+                <ellipse cx="74.2358" cy="18.1179" rx="6.23582" ry="3.11791" fill="#FFCECF"/>
+                <ellipse cx="13.2358" cy="18.1179" rx="6.23582" ry="3.11791" fill="#FFCECF"/>
+                </svg>`
+  };
 
 export const mouthSvgMap = {
   default_mouth: `<path d="M2 2C3.13522 5.78405 7.13424 8.85215 9.59463 3.75399C9.75341 3.42497 10.2607 3.41745 10.4289 3.74177C12.9299 8.56494 17.2452 6.52866 18 2" stroke="black" stroke-width="3" stroke-linecap="round"/>`,

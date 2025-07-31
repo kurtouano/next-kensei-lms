@@ -22,11 +22,12 @@ export default function BonsaiPage() {
   // Mock bonsai data
   const bonsaiData = {
     credits: 450,
-    level: 3,
+    level: 1,
     nextLevelCredits: 800,
     trees: [
       { id: "maple", name: "Maple Bonsai", credits: 0, unlocked: true, color: "#77DD82", category: "tree" },
       { id: "pine", name: "Pine Bonsai", credits: 200, unlocked: true, color: "#4a7c59", category: "tree" },
+      { id: "red", name: "Red", credits: 200, unlocked: true, color: "#2a5c59", category: "tree" },
       { id: "cherry", name: "Cherry Blossom", credits: 500, unlocked: false, color: "#e4b1ab", category: "tree" },
       { id: "juniper", name: "Juniper Bonsai", credits: 750, unlocked: false, color: "#5d9e75", category: "tree" },
     ],
@@ -220,6 +221,7 @@ export default function BonsaiPage() {
                   <div className="flex flex-col items-center">
                     <div className="mb-4">
                       <BonsaiSVG 
+                        level={bonsaiData.level}
                         treeColor={getTreeColor()} 
                         potColor={getPotColor()} 
                         decorations={getActiveDecorations()}
@@ -236,11 +238,11 @@ export default function BonsaiPage() {
 
                 {/* Customization Options */}
                 <div className="md:col-span-2 space-y-6">
-                  {/* Tree Type */}
+                  {/* Tree Color */}
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
                       <Flower className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
-                      Tree Type
+                      Tree Color
                     </h2>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                       {bonsaiData.trees
@@ -423,6 +425,7 @@ export default function BonsaiPage() {
                   <div className="flex flex-col items-center">
                     <div className="mb-4">
                       <BonsaiSVG 
+                        userLevel={bonsaiData.level}
                         treeColor={getTreeColor()} 
                         potColor={getPotColor()} 
                         decorations={getActiveDecorations()}
