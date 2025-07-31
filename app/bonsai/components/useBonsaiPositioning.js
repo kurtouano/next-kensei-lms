@@ -1,9 +1,5 @@
 import { useMemo, useCallback } from 'react';
 
-/**
- * Custom hook for managing bonsai eye and mouth positioning
- * Handles width mappings and centering calculations for different eye/mouth types
- */
 export const useBonsaiPositioning = (selectedEyes, selectedMouth) => {
   // Eye width mappings for different eye types
   const eyeWidthMap = useMemo(() => ({
