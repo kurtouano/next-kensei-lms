@@ -557,9 +557,7 @@ export default function ProfilePage() {
                           <div 
                             className="absolute bottom-0 left-1/2 h-16 w-24 -translate-x-1/2 rounded-t-sm rounded-b-xl"
                             style={{
-                              backgroundColor: userData.bonsai.pot.type === 'ceramic' ? '#5b8fb0' : 
-                                             userData.bonsai.pot.type === 'stone' ? '#8a8a8a' :
-                                             userData.bonsai.pot.type === 'plastic' ? '#4CAF50' : '#8B5E3C'
+                              backgroundColor: userData.bonsai.customization?.potColor || '#8B5E3C'
                             }}
                           ></div>
                           {/* Trunk */}
@@ -567,33 +565,36 @@ export default function ProfilePage() {
                           {/* Main foliage */}
                           <div 
                             className="absolute bottom-24 left-1/2 h-16 w-16 -translate-x-1/2 rounded-full"
-                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
+                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.customization?.foliageColor) }}
                           ></div>
                           {/* Side branches */}
                           <div 
                             className="absolute bottom-28 left-1/4 h-12 w-12 -translate-x-1/2 rounded-full"
-                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
+                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.customization?.foliageColor) }}
                           ></div>
                           <div 
                             className="absolute bottom-28 right-1/4 h-12 w-12 translate-x-1/2 rounded-full"
-                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
+                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.customization?.foliageColor) }}
                           ></div>
                           <div 
                             className="absolute bottom-32 left-1/2 h-14 w-14 -translate-x-1/2 rounded-full"
-                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.tree.color) }}
+                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.customization?.foliageColor) }}
                           ></div>
                           {/* Decoration */}
                           <div className="absolute bottom-6 right-12 h-6 w-6 rounded-md bg-[#d3d3d3]"></div>
                         </div>
                         <div className="text-center">
                           <p className="font-medium text-[#2c3e2d]">
-                            {capitalizeFirst(userData.bonsai.tree.type)} Bonsai (Level {userData.bonsai.tree.level})
+                            Bonsai (Level {userData.bonsai.level})
                           </p>
                           <p className="text-sm text-[#5c6d5e]">
-                            {capitalizeFirst(userData.bonsai.pot.type)} {capitalizeFirst(userData.bonsai.pot.size)} Pot
+                            {capitalizeFirst(userData.bonsai.customization?.potStyle || 'clay')} Pot
                           </p>
                           <p className="text-sm text-[#5c6d5e]">
-                            {capitalizeFirst(userData.bonsai.decoration.style)} {capitalizeFirst(userData.bonsai.decoration.type)}
+                            {userData.bonsai.customization?.decorations?.length > 0 
+                              ? `${userData.bonsai.customization.decorations.length} decoration(s)`
+                              : 'No decorations'
+                            }
                           </p>
                           <p className="text-xs text-[#5c6d5e] mt-1">
                             Total Credits: {userData.bonsai.totalCredits}
