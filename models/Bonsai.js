@@ -46,13 +46,13 @@ const BonsaiSchema = new mongoose.Schema(
     ],
     // --- Customization fields for user-selected bonsai parts ---
     customization: {
-      eyes: { type: String, default: 'default' }, // key to SVG
-      mouth: { type: String, default: 'default' }, // key to SVG
-      foliageColor: { type: String, default: '#6fb58a' }, // hex color
-      potStyle: { type: String, default: 'clay' }, // key to SVG or style
-      potColor: { type: String, default: '#8B4513' }, // hex color for pot
-      foundation: { type: String, default: 'shadow' }, // key to foundation/base SVG (shadow, lilypad, stone, etc)
-      decorations: [{ type: String }], // array of keys to SVGs
+      eyes: { type: String, default: 'default_eyes' },
+      mouth: { type: String, default: 'default_mouth' },
+      foliageColor: { type: String, default: '#77DD82' },
+      potStyle: { type: String, default: 'traditional-blue' },
+      potColor: { type: String, default: '#FD9475' },
+      foundation: { type: String, default: 'shadow' },
+      decorations: [{ type: String }], // array of decoration keys
     },
     // --- Owned items (unlocked part keys) ---
     ownedItems: [{ type: String }], // keys of items the user owns
@@ -67,6 +67,48 @@ const BonsaiSchema = new mongoose.Schema(
   },
   { timestamps: true },
 )
+
+// Create default milestones for new bonsai
+BonsaiSchema.statics.getDefaultMilestones = function() {
+  return [
+    { 
+      level: 1, 
+      name: "Seedling", 
+      description: "You've started your bonsai journey", 
+      creditsRequired: 0, 
+      isAchieved: true, 
+      achievedAt: new Date() 
+    },
+    { 
+      level: 2, 
+      name: "Sapling", 
+      description: "Your bonsai is growing steadily", 
+      creditsRequired: 200, 
+      isAchieved: false 
+    },
+    { 
+      level: 3, 
+      name: "Young Tree", 
+      description: "Your bonsai is developing character", 
+      creditsRequired: 800, 
+      isAchieved: false 
+    }
+  ];
+}
+
+// Get default owned items for new users
+BonsaiSchema.statics.getDefaultOwnedItems = function() {
+  return [
+    'default_eyes', 
+    'default_mouth', 
+    'maple', 
+    'traditional-blue'
+  ];
+}
+
+// Index for efficient queries - removed duplicate userRef unique constraint
+BonsaiSchema.index({ level: 1 })
+BonsaiSchema.index({ totalCredits: -1 })
 
 const Bonsai = mongoose.models.Bonsai || mongoose.model("Bonsai", BonsaiSchema)
 

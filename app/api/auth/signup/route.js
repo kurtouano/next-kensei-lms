@@ -27,13 +27,34 @@ export async function POST(req) {
       providerId,
     });
 
-    const bonsai = await Bonsai.create({ userRef: createUser._id });
+    // Create bonsai with proper defaults
+    const defaultMilestones = Bonsai.getDefaultMilestones();
+    const defaultOwnedItems = Bonsai.getDefaultOwnedItems();
+    
+    const bonsai = await Bonsai.create({ 
+      userRef: createUser._id,
+      level: 1,
+      totalCredits: 0,
+      milestones: defaultMilestones,
+      customization: {
+        eyes: 'default_eyes',
+        mouth: 'default_mouth',
+        foliageColor: '#77DD82',
+        potStyle: 'traditional-blue',
+        potColor: '#FD9475',
+        foundation: 'shadow',
+        decorations: []
+      },
+      ownedItems: defaultOwnedItems
+    });
+    
     createUser.bonsai = bonsai._id;
     await createUser.save();
+    
     return NextResponse.json({ message: "User is Registered" }, { status: 201 });
 
   } catch (error) {
+    console.error('Registration error:', error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-
