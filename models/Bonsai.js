@@ -68,6 +68,52 @@ const BonsaiSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
+// Tree color mapping for frontend/backend consistency
+BonsaiSchema.statics.getTreeColorMap = function() {
+  return {
+    "maple": "#77DD82",
+    "pine": "#4a7c59", 
+    "red": "#2a5c59",
+    "cherry": "#e4b1ab",
+    "juniper": "#5d9e75"
+  };
+}
+
+// Pot color mapping
+BonsaiSchema.statics.getPotColorMap = function() {
+  return {
+    "traditional-blue": "#FD9475",
+    "ceramic-brown": "#8B5E3C",
+    "glazed-green": "#4a7c59",
+    "stone-gray": "#7D7D7D",
+    "premium-gold": "#D4AF37"
+  };
+}
+
+// Helper method to get tree key from color
+BonsaiSchema.statics.getTreeKeyFromColor = function(color) {
+  const colorMap = {
+    "#77DD82": "maple",
+    "#4a7c59": "pine", 
+    "#2a5c59": "red",
+    "#e4b1ab": "cherry",
+    "#5d9e75": "juniper"
+  };
+  return colorMap[color] || "maple";
+}
+
+// Helper method to get pot key from color
+BonsaiSchema.statics.getPotKeyFromColor = function(color) {
+  const colorMap = {
+    "#FD9475": "traditional-blue",
+    "#8B5E3C": "ceramic-brown",
+    "#4a7c59": "glazed-green",
+    "#7D7D7D": "stone-gray",
+    "#D4AF37": "premium-gold"
+  };
+  return colorMap[color] || "traditional-blue";
+}
+
 // Create default milestones for new bonsai
 BonsaiSchema.statics.getDefaultMilestones = function() {
   return [
@@ -99,14 +145,42 @@ BonsaiSchema.statics.getDefaultMilestones = function() {
 // Get default owned items for new users
 BonsaiSchema.statics.getDefaultOwnedItems = function() {
   return [
+    // Default eyes and mouth (everyone gets these)
     'default_eyes', 
     'default_mouth', 
-    'maple', 
-    'traditional-blue'
+    
+    // Default tree colors (basic ones everyone gets)
+    'maple',
+    'pine', 
+    'red',
+    
+    // Default pot styles (basic ones everyone gets)  
+    'traditional-blue',
+    'ceramic-brown',
+    'glazed-green'
   ];
 }
 
-// Index for efficient queries - removed duplicate userRef unique constraint
+// Update bonsai level based on credits
+BonsaiSchema.methods.updateLevel = function() {
+  if (this.totalCredits < 200) {
+    this.level = 1;
+  } else if (this.totalCredits < 800) {
+    this.level = 2;
+  } else {
+    this.level = 3;
+  }
+  
+  // Update milestone achievements
+  this.milestones.forEach(milestone => {
+    if (this.totalCredits >= milestone.creditsRequired && !milestone.isAchieved) {
+      milestone.isAchieved = true;
+      milestone.achievedAt = new Date();
+    }
+  });
+}
+
+// Index for efficient queries
 BonsaiSchema.index({ level: 1 })
 BonsaiSchema.index({ totalCredits: -1 })
 

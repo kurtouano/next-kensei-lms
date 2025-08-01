@@ -40,7 +40,7 @@ export async function GET(request, { params }) {
 
       bonsai = new Bonsai({
         userRef: userId,
-        level: 1,
+        level: getBonsaiLevel(user.credits),
         totalCredits: user.credits || 0,
         milestones: defaultMilestones,
         customization: {
@@ -55,8 +55,9 @@ export async function GET(request, { params }) {
         ownedItems: defaultOwnedItems
       });
       await bonsai.save();
+      console.log('Created new bonsai with default items:', defaultOwnedItems);
     } else {
-      // Update bonsai level and milestones based on current user credits
+      // Update existing bonsai level and milestones based on current user credits
       const newLevel = getBonsaiLevel(user.credits);
       const updatedMilestones = bonsai.milestones.map(milestone => {
         if (user.credits >= milestone.creditsRequired && !milestone.isAchieved) {
@@ -66,10 +67,17 @@ export async function GET(request, { params }) {
         return milestone;
       });
 
+      // Ensure default items are always included
+      const defaultItems = Bonsai.getDefaultOwnedItems();
+      const mergedItems = [...new Set([...defaultItems, ...bonsai.ownedItems])];
+
       bonsai.level = newLevel;
       bonsai.totalCredits = user.credits;
       bonsai.milestones = updatedMilestones;
+      bonsai.ownedItems = mergedItems;
       await bonsai.save();
+      
+      console.log('Updated bonsai with owned items:', mergedItems);
     }
 
     return NextResponse.json(bonsai, { status: 200 });
