@@ -22,7 +22,7 @@ export default function BonsaiPage() {
   // Mock bonsai data
   const bonsaiData = {
     credits: 450,
-    level: 1,
+    level: 3,
     nextLevelCredits: 800,
     trees: [
       { id: "maple", name: "Maple Bonsai", credits: 0, unlocked: true, color: "#77DD82", category: "tree" },
