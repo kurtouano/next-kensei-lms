@@ -425,7 +425,7 @@ export default function BonsaiPage() {
                   <div className="flex flex-col items-center">
                     <div className="mb-4">
                       <BonsaiSVG 
-                        userLevel={bonsaiData.level}
+                        level={bonsaiData.level}
                         treeColor={getTreeColor()} 
                         potColor={getPotColor()} 
                         decorations={getActiveDecorations()}
