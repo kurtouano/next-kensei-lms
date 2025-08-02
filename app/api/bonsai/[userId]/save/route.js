@@ -5,6 +5,7 @@ import { connectDb } from "@/lib/mongodb";
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../auth/[...nextauth]/route';
+import { getLevelInfo } from '@/lib/levelCalculator';
 
 export async function PUT(request, { params }) {
   try {
@@ -36,7 +37,6 @@ export async function PUT(request, { params }) {
 
       bonsai = new Bonsai({
         userRef: userId,
-        level: user.getBonsaiLevel(),
         totalCredits: user.credits || 0,
         milestones: defaultMilestones,
         customization: {
@@ -54,7 +54,7 @@ export async function PUT(request, { params }) {
 
     // Update customization preferences
     if (updates.customization) {
-      // Merge the customization updates
+
       bonsai.customization = {
         ...bonsai.customization,
         ...updates.customization
@@ -68,23 +68,21 @@ export async function PUT(request, { params }) {
       bonsai.ownedItems = [...new Set([...bonsai.ownedItems, ...updates.ownedItems])];
     }
 
-    // Update bonsai level and milestones based on user's current credits
-    bonsai.totalCredits = user.credits;
-    bonsai.updateLevel(); // This method updates level and milestones
+    bonsai.syncWithUserCredits(user.credits);
 
     bonsai.updatedAt = new Date();
     await bonsai.save();
 
-    console.log('Bonsai saved successfully:', bonsai);
-
-    return NextResponse.json({ 
+    const levelInfo = getLevelInfo(user.credits);
+    const response = {
       message: "Bonsai preferences saved successfully", 
       bonsai: {
-        ...bonsai.toObject(),
-        // Include some helpful computed values
-        nextLevelCredits: bonsai.level < 3 ? (bonsai.level === 1 ? 200 : 800) : null
+        ...bonsai.toObject(), // Includes virtual 'level' field
+        levelInfo, // Additional level information
       }
-    }, { status: 200 });
+    };
+
+    return NextResponse.json(response, { status: 200 });
   } catch (error) {
     console.error('Error saving bonsai preferences:', error);
     return NextResponse.json({ 

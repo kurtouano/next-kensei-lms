@@ -110,33 +110,6 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Instance method to calculate bonsai level based on credits
-UserSchema.methods.getBonsaiLevel = function() {
-  if (this.credits < 200) return 1;
-  if (this.credits < 800) return 2;
-  return 3;
-}
-
-// Instance method to get next level requirements
-UserSchema.methods.getNextLevelInfo = function() {
-  const currentLevel = this.getBonsaiLevel();
-  
-  const levelRequirements = {
-    1: { current: 0, next: 200, nextLevel: 2 },
-    2: { current: 200, next: 800, nextLevel: 3 },
-    3: { current: 800, next: null, nextLevel: null }
-  };
-  
-  return levelRequirements[currentLevel];
-}
-
-// Static method to get bonsai level from credits (useful for queries)
-UserSchema.statics.getBonsaiLevelFromCredits = function(credits) {
-  if (credits < 200) return 1;
-  if (credits < 800) return 2;
-  return 3;
-}
-
 // Single field indexes
 UserSchema.index({ provider: 1 })              // Fast login provider checks
 UserSchema.index({ role: 1 })                  // Fast role-based queries

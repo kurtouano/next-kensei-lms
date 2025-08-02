@@ -5,13 +5,7 @@ import { connectDb } from "@/lib/mongodb";
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
-
-// Helper function to determine bonsai level based on credits
-function getBonsaiLevel(totalCredits) {
-  if (totalCredits < 200) return 1;
-  if (totalCredits < 800) return 2;
-  return 3;
-}
+import { calculateBonsaiLevel, getLevelInfo } from '@/lib/levelCalculator';
 
 export async function GET(request, { params }) {
   try {
@@ -40,7 +34,6 @@ export async function GET(request, { params }) {
 
       bonsai = new Bonsai({
         userRef: userId,
-        level: getBonsaiLevel(user.credits),
         totalCredits: user.credits || 0,
         milestones: defaultMilestones,
         customization: {
@@ -57,30 +50,26 @@ export async function GET(request, { params }) {
       await bonsai.save();
       console.log('Created new bonsai with default items:', defaultOwnedItems);
     } else {
-      // Update existing bonsai level and milestones based on current user credits
-      const newLevel = getBonsaiLevel(user.credits);
-      const updatedMilestones = bonsai.milestones.map(milestone => {
-        if (user.credits >= milestone.creditsRequired && !milestone.isAchieved) {
-          milestone.isAchieved = true;
-          milestone.achievedAt = new Date();
-        }
-        return milestone;
-      });
+      bonsai.syncWithUserCredits(user.credits);
 
-      // Ensure default items are always included
       const defaultItems = Bonsai.getDefaultOwnedItems();
       const mergedItems = [...new Set([...defaultItems, ...bonsai.ownedItems])];
-
-      bonsai.level = newLevel;
-      bonsai.totalCredits = user.credits;
-      bonsai.milestones = updatedMilestones;
       bonsai.ownedItems = mergedItems;
-      await bonsai.save();
       
+      await bonsai.save();
       console.log('Updated bonsai with owned items:', mergedItems);
     }
 
-    return NextResponse.json(bonsai, { status: 200 });
+    const levelInfo = getLevelInfo(user.credits);
+
+    const response = {
+      ...bonsai.toObject(),
+      levelInfo, 
+      level: levelInfo.level,
+      totalCredits: user.credits
+    };
+
+    return NextResponse.json(response, { status: 200 });
   } catch (error) {
     console.error('Error fetching bonsai:', error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

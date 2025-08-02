@@ -1,4 +1,5 @@
 import mongoose from "mongoose"
+import { calculateBonsaiLevel, getDefaultMilestones, updateMilestoneAchievements } from "@/lib/levelCalculator"
 
 const BonsaiSchema = new mongoose.Schema(
   {
@@ -7,12 +8,6 @@ const BonsaiSchema = new mongoose.Schema(
       ref: "User",
       required: true,
       unique: true,
-    },
-    level: {
-      type: Number,
-      default: 1,
-      min: 1,
-      max: 3,
     },
     totalCredits: {
       type: Number,
@@ -68,6 +63,14 @@ const BonsaiSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
+BonsaiSchema.virtual('level').get(function() {
+  return calculateBonsaiLevel(this.totalCredits);
+});
+
+// Ensure virtual fields are serialized
+BonsaiSchema.set('toJSON', { virtuals: true });
+BonsaiSchema.set('toObject', { virtuals: true });
+
 // Tree color mapping for frontend/backend consistency
 BonsaiSchema.statics.getTreeColorMap = function() {
   return {
@@ -114,32 +117,9 @@ BonsaiSchema.statics.getPotKeyFromColor = function(color) {
   return colorMap[color] || "traditional-blue";
 }
 
-// Create default milestones for new bonsai
+// ✅ UPDATE: Use utility function instead of static method
 BonsaiSchema.statics.getDefaultMilestones = function() {
-  return [
-    { 
-      level: 1, 
-      name: "Seedling", 
-      description: "You've started your bonsai journey", 
-      creditsRequired: 0, 
-      isAchieved: true, 
-      achievedAt: new Date() 
-    },
-    { 
-      level: 2, 
-      name: "Sapling", 
-      description: "Your bonsai is growing steadily", 
-      creditsRequired: 200, 
-      isAchieved: false 
-    },
-    { 
-      level: 3, 
-      name: "Young Tree", 
-      description: "Your bonsai is developing character", 
-      creditsRequired: 800, 
-      isAchieved: false 
-    }
-  ];
+  return getDefaultMilestones();
 }
 
 // Get default owned items for new users
@@ -161,27 +141,17 @@ BonsaiSchema.statics.getDefaultOwnedItems = function() {
   ];
 }
 
-// Update bonsai level based on credits
-BonsaiSchema.methods.updateLevel = function() {
-  if (this.totalCredits < 200) {
-    this.level = 1;
-  } else if (this.totalCredits < 800) {
-    this.level = 2;
-  } else {
-    this.level = 3;
-  }
+// ✅ UPDATE: Simplified update method using utility functions
+BonsaiSchema.methods.syncWithUserCredits = function(userCredits) {
+  // Update total credits
+  this.totalCredits = userCredits;
   
-  // Update milestone achievements
-  this.milestones.forEach(milestone => {
-    if (this.totalCredits >= milestone.creditsRequired && !milestone.isAchieved) {
-      milestone.isAchieved = true;
-      milestone.achievedAt = new Date();
-    }
-  });
+  // Update milestone achievements using utility function
+  this.milestones = updateMilestoneAchievements(this.milestones, userCredits);
+  
+  // Note: level is calculated dynamically via virtual field
 }
 
-// Index for efficient queries
-BonsaiSchema.index({ level: 1 })
 BonsaiSchema.index({ totalCredits: -1 })
 
 const Bonsai = mongoose.models.Bonsai || mongoose.model("Bonsai", BonsaiSchema)
