@@ -328,23 +328,30 @@ export default function BonsaiPage() {
 
             <TabsContent value="customize" className="mt-0 border-0 p-0">
               <div className="grid gap-6 md:grid-cols-3">
-                {/* Bonsai Preview */}
-                <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-center text-[#2c3e2d]">Your Bonsai</h2>
-                  <div className="flex flex-col items-center">
-                    <div className="mb-4">
-                      <BonsaiSVG 
-                        level={bonsaiData.level}
-                        treeColor={getTreeColor()} 
-                        potColor={getPotColor()} 
-                        decorations={getActiveDecorations()}
-                        selectedEyes={selectedEyes}
-                        selectedMouth={selectedMouth}
-                      />
-                    </div>
-                    <div className="text-center">
-                      <p className="font-medium text-[#2c3e2d]">Level {bonsaiData.level} Bonsai</p>
-                      <p className="text-sm text-[#5c6d5e]">{bonsaiData.totalCredits} Credits Total</p>
+                {/* Bonsai Preview - Fixed/Sticky */}
+                <div className="md:sticky md:top-28 md:self-start">
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm">
+                    <h2 className="mb-4 text-xl font-semibold text-center text-[#2c3e2d]">Your Bonsai</h2>
+                    <div className="flex flex-col items-center">
+                      <div className="mb-4">
+                        <BonsaiSVG 
+                          level={bonsaiData.level}
+                          treeColor={getTreeColor()} 
+                          potColor={getPotColor()} 
+                          decorations={getActiveDecorations()}
+                          selectedEyes={selectedEyes}
+                          selectedMouth={selectedMouth}
+                        />
+                      </div>
+                      <div className="text-center">
+                        <p className="font-medium text-[#2c3e2d]">Level {bonsaiData.level} Bonsai</p>
+                        <p className="text-sm text-[#5c6d5e]">{bonsaiData.totalCredits} Credits Total</p>
+                      </div>
+                      
+                      {/* Live Preview Indicator */}
+                      <div className="mt-3 px-3 py-1 bg-[#eef2eb] rounded-full">
+                        <p className="text-xs text-[#4a7c59] font-medium">Live Preview</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -399,7 +406,8 @@ export default function BonsaiPage() {
                               title="Choose custom color"
                             />
                           </div>
-                          <p className="text-center text-sm font-medium text-[#2c3e2d]">Custom Color (+) </p>
+                          <p className="text-center text-sm font-medium text-[#2c3e2d]">Custom Color</p>
+                          <p className="text-center text-xs text-[#5c6d5e] mt-1">Click to choose</p>
                         </div>
                       </div>
                     </div>
@@ -439,7 +447,7 @@ export default function BonsaiPage() {
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
                       <Eye className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
-                      Eyes <span className="text-sm font-normal text-[#5c6d5e]"></span>
+                      Eyes <span className="text-sm font-normal text-[#5c6d5e]">(All Free)</span>
                     </h2>
                     <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
                       {mockData.eyes.map((eyes) => (
@@ -472,7 +480,7 @@ export default function BonsaiPage() {
                       <svg className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Mouth <span className="text-sm font-normal text-[#5c6d5e]"></span>
+                      Mouth <span className="text-sm font-normal text-[#5c6d5e]">(All Free)</span>
                     </h2>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                       {mockData.mouths.map((mouth) => (
