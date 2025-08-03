@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { Award, Palette, Flower, ShoppingBag, Eye, Loader2 } from "lucide-react"
+import { Award, Palette, Flower, ShoppingBag, Eye, EyeClosed, Loader2 } from "lucide-react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "./components/BonsaiSVG"
 import { BonsaiShop } from "./components/BonsaiShop"
@@ -30,6 +30,7 @@ export default function BonsaiPage() {
   const [activeTab, setActiveTab] = useState("customize")
   const [previewItem, setPreviewItem] = useState(null)
   const [credits, setCredits] = useState(0)
+  const [showMobilePreview, setShowMobilePreview] = useState(false)
 
   // Load bonsai data on component mount
   useEffect(() => {
@@ -311,6 +312,7 @@ export default function BonsaiPage() {
     Math.max(0, nextLevelMilestone.creditsRequired - currentCredits) : 0
 
   return (
+    <>
     <div className="flex min-h-screen flex-col bg-[#f9fafb]">
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
@@ -411,7 +413,7 @@ export default function BonsaiPage() {
                           decorations={getActiveDecorations()}
                           selectedEyes={selectedEyes}
                           selectedMouth={selectedMouth}
-                          selectedPotStyle={selectedPotStyle}        
+                          selectedPotStyle={selectedPotStyle}       
                           selectedGroundStyle={selectedGroundStyle} 
                         />
                       </div>
@@ -761,5 +763,58 @@ export default function BonsaiPage() {
         </div>
       </main>
     </div>
+    
+    {/* Mobile Floating Preview */}
+    {showMobilePreview && (
+      <div className="md:hidden fixed inset-x-4 top-16 z-50 bg-white rounded-lg border border-[#dce4d7] shadow-xl p-4">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-semibold text-sm text-[#2c3e2d]">
+            {previewItem ? "Item Preview" : "Your Bonsai"}
+          </h3>
+          <button 
+            onClick={() => setShowMobilePreview(false)}
+            className="text-gray-400 hover:text-gray-600 text-lg font-bold"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="w-44 h-44 mb-2">
+            <BonsaiSVG 
+              level={bonsaiData.level}
+              treeColor={getTreeColor()} 
+              decorations={getActiveDecorations()}
+              selectedEyes={selectedEyes}
+              selectedMouth={selectedMouth}
+              potColor={getPotColor()} 
+              selectedPotStyle={selectedPotStyle}
+              selectedGroundStyle={getGroundStyle()} 
+            />
+          </div>
+          <div className="text-center">
+            {previewItem ? (
+              <>
+                <p className="font-medium text-sm text-[#2c3e2d]">{previewItem.name}</p>
+                <p className="text-xs text-[#5c6d5e]">{previewItem.credits} Credits</p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium text-sm text-[#2c3e2d]">Level {bonsaiData.level} Bonsai</p>
+                <p className="text-xs text-[#5c6d5e]">{credits} Credits Available</p>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {/* Mobile Preview Toggle Button */}
+    <button 
+      onClick={() => setShowMobilePreview(!showMobilePreview)}
+      className="md:hidden fixed bottom-6 right-6 z-40 bg-[#4a7c59] text-white p-4 rounded-full shadow-lg hover:bg-[#3a6147] transition-colors"
+    >
+      {showMobilePreview ? <EyeClosed /> : <Eye /> }
+    </button>
+    </>
   )
 }
