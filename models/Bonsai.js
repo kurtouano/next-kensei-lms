@@ -39,18 +39,16 @@ const BonsaiSchema = new mongoose.Schema(
         },
       },
     ],
-    // --- Customization fields for user-selected bonsai parts ---
     customization: {
       eyes: { type: String, default: 'default_eyes' },
       mouth: { type: String, default: 'default_mouth' },
       foliageColor: { type: String, default: '#77DD82' },
       potStyle: { type: String, default: 'traditional-blue' },
       potColor: { type: String, default: '#FD9475' },
-      foundation: { type: String, default: 'shadow' },
-      decorations: [{ type: String }], // array of decoration keys
+      groundStyle: { type: String, default: 'default_ground' },  
+      decorations: [{ type: String }], 
     },
-    // --- Owned items (unlocked part keys) ---
-    ownedItems: [{ type: String }], // keys of items the user owns
+    ownedItems: [{ type: String }],
     createdAt: {
       type: Date,
       default: Date.now,

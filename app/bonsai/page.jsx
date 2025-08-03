@@ -16,7 +16,7 @@ export default function BonsaiPage() {
   const [bonsaiData, setBonsaiData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [selectedTree, setSelectedTree] = useState("maple")
+  const [selectedTree, setSelectedTree] = useState("default_foliage")
   const [customTreeColor, setCustomTreeColor] = useState("#77DD82")
   const [useCustomColor, setUseCustomColor] = useState(false)
   const [selectedPot, setSelectedPot] = useState("default_pot")
@@ -131,8 +131,8 @@ export default function BonsaiPage() {
   // Helper functions
   const getTreeKeyFromColor = (color) => {
     const treeMap = {
-      "#77DD82": "maple",
-      "#4a7c59": "pine"
+      "#77DD82": "default_foliage",
+      "#4a7c59": "forest_green_foliage"
     }
     return treeMap[color] || null
   }
@@ -148,8 +148,8 @@ export default function BonsaiPage() {
   // Mock data for tree and pot colors
   const mockData = {
     trees: [
-      { id: "maple", name: "Default Green", credits: 0, unlocked: true, color: "#77DD82", category: "tree" },
-      { id: "pine", name: "Forest Green", credits: 0, unlocked: true, color: "#4a7c59", category: "tree" },
+      { id: "default_foliage", name: "Default Green", credits: 0, unlocked: true, color: "#77DD82", category: "tree" },
+      { id: "forest_green_foliage", name: "Forest Green", credits: 0, unlocked: true, color: "#4a7c59", category: "tree" },
       { id: "custom", name: "Custom Color", credits: 0, unlocked: true, color: customTreeColor, category: "tree" },
     ],
     pots: [
@@ -386,7 +386,7 @@ export default function BonsaiPage() {
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
                       <Flower className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
-                      Tree Color
+                      Foliage Color
                     </h2>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                       {/* Preset Colors */}
@@ -470,7 +470,7 @@ export default function BonsaiPage() {
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
                       <Eye className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
-                      Eyes <span className="text-sm font-normal text-[#5c6d5e]">(All Free)</span>
+                      Eyes <span className="text-sm font-normal text-[#5c6d5e]"></span>
                     </h2>
                     <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
                       {mockData.eyes.map((eyes) => (
@@ -503,7 +503,7 @@ export default function BonsaiPage() {
                       <svg className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Mouth <span className="text-sm font-normal text-[#5c6d5e]">(All Free)</span>
+                      Mouth <span className="text-sm font-normal text-[#5c6d5e]"></span>
                     </h2>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                       {mockData.mouths.map((mouth) => (

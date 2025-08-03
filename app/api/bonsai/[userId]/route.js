@@ -42,7 +42,7 @@ export async function GET(request, { params }) {
           foliageColor: '#77DD82',
           potStyle: 'traditional-blue',
           potColor: '#FD9475',
-          foundation: 'shadow',
+          groundStyle: 'default_ground',
           decorations: []
         },
         ownedItems: defaultOwnedItems

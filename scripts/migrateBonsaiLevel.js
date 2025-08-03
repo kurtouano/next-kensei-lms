@@ -1,6 +1,3 @@
-// scripts/migrateBonsaiLevel.js
-// Run this script AFTER updating your models
-
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
@@ -21,48 +18,113 @@ const connectDb = async () => {
   }
 };
 
-const migrateBonsaiLevel = async () => {
+// Migration to remove old fields that are no longer in the schema
+const cleanupOldBonsaiFields = async () => {
   try {
-    console.log('🚀 Starting Bonsai level field migration...');
+    console.log('🧹 Starting cleanup of old Bonsai fields...');
+    const db = mongoose.connection.db;
+    const bonsaiCollection = db.collection('bonsais');
+
+    // Fields to remove (old schema fields not in current model)
+    const fieldsToRemove = {
+      tree: "",
+      pot: "",
+      level: "",      // This is now a virtual field
+      decoration: "",
+      inventory: ""
+    };
+
+    // First, let's see what we're dealing with
+    const sampleDoc = await bonsaiCollection.findOne({});
+    console.log('📋 Sample document structure:');
+    console.log('Fields present:', Object.keys(sampleDoc || {}));
+
+    // Count documents with old fields
+    const oldFieldCounts = {};
+    for (const field of Object.keys(fieldsToRemove)) {
+      const count = await bonsaiCollection.countDocuments({ [field]: { $exists: true } });
+      oldFieldCounts[field] = count;
+      console.log(`📊 Documents with '${field}' field: ${count}`);
+    }
+
+    // Check if any cleanup is needed
+    const totalOldFields = Object.values(oldFieldCounts).reduce((sum, count) => sum + count, 0);
+    if (totalOldFields === 0) {
+      console.log('✅ No old fields found. Database is already clean!');
+      return { removed: 0, errors: 0 };
+    }
+
+    console.log(`\n🚀 Removing old fields from ${Object.values(oldFieldCounts).filter(c => c > 0).length} field types...`);
+
+    // Remove all old fields in one operation
+    const result = await bonsaiCollection.updateMany(
+      {}, // Update all documents
+      { $unset: fieldsToRemove }
+    );
+
+    console.log(`✅ Old fields cleanup completed!`);
+    console.log(`   - Documents modified: ${result.modifiedCount}`);
+    console.log(`   - Documents matched: ${result.matchedCount}`);
+
+    // Verify cleanup
+    console.log('\n🔍 Verification - checking remaining old fields:');
+    let remainingOldFields = 0;
+    for (const field of Object.keys(fieldsToRemove)) {
+      const remaining = await bonsaiCollection.countDocuments({ [field]: { $exists: true } });
+      if (remaining > 0) {
+        console.log(`⚠️  '${field}' still exists in ${remaining} documents`);
+        remainingOldFields += remaining;
+      } else {
+        console.log(`✅ '${field}' successfully removed`);
+      }
+    }
+
+    if (remainingOldFields === 0) {
+      console.log('🎉 All old fields successfully removed!');
+    } else {
+      console.log(`⚠️  ${remainingOldFields} old field instances still remain`);
+    }
+
+    // Show a sample of the cleaned document
+    const cleanedSample = await bonsaiCollection.findOne({});
+    console.log('\n📋 Sample cleaned document structure:');
+    console.log('Current fields:', Object.keys(cleanedSample || {}));
+
+    return { removed: result.modifiedCount, errors: remainingOldFields };
+
+  } catch (error) {
+    console.error('❌ Old fields cleanup failed:', error);
+    throw error;
+  }
+};
+
+// Main migration function
+const runCleanup = async () => {
+  try {
+    console.log('🧹 Starting Bonsai old fields cleanup...\n');
     
     // Connect to database
     await connectDb();
-    
-    // Get the raw collection (bypassing Mongoose schema)
-    const db = mongoose.connection.db;
-    const bonsaiCollection = db.collection('bonsais');
-    
-    // Check how many documents have the level field
-    const documentsWithLevel = await bonsaiCollection.countDocuments({ level: { $exists: true } });
-    console.log(`📊 Found ${documentsWithLevel} Bonsai documents with 'level' field`);
-    
-    if (documentsWithLevel === 0) {
-      console.log('✅ No documents to migrate. All clean!');
-      return;
-    }
-    
-    // Remove the level field from all documents
-    const result = await bonsaiCollection.updateMany(
-      { level: { $exists: true } }, // Find documents that have level field
-      { $unset: { level: "" } }     // Remove the level field
-    );
-    
-    console.log(`✅ Migration completed!`);
-    console.log(`   - Documents modified: ${result.modifiedCount}`);
-    console.log(`   - Documents matched: ${result.matchedCount}`);
-    
-    // Verify the migration
-    const remainingWithLevel = await bonsaiCollection.countDocuments({ level: { $exists: true } });
-    console.log(`📊 Documents still with 'level' field: ${remainingWithLevel}`);
-    
-    if (remainingWithLevel === 0) {
-      console.log('🎉 Migration successful! All level fields removed.');
+
+    // Run cleanup
+    console.log('='.repeat(60));
+    const result = await cleanupOldBonsaiFields();
+
+    // Print final summary
+    console.log('\n' + '='.repeat(60));
+    console.log('🎉 CLEANUP COMPLETED!');
+    console.log('📊 Final Summary:');
+    console.log(`   Documents cleaned: ${result.removed}`);
+    console.log(`   Remaining issues: ${result.errors}`);
+
+    if (result.errors === 0) {
+      console.log('✅ Database successfully cleaned! All old fields removed.');
     } else {
-      console.log('⚠️  Some documents still have level field. Check manually.');
+      console.log('⚠️  Some old fields still remain. Please review the logs above.');
     }
-    
+
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error('❌ Cleanup failed:', error);
   } finally {
     // Close the connection
     await mongoose.connection.close();
@@ -70,13 +132,13 @@ const migrateBonsaiLevel = async () => {
   }
 };
 
-// Run the migration
-migrateBonsaiLevel()
+// Run cleanup
+runCleanup()
   .then(() => {
-    console.log('🏁 Migration script completed');
+    console.log('🏁 Cleanup script completed');
     process.exit(0);
   })
   .catch((error) => {
-    console.error('💥 Migration script failed:', error);
+    console.error('💥 Cleanup script failed:', error);
     process.exit(1);
   });
