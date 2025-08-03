@@ -319,76 +319,79 @@ export default function BonsaiPage() {
             <p className="text-[#5c6d5e]">Customize and grow your bonsai as you learn Japanese</p>
           </div>
 
-          {/* Level Progress Bar - FIXED */}
-          <div className="mb-8 rounded-lg border border-[#dce4d7] bg-white p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#eef2eb]">
-                  <BonsaiIcon className="h-8 w-8 text-[#4a7c59]" />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-[#2c3e2d]">Level {currentLevel} Bonsai</h2>
-                  <p className="text-sm text-[#5c6d5e]">{currentCredits} credits earned</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  {isMaxLevel ? (
-                    <>
-                      <p className="text-sm font-medium text-[#2c3e2d]">Maximum Level Reached!</p>
-                      <p className="text-xs text-[#5c6d5e]">Your bonsai is fully grown</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm font-medium text-[#2c3e2d]">
-                        Next Level: {nextLevelMilestone?.name || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-[#5c6d5e]">
-                        {creditsNeededForNext} credits needed
-                      </p>
-                    </>
-                  )}
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eef2eb] text-[#4a7c59]">
-                  {isMaxLevel ? '🌳' : (nextLevelMilestone?.level || currentLevel)}
-                </div>
-              </div>
+      {/* Level Progress Bar */}
+      <div className="mb-8 rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#eef2eb]">
+              <BonsaiIcon className="h-8 w-8 text-[#4a7c59]" />
             </div>
-            <div className="mt-4">
-              <div className="mb-1 flex justify-between text-xs">
-                <span>Current: Level {currentLevel}</span>
-                <span>{isMaxLevel ? 'Max Level' : `Next: Level ${nextLevelMilestone?.level || '?'}`}</span>
-              </div>
-              <Progress 
-                value={progressToNextLevel} 
-                className="h-2 bg-[#dce4d7]" 
-                indicatorClassName="bg-[#4a7c59]" 
-              />
+            <div>
+              <h2 className="font-semibold text-[#2c3e2d]">Level {currentLevel} Bonsai</h2>
+              <p className="text-sm text-[#5c6d5e]">{currentCredits} credits earned</p>
             </div>
           </div>
+          <div className="flex items-center gap-3">
+            <div className="text-left sm:text-right">
+              {isMaxLevel ? (
+                <>
+                  <p className="text-sm font-medium text-[#2c3e2d]">Maximum Level Reached!</p>
+                  <p className="text-xs text-[#5c6d5e]">Your bonsai is fully grown</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-[#2c3e2d]">
+                    Next Level: {nextLevelMilestone?.name || 'Unknown'}
+                  </p>
+                  <p className="text-xs text-[#5c6d5e]">
+                    {creditsNeededForNext} credits needed
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eef2eb] text-[#4a7c59]">
+              {isMaxLevel ? '🌳' : (nextLevelMilestone?.level || currentLevel)}
+            </div>
+          </div>
+        </div>
+        <div className="mt-4">
+          <div className="mb-1 flex justify-between text-xs">
+            <span>Current: Level {currentLevel}</span>
+            <span>{isMaxLevel ? 'Max Level' : `Next: Level ${nextLevelMilestone?.level || '?'}`}</span>
+          </div>
+          <Progress 
+            value={progressToNextLevel} 
+            className="h-2 bg-[#dce4d7]" 
+            indicatorClassName="bg-[#4a7c59]" 
+          />
+        </div>
+      </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 bg-[#eef2eb]">
+            <TabsList className="grid w-full grid-cols-3 bg-[#eef2eb] p-1">
               <TabsTrigger
                 value="customize"
-                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white"
+                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm px-2 py-2"
               >
-                <Palette className="mr-2 h-4 w-4" />
-                Customize Bonsai
+                <Palette className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Customize Bonsai</span>
+                <span className="sm:hidden">Customize</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="shop" 
-                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white"
+                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm px-2 py-2"
               >
-                <ShoppingBag className="mr-2 h-4 w-4" />
-                Bonsai Shop
+                <ShoppingBag className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Bonsai Shop</span>
+                <span className="sm:hidden">Shop</span>
               </TabsTrigger>
               <TabsTrigger
                 value="milestones"
-                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white"
+                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm px-2 py-2"
               >
-                <Award className="mr-2 h-4 w-4" />
-                Growth Milestones
+                <Award className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Growth Milestones</span>
+                <span className="sm:hidden">Milestones</span>
               </TabsTrigger>
             </TabsList>
 
@@ -422,13 +425,13 @@ export default function BonsaiPage() {
 
                 {/* Customization Options */}
                 <div className="md:col-span-2 space-y-6">
-                  {/* Tree Color */}
+                  {/* Foliage Color */}
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
                       <Flower className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
                       Foliage Color
                     </h2>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       {/* Preset Colors */}
                       {mockData.trees.slice(0, 2).map((tree) => (
                         <div
@@ -512,7 +515,7 @@ export default function BonsaiPage() {
                       <Eye className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
                       Eyes <span className="text-sm font-normal text-[#5c6d5e]"></span>
                     </h2>
-                    <div className="grid grid-cols-3 gap-3 md:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                       {mockData.eyes.map((eyes) => (
                         <div
                           key={eyes.id}
@@ -530,7 +533,7 @@ export default function BonsaiPage() {
                             <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
                               <Eye className="h-4 w-4 text-[#4a7c59]" />
                             </div>
-                            <p className="text-center text-xs font-medium text-[#2c3e2d]">{eyes.name}</p>
+                            <p className="text-center text-sm font-medium text-[#2c3e2d]">{eyes.name}</p>
                           </div>
                         </div>
                       ))}
@@ -565,7 +568,7 @@ export default function BonsaiPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0" />
                               </svg>
                             </div>
-                            <p className="text-center text-xs font-medium text-[#2c3e2d]">{mouth.name}</p>
+                            <p className="text-center text-sm font-medium text-[#2c3e2d]">{mouth.name}</p>
                           </div>
                         </div>
                       ))}
@@ -633,7 +636,7 @@ export default function BonsaiPage() {
                       <Palette className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
                       Pot Color
                     </h2>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                       {/* Preset Colors */}
                       {mockData.pots.slice(0, 2).map((pot) => (
                         <div

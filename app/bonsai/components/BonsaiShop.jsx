@@ -87,7 +87,7 @@ export const BonsaiShop = ({
     <div className="grid gap-6 md:grid-cols-3">
       {/* Bonsai Preview - Fixed/Sticky for Shop */}
       <div className="md:sticky md:top-20 md:self-start md:h-fit">
-        <div className="rounded-lg border border-[#dce4d7] bg-white p-6 shadow-lg min-h-[500px] flex flex-col justify-center">
+        <div className="rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm min-h-[500px] flex flex-col justify-center">
           <h2 className="mb-6 text-xl font-semibold text-center text-[#2c3e2d]">
             {previewItem ? "Item Preview" : "Your Bonsai"}
           </h2>
