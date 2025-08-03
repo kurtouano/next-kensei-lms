@@ -25,7 +25,8 @@ export default function BonsaiPage() {
   const [selectedEyes, setSelectedEyes] = useState("default_eyes")
   const [selectedMouth, setSelectedMouth] = useState("default_mouth")
   const [selectedDecorations, setSelectedDecorations] = useState([])
-  const [selectedFoundation, setSelectedFoundation] = useState("shadow")
+  const [selectedGroundStyle, setSelectedGroundStyle] = useState("default_ground")
+  const [selectedPotStyle, setSelectedPotStyle] = useState("default_pot")
   const [activeTab, setActiveTab] = useState("customize")
   const [previewItem, setPreviewItem] = useState(null)
   const [credits, setCredits] = useState(0)
@@ -49,7 +50,8 @@ export default function BonsaiPage() {
         if (data.customization) {
           setSelectedEyes(data.customization.eyes || "default_eyes")
           setSelectedMouth(data.customization.mouth || "default_mouth")
-          setSelectedFoundation(data.customization.foundation || "shadow")
+          setSelectedPotStyle(data.customization.potStyle || "default_pot")
+          setSelectedGroundStyle(data.customization.groundStyle || "default_ground")
           
           // Check if using custom color or preset for tree
           const presetTree = getTreeKeyFromColor(data.customization.foliageColor)
@@ -97,7 +99,8 @@ export default function BonsaiPage() {
           mouth: selectedMouth,
           foliageColor: getTreeColor(),
           potColor: getPotColor(),
-          foundation: selectedFoundation,
+          potStyle: selectedPotStyle,
+          groundStyle: selectedGroundStyle,
           decorations: selectedDecorations
         }
       }
@@ -172,11 +175,11 @@ export default function BonsaiPage() {
     ],
   }
 
-  const getFoundation = () => {
+  const getGroundStyle = () => {
     if (previewItem && previewItem.type === "foundation") {
       return previewItem.id
     }
-    return selectedFoundation
+    return selectedGroundStyle
   }
 
   const getTreeColor = () => {
@@ -365,7 +368,8 @@ export default function BonsaiPage() {
                           decorations={getActiveDecorations()}
                           selectedEyes={selectedEyes}
                           selectedMouth={selectedMouth}
-                          foundation={getFoundation()}
+                          selectedPotStyle={selectedPotStyle}        // Add this
+                          selectedGroundStyle={selectedGroundStyle} 
                         />
                       </div>
                       <div className="text-center mb-4">
@@ -528,6 +532,61 @@ export default function BonsaiPage() {
                     </div>
                   </div>
 
+                  {/* Ground Style */}
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
+                      Ground Style
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                      {[
+                        { id: "default_ground", name: "Default Shadow" },
+                        { id: "lilypad_ground", name: "Lily Pad" },
+                        { id: "skate_ground", name: "Skate Ground" },
+                        { id: "flowery_ground", name: "Flowery Ground" },
+                        { id: "mushroom_ground", name: "Mushroom Ground" }
+                      ].map((groundStyle) => (
+                        <div
+                          key={groundStyle.id}
+                          className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                            selectedGroundStyle === groundStyle.id
+                              ? "border-[#4a7c59] bg-[#eef2eb]"
+                              : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
+                          }`}
+                          onClick={() => setSelectedGroundStyle(groundStyle.id)}
+                        >
+                          <p className="text-center text-sm font-medium text-[#2c3e2d]">{groundStyle.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Pot Style */}
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
+                      Pot Style
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                      {[
+                        { id: "default_pot", name: "Default Pot" },
+                        { id: "wide_pot", name: "Wide Pot" },
+                        { id: "slim_pot", name: "Slim Pot" },
+                        { id: "mushroom_pot", name: "Mushroom Pot" }
+                      ].map((potStyle) => (
+                        <div
+                          key={potStyle.id}
+                          className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                            selectedPotStyle === potStyle.id
+                              ? "border-[#4a7c59] bg-[#eef2eb]"
+                              : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
+                          }`}
+                          onClick={() => setSelectedPotStyle(potStyle.id)}
+                        >
+                          <p className="text-center text-sm font-medium text-[#2c3e2d]">{potStyle.name}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Pot Color */}
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
@@ -647,7 +706,7 @@ export default function BonsaiPage() {
                 getActiveDecorations={getActiveDecorations}
                 selectedEyes={selectedEyes}
                 selectedMouth={selectedMouth}
-                getFoundation={getFoundation}
+                getGroundStyle={getGroundStyle}
               />
             </TabsContent>
 
