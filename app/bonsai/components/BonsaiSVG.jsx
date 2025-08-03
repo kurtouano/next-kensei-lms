@@ -52,7 +52,14 @@ export const BonsaiSVG = ({
 
   return (
     <>
-    <svg width={level==3 ? "370" : "320"} height="420" viewBox="0 0 442 415" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <div className="flex items-center justify-center w-full h-full">
+    <svg 
+      className="w-full h-full max-w-[370px] max-h-[450px]" 
+      viewBox="-25 0 500 500" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid meet"
+    >
 
       { level === 1 && (  
         bonsaiLevelOne({treeColor, shadowColor,})
@@ -86,6 +93,7 @@ export const BonsaiSVG = ({
       <path d="M166.701 287.443C159.624 282.135 146.687 290.234 141.931 295.11H148.418C150.187 291.571 160.213 287.443 166.701 287.443Z" stroke="#FBF3CC" strokeWidth="1.17952"/>
       <path d="M213.881 282.244C208.22 289.094 196.548 292.161 192.42 295.11H316.499C309.894 286.302 296.841 286.729 291.14 287.748C295.268 280.955 288.191 280.366 287.601 280.366C285.832 282.2 279.344 284.69 268.729 288.972C268.139 290.195 242.779 293.253 229.805 294.476C227.918 289.094 218.403 284.079 213.881 282.244Z" fill={shadowColor} stroke={shadowColor} strokeWidth="1.17952"/>
     </svg>
+  </div>
     </>
   )
 }

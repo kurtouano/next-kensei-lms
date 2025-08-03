@@ -276,14 +276,39 @@ export default function BonsaiPage() {
     )
   }
 
-  // Calculate progress to next level
-  const currentLevelMilestone = bonsaiData.milestones.find((m) => m.level === bonsaiData.level)
-  const nextLevelMilestone = bonsaiData.milestones.find((m) => m.level > bonsaiData.level)
+  // Calculate progress to next level - FIXED VERSION
+  const currentLevel = bonsaiData.level
+  const currentCredits = bonsaiData.totalCredits
 
-  const progressToNextLevel = currentLevelMilestone && nextLevelMilestone
-    ? ((bonsaiData.totalCredits - currentLevelMilestone.creditsRequired) /
-        (nextLevelMilestone.creditsRequired - currentLevelMilestone.creditsRequired)) * 100
-    : 0
+  // Find current milestone (the one we've achieved for our current level)
+  const currentLevelMilestone = bonsaiData.milestones.find((m) => m.level === currentLevel)
+
+  // Find next milestone (the next level we're working towards)
+  const nextLevelMilestone = bonsaiData.milestones
+    .filter((m) => m.level > currentLevel)
+    .sort((a, b) => a.level - b.level)[0] // Get the next immediate level
+
+  // Calculate progress to next level
+  let progressToNextLevel = 0
+  let isMaxLevel = false
+
+  if (nextLevelMilestone && currentLevelMilestone) {
+    // Normal case: there's a next level
+    const creditsInCurrentLevel = currentCredits - currentLevelMilestone.creditsRequired
+    const creditsNeededForNextLevel = nextLevelMilestone.creditsRequired - currentLevelMilestone.creditsRequired
+    progressToNextLevel = Math.min(100, Math.max(0, (creditsInCurrentLevel / creditsNeededForNextLevel) * 100))
+  } else if (!nextLevelMilestone) {
+    // Max level reached
+    isMaxLevel = true
+    progressToNextLevel = 100
+  } else {
+    // Edge case: no current milestone found, assume 0 progress
+    progressToNextLevel = 0
+  }
+
+  // Calculate credits needed for next level
+  const creditsNeededForNext = nextLevelMilestone ? 
+    Math.max(0, nextLevelMilestone.creditsRequired - currentCredits) : 0
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f9fafb]">
@@ -294,7 +319,7 @@ export default function BonsaiPage() {
             <p className="text-[#5c6d5e]">Customize and grow your bonsai as you learn Japanese</p>
           </div>
 
-          {/* Level Progress Bar */}
+          {/* Level Progress Bar - FIXED */}
           <div className="mb-8 rounded-lg border border-[#dce4d7] bg-white p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -302,28 +327,43 @@ export default function BonsaiPage() {
                   <BonsaiIcon className="h-8 w-8 text-[#4a7c59]" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-[#2c3e2d]">Level {bonsaiData.level} Bonsai</h2>
-                  <p className="text-sm text-[#5c6d5e]">{bonsaiData.totalCredits} credits earned</p>
+                  <h2 className="font-semibold text-[#2c3e2d]">Level {currentLevel} Bonsai</h2>
+                  <p className="text-sm text-[#5c6d5e]">{currentCredits} credits earned</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-[#2c3e2d]">Next Level: {nextLevelMilestone?.name}</p>
-                  <p className="text-xs text-[#5c6d5e]">
-                    {nextLevelMilestone ? nextLevelMilestone.creditsRequired - bonsaiData.totalCredits : 0} credits needed
-                  </p>
+                  {isMaxLevel ? (
+                    <>
+                      <p className="text-sm font-medium text-[#2c3e2d]">Maximum Level Reached!</p>
+                      <p className="text-xs text-[#5c6d5e]">Your bonsai is fully grown</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium text-[#2c3e2d]">
+                        Next Level: {nextLevelMilestone?.name || 'Unknown'}
+                      </p>
+                      <p className="text-xs text-[#5c6d5e]">
+                        {creditsNeededForNext} credits needed
+                      </p>
+                    </>
+                  )}
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eef2eb] text-[#4a7c59]">
-                  {nextLevelMilestone?.level || bonsaiData.level}
+                  {isMaxLevel ? '🌳' : (nextLevelMilestone?.level || currentLevel)}
                 </div>
               </div>
             </div>
             <div className="mt-4">
               <div className="mb-1 flex justify-between text-xs">
-                <span>Current: {bonsaiData.level}</span>
-                <span>Next: {nextLevelMilestone?.level || 'Max'}</span>
+                <span>Current: Level {currentLevel}</span>
+                <span>{isMaxLevel ? 'Max Level' : `Next: Level ${nextLevelMilestone?.level || '?'}`}</span>
               </div>
-              <Progress value={progressToNextLevel} className="h-2 bg-[#dce4d7]" indicatorClassName="bg-[#4a7c59]" />
+              <Progress 
+                value={progressToNextLevel} 
+                className="h-2 bg-[#dce4d7]" 
+                indicatorClassName="bg-[#4a7c59]" 
+              />
             </div>
           </div>
 
@@ -368,7 +408,7 @@ export default function BonsaiPage() {
                           decorations={getActiveDecorations()}
                           selectedEyes={selectedEyes}
                           selectedMouth={selectedMouth}
-                          selectedPotStyle={selectedPotStyle}        // Add this
+                          selectedPotStyle={selectedPotStyle}        
                           selectedGroundStyle={selectedGroundStyle} 
                         />
                       </div>
