@@ -12,13 +12,12 @@ export const BonsaiShop = ({
   setBonsaiData,
   previewItem,
   setPreviewItem,
-  // Bonsai state for preview
   getTreeColor,
   getPotColor,
   getActiveDecorations,
   selectedEyes,
   selectedMouth,
-  getFoundation
+  getGroundStyle 
 }) => {
   const [shopCategory, setShopCategory] = useState("all")
 
@@ -70,7 +69,7 @@ export const BonsaiShop = ({
 
   const previewShopItem = (item) => {
     if (item.type === "foundation") {
-      setPreviewItem({ ...item, originalFoundation: getFoundation() })
+      setPreviewItem({ ...item, originalFoundation: getGroundStyle() })
     } else {
       setPreviewItem(item)
     }
@@ -97,11 +96,12 @@ export const BonsaiShop = ({
               <BonsaiSVG 
                 level={bonsaiData.level}
                 treeColor={getTreeColor()} 
-                potColor={getPotColor()} 
                 decorations={getActiveDecorations()}
                 selectedEyes={selectedEyes}
                 selectedMouth={selectedMouth}
-                foundation={getFoundation()}
+                potColor={getPotColor()} 
+                selectedPotStyle="default_pot"
+                selectedGroundStyle={getGroundStyle()} 
               />
             </div>
             <div className="text-center mb-4">
