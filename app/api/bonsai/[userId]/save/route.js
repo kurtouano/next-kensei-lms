@@ -13,9 +13,6 @@ export async function PUT(request, { params }) {
     const { userId } = await params;
     const updates = await request.json();
 
-    console.log('Save request received for user:', userId);
-    console.log('Updates:', updates);
-
     // Verify user is authenticated and can access this bonsai
     const session = await getServerSession(authOptions);
     if (!session || session.user.id !== userId) {
@@ -43,7 +40,7 @@ export async function PUT(request, { params }) {
           eyes: 'default_eyes',
           mouth: 'default_mouth',
           foliageColor: '#77DD82',
-          potStyle: 'traditional-blue',
+          potStyle: 'default_pot',
           potColor: '#FD9475',
           groundStyle: 'default_ground',
           decorations: []
@@ -60,7 +57,6 @@ export async function PUT(request, { params }) {
         ...updates.customization
       };
       
-      console.log('Updated customization:', bonsai.customization);
     }
 
     // Update owned items if provided

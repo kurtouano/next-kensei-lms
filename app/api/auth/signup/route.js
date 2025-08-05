@@ -40,9 +40,9 @@ export async function POST(req) {
         eyes: 'default_eyes',
         mouth: 'default_mouth',
         foliageColor: '#77DD82',
-        potStyle: 'traditional-blue',
+        potStyle: 'default_pot',
         potColor: '#FD9475',
-        foundation: 'shadow',
+        groundStyle: 'default_ground',
         decorations: []
       },
       ownedItems: defaultOwnedItems

@@ -70,29 +70,25 @@ BonsaiSchema.virtual('level').get(function() {
 BonsaiSchema.set('toJSON', { virtuals: true });
 BonsaiSchema.set('toObject', { virtuals: true });
 
-// ✅ UPDATED: Use centralized config
 BonsaiSchema.statics.getDefaultOwnedItems = function() {
   return getDefaultOwnedItems();
 }
 
-// ✅ UPDATED: Use centralized config
 BonsaiSchema.statics.getPremiumItems = function() {
   return getPremiumItems();
 }
 
-// ✅ UPDATED: Use centralized config
+// Updated to include all categories properly
 BonsaiSchema.statics.getItemsByCategory = function() {
   const allItems = getAllShopItems();
   
-  // Group by category for backward compatibility
+  // Group by category/type for validation in purchase route
   const grouped = {
-    eyes: allItems.filter(item => item.category === 'eyes'),
-    mouths: allItems.filter(item => item.category === 'mouths'), 
-    foliage: allItems.filter(item => item.category === 'foliage'),
-    pots: allItems.filter(item => item.category === 'pot'),
-    potColors: allItems.filter(item => item.category === 'potColor'),
-    grounds: allItems.filter(item => item.category === 'foundation'),
-    decorations: allItems.filter(item => item.category === 'decoration')
+    eyes: allItems.filter(item => item.category === 'eyes' || item.type === 'eyes'),
+    mouths: allItems.filter(item => item.category === 'mouths' || item.type === 'mouths'), 
+    pots: allItems.filter(item => item.category === 'pot' || item.type === 'pot'),
+    grounds: allItems.filter(item => item.category === 'ground' || item.type === 'ground'),
+    decorations: allItems.filter(item => item.category === 'decoration' || item.type === 'decoration')
   };
   
   return grouped;

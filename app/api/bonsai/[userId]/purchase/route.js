@@ -42,33 +42,20 @@ export async function POST(request, { params }) {
     }
 
     // ✅ NEW: Validate item exists in our item catalog
-    const allItems = Bonsai.getItemsByCategory();
-    const allItemIds = [
-      ...allItems.eyes.map(item => item.id),
-      ...allItems.mouths.map(item => item.id),
-      ...allItems.foliage.map(item => item.id),
-      ...allItems.pots.map(item => item.id),
-      ...allItems.potColors.map(item => item.id),
-      ...allItems.grounds.map(item => item.id),
-      ...allItems.decorations.map(item => item.id)
-    ];
+    const { getAllShopItems, getPurchasableItems } = await import('@/components/bonsai/shopItems');
+    const allItems = getAllShopItems();
+    const allItemIds = allItems.map(item => item.id);
 
     if (!allItemIds.includes(itemKey)) {
       return NextResponse.json({ error: "Invalid item" }, { status: 400 });
     }
 
     // ✅ NEW: Additional validation - check if item should be purchasable
-    const purchasableItems = [
-      ...allItems.foliage.filter(item => !item.unlocked),
-      ...allItems.pots.filter(item => !item.unlocked), 
-      ...allItems.potColors.filter(item => !item.unlocked),
-      ...allItems.grounds.filter(item => !item.unlocked),
-      ...allItems.decorations.filter(item => !item.unlocked)
-    ];
-
+    const purchasableItems = getPurchasableItems(bonsai.ownedItems);
     const itemToPurchase = purchasableItems.find(item => item.id === itemKey);
+    
     if (!itemToPurchase) {
-      return NextResponse.json({ error: "Item is not purchasable" }, { status: 400 });
+      return NextResponse.json({ error: "Item is not purchasable or already owned" }, { status: 400 });
     }
 
     // Verify credit cost matches
@@ -86,8 +73,6 @@ export async function POST(request, { params }) {
       bonsai.ownedItems.push(itemKey);
       bonsai.updatedAt = new Date();
       await bonsai.save();
-
-      console.log(`User ${userId} purchased ${itemKey} for ${itemCredits} credits`);
 
       return NextResponse.json({ 
         message: "Item purchased successfully",

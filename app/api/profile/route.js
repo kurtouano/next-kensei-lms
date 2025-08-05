@@ -102,10 +102,10 @@ export async function GET() {
                     customization: {
                         eyes: bonsai.customization?.eyes || 'default_eyes',
                         mouth: bonsai.customization?.mouth || 'default_mouth',
-                        foliageColor: bonsai.customization?.foliageColor || '#6fb58a',
-                        potStyle: bonsai.customization?.potStyle || 'clay',
-                        potColor: bonsai.customization?.potColor || '#8B4513',
-                        foundation: bonsai.customization?.foundation || 'shadow',
+                        foliageColor: bonsai.customization?.foliageColor || '#77DD82',
+                        potStyle: bonsai.customization?.potStyle || 'default_pot',
+                        potColor: bonsai.customization?.potColor || '#FD9475',
+                        groundStyle: bonsai.customization?.groundStyle || 'default_ground',
                         decorations: bonsai.customization?.decorations || []
                     },
                     ownedItems: bonsai.ownedItems || []
@@ -115,10 +115,10 @@ export async function GET() {
                     customization: {
                         eyes: 'default_eyes',
                         mouth: 'default_mouth',
-                        foliageColor: '#6fb58a',
-                        potStyle: 'clay',
-                        potColor: '#8B4513',
-                        foundation: 'shadow',
+                        foliageColor: '#77DD82',
+                        potStyle: 'default_pot',
+                        potColor: '#FD9475',
+                        groundStyle: 'default_ground',
                         decorations: []
                     },
                     ownedItems: []

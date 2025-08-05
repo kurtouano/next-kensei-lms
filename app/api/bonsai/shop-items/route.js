@@ -1,23 +1,37 @@
-import ShopItem from '@/models/ShopItem';
-import Course from '@/models/Course';
-import { connectDb } from "@/lib/mongodb"
 import { NextResponse } from 'next/server';
+import { getAllShopItems, getPurchasableItems, getItemsByCategory } from '@/components/bonsai/shopItems';
 
 export async function GET(request) {
-    try {
-      await connectDb();
+  try {
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const purchasableOnly = searchParams.get('purchasable') === 'true';
+    const userOwnedItems = searchParams.get('owned')?.split(',') || [];
 
-      const usedItems = await Course.distinct("itemsReward"); // Get all distinct items used in courses
-      const shopItems = await ShopItem.find({_id: { $nin: usedItems },}); // Not in usedItems
+    let items;
 
-      if (!shopItems || shopItems.length === 0) { // No shop items found
-        return NextResponse.json({ error: "No shop items found" }, { status: 404 });
-      }
-      console.log("Shop items fetched successfully:", shopItems);
-
-      return NextResponse.json(shopItems, { status: 200 }); // Send back to frontend
-    } catch (error) {
-      return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    if (category) {
+      // Get items by specific category
+      items = getItemsByCategory(category);
+    } else if (purchasableOnly) {
+      // Get only purchasable items (excludes free/unlocked items and owned items)
+      items = getPurchasableItems(userOwnedItems);
+    } else {
+      // Get all shop items
+      items = getAllShopItems();
     }
 
+    return NextResponse.json({
+      items,
+      total: items.length,
+      categories: ['eyes', 'mouths', 'ground', 'pot', 'decoration']
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error('Error fetching shop items:', error);
+    return NextResponse.json({ 
+      error: "Internal Server Error",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
+  }
 }

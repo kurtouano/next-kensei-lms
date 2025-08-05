@@ -40,7 +40,7 @@ export async function GET(request, { params }) {
           eyes: 'default_eyes',
           mouth: 'default_mouth',
           foliageColor: '#77DD82',
-          potStyle: 'traditional-blue',
+          potStyle: 'default_pot',
           potColor: '#FD9475',
           groundStyle: 'default_ground',
           decorations: []
@@ -48,7 +48,6 @@ export async function GET(request, { params }) {
         ownedItems: defaultOwnedItems
       });
       await bonsai.save();
-      console.log('Created new bonsai with default items:', defaultOwnedItems);
     } else {
       bonsai.syncWithUserCredits(user.credits);
 
@@ -57,7 +56,6 @@ export async function GET(request, { params }) {
       bonsai.ownedItems = mergedItems;
       
       await bonsai.save();
-      console.log('Updated bonsai with owned items:', mergedItems);
     }
 
     const levelInfo = getLevelInfo(user.credits);

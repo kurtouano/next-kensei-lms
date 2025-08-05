@@ -2,13 +2,129 @@
 // SINGLE SOURCE OF TRUTH for all bonsai shop items
 
 export const SHOP_ITEMS = {
-  foundations: [
+  eyes: [
+    { 
+      id: "default_eyes", 
+      name: "Default Eyes", 
+      credits: 0, 
+      unlocked: true, 
+      category: "eyes",
+      emoji: "👀",
+      description: "Classic default eye style"
+    },
+    { 
+      id: "cry_eyes", 
+      name: "Crying Eyes", 
+      credits: 0, 
+      unlocked: true, 
+      category: "eyes",
+      emoji: "😢",
+      description: "Always available crying eyes"
+    },
+    { 
+      id: "happy_eyes", 
+      name: "Happy Eyes", 
+      credits: 0, 
+      unlocked: true, 
+      category: "eyes",
+      emoji: "😊",
+      description: "Always available happy eyes"
+    },
+    { 
+      id: "flat_eyes", 
+      name: "Sleepy Eyes", 
+      credits: 0, 
+      unlocked: true, 
+      category: "eyes",
+      emoji: "😴",
+      description: "Always available sleepy eyes"
+    },
+    { 
+      id: "wink_eyes", 
+      name: "Winking Eyes", 
+      credits: 0, 
+      unlocked: true, 
+      category: "eyes",
+      emoji: "😉",
+      description: "Always available winking eyes"
+    },
+    { 
+      id: "puppy_eyes", 
+      name: "Puppy Eyes", 
+      credits: 0, 
+      unlocked: true, 
+      category: "eyes",
+      emoji: "🥺",
+      description: "Always available puppy eyes"
+    },
+    { 
+      id: "female_eyes", 
+      name: "Elegant Eyes", 
+      credits: 0, 
+      unlocked: true, 
+      category: "eyes",
+      emoji: "💄",
+      description: "Always available elegant eyes"
+    },
+    // Add purchasable eyes here when ready
+  ],
+
+  mouths: [
+    { 
+      id: "default_mouth", 
+      name: "Default Smile", 
+      credits: 0, 
+      unlocked: true, 
+      category: "mouths",
+      emoji: "😊",
+      description: "Classic default smile"
+    },
+    { 
+      id: "smile_mouth", 
+      name: "Big Smile", 
+      credits: 0, 
+      unlocked: true, 
+      category: "mouths",
+      emoji: "😃",
+      description: "Always available big smile"
+    },
+    { 
+      id: "kiss_mouth", 
+      name: "Kiss", 
+      credits: 0, 
+      unlocked: true, 
+      category: "mouths",
+      emoji: "😘",
+      description: "Always available kiss mouth"
+    },
+    { 
+      id: "surprised_mouth", 
+      name: "Surprised", 
+      credits: 0, 
+      unlocked: true, 
+      category: "mouths",
+      emoji: "😮",
+      description: "Always available surprised mouth"
+    },
+    { 
+      id: "bone_mouth", 
+      name: "Playful", 
+      credits: 0, 
+      unlocked: true, 
+      category: "mouths",
+      emoji: "😛",
+      description: "Always available playful mouth"
+    },
+    // Add purchasable mouths here when ready
+  ],
+
+  grounds: [
     { 
       id: "default_ground", 
       name: "Default Shadow", 
       credits: 0, 
       unlocked: true, 
-      category: "foundation",
+      category: "ground",
       emoji: "⚫",
       description: "Classic shadow base for your bonsai"
     },
@@ -17,7 +133,7 @@ export const SHOP_ITEMS = {
       name: "Flowery Ground", 
       credits: 50, 
       unlocked: false, 
-      category: "foundation",
+      category: "ground",
       emoji: "🌸",
       description: "Beautiful flowery garden base"
     },
@@ -26,7 +142,7 @@ export const SHOP_ITEMS = {
       name: "Lily Pad", 
       credits: 75, 
       unlocked: false, 
-      category: "foundation",
+      category: "ground",
       emoji: "🪷",
       description: "Serene water lily pond setting" 
     },
@@ -35,7 +151,7 @@ export const SHOP_ITEMS = {
       name: "Skate Ground", 
       credits: 100, 
       unlocked: false, 
-      category: "foundation",
+      category: "ground",
       emoji: "🛼",
       description: "Fun skating rink surface"
     },
@@ -44,7 +160,7 @@ export const SHOP_ITEMS = {
       name: "Mushroom Ground", 
       credits: 150, 
       unlocked: false, 
-      category: "foundation",
+      category: "ground",
       emoji: "🍄",
       description: "Magical mushroom forest floor"
     },
@@ -87,6 +203,7 @@ export const SHOP_ITEMS = {
       emoji: "🍄",
       description: "Whimsical mushroom-shaped pot"
     },
+    // Add more purchasable pot styles here when ready
   ],
 
   decorations: [
@@ -122,7 +239,9 @@ export const SHOP_ITEMS = {
 
 export const getAllShopItems = () => {
   return [
-    ...SHOP_ITEMS.foundations.map(item => ({ ...item, type: "foundation" })),
+    ...SHOP_ITEMS.eyes.map(item => ({ ...item, type: "eyes" })),
+    ...SHOP_ITEMS.mouths.map(item => ({ ...item, type: "mouths" })),
+    ...SHOP_ITEMS.grounds.map(item => ({ ...item, type: "ground" })),
     ...SHOP_ITEMS.potStyles.map(item => ({ ...item, type: "pot" })),
     ...SHOP_ITEMS.decorations.map(item => ({ ...item, type: "decoration" })),
   ];

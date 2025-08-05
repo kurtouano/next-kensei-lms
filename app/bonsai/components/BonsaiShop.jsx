@@ -36,12 +36,16 @@ export const BonsaiShop = ({
     return selectedPotStyle || "default_pot"
   }
 
-  // ✅ UPDATED: Fix preview logic for pot items
+  // ✅ UPDATED: Fix preview logic for all item types
   const previewShopItem = (item) => {
-    if (item.type === "foundation") {
-      setPreviewItem({ ...item, originalFoundation: getGroundStyle() })
+    if (item.type === "ground") {
+      setPreviewItem({ ...item, originalGround: getGroundStyle() })
     } else if (item.type === "pot") {
-        setPreviewItem({ ...item, isPotStyle: true })
+      setPreviewItem({ ...item, isPotStyle: true })
+    } else if (item.type === "eyes") {
+      setPreviewItem({ ...item, isEyes: true })
+    } else if (item.type === "mouths") {
+      setPreviewItem({ ...item, isMouth: true })
     } else {
       setPreviewItem(item)
     }
@@ -107,8 +111,8 @@ export const BonsaiShop = ({
                 level={bonsaiData.level}
                 treeColor={getTreeColor()} 
                 decorations={getActiveDecorations()}
-                selectedEyes={selectedEyes}
-                selectedMouth={selectedMouth}
+                selectedEyes={previewItem && previewItem.isEyes ? previewItem.id : selectedEyes}
+                selectedMouth={previewItem && previewItem.isMouth ? previewItem.id : selectedMouth}
                 potColor={getPotColor()} 
                 selectedPotStyle={getPotStyle()}
                 selectedGroundStyle={getGroundStyle()} 
@@ -163,13 +167,33 @@ export const BonsaiShop = ({
             </button>
             <button
               className={`rounded-full px-4 py-1 text-sm font-medium ${
-                shopCategory === "foundation"
+                shopCategory === "eyes"
                   ? "bg-[#4a7c59] text-white"
                   : "bg-[#eef2eb] text-[#2c3e2d] hover:bg-[#dce4d7]"
               }`}
-              onClick={() => setShopCategory("foundation")}
+              onClick={() => setShopCategory("eyes")}
             >
-              Foundations ({allShopItems.filter(i => i.type === "foundation").length})
+              Eyes ({allShopItems.filter(i => i.type === "eyes").length})
+            </button>
+            <button
+              className={`rounded-full px-4 py-1 text-sm font-medium ${
+                shopCategory === "mouths"
+                  ? "bg-[#4a7c59] text-white"
+                  : "bg-[#eef2eb] text-[#2c3e2d] hover:bg-[#dce4d7]"
+              }`}
+              onClick={() => setShopCategory("mouths")}
+            >
+              Mouths ({allShopItems.filter(i => i.type === "mouths").length})
+            </button>
+            <button
+              className={`rounded-full px-4 py-1 text-sm font-medium ${
+                shopCategory === "ground"
+                  ? "bg-[#4a7c59] text-white"
+                  : "bg-[#eef2eb] text-[#2c3e2d] hover:bg-[#dce4d7]"
+              }`}
+              onClick={() => setShopCategory("ground")}
+            >
+              Ground ({allShopItems.filter(i => i.type === "ground").length})
             </button>
             <button
               className={`rounded-full px-4 py-1 text-sm font-medium ${
@@ -189,7 +213,6 @@ export const BonsaiShop = ({
               }`}
               onClick={() => setShopCategory("decoration")}
             >
-              <Sparkles className="inline w-3 h-3 mr-1" />
               Decorations ({allShopItems.filter(i => i.type === "decoration").length})
             </button>
           </div>
@@ -204,8 +227,10 @@ export const BonsaiShop = ({
                 <div className="mb-3 flex items-center justify-between">
                   <span className={`rounded-full px-3 py-1 text-xs font-medium text-white ${
                     item.type === 'decoration' ? 'bg-purple-500' :
-                    item.type === 'foundation' ? 'bg-green-500' :
-                    item.type === 'pot' ? 'bg-orange-500' : 'bg-gray-500'
+                    item.type === 'ground' ? 'bg-green-500' :
+                    item.type === 'pot' ? 'bg-orange-500' : 
+                    item.type === 'eyes' ? 'bg-blue-500' :
+                    item.type === 'mouths' ? 'bg-pink-500' : 'bg-gray-500'
                   }`}>
                     {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
                   </span>

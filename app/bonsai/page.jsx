@@ -213,7 +213,7 @@ export default function BonsaiPage() {
   }
 
   const getGroundStyle = () => {
-    if (previewItem && previewItem.type === "foundation") {
+    if (previewItem && previewItem.type === "ground") {
       return previewItem.id
     }
     return selectedGroundStyle

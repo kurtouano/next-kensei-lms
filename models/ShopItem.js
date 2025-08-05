@@ -13,7 +13,7 @@ const ShopItemSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["eyes", "mouth", "pot", "foundation", "decoration", "foliage"],
+      enum: ["eyes", "mouth", "pot", "ground", "decoration", "foliage"],
       required: true,
     },
     creditsRequired: {
