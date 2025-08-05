@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { Award, Palette, Flower, ShoppingBag, Eye, EyeClosed, Loader2 } from "lucide-react"
+import { Award, Palette, Flower, ShoppingBag, Eye, EyeClosed, Loader2, Sparkles } from "lucide-react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "./components/BonsaiSVG"
 import { BonsaiShop } from "./components/BonsaiShop"
@@ -53,6 +53,7 @@ export default function BonsaiPage() {
           setSelectedMouth(data.customization.mouth || "default_mouth")
           setSelectedPotStyle(data.customization.potStyle || "default_pot")
           setSelectedGroundStyle(data.customization.groundStyle || "default_ground")
+          setSelectedDecorations(data.customization.decorations || [])
           
           // Check if using custom color or preset for tree
           const presetTree = getTreeKeyFromColor(data.customization.foliageColor)
@@ -73,8 +74,6 @@ export default function BonsaiPage() {
             setUseCustomPotColor(true)
             setCustomPotColor(data.customization.potColor || "#FD9475")
           }
-          
-          setSelectedDecorations(data.customization.decorations || [])
         }
         
         // Set credits from user data
@@ -129,7 +128,7 @@ export default function BonsaiPage() {
     }
   }
 
-  // Helper functions
+  // Helper functions to get tree/pot keys from colors
   const getTreeKeyFromColor = (color) => {
     const treeMap = {
       "#77DD82": "default_foliage",
@@ -146,34 +145,71 @@ export default function BonsaiPage() {
     return potMap[color] || null
   }
 
-  // Mock data for tree and pot colors
-  const mockData = {
-    trees: [
-      { id: "default_foliage", name: "Default Green", credits: 0, unlocked: true, color: "#77DD82", category: "tree" },
-      { id: "forest_green_foliage", name: "Forest Green", credits: 0, unlocked: true, color: "#4a7c59", category: "tree" },
-      { id: "custom", name: "Custom Color", credits: 0, unlocked: true, color: customTreeColor, category: "tree" },
-    ],
-    pots: [
-      { id: "default_pot", name: "Default Orange", credits: 0, unlocked: true, color: "#FD9475", category: "pot" },
-      { id: "brown_pot", name: "Earth Brown", credits: 0, unlocked: true, color: "#8B5E3C", category: "pot" },
-      { id: "custom_pot", name: "Custom Color", credits: 0, unlocked: true, color: customPotColor, category: "pot" },
-    ],
-    eyes: [
-      { id: "default_eyes", name: "Default Eyes", credits: 0, unlocked: true, category: "eyes" },
-      { id: "cry_eyes", name: "Crying Eyes", credits: 0, unlocked: true, category: "eyes" },
-      { id: "happy_eyes", name: "Happy Eyes", credits: 0, unlocked: true, category: "eyes" },
-      { id: "flat_eyes", name: "Sleepy Eyes", credits: 0, unlocked: true, category: "eyes" },
-      { id: "wink_eyes", name: "Winking Eyes", credits: 0, unlocked: true, category: "eyes" },
-      { id: "puppy_eyes", name: "Puppy Eyes", credits: 0, unlocked: true, category: "eyes" },
-      { id: "female_eyes", name: "Elegant Eyes", credits: 0, unlocked: true, category: "eyes" },
-    ],
-    mouths: [
-      { id: "default_mouth", name: "Default Smile", credits: 0, unlocked: true, category: "mouth" },
-      { id: "smile_mouth", name: "Big Smile", credits: 0, unlocked: true, category: "mouth" },
-      { id: "kiss_mouth", name: "Kiss", credits: 0, unlocked: true, category: "mouth" },
-      { id: "surprised_mouth", name: "Surprised", credits: 0, unlocked: true, category: "mouth" },
-      { id: "bone_mouth", name: "Playful", credits: 0, unlocked: true, category: "mouth" },
-    ],
+  // ✅ NEW: Helper functions to get available options (replacing mockData)
+  const getAvailableTreeColors = () => {
+    return [
+      { id: "default_foliage", name: "Default Green", color: "#77DD82" },
+      { id: "forest_green_foliage", name: "Forest Green", color: "#4a7c59" },
+      { id: "custom", name: "Custom Color", color: customTreeColor },
+    ];
+  }
+
+  const getAvailablePotColors = () => {
+    return [
+      { id: "default_pot", name: "Default Orange", color: "#FD9475" },
+      { id: "brown_pot", name: "Earth Brown", color: "#8B5E3C" },
+      { id: "custom_pot", name: "Custom Color", color: customPotColor },
+    ];
+  }
+
+  const getAvailableEyes = () => {
+    return [
+      { id: "default_eyes", name: "Default Eyes" },
+      { id: "cry_eyes", name: "Crying Eyes" },
+      { id: "happy_eyes", name: "Happy Eyes" },
+      { id: "flat_eyes", name: "Sleepy Eyes" },
+      { id: "wink_eyes", name: "Winking Eyes" },
+      { id: "puppy_eyes", name: "Puppy Eyes" },
+      { id: "female_eyes", name: "Elegant Eyes" },
+    ];
+  }
+
+  const getAvailableMouths = () => {
+    return [
+      { id: "default_mouth", name: "Default Smile" },
+      { id: "smile_mouth", name: "Big Smile" },
+      { id: "kiss_mouth", name: "Kiss" },
+      { id: "surprised_mouth", name: "Surprised" },
+      { id: "bone_mouth", name: "Playful" },
+    ];
+  }
+
+  // ✅ UPDATED: Get decorations user actually owns
+  const getAvailableDecorations = () => {
+    const allDecorations = [
+      { id: "crown_decoration", name: "Crown" },
+      { id: "graduate_cap_decoration", name: "Graduate Cap" },
+      { id: "christmas_cap_decoration", name: "Christmas Cap" },
+    ];
+    
+    return allDecorations.filter(decoration => 
+      bonsaiData?.ownedItems?.includes(decoration.id)
+    );
+  }
+
+  // ✅ UPDATED: Handle decoration toggle
+  const toggleDecoration = (decorationId) => {
+    setSelectedDecorations(prev => {
+      if (prev.includes(decorationId)) {
+        return prev.filter(id => id !== decorationId)
+      } else {
+        if (prev.length >= 3) {
+          alert("You can only have up to 3 decorations at once!")
+          return prev
+        }
+        return [...prev, decorationId]
+      }
+    })
   }
 
   const getGroundStyle = () => {
@@ -183,6 +219,7 @@ export default function BonsaiPage() {
     return selectedGroundStyle
   }
 
+  // ✅ UPDATED: getTreeColor function (no mockData)
   const getTreeColor = () => {
     if (previewItem && previewItem.type === "tree") {
       return previewItem.color
@@ -192,12 +229,14 @@ export default function BonsaiPage() {
       return customTreeColor
     }
     
-    const tree = mockData.trees.find((t) => t.id === selectedTree)
+    const trees = getAvailableTreeColors();
+    const tree = trees.find((t) => t.id === selectedTree)
     return tree ? tree.color : "#77DD82"
   }
 
+  // ✅ UPDATED: getPotColor function (no mockData)
   const getPotColor = () => {
-    if (previewItem && previewItem.type === "pot") {
+    if (previewItem && previewItem.type === "pot" && previewItem.isPotColor && previewItem.color) {
       return previewItem.color
     }
     
@@ -205,7 +244,8 @@ export default function BonsaiPage() {
       return customPotColor
     }
     
-    const pot = mockData.pots.find((p) => p.id === selectedPot)
+    const pots = getAvailablePotColors();
+    const pot = pots.find((p) => p.id === selectedPot)
     return pot ? pot.color : "#FD9475"
   }
 
@@ -420,6 +460,11 @@ export default function BonsaiPage() {
                       <div className="text-center mb-4">
                         <p className="font-medium text-[#2c3e2d]">Level {bonsaiData.level} Bonsai</p>
                         <p className="text-sm text-[#5c6d5e]">{bonsaiData.totalCredits} Credits Total</p>
+                        {selectedDecorations.length > 0 && (
+                          <p className="text-xs text-[#4a7c59] mt-1">
+                            {selectedDecorations.length} decoration{selectedDecorations.length !== 1 ? 's' : ''} active
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -433,9 +478,9 @@ export default function BonsaiPage() {
                       <Flower className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
                       Foliage Color
                     </h2>
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                      {/* Preset Colors */}
-                      {mockData.trees.slice(0, 2).map((tree) => (
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+                      {/* ✅ UPDATED: Use helper function instead of mockData */}
+                      {getAvailableTreeColors().slice(0, 2).map((tree) => (
                         <div
                           key={tree.id}
                           className={`cursor-pointer rounded-lg border p-3 transition-colors ${
@@ -517,8 +562,9 @@ export default function BonsaiPage() {
                       <Eye className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
                       Eyes <span className="text-sm font-normal text-[#5c6d5e]"></span>
                     </h2>
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                      {mockData.eyes.map((eyes) => (
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                      {/* ✅ UPDATED: Use helper function instead of mockData */}
+                      {getAvailableEyes().map((eyes) => (
                         <div
                           key={eyes.id}
                           className={`cursor-pointer rounded-lg border p-3 transition-colors ${
@@ -551,7 +597,8 @@ export default function BonsaiPage() {
                       Mouth <span className="text-sm font-normal text-[#5c6d5e]"></span>
                     </h2>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                      {mockData.mouths.map((mouth) => (
+                      {/* ✅ UPDATED: Use helper function instead of mockData */}
+                      {getAvailableMouths().map((mouth) => (
                         <div
                           key={mouth.id}
                           className={`cursor-pointer rounded-lg border p-3 transition-colors ${
@@ -577,6 +624,75 @@ export default function BonsaiPage() {
                     </div>
                   </div>
 
+                  {/* Decorations Section */}
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
+                      <Sparkles className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
+                      Decorations <span className="text-sm font-normal text-[#5c6d5e]">(Max 3)</span>
+                    </h2>
+                    {/* ✅ UPDATED: Use helper function instead of mockData */}
+                    {getAvailableDecorations().length === 0 ? (
+                      <div className="text-center py-8">
+                        <Sparkles className="mx-auto h-12 w-12 text-[#dce4d7] mb-4" />
+                        <p className="text-[#5c6d5e] mb-2">No decorations owned yet</p>
+                        <p className="text-sm text-[#5c6d5e]">Visit the shop to purchase decorations for your bonsai!</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                        {getAvailableDecorations().map((decoration) => (
+                          <div
+                            key={decoration.id}
+                            className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                              selectedDecorations.includes(decoration.id)
+                                ? "border-[#4a7c59] bg-[#eef2eb]"
+                                : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
+                            }`}
+                            onClick={() => toggleDecoration(decoration.id)}
+                          >
+                            <div className="flex flex-col items-center">
+                              <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
+                                <Sparkles className="h-4 w-4 text-[#4a7c59]" />
+                              </div>
+                              <p className="text-center text-sm font-medium text-[#2c3e2d]">{decoration.name}</p>
+                              {selectedDecorations.includes(decoration.id) && (
+                                <div className="mt-1 text-xs text-[#4a7c59] font-medium">Active</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {selectedDecorations.length > 0 && (
+                      <div className="mt-4 p-3 bg-[#f8f7f4] rounded-lg">
+                        <p className="text-sm text-[#2c3e2d] mb-2">
+                          Active decorations ({selectedDecorations.length}/3):
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedDecorations.map(decorationId => {
+                            const decoration = getAvailableDecorations().find(d => d.id === decorationId)
+                            return (
+                              <span 
+                                key={decorationId}
+                                className="inline-flex items-center px-2 py-1 bg-[#4a7c59] text-white text-xs rounded-full"
+                              >
+                                {decoration?.name || decorationId}
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    toggleDecoration(decorationId)
+                                  }}
+                                  className="ml-1 text-white hover:text-red-300"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Ground Style */}
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
@@ -584,12 +700,17 @@ export default function BonsaiPage() {
                     </h2>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                       {[
-                        { id: "default_ground", name: "Default Shadow" },
-                        { id: "lilypad_ground", name: "Lily Pad" },
-                        { id: "skate_ground", name: "Skate Ground" },
-                        { id: "flowery_ground", name: "Flowery Ground" },
-                        { id: "mushroom_ground", name: "Mushroom Ground" }
-                      ].map((groundStyle) => (
+                        { id: "default_ground", name: "Default Shadow", requiresOwnership: false }, // Always available
+                        { id: "flowery_ground", name: "Flowery Ground", requiresOwnership: true },
+                        { id: "lilypad_ground", name: "Lily Pad", requiresOwnership: true },
+                        { id: "skate_ground", name: "Skate Ground", requiresOwnership: true },
+                        { id: "mushroom_ground", name: "Mushroom Ground", requiresOwnership: true }
+                      ]
+                      .filter(groundStyle => {
+                        // Show if it's free OR if user owns it
+                        return !groundStyle.requiresOwnership || bonsaiData?.ownedItems?.includes(groundStyle.id)
+                      })
+                      .map((groundStyle) => (
                         <div
                           key={groundStyle.id}
                           className={`cursor-pointer rounded-lg border p-3 transition-colors ${
@@ -611,12 +732,18 @@ export default function BonsaiPage() {
                       Pot Style
                     </h2>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                      {/* ✅ FIXED: Only show pot styles the user actually owns */}
                       {[
-                        { id: "default_pot", name: "Default Pot" },
-                        { id: "wide_pot", name: "Wide Pot" },
-                        { id: "slim_pot", name: "Slim Pot" },
-                        { id: "mushroom_pot", name: "Mushroom Pot" }
-                      ].map((potStyle) => (
+                        { id: "default_pot", name: "Default Pot", requiresOwnership: false }, // Always available
+                        { id: "wide_pot", name: "Wide Pot", requiresOwnership: false }, // Always available
+                        { id: "slim_pot", name: "Slim Pot", requiresOwnership: false }, // Always available
+                        { id: "mushroom_pot", name: "Mushroom Pot", requiresOwnership: true } // Requires purchase
+                      ]
+                      .filter(potStyle => {
+                        // Show if it's free OR if user owns it
+                        return !potStyle.requiresOwnership || bonsaiData?.ownedItems?.includes(potStyle.id)
+                      })
+                      .map((potStyle) => (
                         <div
                           key={potStyle.id}
                           className={`cursor-pointer rounded-lg border p-3 transition-colors ${
@@ -639,8 +766,8 @@ export default function BonsaiPage() {
                       Pot Color
                     </h2>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                      {/* Preset Colors */}
-                      {mockData.pots.slice(0, 2).map((pot) => (
+                      {/* ✅ UPDATED: Use helper function instead of mockData */}
+                      {getAvailablePotColors().slice(0, 2).map((pot) => (
                         <div
                           key={pot.id}
                           className={`cursor-pointer rounded-lg border p-3 transition-colors ${
@@ -752,6 +879,7 @@ export default function BonsaiPage() {
                 selectedEyes={selectedEyes}
                 selectedMouth={selectedMouth}
                 getGroundStyle={getGroundStyle}
+                selectedPotStyle={selectedPotStyle}
               />
             </TabsContent>
 

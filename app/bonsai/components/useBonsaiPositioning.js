@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from 'react';
 
-export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotStyle, selectedGroundStyle) => {
+export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotStyle, selectedGroundStyle, decorations = []) => {
   // Eye width mappings for different eye types
   const eyeWidthMap = useMemo(() => ({
     default_eyes: 74,    
@@ -38,6 +38,13 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
     mushroom_ground: { x: -100, y: -40 },
   }), []);
 
+  // Decoration positioning mappings
+  const decorationPositionMap = useMemo(() => ({
+    crown_decoration: { x: 160, y: -52},
+    graduate_cap_decoration: { x: 50, y: -45},
+    christmas_cap_decoration: { x: 70, y: -80 },
+  }), []);
+
   // Get current dimensions and adjustments
   const currentEyeWidth = useMemo(() => {
     return eyeWidthMap[selectedEyes] || eyeWidthMap['default_eyes'];
@@ -54,6 +61,26 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
   const currentGroundAdjustment = useMemo(() => {
     return groundAdjustmentMap[selectedGroundStyle] || groundAdjustmentMap['default_ground'];
   }, [selectedGroundStyle, groundAdjustmentMap]);
+
+  // Fixed: Handle decorations array properly
+  const decorationPositions = useMemo(() => {
+    if (!decorations || decorations.length === 0) {
+      return [];
+    }
+    
+    return decorations.map((decorationId, index) => {
+      const basePosition = decorationPositionMap[decorationId] || { x: 0, y: 0 };
+      // Add slight offset for multiple decorations to prevent overlap
+      const offsetX = index * 20;
+      const offsetY = index * 5;
+      
+      return {
+        id: decorationId,
+        x: basePosition.x + offsetX,
+        y: basePosition.y + offsetY
+      };
+    });
+  }, [decorations, decorationPositionMap]);
 
   // Calculate all positions
   const calculatePositions = useCallback(() => {
@@ -75,6 +102,12 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
 
     const groundX = basePotCenterX + currentGroundAdjustment.x;
     const groundY = baseGroundY + currentGroundAdjustment.y;
+
+    // Fixed: Handle decorations properly
+    const decorationTransforms = decorationPositions.map((decoration) => ({
+      id: decoration.id,
+      transform: `translate(${basePotCenterX + decoration.x}, ${basePotY + decoration.y})`
+    }));
 
     return {
       // Basic centers
@@ -102,13 +135,15 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
         x: groundX,
         y: groundY,
         transform: `translate(${groundX}, ${groundY})`
-      }
+      },
+      decorations: decorationTransforms
     };
   }, [
     currentEyeWidth, 
     currentMouthWidth, 
     currentPotAdjustment, 
-    currentGroundAdjustment
+    currentGroundAdjustment,
+    decorationPositions
   ]);
 
   const positions = useMemo(() => calculatePositions(), [calculatePositions]);

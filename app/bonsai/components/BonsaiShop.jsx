@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag, Eye } from "lucide-react"
+import { ShoppingBag, Eye, Sparkles } from "lucide-react"
 import { BonsaiSVG } from "./BonsaiSVG"
 
 export const BonsaiShop = ({ 
@@ -17,59 +17,83 @@ export const BonsaiShop = ({
   getActiveDecorations,
   selectedEyes,
   selectedMouth,
-  getGroundStyle 
+  getGroundStyle,
+  selectedPotStyle,
 }) => {
   const [shopCategory, setShopCategory] = useState("all")
 
-  // Mock data for shop items
-  const mockData = {
-    foundations: [
-      { id: "shadow", name: "Default Shadow", credits: 0, unlocked: true, category: "foundation" },
-      { id: "lily_pad", name: "Lily Pad", credits: 50, unlocked: false, category: "foundation" },
-      { id: "stone_circle", name: "Stone Circle", credits: 75, unlocked: false, category: "foundation" },
-      { id: "flower_bed", name: "Flower Bed", credits: 100, unlocked: false, category: "foundation" },
-      { id: "zen_sand", name: "Zen Sand", credits: 150, unlocked: false, category: "foundation" },
-    ],
-    accessories: [
-      { id: "butterfly", name: "Butterfly", credits: 25, unlocked: false, category: "decoration" },
-      { id: "bird", name: "Small Bird", credits: 40, unlocked: false, category: "decoration" },
-      { id: "lantern", name: "Mini Lantern", credits: 60, unlocked: false, category: "decoration" },
-      { id: "mushroom", name: "Mushroom", credits: 30, unlocked: false, category: "decoration" },
-      { id: "bamboo", name: "Bamboo Stick", credits: 35, unlocked: false, category: "decoration" },
-    ],
-  }
+  // ✅ REMOVED: Delete the entire mockData object
 
-  const isItemAvailable = (item, bonsaiData) => {
-    // Always show basic/free items (0 credits)
-    if (item.credits === 0) return true;
-    
-    // Show if user owns the item
-    return bonsaiData?.ownedItems?.includes(item.id) || false;
-  };
+  // ✅ NEW: Get shop items from Bonsai model data instead of mockData
+  const getShopItemsFromModel = useMemo(() => {
+    if (!bonsaiData) return [];
 
-  // Combine all items for the shop
-  const allShopItems = [
-    ...mockData.foundations.filter((item) => !isItemAvailable(item, bonsaiData)).map((item) => ({ ...item, type: "foundation" })),
-    ...mockData.accessories.filter((item) => !isItemAvailable(item, bonsaiData)).map((item) => ({ ...item, type: "decoration" })),
-  ]
+    // Get all available items from the model structure
+    const allItems = [
+      ...[
+        { id: "default_ground", name: "Default Shadow", credits: 0, unlocked: true, category: "foundation" },
+        { id: "flowery_ground", name: "Flowery Ground", credits: 50, unlocked: false, category: "foundation" },
+        { id: "lilypad_ground", name: "Lily Pad", credits: 75, unlocked: false, category: "foundation" },
+        { id: "skate_ground", name: "Skate Ground", credits: 100, unlocked: false, category: "foundation" },
+        { id: "mushroom_ground", name: "Mushroom Ground", credits: 150, unlocked: false, category: "foundation" },
+      ].map(item => ({ ...item, type: "foundation" })),
 
-  const purchaseItem = (item) => {
-    if (credits >= item.credits) {
-      setCredits(credits - item.credits)
-      // Add item to owned items in bonsaiData
-      setBonsaiData(prev => ({
-        ...prev,
-        ownedItems: [...prev.ownedItems, item.id]
-      }))
-      alert(`Successfully purchased ${item.name}!`)
-    } else {
-      alert("Not enough credits to purchase this item!")
+      // Pot style items
+      ...[
+        { id: "default_pot", name: "Default Pot", credits: 0, unlocked: true, category: "pot" },
+        { id: "wide_pot", name: "Wide Pot", credits: 0, unlocked: true, category: "pot" },
+        { id: "slim_pot", name: "Slim Pot", credits: 0, unlocked: true, category: "pot" },
+        { id: "mushroom_pot", name: "Mushroom Pot", credits: 300, unlocked: false, category: "pot" },
+      ].map(item => ({ ...item, type: "pot" })),
+
+      // Decoration items
+      ...[
+        { id: "crown_decoration", name: "Crown", credits: 200, unlocked: false, category: "decoration", description: "A royal crown for your majestic bonsai" },
+        { id: "graduate_cap_decoration", name: "Graduate Cap", credits: 150, unlocked: false, category: "decoration", description: "Celebrate your learning achievements" },
+        { id: "christmas_cap_decoration", name: "Christmas Cap", credits: 100, unlocked: false, category: "decoration", description: "Festive holiday decoration" },
+      ].map(item => ({ ...item, type: "decoration" })),
+
+      // Foliage items
+      ...[
+        { id: "cherry_blossom_foliage", name: "Cherry Blossom", credits: 250, unlocked: false, category: "foliage", color: "#FFB7C5" },
+        { id: "autumn_red_foliage", name: "Autumn Red", credits: 200, unlocked: false, category: "foliage", color: "#CC5500" },
+        { id: "golden_foliage", name: "Golden", credits: 300, unlocked: false, category: "foliage", color: "#FFD700" },
+      ].map(item => ({ ...item, type: "foliage" })),
+    ];
+
+    // ✅ FILTER: Only show items that are NOT owned and cost credits
+    return allItems.filter(item => {
+      // Hide free items (they should be available by default)
+      if (item.credits === 0 || item.unlocked) return false;
+      
+      // Hide if user already owns the item
+      return !bonsaiData?.ownedItems?.includes(item.id);
+    });
+
+  }, [bonsaiData]);
+
+  // ✅ NEW: Function to get the pot style for preview
+  const getPotStyle = () => {
+    if (previewItem && previewItem.type === "pot" && !previewItem.color) {
+      // This is a pot STYLE item (like mushroom_pot), not a pot COLOR item
+      return previewItem.id
     }
+    return selectedPotStyle || "default_pot"
   }
 
+  // ✅ UPDATED: Fix preview logic for pot items
   const previewShopItem = (item) => {
     if (item.type === "foundation") {
       setPreviewItem({ ...item, originalFoundation: getGroundStyle() })
+    } else if (item.type === "pot") {
+      // Distinguish between pot styles and pot colors
+      if (item.color) {
+        // This is a pot color item
+        setPreviewItem({ ...item, isPotColor: true })
+      } else {
+        // This is a pot style item  
+        setPreviewItem({ ...item, isPotStyle: true })
+      }
     } else {
       setPreviewItem(item)
     }
@@ -79,9 +103,75 @@ export const BonsaiShop = ({
     setPreviewItem(null)
   }
 
+  // ✅ UPDATED: Use shop items from model instead of mockData
+  const allShopItems = getShopItemsFromModel;
+
+  // ✅ Purchase item function (unchanged)
+  const purchaseItem = async (item) => {
+    if (credits < item.credits) {
+      alert("Not enough credits to purchase this item!")
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/bonsai/${bonsaiData.userRef}/purchase`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemKey: item.id,
+          itemCredits: item.credits
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCredits(data.remainingCredits)
+        setBonsaiData(prev => ({
+          ...prev,
+          ownedItems: data.ownedItems
+        }))
+        alert(`Successfully purchased ${item.name}!`)
+        setPreviewItem(null) // Clear preview after purchase
+      } else {
+        const errorData = await response.json()
+        alert(`Failed to purchase: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Error purchasing item:', error)
+      alert('Failed to purchase item')
+    }
+  }
+
   const filteredShopItems = shopCategory === "all" 
     ? allShopItems 
     : allShopItems.filter((item) => item.category === shopCategory || item.type === shopCategory)
+
+  // ✅ NEW: Get item emoji for display
+  const getItemEmoji = (item) => {
+    const emojiMap = {
+      // Foundations
+      "lilypad_ground": "🪷",
+      "skate_ground": "🛼", 
+      "mushroom_ground": "🍄",
+      "flowery_ground": "🌸",
+      
+      // Pots
+      "mushroom_pot": "🍄",
+      
+      // Decorations
+      "crown_decoration": "👑",
+      "graduate_cap_decoration": "🎓",
+      "christmas_cap_decoration": "🎅",
+      
+      // Foliage
+      "cherry_blossom_foliage": "🌸",
+      "autumn_red_foliage": "🍂", 
+      "golden_foliage": "✨"
+    }
+    return emojiMap[item.id] || "🎁"
+  }
 
   return (
     <div className="grid gap-6 md:grid-cols-3">
@@ -95,12 +185,12 @@ export const BonsaiShop = ({
             <div className="mb-6">
               <BonsaiSVG 
                 level={bonsaiData.level}
-                treeColor={getTreeColor()} 
+                treeColor={previewItem?.type === "foliage" ? previewItem.color : getTreeColor()} 
                 decorations={getActiveDecorations()}
                 selectedEyes={selectedEyes}
                 selectedMouth={selectedMouth}
                 potColor={getPotColor()} 
-                selectedPotStyle="default_pot"
+                selectedPotStyle={getPotStyle()} // ✅ FIXED: Use dynamic pot style
                 selectedGroundStyle={getGroundStyle()} 
               />
             </div>
@@ -144,6 +234,7 @@ export const BonsaiShop = ({
             </div>
           </div>
 
+          {/* ✅ UPDATED: Category filters with real counts */}
           <div className="mb-6 flex flex-wrap gap-2">
             <button
               className={`rounded-full px-4 py-1 text-sm font-medium ${
@@ -153,7 +244,7 @@ export const BonsaiShop = ({
               }`}
               onClick={() => setShopCategory("all")}
             >
-              All Items
+              All Items ({allShopItems.length})
             </button>
             <button
               className={`rounded-full px-4 py-1 text-sm font-medium ${
@@ -163,7 +254,17 @@ export const BonsaiShop = ({
               }`}
               onClick={() => setShopCategory("foundation")}
             >
-              Foundations
+              Foundations ({allShopItems.filter(i => i.type === "foundation").length})
+            </button>
+            <button
+              className={`rounded-full px-4 py-1 text-sm font-medium ${
+                shopCategory === "pot"
+                  ? "bg-[#4a7c59] text-white"
+                  : "bg-[#eef2eb] text-[#2c3e2d] hover:bg-[#dce4d7]"
+              }`}
+              onClick={() => setShopCategory("pot")}
+            >
+              Pots ({allShopItems.filter(i => i.type === "pot").length})
             </button>
             <button
               className={`rounded-full px-4 py-1 text-sm font-medium ${
@@ -173,10 +274,22 @@ export const BonsaiShop = ({
               }`}
               onClick={() => setShopCategory("decoration")}
             >
-              Accessories
+              <Sparkles className="inline w-3 h-3 mr-1" />
+              Decorations ({allShopItems.filter(i => i.type === "decoration").length})
+            </button>
+            <button
+              className={`rounded-full px-4 py-1 text-sm font-medium ${
+                shopCategory === "foliage"
+                  ? "bg-[#4a7c59] text-white"
+                  : "bg-[#eef2eb] text-[#2c3e2d] hover:bg-[#dce4d7]"
+              }`}
+              onClick={() => setShopCategory("foliage")}
+            >
+              Foliage ({allShopItems.filter(i => i.type === "foliage").length})
             </button>
           </div>
 
+          {/* ✅ Shop items grid */}
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredShopItems.map((item) => (
               <div
@@ -184,41 +297,45 @@ export const BonsaiShop = ({
                 className="rounded-lg border border-[#dce4d7] bg-[#f8f7f4] p-4 transition-all hover:shadow-md"
               >
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#4a7c59]">
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium text-white ${
+                    item.type === 'decoration' ? 'bg-purple-500' :
+                    item.type === 'foundation' ? 'bg-green-500' :
+                    item.type === 'pot' ? 'bg-orange-500' :
+                    item.type === 'foliage' ? 'bg-pink-500' : 'bg-blue-500'
+                  }`}>
+                    {item.type === 'decoration' && <Sparkles className="inline w-3 h-3 mr-1" />}
                     {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
                   </span>
                   <span className="flex items-center text-sm font-medium text-[#2c3e2d]">
-                    {item.credits} credits
+                    💰 {item.credits}
                   </span>
                 </div>
                 <div className="mb-3 flex items-center gap-3">
-                  <div className="h-16 w-16 overflow-hidden rounded-md bg-white flex items-center justify-center">
-                    {item.type === "foundation" && (
-                      <div className="flex items-center justify-center text-2xl">
-                        {item.id === "lily_pad" && "🪷"}
-                        {item.id === "stone_circle" && "⭕"}
-                        {item.id === "flower_bed" && "🌸"}
-                        {item.id === "zen_sand" && "🏜️"}
-                        {item.id === "shadow" && "⚫"}
-                      </div>
-                    )}
-                    {item.type === "decoration" && (
-                      <div className="flex items-center justify-center text-2xl">
-                        {item.id === "butterfly" && "🦋"}
-                        {item.id === "bird" && "🐦"}
-                        {item.id === "lantern" && "🏮"}
-                        {item.id === "mushroom" && "🍄"}
-                        {item.id === "bamboo" && "🎋"}
-                      </div>
+                  <div className="h-16 w-16 overflow-hidden rounded-md bg-white flex items-center justify-center text-3xl">
+                    {item.type === "foliage" ? (
+                      <div 
+                        className="w-12 h-12 rounded-full border-2 border-gray-300"
+                        style={{ backgroundColor: item.color }}
+                      />
+                    ) : (
+                      getItemEmoji(item)
                     )}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-medium text-[#2c3e2d]">{item.name}</h3>
                     <p className="text-sm text-[#5c6d5e]">
-                      {item.type === "foundation" ? "Changes the base under your bonsai" :
-                       item.type === "decoration" ? "Decorative accessory for your bonsai" :
-                       `Unlock this ${item.type} for your bonsai`}
+                      {item.description || 
+                       (item.type === "foundation" ? "Changes the base under your bonsai" :
+                        item.type === "pot" ? "New pot style for your bonsai" :
+                        item.type === "decoration" ? "Decorative accessory for your bonsai" :
+                        item.type === "foliage" ? "Premium foliage color" :
+                        `Unlock this ${item.type} for your bonsai`)}
                     </p>
+                    {item.credits > 200 && (
+                      <span className="inline-block mt-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                        Premium
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -231,7 +348,7 @@ export const BonsaiShop = ({
                     disabled={credits < item.credits}
                     onClick={() => purchaseItem(item)}
                   >
-                    Purchase
+                    {credits >= item.credits ? 'Purchase' : 'Not enough credits'}
                   </Button>
                   <Button
                     variant="outline"
@@ -245,10 +362,16 @@ export const BonsaiShop = ({
             ))}
           </div>
 
+          {/* ✅ UPDATED: Empty state message */}
           {filteredShopItems.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-[#5c6d5e] mb-2">All items in this category are already owned!</div>
-              <p className="text-sm text-[#5c6d5e]">Check other categories or complete courses to earn more credits.</p>
+              <div className="text-[#5c6d5e] mb-2">
+                {shopCategory === "all" 
+                  ? "All items are already owned!"
+                  : `All ${shopCategory} items are already owned!`
+                }
+              </div>
+              <p className="text-sm text-[#5c6d5e]">Complete courses to earn more credits and unlock new items.</p>
             </div>
           )}
         </div>
