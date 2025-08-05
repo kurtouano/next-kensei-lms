@@ -460,11 +460,6 @@ export default function BonsaiPage() {
                       <div className="text-center mb-4">
                         <p className="font-medium text-[#2c3e2d]">Level {bonsaiData.level} Bonsai</p>
                         <p className="text-sm text-[#5c6d5e]">{bonsaiData.totalCredits} Credits Total</p>
-                        {selectedDecorations.length > 0 && (
-                          <p className="text-xs text-[#4a7c59] mt-1">
-                            {selectedDecorations.length} decoration{selectedDecorations.length !== 1 ? 's' : ''} active
-                          </p>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -654,41 +649,9 @@ export default function BonsaiPage() {
                                 <Sparkles className="h-4 w-4 text-[#4a7c59]" />
                               </div>
                               <p className="text-center text-sm font-medium text-[#2c3e2d]">{decoration.name}</p>
-                              {selectedDecorations.includes(decoration.id) && (
-                                <div className="mt-1 text-xs text-[#4a7c59] font-medium">Active</div>
-                              )}
                             </div>
                           </div>
                         ))}
-                      </div>
-                    )}
-                    {selectedDecorations.length > 0 && (
-                      <div className="mt-4 p-3 bg-[#f8f7f4] rounded-lg">
-                        <p className="text-sm text-[#2c3e2d] mb-2">
-                          Active decorations ({selectedDecorations.length}/3):
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedDecorations.map(decorationId => {
-                            const decoration = getAvailableDecorations().find(d => d.id === decorationId)
-                            return (
-                              <span 
-                                key={decorationId}
-                                className="inline-flex items-center px-2 py-1 bg-[#4a7c59] text-white text-xs rounded-full"
-                              >
-                                {decoration?.name || decorationId}
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleDecoration(decorationId)
-                                  }}
-                                  className="ml-1 text-white hover:text-red-300"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            )
-                          })}
-                        </div>
                       </div>
                     )}
                   </div>
