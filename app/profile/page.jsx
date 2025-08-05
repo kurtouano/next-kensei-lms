@@ -5,7 +5,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BonsaiIcon } from "@/components/bonsai-icon"
-import { User, Award, BookOpen, Flag, Globe, Mail, Lock, LogOut, Check, ChevronRight, Loader2, Upload } from "lucide-react"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
+import { User, Award, BookOpen, Flag, Globe, Mail, Lock, LogOut, Check, ChevronRight, Loader2, Upload, Settings, Target, TreePine } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { CertificateModal } from "@/components/certificate-modal"
@@ -334,10 +335,10 @@ export default function ProfilePage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2 bg-[#eef2eb]">
+            <TabsList className="grid w-full grid-cols-3 bg-[#eef2eb]">
               <TabsTrigger value="profile" className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white">
                 <User className="mr-2 h-4 w-4" />
-                Profile
+                My Profile
               </TabsTrigger>
               <TabsTrigger
                 value="certifications"
@@ -345,6 +346,13 @@ export default function ProfilePage() {
               >
                 <Award className="mr-2 h-4 w-4" />
                 Certifications
+              </TabsTrigger>
+              <TabsTrigger
+                value="settings"
+                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
               </TabsTrigger>
             </TabsList>
 
@@ -377,153 +385,52 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Account Settings */}
-                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-semibold text-[#2c3e2d]">Account Settings</h2>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="border-[#4a7c59] text-[#4a7c59]"
-                        onClick={handleEditModeToggle}
-                      >
-                        {editMode ? "Cancel" : "Edit"}
-                      </Button>
-                    </div>
-
-                    <div className="space-y-4">
-                      {/* Profile Icon Section */}
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-[#2c3e2d]">Profile Icon</label>
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-2 border-[#dce4d7]">
-                            {editData.icon ? (
-                              editData.icon.startsWith('http') ? (
-                                <img 
-                                  src={editData.icon} 
-                                  alt="Profile" 
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-2xl">{editData.icon}</span>
-                              )
-                            ) : (
-                              <BonsaiIcon className="h-8 w-8 text-[#4a7c59]" />
-                            )}
+                  {/* My Bonsai */}
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6 flex flex-col h-fit">
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">My Bonsai</h2>
+                    <div className="flex-1 flex flex-col justify-center">
+                      {userData.bonsai ? (
+                        <div className=" flex flex-col items-center">
+                          <div className="mb-4 flex justify-center md:h-[440px]">
+                            <BonsaiSVG 
+                              level={userData.bonsai.level || 1}
+                              treeColor={userData.bonsai.customization?.foliageColor || '#77DD82'} 
+                              potColor={userData.bonsai.customization?.potColor || '#FD9475'} 
+                              selectedEyes={userData.bonsai.customization?.eyes || 'default_eyes'}
+                              selectedMouth={userData.bonsai.customization?.mouth || 'default_mouth'}
+                              selectedPotStyle={userData.bonsai.customization?.potStyle || 'default_pot'}
+                              selectedGroundStyle={userData.bonsai.customization?.groundStyle || 'default_ground'}
+                              decorations={userData.bonsai.customization?.decorations || []}
+                            />
                           </div>
-                          
-                          {editMode && (
-                            <div className="flex gap-2">
-                              {/* Hidden file input */}
-                              <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                onChange={handleIconUpload}
-                                className="hidden"
-                                disabled={uploadingIcon}
-                              />
-                              
-                              {/* Upload button */}
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
-                                onClick={handleIconUploadClick}
-                                disabled={uploadingIcon}
-                              >
-                                {uploadingIcon ? (
-                                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Upload className="mr-1 h-3 w-3" />
-                                )}
-                                Upload
-                              </Button>
-                              
-                              {/* Remove button */}
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
-                                onClick={() => setEditData(prev => ({ ...prev, icon: null }))}
-                              >
-                                Remove
-                              </Button>
-                            </div>
-                          )}
                         </div>
-                        
-                        {/* Help text */}
-                        {!editMode && (
-                          <p className="text-xs text-[#5c6d5e] mt-2">
-                            Click "Edit" above to change your personal details
-                          </p>
-                        )}
-
-                      </div>
-                      
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Username</label>
-                        <input
-                          type="text"
-                          value={editMode ? editData.name : userData.name}
-                          onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
-                          className="w-full rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none"
-                          readOnly={!editMode}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Email</label>
-                        <div className="flex items-center rounded-md border border-[#dce4d7] bg-[#f8f7f4] px-3 py-2">
-                          <Mail className="mr-2 h-4 w-4 text-[#5c6d5e]" />
-                          <span className="text-[#5c6d5e]">{userData.email}</span>
+                      ) : (
+                        <div className="text-center p-4">
+                          <div className="mb-4 flex justify-center">
+                            <BonsaiSVG 
+                              level={1}
+                              treeColor="#77DD82" 
+                              potColor="#FD9475" 
+                              selectedEyes="default_eyes"
+                              selectedMouth="default_mouth"
+                              selectedPotStyle="default_pot"
+                              selectedGroundStyle="default_ground"
+                              decorations={[]}
+                            />
+                          </div>
+                          <p className="text-[#5c6d5e] mb-4">Start learning to grow your bonsai!</p>
                         </div>
-                      </div>
-
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Country</label>
-                        <select 
-                          className="w-full rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none"
-                          value={editMode ? editData.country : userData.country}
-                          onChange={(e) => setEditData(prev => ({ ...prev, country: e.target.value }))}
-                          disabled={!editMode}
-                        >
-                          <option value="United States">United States</option>
-                          <option value="Japan">Japan</option>
-                          <option value="Canada">Canada</option>
-                          <option value="United Kingdom">United Kingdom</option>
-                          <option value="Australia">Australia</option>
-                          <option value="Bonsai Garden Resident">Bonsai Garden Resident</option>
-                        </select>
-                      </div>
-
-                      {/* Role Information */}
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Role</label>
-                        <div className="flex items-center rounded-md border border-[#dce4d7] bg-[#f8f7f4] px-3 py-2">
-                          <span className="text-[#5c6d5e]">{capitalizeFirst(userData.role)}</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
-
-                    {editMode && (
-                      <Button 
-                        className="mt-6 w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
-                        onClick={handleUpdateProfile}
-                        disabled={updating}
-                      >
-                        {updating ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          "Save Changes"
-                        )}
-                      </Button>
-                    )}
+                    <Button className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147] mt-auto" asChild>
+                      <Link href="/bonsai">
+                        Customize My Bonsai
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
                   </div>
+
+
 
                   {/* Subscription Information */}
                   {userData.subscription && (
@@ -546,82 +453,108 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                {/* Bonsai Preview & Logout */}
-                <div className="space-y-4">
+                {/* Right Sidebar */}
+                <div className="flex flex-col h-full">
+                  <div className="space-y-6 flex-1">
+                    {/* Quick Stats */}
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
-                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">My Bonsai</h2>
-                    {userData.bonsai ? (
-                      <div className="mb-6 flex flex-col items-center">
-                        <div className="relative mb-4 h-48 w-48">
-                          {/* Pot */}
-                          <div 
-                            className="absolute bottom-0 left-1/2 h-16 w-24 -translate-x-1/2 rounded-t-sm rounded-b-xl"
-                            style={{
-                              backgroundColor: userData.bonsai.customization?.potColor || '#8B5E3C'
-                            }}
-                          ></div>
-                          {/* Trunk */}
-                          <div className="absolute bottom-12 left-1/2 h-24 w-4 -translate-x-1/2 bg-[#8B5E3C]"></div>
-                          {/* Main foliage */}
-                          <div 
-                            className="absolute bottom-24 left-1/2 h-16 w-16 -translate-x-1/2 rounded-full"
-                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.customization?.foliageColor) }}
-                          ></div>
-                          {/* Side branches */}
-                          <div 
-                            className="absolute bottom-28 left-1/4 h-12 w-12 -translate-x-1/2 rounded-full"
-                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.customization?.foliageColor) }}
-                          ></div>
-                          <div 
-                            className="absolute bottom-28 right-1/4 h-12 w-12 translate-x-1/2 rounded-full"
-                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.customization?.foliageColor) }}
-                          ></div>
-                          <div 
-                            className="absolute bottom-32 left-1/2 h-14 w-14 -translate-x-1/2 rounded-full"
-                            style={{ backgroundColor: getBonsaiTreeColor(userData.bonsai.customization?.foliageColor) }}
-                          ></div>
-                          {/* Decoration */}
-                          <div className="absolute bottom-6 right-12 h-6 w-6 rounded-md bg-[#d3d3d3]"></div>
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Quick Stats</h2>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-[#eef2eb]">
+                        <div className="flex items-center">
+                          <BonsaiIcon className="mr-3 h-5 w-5 text-[#4a7c59]" />
+                          <span className="text-sm font-medium text-[#2c3e2d]">Bonsai Level</span>
                         </div>
-                        <div className="text-center">
-                          <p className="font-medium text-[#2c3e2d]">
-                            Bonsai (Level {userData.bonsai.level})
-                          </p>
-                          <p className="text-sm text-[#5c6d5e]">
-                            {capitalizeFirst(userData.bonsai.customization?.potStyle || 'clay')} Pot
-                          </p>
-                          <p className="text-sm text-[#5c6d5e]">
-                            {userData.bonsai.customization?.decorations?.length > 0 
-                              ? `${userData.bonsai.customization.decorations.length} decoration(s)`
-                              : 'No decorations'
-                            }
-                          </p>
-                          <p className="text-xs text-[#5c6d5e] mt-1">
-                            Total Credits: {userData.bonsai.totalCredits}
-                          </p>
+                        <span className="text-lg font-bold text-[#4a7c59]">
+                          {userData.bonsai ? userData.bonsai.level : 1}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-[#eef2eb]">
+                        <div className="flex items-center">
+                          <Award className="mr-3 h-5 w-5 text-[#4a7c59]" />
+                          <span className="text-sm font-medium text-[#2c3e2d]">Certificates</span>
                         </div>
+                        <span className="text-lg font-bold text-[#4a7c59]">
+                          {certificates.length}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-[#eef2eb]">
+                        <div className="flex items-center">
+                          <BookOpen className="mr-3 h-5 w-5 text-[#4a7c59]" />
+                          <span className="text-sm font-medium text-[#2c3e2d]">Active Courses</span>
+                        </div>
+                        <span className="text-lg font-bold text-[#4a7c59]">
+                          {userData.progress?.enrolledCourses || 0}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Achievement */}
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Recent Achievement</h2>
+                    {certificates.length > 0 ? (
+                      <div className="text-center p-4 rounded-lg bg-gradient-to-br from-[#eef2eb] to-[#dce4d7]">
+                        <Award className="mx-auto mb-3 h-8 w-8 text-[#4a7c59]" />
+                        <h3 className="font-medium text-[#2c3e2d] mb-1">Latest Certificate</h3>
+                        <p className="text-sm text-[#5c6d5e] mb-2">
+                          {certificates[certificates.length - 1]?.courseTitle}
+                        </p>
+                        <p className="text-xs text-[#5c6d5e]">
+                          {certificates[certificates.length - 1]?.completionDate ? 
+                            new Date(certificates[certificates.length - 1].completionDate).toLocaleDateString() : 
+                            'Recently earned'
+                          }
+                        </p>
                       </div>
                     ) : (
-                      <div className="text-center p-4">
-                        <p className="text-[#5c6d5e] mb-4">No bonsai found</p>
+                      <div className="text-center p-4 rounded-lg bg-[#f8f7f4]">
+                        <Award className="mx-auto mb-3 h-8 w-8 text-[#5c6d5e] opacity-50" />
+                        <p className="text-sm text-[#5c6d5e] mb-2">No certificates yet</p>
+                        <Button size="sm" className="bg-[#4a7c59] text-white hover:bg-[#3a6147]" asChild>
+                          <Link href="/courses">Start Learning</Link>
+                        </Button>
                       </div>
                     )}
+                  </div>
+
+                  {/* Learning Streak */}
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">Learning Journey</h2>
                     <div className="space-y-3">
-                      <Button className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]" asChild>
-                        <Link href="/bonsai">
-                          Customize My Bonsai
-                          <ChevronRight className="ml-1 h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button 
-                        onClick={handleLogout} 
-                        variant="outline"
-                        className="w-full border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                      </Button>
-                    </div>
+                      <div className="flex items-center">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2eb] mr-3">
+                          <User className="h-4 w-4 text-[#4a7c59]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[#2c3e2d]">Joined</p>
+                          <p className="text-xs text-[#5c6d5e]">{formatDate(userData.joinDate)}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2eb] mr-3">
+                          <Target className="h-4 w-4 text-[#4a7c59]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[#2c3e2d]">Current Focus</p>
+                          <p className="text-xs text-[#5c6d5e]">Japanese Language Learning</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2eb] mr-3">
+                          <TreePine className="h-4 w-4 text-[#4a7c59]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[#2c3e2d]">Bonsai Growth</p>
+                          <p className="text-xs text-[#5c6d5e]">Level {userData.bonsai ? userData.bonsai.level : 1} Tree</p>
+                        </div>
+                      </div>
+                    </div>  
+                  </div>
                   </div>
                 </div>
               </div>
@@ -691,6 +624,169 @@ export default function ProfilePage() {
                onClose={() => setShowCertificateModal(false)}
                courseId={selectedCourseId}
              />
+           </TabsContent>
+
+           <TabsContent value="settings" className="mt-0 border-0 p-0">
+             <div className="max-w-2xl mx-auto">
+               <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
+               <div className="flex items-center justify-between mb-4">
+                 <h2 className="text-xl font-semibold text-[#2c3e2d]">Account Settings</h2>
+                 <Button 
+                   variant="outline" 
+                   size="sm" 
+                   className="border-[#4a7c59] text-[#4a7c59]"
+                   onClick={handleEditModeToggle}
+                 >
+                   {editMode ? "Cancel" : "Edit"}
+                 </Button>
+               </div>
+
+               <div className="space-y-4">
+                 {/* Profile Icon Section */}
+                 <div>
+                   <label className="mb-2 block text-sm font-medium text-[#2c3e2d]">Profile Icon</label>
+                   <div className="flex items-center gap-4">
+                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-2 border-[#dce4d7]">
+                       {editData.icon ? (
+                         editData.icon.startsWith('http') ? (
+                           <img 
+                             src={editData.icon} 
+                             alt="Profile" 
+                             className="h-full w-full object-cover"
+                           />
+                         ) : (
+                           <span className="text-2xl">{editData.icon}</span>
+                         )
+                       ) : (
+                         <BonsaiIcon className="h-8 w-8 text-[#4a7c59]" />
+                       )}
+                     </div>
+                     
+                     {editMode && (
+                       <div className="flex gap-2">
+                         {/* Hidden file input */}
+                         <input
+                           ref={fileInputRef}
+                           type="file"
+                           accept="image/*"
+                           onChange={handleIconUpload}
+                           className="hidden"
+                           disabled={uploadingIcon}
+                         />
+                         
+                         {/* Upload button */}
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                           onClick={handleIconUploadClick}
+                           disabled={uploadingIcon}
+                         >
+                           {uploadingIcon ? (
+                             <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                           ) : (
+                             <Upload className="mr-1 h-3 w-3" />
+                           )}
+                           Upload
+                         </Button>
+                         
+                         {/* Remove button */}
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                           onClick={() => setEditData(prev => ({ ...prev, icon: null }))}
+                         >
+                           Remove
+                         </Button>
+                       </div>
+                     )}
+                   </div>
+                   
+                   {/* Help text */}
+                   {!editMode && (
+                     <p className="text-xs text-[#5c6d5e] mt-2">
+                       Click "Edit" above to change your personal details
+                     </p>
+                   )}
+
+                 </div>
+                 
+                 <div>
+                   <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Username</label>
+                   <input
+                     type="text"
+                     value={editMode ? editData.name : userData.name}
+                     onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
+                     className="w-full rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none"
+                     readOnly={!editMode}
+                   />
+                 </div>
+
+                 <div>
+                   <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Email</label>
+                   <div className="flex items-center rounded-md border border-[#dce4d7] bg-[#f8f7f4] px-3 py-2">
+                     <Mail className="mr-2 h-4 w-4 text-[#5c6d5e]" />
+                     <span className="text-[#5c6d5e]">{userData.email}</span>
+                   </div>
+                 </div>
+
+                 <div>
+                   <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Country</label>
+                   <select 
+                     className="w-full rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none"
+                     value={editMode ? editData.country : userData.country}
+                     onChange={(e) => setEditData(prev => ({ ...prev, country: e.target.value }))}
+                     disabled={!editMode}
+                   >
+                     <option value="United States">United States</option>
+                     <option value="Japan">Japan</option>
+                     <option value="Canada">Canada</option>
+                     <option value="United Kingdom">United Kingdom</option>
+                     <option value="Australia">Australia</option>
+                     <option value="Bonsai Garden Resident">Bonsai Garden Resident</option>
+                   </select>
+                 </div>
+
+                 {/* Role Information */}
+                 <div>
+                   <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Role</label>
+                   <div className="flex items-center rounded-md border border-[#dce4d7] bg-[#f8f7f4] px-3 py-2">
+                     <span className="text-[#5c6d5e]">{capitalizeFirst(userData.role)}</span>
+                   </div>
+                 </div>
+               </div>
+
+               {editMode && (
+                 <Button 
+                   className="mt-6 w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+                   onClick={handleUpdateProfile}
+                   disabled={updating}
+                 >
+                   {updating ? (
+                     <>
+                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                       Saving...
+                     </>
+                   ) : (
+                     "Save Changes"
+                   )}
+                 </Button>
+               )}
+
+               {/* Logout Button */}
+               <div className="mt-8 pt-6 border-t border-[#dce4d7]">
+                 <Button 
+                   onClick={handleLogout} 
+                   variant="outline"
+                   className="w-full border-red-500 text-red-600 hover:bg-red-50"
+                 >
+                   <LogOut className="mr-2 h-4 w-4" />
+                   Logout
+                 </Button>
+               </div>
+               </div>
+             </div>
            </TabsContent>
          </Tabs>
        </div>
