@@ -228,7 +228,7 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
             <div className="relative banner-dropdown-container">
                 <Button 
                 size="sm"
-                className="bg-transparent text-white hover:bg-white/10 border border-white/20 backdrop-blur-sm text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-auto"
+                className="bg-transparent text-white md:mr-3 hover:bg-white/10 border border-white/20 backdrop-blur-sm text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-auto"
                 onClick={handleBannerDropdownToggle}
                 disabled={uploadingBanner}
                 >
@@ -238,7 +238,7 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
                     <Camera className="mr-1 h-3 w-3" />
                 )}
                 <span className="hidden sm:inline">
-                  {userData.banner ? 'Edit' : 'Add Banner'}
+                  {userData.banner ? 'Edit Banner' : 'Add Banner'}
                 </span>
                 <span className="sm:hidden">
                   {userData.banner ? 'Edit' : 'Add'}
@@ -273,8 +273,8 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
             </div>
 
           {/* Profile Info - Mobile Optimized Layout */}
-          <div className="relative z-10 w-full flex flex-col items-center justify-center gap-3 sm:gap-4 sm:flex-row sm:justify-between">
-            <div className="flex flex-col sm:flex-row items-center sm:items-end">
+          <div className="relative z-10 w-full flex flex-col items-center justify-center gap-3 sm:gap-4 sm:flex-row sm:justify-between sm:items-center">
+            <div className="flex flex-col sm:flex-row items-center sm:items-center">
               <div className="mb-2 sm:mb-0 sm:mr-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-2 sm:border-4 border-white shadow-lg">
                 {userData.icon ? (
                   userData.icon.startsWith('http') ? (
@@ -299,9 +299,6 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
                     <Check className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                   </div>
                 </div>
-                <p className="text-sm sm:text-base text-white/90">
-                  Joined {formatDate(userData.joinDate)}
-                </p>
               </div>
             </div>
             
@@ -314,9 +311,9 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
                 </span>
               </div>
               <div className="flex items-center rounded-full px-2 sm:px-4 py-1 sm:py-2 bg-white/20 backdrop-blur-sm">
-                <BonsaiIcon className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                <User className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" />
                 <span className="text-xs sm:text-sm font-medium text-white">
-                  {userData.credits} Credits
+                  {userData.role.charAt(0).toUpperCase() + userData.role.slice(1)}
                 </span>
               </div>
               <div className="flex items-center rounded-full px-2 sm:px-4 py-1 sm:py-2 bg-white/20 backdrop-blur-sm">
