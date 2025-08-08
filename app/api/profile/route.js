@@ -85,6 +85,7 @@ export async function GET() {
                 role: user.role,
                 credits: user.credits,
                 icon: user.icon,
+                banner: user.banner, // Add banner field
                 joinDate: user.createdAt,
                 lastLogin: user.lastLogin,
                 subscription: user.subscription,
@@ -150,17 +151,23 @@ export async function PUT(req) {
         const updateData = await req.json();
         await connectDb();
 
+        // Build update object
+        const updateFields = {
+            name: updateData.name,
+            country: updateData.country,
+            icon: updateData.icon,
+            updatedAt: new Date()
+        };
+
+        // Add banner if provided
+        if (updateData.banner !== undefined) {
+            updateFields.banner = updateData.banner;
+        }
+
         // Find and update user
         const user = await User.findOneAndUpdate(
             { email: session.user.email },
-            {
-                $set: {
-                    name: updateData.name,
-                    country: updateData.country,
-                    icon: updateData.icon,
-                    updatedAt: new Date()
-                }
-            },
+            { $set: updateFields },
             { new: true }
         );
 
@@ -175,7 +182,8 @@ export async function PUT(req) {
                 name: user.name,
                 email: user.email,
                 country: user.country,
-                icon: user.icon
+                icon: user.icon,
+                banner: user.banner
             }
         });
 

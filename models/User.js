@@ -38,6 +38,9 @@ const UserSchema = new mongoose.Schema(
     icon: {
       type: String,
     },
+    banner: {
+      type: String,
+    },
     country: {
       type: String,
       default: "Bonsai Garden Resident",
