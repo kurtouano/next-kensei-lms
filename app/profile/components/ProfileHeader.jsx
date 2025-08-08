@@ -200,9 +200,9 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
   return (
     <>
       {/* Profile Header with Banner Background */}
-      <div className="mb-8 relative">
+      <div className="mb-4 sm:mb-8 relative">
         <div 
-            className={`rounded-lg p-6 min-h-[150px] flex items-end relative overflow-hidden ${!userData.banner ? ' bg-[#679873] ': ''}`}
+            className={`rounded-lg p-4 sm:p-6 min-h-[120px] sm:min-h-[150px] flex items-end relative overflow-hidden ${!userData.banner ? ' bg-[#679873] ': ''}`}
             style={userData.banner ? {
             backgroundImage: `url(${userData.banner})`,
             backgroundSize: 'cover',
@@ -215,8 +215,8 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
             <div className="absolute inset-0 bg-black/40 rounded-lg"></div>
             )}
             
-            {/* Banner Edit Button with Dropdown */}
-            <div className="absolute top-3 right-3 z-20">
+            {/* Banner Edit Button with Dropdown - Mobile Optimized */}
+            <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20">
             <input
                 ref={bannerFileInputRef}
                 type="file"
@@ -228,7 +228,7 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
             <div className="relative banner-dropdown-container">
                 <Button 
                 size="sm"
-                className="bg-transparent text-white hover:bg-white/10 border border-white/20 backdrop-blur-sm"
+                className="bg-transparent text-white hover:bg-white/10 border border-white/20 backdrop-blur-sm text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-8 sm:h-auto"
                 onClick={handleBannerDropdownToggle}
                 disabled={uploadingBanner}
                 >
@@ -237,28 +237,33 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
                 ) : (
                     <Camera className="mr-1 h-3 w-3" />
                 )}
-                {userData.banner ? 'Edit Banner' : 'Add Banner'}
+                <span className="hidden sm:inline">
+                  {userData.banner ? 'Edit' : 'Add Banner'}
+                </span>
+                <span className="sm:hidden">
+                  {userData.banner ? 'Edit' : 'Add'}
+                </span>
                 </Button>
                 
                 {/* Dropdown Menu */}
                 {showBannerDropdown && (
-                <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-30">
+                <div className="absolute top-full right-0 mt-2 w-40 sm:w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-30">
                     <button
                     onClick={handleChooseCoverPhoto}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                    className="w-full px-3 sm:px-4 py-2 text-left text-xs sm:text-sm text-gray-700 hover:bg-gray-50 flex items-center"
                     disabled={uploadingBanner}
                     >
-                    <Image className="mr-3 h-4 w-4 text-[#4a7c59]" />
+                    <Image className="mr-2 sm:mr-3 h-3 sm:h-4 w-3 sm:w-4 text-[#4a7c59]" />
                     Choose banner photo
                     </button>
                     
                     {userData.banner && (
                     <button
                         onClick={handleRemoveBanner}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                        className="w-full px-3 sm:px-4 py-2 text-left text-xs sm:text-sm text-red-600 hover:bg-red-50 flex items-center"
                         disabled={uploadingBanner}
                     >
-                        <Trash2 className="mr-3 h-4 w-4 text-red-500" />
+                        <Trash2 className="mr-2 sm:mr-3 h-3 sm:h-4 w-3 sm:w-4 text-red-500" />
                         Remove
                     </button>
                     )}
@@ -267,10 +272,10 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
             </div>
             </div>
 
-          {/* Profile Info - Bottom Aligned */}
-          <div className="relative z-10 w-full flex flex-col items-center justify-center gap-4 md:flex-row md:justify-between">
-            <div className="flex items-center">
-              <div className="mr-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-4 border-white shadow-lg">
+          {/* Profile Info - Mobile Optimized Layout */}
+          <div className="relative z-10 w-full flex flex-col items-center justify-center gap-3 sm:gap-4 sm:flex-row sm:justify-between">
+            <div className="flex flex-col sm:flex-row items-center sm:items-end">
+              <div className="mb-2 sm:mb-0 sm:mr-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-2 sm:border-4 border-white shadow-lg">
                 {userData.icon ? (
                   userData.icon.startsWith('http') ? (
                     <img 
@@ -279,42 +284,44 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <span className="text-4xl">{userData.icon}</span>
+                    <span className="text-2xl sm:text-4xl">{userData.icon}</span>
                   )
                 ) : (
-                  <BonsaiIcon className="h-12 w-12 text-[#4a7c59]" />
+                  <BonsaiIcon className="h-8 w-8 sm:h-12 sm:w-12 text-[#4a7c59]" />
                 )}
               </div>
-              <div>
-                <div className="flex items-center">
-                  <h1 className="text-2xl font-bold text-white">
+              <div className="text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start">
+                  <h1 className="text-xl sm:text-2xl font-bold text-white">
                     {userData.name}
                   </h1>
-                  <div className="ml-2 rounded-full px-2 py-0.5 bg-white/20">
-                    <Check className="h-4 w-4 text-white" />
+                  <div className="ml-2 rounded-full px-1.5 sm:px-2 py-0.5 bg-white/20">
+                    <Check className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                   </div>
                 </div>
-                <p className="text-white/90">
+                <p className="text-sm sm:text-base text-white/90">
                   Joined {formatDate(userData.joinDate)}
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <div className="flex items-center rounded-full px-4 py-2 bg-white/20 backdrop-blur-sm">
-                <BookOpen className="mr-2 h-4 w-4 text-white" />
-                <span className="text-sm font-medium text-white">
+            
+            {/* Stats - Mobile Optimized */}
+            <div className="flex flex-wrap justify-center sm:justify-end gap-1.5 sm:gap-2 w-full sm:w-auto">
+              <div className="flex items-center rounded-full px-2 sm:px-4 py-1 sm:py-2 bg-white/20 backdrop-blur-sm">
+                <BookOpen className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                <span className="text-xs sm:text-sm font-medium text-white">
                   {userData.bonsai ? `Level ${userData.bonsai.level}` : 'Level 1'} Learner
                 </span>
               </div>
-              <div className="flex items-center rounded-full px-4 py-2 bg-white/20 backdrop-blur-sm">
-                <BonsaiIcon className="mr-2 h-4 w-4 text-white" />
-                <span className="text-sm font-medium text-white">
+              <div className="flex items-center rounded-full px-2 sm:px-4 py-1 sm:py-2 bg-white/20 backdrop-blur-sm">
+                <BonsaiIcon className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                <span className="text-xs sm:text-sm font-medium text-white">
                   {userData.credits} Credits
                 </span>
               </div>
-              <div className="flex items-center rounded-full px-4 py-2 bg-white/20 backdrop-blur-sm">
-                <Flag className="mr-2 h-4 w-4 text-white" />
-                <span className="text-sm font-medium text-white">
+              <div className="flex items-center rounded-full px-2 sm:px-4 py-1 sm:py-2 bg-white/20 backdrop-blur-sm">
+                <Flag className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                <span className="text-xs sm:text-sm font-medium text-white">
                   {userData.country}
                 </span>
               </div>
