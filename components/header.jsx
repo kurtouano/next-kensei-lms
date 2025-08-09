@@ -1,10 +1,10 @@
-// components/header.jsx - Updated with Auto-Close Mobile Menu
+// components/header.jsx - Updated with Friends Button
 "use client"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
-import { Menu, X, User } from "lucide-react"
+import { Menu, X, User, Users } from "lucide-react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { useSession } from "next-auth/react"
 import { useRoleAccess, RoleGuard } from "@/hooks/useRoleAccess"
@@ -235,11 +235,23 @@ export function Header() {
         {/* Auth Buttons */}
         <div className="hidden items-center gap-2 md:flex">
           {isAuthenticated ? (
-            <Link href="/profile" className="flex flex-row items-center gap-2">
-              <div className="h-9 w-9 mr-6 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden hover:bg-[#eef2eb] transition-colors">
-                {renderUserIcon()}
-              </div>  
-            </Link>
+            <div className="flex items-center gap-3">
+              {/* Friends/Users Button */}
+              <Link 
+                href="/users" 
+                className="h-9 w-9 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+                title="Find Friends"
+              >
+                <Users size={18} className="text-[#4a7c59]" />
+              </Link>
+              
+              {/* Profile Button */}
+              <Link href="/profile" className="flex flex-row items-center gap-2">
+                <div className="h-9 w-9 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden hover:bg-[#eef2eb] transition-colors">
+                  {renderUserIcon()}
+                </div>  
+              </Link>
+            </div>
           ) : (
             <>
               <Link href="/auth/login" className="rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb]">Log In</Link>
@@ -315,6 +327,15 @@ export function Header() {
                     Admin
                   </Link>
                 </RoleGuard>
+                
+                {/* Mobile Find Friends Link */}
+                <Link 
+                  href="/users" 
+                  className={`block text-sm font-medium ${isActive("/users") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  Find Friends
+                </Link>
                 
                 {/* Mobile Profile Link */}
                 <div className="pt-4 border-t border-[#dce4d7]">
