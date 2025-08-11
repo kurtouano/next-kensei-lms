@@ -3,8 +3,9 @@
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function UnauthorizedPage() {
+function UnauthorizedContent() {
   const { data: session } = useSession()
   const searchParams = useSearchParams()
   
@@ -40,6 +41,25 @@ export default function UnauthorizedPage() {
         </Link>
       </div>
     </div>
+  )
+}
+
+export default function UnauthorizedPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[80vh] bg-white flex items-center justify-center p-4">
+        <div className="max-w-md mx-auto text-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded mb-4"></div>
+            <div className="h-6 bg-gray-200 rounded mb-6"></div>
+            <div className="h-6 bg-gray-200 rounded mb-8"></div>
+            <div className="h-12 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <UnauthorizedContent />
+    </Suspense>
   )
 }
 
