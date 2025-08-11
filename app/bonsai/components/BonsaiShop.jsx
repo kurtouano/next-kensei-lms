@@ -20,6 +20,7 @@ export const BonsaiShop = ({
   selectedMouth,
   getGroundStyle,
   selectedPotStyle,
+  getDecorationSubcategoryById, // ✅ NEW: Receive helper function
 }) => {
   const [shopCategory, setShopCategory] = useState("all")
 
@@ -36,7 +37,7 @@ export const BonsaiShop = ({
     return selectedPotStyle || "default_pot"
   }
 
-  // ✅ UPDATED: Fix preview logic for all item types
+  // ✅ UPDATED: Enhanced preview logic with decoration subcategory handling
   const previewShopItem = (item) => {
     if (item.type === "ground") {
       setPreviewItem({ ...item, originalGround: getGroundStyle() })
@@ -47,7 +48,12 @@ export const BonsaiShop = ({
     } else if (item.type === "mouths") {
       setPreviewItem({ ...item, isMouth: true })
     } else if (item.type === "decoration") {
-      setPreviewItem({ ...item, isDecoration: true })
+      // ✅ NEW: Store the subcategory for proper replacement logic
+      setPreviewItem({ 
+        ...item, 
+        isDecoration: true,
+        subcategory: item.subcategory // Make sure subcategory is included
+      })
     } else {
       setPreviewItem(item)
     }
@@ -106,7 +112,39 @@ export const BonsaiShop = ({
     }
   }, [allShopItems, shopCategory]);
 
-  // ✅ REMOVED: Decoration subcategory counts (no longer needed)
+  // ✅ UPDATED: Use passed helper function instead of local one
+  const getActiveDecorationsForPreview = () => {
+    if (!previewItem || !previewItem.isDecoration) {
+      return getActiveDecorations();
+    }
+
+    // Get current decorations as an object (subcategory structure)
+    const currentDecorations = getActiveDecorations();
+    
+    // If we're previewing a decoration, we need to replace the decoration in the same subcategory
+    // and keep decorations from other subcategories
+    const previewSubcategory = previewItem.subcategory;
+    
+    // Convert current decorations array back to subcategory object structure
+    // This assumes your getActiveDecorations returns an array, but we need to work with subcategories
+    
+    // For preview, we create a new decorations array that:
+    // 1. Removes any existing decoration from the same subcategory as the preview
+    // 2. Adds the preview decoration
+    const decorationsArray = Array.isArray(currentDecorations) ? currentDecorations : Object.values(currentDecorations).filter(Boolean);
+    
+    // Filter out any decoration from the same subcategory as the preview
+    const filteredDecorations = decorationsArray.filter(decorationId => {
+      // Use the passed helper function
+      const existingDecorationSubcategory = getDecorationSubcategoryById ? getDecorationSubcategoryById(decorationId) : 'hats';
+      return existingDecorationSubcategory !== previewSubcategory;
+    });
+
+    // Add the preview decoration
+    return [...filteredDecorations, previewItem.id];
+  }
+
+  // ✅ REMOVED: Local helper function since we now receive it as a prop
 
   return (
     <div className="grid gap-6 md:grid-cols-3">
@@ -121,7 +159,7 @@ export const BonsaiShop = ({
               <BonsaiSVG 
                 level={bonsaiData.level}
                 treeColor={getTreeColor()} 
-                decorations={getActiveDecorations()}
+                decorations={getActiveDecorationsForPreview()} // ✅ Use enhanced decoration logic
                 selectedEyes={previewItem && previewItem.isEyes ? previewItem.id : selectedEyes}
                 selectedMouth={previewItem && previewItem.isMouth ? previewItem.id : selectedMouth}
                 potColor={getPotColor()} 

@@ -10,7 +10,7 @@ import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "./components/BonsaiSVG"
 import { BonsaiShop } from "./components/BonsaiShop"
 import { BonsaiMilestones } from "./components/BonsaiMilestones"
-import { getDecorationSubcategories, getOwnedDecorationsBySubcategory } from "@/components/bonsai/shopItems"
+import { getDecorationSubcategories, getOwnedDecorationsBySubcategory, getItemById } from "@/components/bonsai/shopItems"
 import { BonsaiConfigHelpers, BONSAI_CONFIG } from "@/components/bonsai/BonsaiConfig"
 
 export default function BonsaiPage() {
@@ -216,15 +216,34 @@ export default function BonsaiPage() {
     
     return BonsaiConfigHelpers.getPotColorFromKey(selectedPot)
   }
+  
+  const getDecorationSubcategoryById = (decorationId) => {
+    const item = getItemById(decorationId);
+    return item?.subcategory || 'hats'; // Default fallback
+  }
 
-  // ✅ UPDATED: Get active decorations as array for SVG component
   const getActiveDecorations = () => {
     let decorations = Object.values(selectedDecorations).filter(Boolean)
-    if (previewItem && previewItem.type === "decoration") {
+    
+    // Handle preview logic for decorations
+    if (previewItem && previewItem.type === "decoration" && previewItem.isDecoration) {
+      const previewSubcategory = previewItem.subcategory;
+      
+      // Remove any existing decoration from the same subcategory as the preview
+      decorations = decorations.filter(decorationId => {
+        const existingDecorationSubcategory = getDecorationSubcategoryById(decorationId);
+        return existingDecorationSubcategory !== previewSubcategory;
+      });
+      
+      // Add the preview decoration
+      decorations.push(previewItem.id);
+    } else if (previewItem && previewItem.type === "decoration") {
+      // Fallback for legacy preview items without isDecoration flag
       if (!decorations.includes(previewItem.id)) {
         decorations.push(previewItem.id)
       }
     }
+    
     return decorations
   }
 
@@ -922,6 +941,7 @@ export default function BonsaiPage() {
                 selectedMouth={selectedMouth}
                 getGroundStyle={getGroundStyle}
                 selectedPotStyle={selectedPotStyle}
+                getDecorationSubcategoryById={getDecorationSubcategoryById}
               />
             </TabsContent>
 
