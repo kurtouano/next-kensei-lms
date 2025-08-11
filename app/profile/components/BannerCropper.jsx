@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button"
 import { X, Move, RotateCcw, Check } from 'lucide-react'
 import { compressImage, validateImageFile } from '@/lib/imageCompression'
 
-const BANNER_ASPECT_RATIO = 700 / 150 // 4.67:1
+// Responsive banner dimensions matching header min-heights
+const BANNER_WIDTH = 700
+const BANNER_HEIGHT_MOBILE = 120
+const BANNER_HEIGHT_DESKTOP = 150
+const SM_MEDIA_QUERY = '(min-width: 640px)'
 
 export function BannerCropper({ 
   isOpen, 
@@ -22,16 +26,34 @@ export function BannerCropper({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 })
   const [imageLoaded, setImageLoaded] = useState(false)
-  const [containerSize, setContainerSize] = useState({ width: 500, height: 300 })
+  const [targetHeight, setTargetHeight] = useState(
+    typeof window !== 'undefined' && window.matchMedia && window.matchMedia(SM_MEDIA_QUERY).matches
+      ? BANNER_HEIGHT_DESKTOP
+      : BANNER_HEIGHT_MOBILE
+  )
+  const [containerSize, setContainerSize] = useState({ width: BANNER_WIDTH, height: targetHeight })
   const [compressionStatus, setCompressionStatus] = useState('')
   const [compressing, setCompressing] = useState(false)
 
+  // Sync target height with responsive breakpoint (sm and up)
   useEffect(() => {
-    if (isOpen && containerRef.current) {
-      const container = containerRef.current
-      const containerWidth = Math.min(container.clientWidth - 40, 600)
-      const containerHeight = containerWidth / BANNER_ASPECT_RATIO
-      setContainerSize({ width: containerWidth, height: containerHeight })
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const media = window.matchMedia(SM_MEDIA_QUERY)
+    const handleChange = () => {
+      const nextHeight = media.matches ? BANNER_HEIGHT_DESKTOP : BANNER_HEIGHT_MOBILE
+      setTargetHeight(nextHeight)
+      setContainerSize({ width: BANNER_WIDTH, height: nextHeight })
+    }
+    handleChange()
+    media.addEventListener ? media.addEventListener('change', handleChange) : media.addListener(handleChange)
+    return () => {
+      media.removeEventListener ? media.removeEventListener('change', handleChange) : media.removeListener(handleChange)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isOpen) {
+      setContainerSize({ width: BANNER_WIDTH, height: targetHeight })
     }
   }, [isOpen])
 
@@ -42,17 +64,20 @@ export function BannerCropper({
     const containerWidth = containerSize.width
     const containerHeight = containerSize.height
 
-    // Calculate scale to fit image in container while maintaining aspect ratio
+    // For cover mode (like background-size: cover), we need to scale the image
+    // so it completely fills the container, even if parts get cropped
     const scaleX = containerWidth / img.naturalWidth
     const scaleY = containerHeight / img.naturalHeight
-    const scale = Math.max(scaleX, scaleY) // Use max to ensure image covers the area
+    
+    // Use the larger scale to ensure the image covers the entire container
+    const scale = Math.max(scaleX, scaleY)
 
     const scaledWidth = img.naturalWidth * scale
     const scaledHeight = img.naturalHeight * scale
 
-    // Center the crop area
-    const x = Math.max(0, (scaledWidth - containerWidth) / 2)
-    const y = Math.max(0, (scaledHeight - containerHeight) / 2)
+    // Center the image in the container
+    const x = (scaledWidth - containerWidth) / 2
+    const y = (scaledHeight - containerHeight) / 2
 
     setCropArea({
       x: -x,
@@ -121,44 +146,31 @@ export function BannerCropper({
       const img = imageRef.current
 
       // Set canvas size to banner dimensions
-      canvas.width = 700
-      canvas.height = 150
+      canvas.width = BANNER_WIDTH
+      canvas.height = targetHeight
 
       // Calculate the scale used in the preview
       const scaleX = containerSize.width / img.naturalWidth
       const scaleY = containerSize.height / img.naturalHeight
-      const scale = Math.max(scaleX, scaleY)
+      const scale = Math.max(scaleX, scaleY) // Match the preview scaling logic for cover mode
 
-      // Calculate the scaled dimensions of the image in the preview
-      const scaledImageWidth = img.naturalWidth * scale
-      const scaledImageHeight = img.naturalHeight * scale
-
-      // Calculate the visible crop area in the preview
-      const visibleWidth = containerSize.width
-      const visibleHeight = containerSize.height
-
-      // Calculate the source coordinates on the original image
-      // The cropArea.x and cropArea.y are negative values representing the offset
-      // We need to convert these preview coordinates to actual image coordinates
+      // Calculate source coordinates and dimensions
       const sourceX = Math.max(0, (-cropArea.x) / scale)
       const sourceY = Math.max(0, (-cropArea.y) / scale)
-      
-      // Calculate the source dimensions based on the visible area
-      const sourceWidth = Math.min(visibleWidth / scale, img.naturalWidth - sourceX)
-      const sourceHeight = Math.min(visibleHeight / scale, img.naturalHeight - sourceY)
+      const sourceWidth = containerSize.width / scale
+      const sourceHeight = containerSize.height / scale
 
       // Ensure we don't exceed image boundaries
       const finalSourceX = Math.min(sourceX, img.naturalWidth - sourceWidth)
       const finalSourceY = Math.min(sourceY, img.naturalHeight - sourceHeight)
 
-      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // Draw the cropped image
       ctx.drawImage(
         img,
         finalSourceX, finalSourceY, sourceWidth, sourceHeight,
-        0, 0, 700, 150
+        0, 0, BANNER_WIDTH, targetHeight
       )
 
       // Convert canvas to blob
@@ -170,12 +182,11 @@ export function BannerCropper({
             // Convert blob to file for compression
             const file = new File([blob], 'banner.jpg', { type: 'image/jpeg' })
             
-            // ✅ NEW: Compress the cropped image using your compression utility
-            // Banner-specific compression settings (more aggressive since it's a banner)
+            // Compress the cropped image
             const compressionOptions = {
-              maxSizeKB: 150, // Slightly higher limit for banners
-              maxWidthOrHeight: 700, // Match banner width
-              quality: 0.8, // Good quality for banners
+              maxSizeKB: 150,
+              maxWidthOrHeight: BANNER_WIDTH,
+              quality: 0.8,
               aggressiveQuality: 0.65,
               extremeQuality: 0.5,
               fileType: 'image/jpeg'
@@ -190,7 +201,7 @@ export function BannerCropper({
             
             setTimeout(() => {
               onCropComplete(compressedBlob)
-            }, 500) // Brief delay to show compression status
+            }, 500)
             
           } catch (compressionError) {
             console.error('Compression failed:', compressionError)
@@ -238,18 +249,16 @@ export function BannerCropper({
         <div className="p-6 select-none">
           <div className="mb-4 text-center select-none">
             <p className="text-sm text-[#5c6d5e] mb-2">
-              Drag to position your image within the banner area (700×150)
+              Drag to position your image within the banner area (700×{targetHeight})
             </p>
             <div className="inline-flex items-center gap-2 text-xs text-[#5c6d5e] bg-[#eef2eb] px-3 py-1 rounded-full">
               <Move className="h-3 w-3" />
               Click and drag to reposition
             </div>
             
-            {/* ✅ NEW: Compression Status Display */}
             {(compressing || compressionStatus) && (
               <div className="mt-2 inline-flex items-center gap-2 text-xs text-[#4a7c59] bg-blue-50 px-3 py-1 rounded-full">
                 {compressing && <div className="w-3 h-3 border-2 border-[#4a7c59] border-t-transparent rounded-full animate-spin"></div>}
-                <span>{compressionStatus}</span>
               </div>
             )}
           </div>
@@ -276,7 +285,7 @@ export function BannerCropper({
                   ref={imageRef}
                   src={imageSrc}
                   alt="Crop preview"
-                  className="absolute select-none pointer-events-none"
+                  className="absolute h-50 select-none pointer-events-none"
                   style={{
                     width: `${cropArea.width}px`,
                     height: `${cropArea.height}px`,
@@ -331,8 +340,8 @@ export function BannerCropper({
         <canvas
           ref={canvasRef}
           className="hidden"
-          width={700}
-          height={150}
+          width={BANNER_WIDTH}
+          height={targetHeight}
         />
       </div>
     </div>
