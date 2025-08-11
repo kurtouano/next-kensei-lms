@@ -6,13 +6,13 @@ import { getEyeSvg, getMouthSvg, getPotStyleSvg, getGroundStyleSvg, getDecoratio
 
 // Custom Bonsai SVG Component
 export const BonsaiSVG = ({ 
-  level, 
-  treeColor, 
-  potColor, 
-  selectedEyes,
-  selectedMouth,
-  selectedPotStyle,
-  selectedGroundStyle, 
+  level = 1, 
+  treeColor = "#77DD82", 
+  potColor = "#FD9475", 
+  selectedEyes = "default_eyes",
+  selectedMouth = "default_mouth",
+  selectedPotStyle = "default_pot",
+  selectedGroundStyle = "default_ground", 
   decorations = [],
   }) => {
 
@@ -30,15 +30,27 @@ export const BonsaiSVG = ({
   // Use custom hook for positioning logic
   const { positions } = useBonsaiPositioning(selectedEyes, selectedMouth, selectedPotStyle, selectedGroundStyle, decorations);
   
+  // Ensure positions object is valid
+  const safePositions = positions && typeof positions === 'object' ? positions : {
+    ground: { transform: 'translate(0,0)' },
+    pot: { transform: 'translate(0,0)' },
+    eyeCenterX: 0,
+    mouthCenterX: 0,
+    decorations: []
+  };
+  
   // Get SVG content using utility functions with memoization for performance
   const eyeSvg = useMemo(() => getEyeSvg(selectedEyes), [selectedEyes]);
   const mouthSvg = useMemo(() => getMouthSvg(selectedMouth), [selectedMouth]);
   const groundStyleSvg = useMemo(() => getGroundStyleSvg(selectedGroundStyle), [selectedGroundStyle]);
 
   const decorationSvgs = useMemo(() => {
-    if (!decorations || decorations.length === 0) return [];
+    // Ensure decorations is always an array
+    const decorationsArray = Array.isArray(decorations) ? decorations : [];
     
-    return decorations.map(decorationId => {
+    if (decorationsArray.length === 0) return [];
+    
+    return decorationsArray.map(decorationId => {
       const svg = getDecorationSvg(decorationId);
       return svg ? { id: decorationId, svg } : null;
     }).filter(Boolean);
@@ -81,14 +93,14 @@ export const BonsaiSVG = ({
       )}
 
       {/* Ground Shadow */}
-      <g transform={positions.ground.transform} dangerouslySetInnerHTML={{ __html: groundStyleSvg }} />
+      <g transform={safePositions.ground.transform} dangerouslySetInnerHTML={{ __html: groundStyleSvg }} />
 
       {/* Pot Style */} 
-      <g transform={positions.pot.transform} dangerouslySetInnerHTML={{ __html: potStyleSvgWithColor }} />
+      <g transform={safePositions.pot.transform} dangerouslySetInnerHTML={{ __html: potStyleSvgWithColor }} />
 
       {/* Dynamic Eyes and Mouth */}
-      <g transform={`translate(${positions.eyeCenterX}, 352)`} dangerouslySetInnerHTML={{ __html: eyeSvg }} />
-      <g transform={`translate(${positions.mouthCenterX}, 365)`} dangerouslySetInnerHTML={{ __html: mouthSvg }} />
+      <g transform={`translate(${safePositions.eyeCenterX}, 352)`} dangerouslySetInnerHTML={{ __html: eyeSvg }} />
+      <g transform={`translate(${safePositions.mouthCenterX}, 365)`} dangerouslySetInnerHTML={{ __html: mouthSvg }} />
       
       {/* Bush Main Outline and bgcolor */}
       <path d="M321.217 297.469H136.623C154.316 277.417 168.47 283.314 172.008 289.212C175.547 279.776 188.325 277.81 193.24 277.417C213.056 274.586 226.659 286.067 230.984 292.161C246.554 279.422 261.848 282.921 267.549 286.263C267.549 279.658 276.592 277.613 281.114 277.417C294.796 276.945 295.858 283.118 294.678 286.263C309.304 283.904 318.465 292.751 321.217 297.469Z" fill={treeColor} stroke="black" strokeWidth="3.53855"/> 
@@ -104,7 +116,7 @@ export const BonsaiSVG = ({
       {decorationSvgs.map((decoration) => (
         <g 
           key={`decoration-${decoration.id}`}
-          transform={positions.decorations.find(pos => pos.id === decoration.id)?.transform || 'translate(0,0)'}
+          transform={safePositions.decorations.find(pos => pos.id === decoration.id)?.transform || 'translate(0,0)'}
           dangerouslySetInnerHTML={{ __html: decoration.svg }} 
         />
       ))}

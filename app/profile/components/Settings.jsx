@@ -7,6 +7,7 @@ import { BonsaiIcon } from "@/components/bonsai-icon"
 import { Mail, LogOut, Loader2, Upload, Image } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { compressImage } from '@/lib/imageCompression'
 
 export function Settings({ userData, onUserDataUpdate, onError }) {
   const router = useRouter()
@@ -20,6 +21,7 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
   })
   const [updating, setUpdating] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [compressionStatus, setCompressionStatus] = useState('')
 
   const capitalizeFirst = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1)
@@ -77,6 +79,7 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
         banner: userData.banner
       })
       onError("")
+      setCompressionStatus('')
     }
     setEditMode(!editMode)
   }
@@ -89,13 +92,8 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
     const file = event.target.files[0]
     if (!file) return
 
-    // Check file size (limit to 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      onError("File size must be less than 2MB")
-      return
-    }
-
-    // Check file type
+    // ✅ REMOVED: File size check since compression will handle it
+    // ✅ SIMPLIFIED: Only check file type
     if (!file.type.startsWith('image/')) {
       onError("Please select an image file")
       return
@@ -105,6 +103,23 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
     onError("")
 
     try {
+      // ✅ NEW: Compress the avatar image before upload
+      setCompressionStatus('Compressing avatar image...')
+      
+      // Avatar-specific compression settings (square format, smaller size)
+      const compressionOptions = {
+        maxSizeKB: 100, // Smaller limit for avatars
+        maxWidthOrHeight: 400, // Good size for avatars
+        quality: 0.8,
+        aggressiveQuality: 0.65,
+        extremeQuality: 0.5,
+        fileType: 'image/jpeg'
+      }
+
+      const compressedFile = await compressImage(file, compressionOptions)
+      
+      setCompressionStatus(`Compressed from ${(file.size / 1024).toFixed(1)}KB to ${(compressedFile.size / 1024).toFixed(1)}KB`)
+
       // Step 1: Get presigned URL
       const presignedResponse = await fetch('/api/profile/avatar', {
         method: 'POST',
@@ -112,8 +127,8 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          name: file.name,
-          type: file.type
+          name: compressedFile.name,
+          type: compressedFile.type
         })
       })
 
@@ -124,24 +139,35 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
         return
       }
 
-      // Step 2: Upload file directly to S3
+      setCompressionStatus('Uploading optimized image...')
+
+      // Step 2: Upload compressed file directly to S3
       const uploadResponse = await fetch(presignedData.uploadUrl, {
         method: 'PUT',
-        body: file,
+        body: compressedFile,
         headers: {
-          'Content-Type': file.type
+          'Content-Type': compressedFile.type
         }
       })
 
       if (uploadResponse.ok) {
         // Step 3: Update the edit data with the new avatar URL
         setEditData(prev => ({ ...prev, icon: presignedData.fileUrl }))
+        setCompressionStatus('✅ Avatar optimized and uploaded!')
         onError("")
+        
+        setTimeout(() => {
+          setCompressionStatus('')
+        }, 2000)
       } else {
         onError("Failed to upload image")
       }
     } catch (err) {
-      onError("Failed to upload image")
+      if (err.message.includes('compress')) {
+        onError("Failed to compress image: " + err.message)
+      } else {
+        onError("Failed to upload image")
+      }
       console.error("Icon upload error:", err)
     } finally {
       setUploadingIcon(false)
@@ -219,7 +245,7 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
               </div>
               
               {editMode && (
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -230,31 +256,41 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
                     disabled={uploadingIcon}
                   />
                   
-                  {/* Upload button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
-                    onClick={handleIconUploadClick}
-                    disabled={uploadingIcon}
-                  >
-                    {uploadingIcon ? (
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    ) : (
-                      <Upload className="mr-1 h-3 w-3" />
-                    )}
-                    Upload
-                  </Button>
+                  <div className="flex gap-2">
+                    {/* Upload button */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                      onClick={handleIconUploadClick}
+                      disabled={uploadingIcon}
+                    >
+                      {uploadingIcon ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : (
+                        <Upload className="mr-1 h-3 w-3" />
+                      )}
+                      Upload
+                    </Button>
+                    
+                    {/* Remove button */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                      onClick={() => setEditData(prev => ({ ...prev, icon: null }))}
+                      disabled={uploadingIcon}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                   
-                  {/* Remove button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
-                    onClick={() => setEditData(prev => ({ ...prev, icon: null }))}
-                  >
-                    Remove
-                  </Button>
+                  {/* ✅ NEW: Compression Status */}
+                  {compressionStatus && (
+                    <div className="text-xs text-[#4a7c59] bg-blue-50 px-2 py-1 rounded">
+                      {compressionStatus}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -263,6 +299,13 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
             {!editMode && (
               <p className="text-xs text-[#5c6d5e] mt-2">
                 Click "Edit" above to change your personal details
+              </p>
+            )}
+            
+            {/* ✅ NEW: Compression info for edit mode */}
+            {editMode && !compressionStatus && (
+              <p className="text-xs text-[#5c6d5e] mt-2">
+                ✨ Images are automatically optimized for fast loading (any size accepted)
               </p>
             )}
           </div>

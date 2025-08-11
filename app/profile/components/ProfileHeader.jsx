@@ -39,13 +39,8 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
     const file = event.target.files[0]
     if (!file) return
 
-    // Check file size (limit to 5MB for banners)
-    if (file.size > 5 * 1024 * 1024) {
-      onError("Banner file size must be less than 5MB")
-      return
-    }
-
-    // Check file type
+    // ✅ REMOVED: File size check since compression will handle it
+    // ✅ SIMPLIFIED: Only check file type
     if (!file.type.startsWith('image/')) {
       onError("Please select an image file")
       return
@@ -87,7 +82,7 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
         return
       }
 
-      // Step 2: Upload cropped image to S3
+      // Step 2: Upload cropped and compressed image to S3
       const uploadResponse = await fetch(presignedData.uploadUrl, {
         method: 'PUT',
         body: croppedBlob,
@@ -247,7 +242,7 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
                 
                 {/* Dropdown Menu */}
                 {showBannerDropdown && (
-                <div className="absolute top-full right-0 mt-2 w-40 sm:w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-30">
+                <div className="absolute z-50 top-full right-0 mt-2 w-40 sm:w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
                     <button
                     onClick={handleChooseCoverPhoto}
                     className="w-full px-3 sm:px-4 py-2 text-left text-xs sm:text-sm text-gray-700 hover:bg-gray-50 flex items-center"

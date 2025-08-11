@@ -170,18 +170,24 @@ export default function BonsaiPage() {
 
   // ✅ UPDATED: Handle decoration selection (only one per subcategory)
   const selectDecoration = (subcategory, decorationId) => {
-    setSelectedDecorations(prev => ({
-      ...prev,
-      [subcategory]: decorationId
-    }))
+    setSelectedDecorations(prev => {
+      const prevDecorations = prev && typeof prev === 'object' ? prev : {};
+      return {
+        ...prevDecorations,
+        [subcategory]: decorationId
+      };
+    })
   }
 
   // ✅ UPDATED: Clear decoration for subcategory
   const clearDecoration = (subcategory) => {
-    setSelectedDecorations(prev => ({
-      ...prev,
-      [subcategory]: null
-    }))
+    setSelectedDecorations(prev => {
+      const prevDecorations = prev && typeof prev === 'object' ? prev : {};
+      return {
+        ...prevDecorations,
+        [subcategory]: null
+      };
+    })
   }
 
   const getGroundStyle = () => {
@@ -218,12 +224,19 @@ export default function BonsaiPage() {
   }
   
   const getDecorationSubcategoryById = (decorationId) => {
+    // Ensure decorationId is valid
+    if (!decorationId || typeof decorationId !== 'string') {
+      return 'hats'; // Default fallback
+    }
+    
     const item = getItemById(decorationId);
     return item?.subcategory || 'hats'; // Default fallback
   }
 
   const getActiveDecorations = () => {
-    let decorations = Object.values(selectedDecorations).filter(Boolean)
+    // Ensure selectedDecorations is always an object
+    const decorationsObj = selectedDecorations && typeof selectedDecorations === 'object' ? selectedDecorations : {};
+    let decorations = Object.values(decorationsObj).filter(Boolean)
     
     // Handle preview logic for decorations
     if (previewItem && previewItem.type === "decoration" && previewItem.isDecoration) {

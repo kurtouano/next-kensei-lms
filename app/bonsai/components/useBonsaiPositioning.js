@@ -1,6 +1,13 @@
 import { useMemo, useCallback } from 'react';
 
 export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotStyle, selectedGroundStyle, decorations = []) => {
+  // Ensure input parameters are valid strings
+  const safeSelectedEyes = typeof selectedEyes === 'string' ? selectedEyes : 'default_eyes';
+  const safeSelectedMouth = typeof selectedMouth === 'string' ? selectedMouth : 'default_mouth';
+  const safeSelectedPotStyle = typeof selectedPotStyle === 'string' ? selectedPotStyle : 'default_pot';
+  const safeSelectedGroundStyle = typeof selectedGroundStyle === 'string' ? selectedGroundStyle : 'default_ground';
+  const safeDecorations = Array.isArray(decorations) ? decorations : [];
+
   // Eye width mappings for different eye types
   const eyeWidthMap = useMemo(() => ({
     default_eyes: 74,    
@@ -47,97 +54,148 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
 
   // Get current dimensions and adjustments
   const currentEyeWidth = useMemo(() => {
-    return eyeWidthMap[selectedEyes] || eyeWidthMap['default_eyes'];
-  }, [selectedEyes, eyeWidthMap]);
+    try {
+      return eyeWidthMap[safeSelectedEyes] || eyeWidthMap['default_eyes'];
+    } catch (error) {
+      console.error('Error getting eye width:', error);
+      return eyeWidthMap['default_eyes'];
+    }
+  }, [safeSelectedEyes, eyeWidthMap]);
 
   const currentMouthWidth = useMemo(() => {
-    return mouthWidthMap[selectedMouth] || mouthWidthMap['default_mouth'];
-  }, [selectedMouth, mouthWidthMap]);
+    try {
+      return mouthWidthMap[safeSelectedMouth] || mouthWidthMap['default_mouth'];
+    } catch (error) {
+      console.error('Error getting mouth width:', error);
+      return mouthWidthMap['default_mouth'];
+    }
+  }, [safeSelectedMouth, mouthWidthMap]);
 
   const currentPotAdjustment = useMemo(() => {
-    return potAdjustmentMap[selectedPotStyle] || potAdjustmentMap['default_pot'];
-  }, [selectedPotStyle, potAdjustmentMap]);
+    try {
+      return potAdjustmentMap[safeSelectedPotStyle] || potAdjustmentMap['default_pot'];
+    } catch (error) {
+      console.error('Error getting pot adjustment:', error);
+      return potAdjustmentMap['default_pot'];
+    }
+  }, [safeSelectedPotStyle, potAdjustmentMap]);
 
   const currentGroundAdjustment = useMemo(() => {
-    return groundAdjustmentMap[selectedGroundStyle] || groundAdjustmentMap['default_ground'];
-  }, [selectedGroundStyle, groundAdjustmentMap]);
+    try {
+      return groundAdjustmentMap[safeSelectedGroundStyle] || groundAdjustmentMap['default_ground'];
+    } catch (error) {
+      console.error('Error getting ground adjustment:', error);
+      return groundAdjustmentMap['default_ground'];
+    }
+  }, [safeSelectedGroundStyle, groundAdjustmentMap]);
 
   // Fixed: Handle decorations array properly
   const decorationPositions = useMemo(() => {
-    if (!decorations || decorations.length === 0) {
+    // Ensure decorations is always an array
+    const decorationsArray = Array.isArray(safeDecorations) ? safeDecorations : [];
+    
+    if (decorationsArray.length === 0) {
       return [];
     }
     
-    return decorations.map((decorationId, index) => {
-      const basePosition = decorationPositionMap[decorationId] || { x: 0, y: 0 };
-      // Add slight offset for multiple decorations to prevent overlap
-      const offsetX = index * 20;
-      const offsetY = index * 5;
-      
-      return {
-        id: decorationId,
-        x: basePosition.x + offsetX,
-        y: basePosition.y + offsetY
-      };
+    return decorationsArray.map((decorationId, index) => {
+      try {
+        const basePosition = decorationPositionMap[decorationId] || { x: 0, y: 0 };
+        // Add slight offset for multiple decorations to prevent overlap
+        const offsetX = index * 20;
+        const offsetY = index * 5;
+        
+        return {
+          id: decorationId,
+          x: basePosition.x + offsetX,
+          y: basePosition.y + offsetY
+        };
+      } catch (error) {
+        console.error('Error processing decoration:', decorationId, error);
+        return {
+          id: decorationId,
+          x: index * 20,
+          y: index * 5
+        };
+      }
     });
-  }, [decorations, decorationPositionMap]);
+  }, [safeDecorations, decorationPositionMap]);
 
   // Calculate all positions
   const calculatePositions = useCallback(() => {
-    const baseEyeY = 352;
-    const baseMouthY = 365;
-    const baseGroundY = 395;
-    const basePotCenterX = 100;
-    const basePotY = 296;
+    try {
+      const baseEyeY = 352;
+      const baseMouthY = 365;
+      const baseGroundY = 395;
+      const basePotCenterX = 100;
+      const basePotY = 296;
 
-    // Calculate positions
-    const potX = basePotCenterX + currentPotAdjustment.x;
-    const potY = basePotY + currentPotAdjustment.y;
+      // Ensure adjustments are valid objects with x and y properties
+      const potAdjustment = currentPotAdjustment && typeof currentPotAdjustment === 'object' ? currentPotAdjustment : { x: 0, y: 0 };
+      const groundAdjustment = currentGroundAdjustment && typeof currentGroundAdjustment === 'object' ? currentGroundAdjustment : { x: 0, y: 0 };
 
-    const eyeCenterX = 230 - (currentEyeWidth / 2);
-    const eyeCenterY = baseEyeY;
+      // Calculate positions
+      const potX = basePotCenterX + (potAdjustment.x || 0);
+      const potY = basePotY + (potAdjustment.y || 0);
 
-    const mouthCenterX = 230 - (currentMouthWidth / 2);
-    const mouthCenterY = baseMouthY;
+      const eyeCenterX = 230 - ((currentEyeWidth || 74) / 2);
+      const eyeCenterY = baseEyeY;
 
-    const groundX = basePotCenterX + currentGroundAdjustment.x;
-    const groundY = baseGroundY + currentGroundAdjustment.y;
+      const mouthCenterX = 230 - ((currentMouthWidth || 20) / 2);
+      const mouthCenterY = baseMouthY;
 
-    // Fixed: Handle decorations properly
-    const decorationTransforms = decorationPositions.map((decoration) => ({
-      id: decoration.id,
-      transform: `translate(${basePotCenterX + decoration.x}, ${basePotY + decoration.y})`
-    }));
+      const groundX = basePotCenterX + (groundAdjustment.x || 0);
+      const groundY = baseGroundY + (groundAdjustment.y || 0);
 
-    return {
-      // Basic centers
-      potCenterX: basePotCenterX,
-      eyeCenterX,
-      mouthCenterX,
-      
-      // Transforms
-      pot: {
-        x: potX,
-        y: potY,
-        transform: `translate(${potX}, ${potY})`
-      },
-      eyes: {
-        x: eyeCenterX,
-        y: eyeCenterY,
-        transform: `translate(${eyeCenterX}, ${eyeCenterY})`
-      },
-      mouth: {
-        x: mouthCenterX,
-        y: mouthCenterY,
-        transform: `translate(${mouthCenterX}, ${mouthCenterY})`
-      },
-      ground: {
-        x: groundX,
-        y: groundY,
-        transform: `translate(${groundX}, ${groundY})`
-      },
-      decorations: decorationTransforms
-    };
+      // Fixed: Handle decorations properly
+      const decorationTransforms = Array.isArray(decorationPositions) ? decorationPositions.map((decoration) => ({
+        id: decoration.id,
+        transform: `translate(${basePotCenterX + (decoration.x || 0)}, ${basePotY + (decoration.y || 0)})`
+      })) : [];
+
+      return {
+        // Basic centers
+        potCenterX: basePotCenterX,
+        eyeCenterX,
+        mouthCenterX,
+        
+        // Transforms
+        pot: {
+          x: potX,
+          y: potY,
+          transform: `translate(${potX}, ${potY})`
+        },
+        eyes: {
+          x: eyeCenterX,
+          y: eyeCenterY,
+          transform: `translate(${eyeCenterX}, ${eyeCenterY})`
+        },
+        mouth: {
+          x: mouthCenterX,
+          y: mouthCenterY,
+          transform: `translate(${mouthCenterX}, ${mouthCenterY})`
+        },
+        ground: {
+          x: groundX,
+          y: groundY,
+          transform: `translate(${groundX}, ${groundY})`
+        },
+        decorations: decorationTransforms
+      };
+    } catch (error) {
+      console.error('Error in calculatePositions:', error);
+      // Return safe fallback positions
+      return {
+        potCenterX: 100,
+        eyeCenterX: 183,
+        mouthCenterX: 220,
+        pot: { x: 100, y: 296, transform: 'translate(100, 296)' },
+        eyes: { x: 183, y: 352, transform: 'translate(183, 352)' },
+        mouth: { x: 220, y: 365, transform: 'translate(220, 365)' },
+        ground: { x: 90, y: 395, transform: 'translate(90, 395)' },
+        decorations: []
+      };
+    }
   }, [
     currentEyeWidth, 
     currentMouthWidth, 
@@ -146,7 +204,24 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
     decorationPositions
   ]);
 
-  const positions = useMemo(() => calculatePositions(), [calculatePositions]);
+  const positions = useMemo(() => {
+    try {
+      return calculatePositions();
+    } catch (error) {
+      console.error('Error calculating positions:', error);
+      // Return safe fallback positions
+      return {
+        potCenterX: 100,
+        eyeCenterX: 183,
+        mouthCenterX: 220,
+        pot: { x: 100, y: 296, transform: 'translate(100, 296)' },
+        eyes: { x: 183, y: 352, transform: 'translate(183, 352)' },
+        mouth: { x: 220, y: 365, transform: 'translate(220, 365)' },
+        ground: { x: 90, y: 395, transform: 'translate(90, 395)' },
+        decorations: []
+      };
+    }
+  }, [calculatePositions]);
 
   return {
     positions,
