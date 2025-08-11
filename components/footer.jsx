@@ -3,7 +3,7 @@ export function Footer() {
     <footer className="border-t border-[#dce4d7] bg-white py-6">
       <div className="container mx-auto px-4 text-center">
         <p className="text-sm text-[#5c6d5e]">
-          © {new Date().getFullYear()} Genko Tree. All rights reserved.
+          © {new Date().getFullYear()} Jotatsu. All rights reserved.
         </p>
       </div>
     </footer>

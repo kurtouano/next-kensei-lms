@@ -80,7 +80,7 @@ export default function LoginPage() {
       <div className="container mx-auto flex min-h-[calc(100vh-8.5rem)] flex-col items-center justify-center px-4 py-12">
         <Link href="/" className="mb-8 flex items-center gap-2">
           <BonsaiIcon className="h-10 w-10 text-[#4a7c59]" />
-          <span className="text-2xl font-semibold text-[#2c3e2d]">Genko Tree</span>
+            <span className="text-2xl font-semibold text-[#2c3e2d]">Jotatsu</span>
         </Link>
 
         <div className="w-full max-w-md rounded-lg border border-[#dce4d7] bg-white p-8 shadow-sm">

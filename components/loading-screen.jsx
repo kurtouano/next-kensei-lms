@@ -127,7 +127,7 @@ export function LoadingScreen({ onLoadingComplete }) {
           transition={{ delay: 0.3 }}
           className="mb-2 text-2xl font-bold text-[#2c3e2d]"
         >
-          Genko Tree
+          Jotatsu
         </motion.h1>
         
         <motion.p 

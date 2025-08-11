@@ -87,7 +87,7 @@ function UsersPage() {
               <h1 className="text-2xl sm:text-3xl font-bold text-[#2c3e2d]">Find Friends</h1>
             </div>
             <p className="text-[#5c6d5e] text-sm sm:text-base">
-              Discover and connect with other learners in the Genko Tree community
+              Discover and connect with other learners in the Jotatsu community
             </p>
           </div>
 

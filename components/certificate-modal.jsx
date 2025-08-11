@@ -149,7 +149,7 @@ function PDFCertificate({
                 letterSpacing: "2px",
                 marginBottom: "4px"
               }}>
-                GENKO TREE
+                JOTATSU
               </div>
               <div style={{
                 fontSize: "12px",
@@ -289,7 +289,7 @@ function PDFCertificate({
             fontSize: "13px",
             color: "#6b8e6b"
           }}>
-            Recognized by Genko Tree Japanese Language Learning Academy
+            Recognized by Jotatsu Japanese Language Learning Academy
           </div>
         </div>
 
@@ -354,7 +354,7 @@ function PDFCertificate({
                   marginBottom: "4px",
                   paddingBottom: "8px",
                 }}>
-                  Genko Tree Academy
+                  Jotatsu Academy
                 </div>
               </div>
               <div style={{
@@ -536,9 +536,9 @@ export function CertificateModal({
     pdf.setProperties({
       title: `Certificate - ${certificateData.courseTitle}`,
       subject: `Certificate of Completion for ${certificateData.userName}`,
-      author: 'Genko Tree - Japanese Language Learning Academy',
+      author: 'Jotatsu - Japanese Language Learning Academy',
       keywords: 'certificate, japanese, language, completion',
-      creator: 'Genko Tree'
+      creator: 'Jotatsu'
     })
 
     return pdf
@@ -573,7 +573,7 @@ export function CertificateModal({
       const pdf = await generatePDF()
       
       // Download with descriptive filename
-      const fileName = `GenkoTree_Certificate_${certificateData.userName.replace(/[^a-zA-Z0-9]/g, '_')}_${certificateData.certificateId}.pdf`
+      const fileName = `Jotatsu_Certificate_${certificateData.userName.replace(/[^a-zA-Z0-9]/g, '_')}_${certificateData.certificateId}.pdf`
       pdf.save(fileName)
 
     } catch (error) {
@@ -595,7 +595,7 @@ export function CertificateModal({
           <div className="flex items-center justify-between py-6 px-8">
             <div>
               <h2 className="text-xl font-bold">Certificate of Completion</h2>
-              <p className="text-sm opacity-90 mt-1">Genko Tree - Japanese Language Learning Academy</p>
+              <p className="text-sm opacity-90 mt-1">Jotatsu - Japanese Language Learning Academy</p>
             </div>
             <button
               onClick={onClose}
