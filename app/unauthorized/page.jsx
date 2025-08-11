@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { useSession } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 
 export default function UnauthorizedPage() {
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
   
   // Get the attempted path from URL params
-  const searchParams = new URLSearchParams(window.location.search)
   const attemptedPath = searchParams.get('attemptedPath') || 'this area'
 
   return (
