@@ -18,8 +18,14 @@ const poppins = Poppins({
 })
 
 export const metadata = {
-  title: "Jotatsu Academy",
-  description: "Learn Japanese online with our Bonsai-themed e-learning platform"
+  title: "Jotatsu - Learn Japanese Online",
+  description: "Master Japanese with Jotatsu Academy's comprehensive online courses. From beginner basics to JLPT test prep, learn through interactive lessons, grammar drills, and real-world conversation practice. Join thousands of successful students.",
+  keywords: "learn Japanese online, Japanese course, JLPT test prep, Japanese grammar, hiragana katakana, Japanese conversation, N5 N4 N3 N2 N1, Japanese vocabulary, kanji learning, Japanese tutor online, speak Japanese fluently",
+  authors: [{ name: "Jotatsu" }],
+  robots: "index, follow",
+  alternates: {
+    canonical: "https://jotatsu.com"
+  }
 }
 
 export default async function RootLayout({ children }) {
