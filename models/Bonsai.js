@@ -1,7 +1,7 @@
-// models/Bonsai.js
+// Updated Bonsai.js with decoration subcategories support
 import mongoose from "mongoose"
 import { calculateBonsaiLevel, getDefaultMilestones, updateMilestoneAchievements } from "@/lib/levelCalculator"
-import { getDefaultOwnedItems, getPremiumItems, getAllShopItems } from "@/components/bonsai/shopItems"
+import { getDefaultOwnedItems, getPremiumItems, getAllShopItems, validateDecorationSubcategories } from "@/components/bonsai/shopItems"
 
 const BonsaiSchema = new mongoose.Schema(
   {
@@ -48,7 +48,12 @@ const BonsaiSchema = new mongoose.Schema(
       potStyle: { type: String, default: 'default_pot' },
       potColor: { type: String, default: '#FD9475' },
       groundStyle: { type: String, default: 'default_ground' },  
-      decorations: [{ type: String }],
+      // Updated decorations structure to support subcategories
+      decorations: {
+        hats: { type: String, default: null }, // Only one hat can be active
+        ambient: { type: String, default: null }, // Only one ambient can be active
+        background: { type: String, default: null } // Only one background can be active
+      }
     },
     ownedItems: [{ type: String }],
     createdAt: {
@@ -120,6 +125,57 @@ BonsaiSchema.methods.getShopItems = function() {
   return allItems.filter(item => {
     return !item.unlocked && !this.ownsItem(item.id);
   });
+}
+
+// ✅ NEW: Get active decorations as an array (for backward compatibility)
+BonsaiSchema.methods.getActiveDecorations = function() {
+  const activeDecorations = [];
+  
+  if (this.customization.decorations) {
+    // Handle new subcategory structure
+    if (typeof this.customization.decorations === 'object' && !Array.isArray(this.customization.decorations)) {
+      Object.values(this.customization.decorations).forEach(decorationId => {
+        if (decorationId) {
+          activeDecorations.push(decorationId);
+        }
+      });
+    }
+    // Handle legacy array structure (for backward compatibility)
+    else if (Array.isArray(this.customization.decorations)) {
+      activeDecorations.push(...this.customization.decorations);
+    }
+  }
+  
+  return activeDecorations;
+}
+
+// ✅ NEW: Set decoration for a specific subcategory with validation
+BonsaiSchema.methods.setDecoration = function(subcategory, decorationId) {
+  if (!this.customization.decorations) {
+    this.customization.decorations = validateDecorationSubcategories({});
+  }
+  
+  // Ensure decorations is an object, not an array
+  if (Array.isArray(this.customization.decorations)) {
+    this.customization.decorations = validateDecorationSubcategories({});
+  }
+  
+  this.customization.decorations[subcategory] = decorationId;
+}
+
+// ✅ NEW: Clear decoration for a specific subcategory
+BonsaiSchema.methods.clearDecoration = function(subcategory) {
+  if (this.customization.decorations && typeof this.customization.decorations === 'object') {
+    this.customization.decorations[subcategory] = null;
+  }
+}
+
+// ✅ NEW: Get decoration for a specific subcategory
+BonsaiSchema.methods.getDecoration = function(subcategory) {
+  if (this.customization.decorations && typeof this.customization.decorations === 'object') {
+    return this.customization.decorations[subcategory] || null;
+  }
+  return null;
 }
 
 BonsaiSchema.statics.getDefaultMilestones = function() {

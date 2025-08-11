@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { ShoppingBag, Eye, Sparkles } from "lucide-react"
+import { ShoppingBag, Eye, Sparkles, Crown } from "lucide-react"
 import { BonsaiSVG } from "./BonsaiSVG"
-import { getPurchasableItems, getItemEmoji } from "@/components/bonsai/shopItems"
+import { getPurchasableItems, getItemEmoji, getDecorationSubcategories } from "@/components/bonsai/shopItems"
 
 export const BonsaiShop = ({ 
   bonsaiData, 
@@ -46,6 +46,8 @@ export const BonsaiShop = ({
       setPreviewItem({ ...item, isEyes: true })
     } else if (item.type === "mouths") {
       setPreviewItem({ ...item, isMouth: true })
+    } else if (item.type === "decoration") {
+      setPreviewItem({ ...item, isDecoration: true })
     } else {
       setPreviewItem(item)
     }
@@ -93,9 +95,18 @@ export const BonsaiShop = ({
     }
   }
 
-  const filteredShopItems = shopCategory === "all" 
-    ? allShopItems 
-    : allShopItems.filter((item) => item.category === shopCategory || item.type === shopCategory)
+  // ✅ UPDATED: Filter items by category (simplified for single decoration category)
+  const filteredShopItems = useMemo(() => {
+    if (shopCategory === "all") {
+      return allShopItems;
+    } else {
+      return allShopItems.filter(item => 
+        item.category === shopCategory || item.type === shopCategory
+      );
+    }
+  }, [allShopItems, shopCategory]);
+
+  // ✅ REMOVED: Decoration subcategory counts (no longer needed)
 
   return (
     <div className="grid gap-6 md:grid-cols-3">
@@ -153,7 +164,7 @@ export const BonsaiShop = ({
             </div>
           </div>
 
-          {/* Category filters */}
+          {/* ✅ UPDATED: Category filters - merge decorations into one category */}
           <div className="mb-6 flex flex-wrap gap-2">
             <button
               className={`rounded-full px-4 py-1 text-sm font-medium ${
@@ -205,6 +216,8 @@ export const BonsaiShop = ({
             >
               Pots ({allShopItems.filter(i => i.type === "pot").length})
             </button>
+            
+            {/* ✅ UPDATED: Single Decorations category */}
             <button
               className={`rounded-full px-4 py-1 text-sm font-medium ${
                 shopCategory === "decoration"
@@ -213,12 +226,13 @@ export const BonsaiShop = ({
               }`}
               onClick={() => setShopCategory("decoration")}
             >
+              <Sparkles className="inline h-3 w-3 mr-1" />
               Decorations ({allShopItems.filter(i => i.type === "decoration").length})
             </button>
           </div>
 
           {/* Shop items grid */}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="max-h-[640px] overflow-y-scroll grid gap-4 sm:grid-cols-2">
             {filteredShopItems.map((item) => (
               <div
                 key={`${item.type}-${item.id}`}
@@ -226,13 +240,19 @@ export const BonsaiShop = ({
               >
                 <div className="mb-3 flex items-center justify-between">
                   <span className={`rounded-full px-3 py-1 text-xs font-medium text-white ${
-                    item.type === 'decoration' ? 'bg-purple-500' :
-                    item.type === 'ground' ? 'bg-green-500' :
+                    item.type === 'decoration' ? 
+                      item.subcategory === 'hats' ? 'bg-purple-500' :
+                      item.subcategory === 'ambient' ? 'bg-blue-500' :
+                      item.subcategory === 'background' ? 'bg-green-500' : 'bg-gray-500'
+                    : item.type === 'ground' ? 'bg-green-500' :
                     item.type === 'pot' ? 'bg-orange-500' : 
                     item.type === 'eyes' ? 'bg-blue-500' :
                     item.type === 'mouths' ? 'bg-pink-500' : 'bg-gray-500'
                   }`}>
-                    {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                    {item.type === 'decoration' 
+                      ? item.subcategory?.charAt(0).toUpperCase() + item.subcategory?.slice(1) 
+                      : item.type.charAt(0).toUpperCase() + item.type.slice(1)
+                    }
                   </span>
                   <span className="flex items-center text-sm font-medium text-[#2c3e2d]">
                     💰 {item.credits}
@@ -250,6 +270,11 @@ export const BonsaiShop = ({
                     {item.credits > 200 && (
                       <span className="inline-block mt-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
                         Premium
+                      </span>
+                    )}
+                    {item.type === 'decoration' && (
+                      <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                        {item.subcategory}
                       </span>
                     )}
                   </div>
@@ -284,7 +309,9 @@ export const BonsaiShop = ({
               <div className="text-[#5c6d5e] mb-2">
                 {shopCategory === "all" 
                   ? "All items are already owned!"
-                  : `All ${shopCategory} items are already owned!`
+                  : shopCategory.startsWith("decoration-")
+                    ? `All ${shopCategory.split("-")[1]} items are already owned!`
+                    : `All ${shopCategory} items are already owned!`
                 }
               </div>
               <p className="text-sm text-[#5c6d5e]">Complete courses to earn more credits and unlock new items.</p>

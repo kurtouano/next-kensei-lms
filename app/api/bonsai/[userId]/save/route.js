@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../auth/[...nextauth]/route';
 import { getLevelInfo } from '@/lib/levelCalculator';
+import { validateDecorationSubcategories, getDecorationSubcategories } from '@/components/bonsai/shopItems';
 
 export async function PUT(request, { params }) {
   try {
@@ -43,20 +44,52 @@ export async function PUT(request, { params }) {
           potStyle: 'default_pot',
           potColor: '#FD9475',
           groundStyle: 'default_ground',
-          decorations: []
+          decorations: validateDecorationSubcategories({})
         },
         ownedItems: defaultOwnedItems
       });
     }
 
-    // Update customization preferences
+    // ✅ UPDATED: Handle customization with decoration subcategories
     if (updates.customization) {
+      // Handle legacy decoration array migration
+      if (updates.customization.decorations) {
+        if (Array.isArray(updates.customization.decorations)) {
+          // Migrate legacy array to subcategory structure
+          const legacyDecorations = updates.customization.decorations;
+          const migratedDecorations = { hats: null, ambient: null, background: null };
+          
+          // Simple migration logic - assign first decoration to hats if it exists
+          if (legacyDecorations.length > 0) {
+            // You can add more sophisticated logic here based on decoration IDs
+            const firstDecoration = legacyDecorations[0];
+            if (firstDecoration.includes('hat') || firstDecoration.includes('crown') || firstDecoration.includes('cap')) {
+              migratedDecorations.hats = firstDecoration;
+            } else if (firstDecoration.includes('ambient') || firstDecoration.includes('sparkle') || firstDecoration.includes('firefly')) {
+              migratedDecorations.ambient = firstDecoration;
+            } else if (firstDecoration.includes('background') || firstDecoration.includes('sunset') || firstDecoration.includes('forest')) {
+              migratedDecorations.background = firstDecoration;
+            } else {
+              // Default to hats for unknown decorations
+              migratedDecorations.hats = firstDecoration;
+            }
+          }
+          
+          updates.customization.decorations = migratedDecorations;
+        }
+      }
+
+      // Ensure decorations structure is correct using validation helper
+      if (!updates.customization.decorations || Array.isArray(updates.customization.decorations)) {
+        updates.customization.decorations = validateDecorationSubcategories(updates.customization.decorations);
+      } else {
+        updates.customization.decorations = validateDecorationSubcategories(updates.customization.decorations);
+      }
 
       bonsai.customization = {
         ...bonsai.customization,
         ...updates.customization
       };
-      
     }
 
     // Update owned items if provided
@@ -64,6 +97,7 @@ export async function PUT(request, { params }) {
       bonsai.ownedItems = [...new Set([...bonsai.ownedItems, ...updates.ownedItems])];
     }
 
+    // Sync with user credits and update milestones
     bonsai.syncWithUserCredits(user.credits);
 
     bonsai.updatedAt = new Date();

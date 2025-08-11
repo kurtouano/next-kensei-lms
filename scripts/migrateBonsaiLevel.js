@@ -1,144 +1,164 @@
+// scripts/migrateBonsaiLevel.js
+// Standalone script to migrate bonsai decorations without Next.js import aliases
+
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
+// Load environment variables
 dotenv.config();
 
-const connectDb = async () => {
+// Define Bonsai schema locally to avoid import issues
+const BonsaiSchema = new mongoose.Schema(
+  {
+    userRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+    },
+    totalCredits: {
+      type: Number,
+      default: 0,
+    },
+    customization: {
+      decorations: mongoose.Schema.Types.Mixed // Allow both array and object types
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { timestamps: true }
+);
+
+const Bonsai = mongoose.model('Bonsai', BonsaiSchema);
+
+// Connect to MongoDB
+async function connectDb() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      bufferCommands: false,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    });
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI environment variable is not set. Please check your .env file.');
+    }
+    
+    await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
+    console.log('💡 Make sure you have a .env file with MONGODB_URI in your project root');
     throw error;
   }
-};
+}
 
-// Migration to remove old fields that are no longer in the schema
-const cleanupOldBonsaiFields = async () => {
+async function migrateDecorations() {
   try {
-    console.log('🧹 Starting cleanup of old Bonsai fields...');
-    const db = mongoose.connection.db;
-    const bonsaiCollection = db.collection('bonsais');
+    await connectDb();
+    console.log('🔄 Starting decoration migration...');
 
-    // Fields to remove (old schema fields not in current model)
-    const fieldsToRemove = {
-      tree: "",
-      pot: "",
-      level: "",      // This is now a virtual field
-      decoration: "",
-      inventory: ""
-    };
+    // Find all bonsai with array-based decorations
+    const bonsaiToMigrate = await Bonsai.find({
+      'customization.decorations': { $type: 'array' }
+    });
 
-    // First, let's see what we're dealing with
-    const sampleDoc = await bonsaiCollection.findOne({});
-    console.log('📋 Sample document structure:');
-    console.log('Fields present:', Object.keys(sampleDoc || {}));
+    console.log(`📊 Found ${bonsaiToMigrate.length} bonsai records to migrate`);
 
-    // Count documents with old fields
-    const oldFieldCounts = {};
-    for (const field of Object.keys(fieldsToRemove)) {
-      const count = await bonsaiCollection.countDocuments({ [field]: { $exists: true } });
-      oldFieldCounts[field] = count;
-      console.log(`📊 Documents with '${field}' field: ${count}`);
+    if (bonsaiToMigrate.length === 0) {
+      console.log('🎉 No records need migration!');
+      return;
     }
 
-    // Check if any cleanup is needed
-    const totalOldFields = Object.values(oldFieldCounts).reduce((sum, count) => sum + count, 0);
-    if (totalOldFields === 0) {
-      console.log('✅ No old fields found. Database is already clean!');
-      return { removed: 0, errors: 0 };
-    }
+    let migratedCount = 0;
+    let errorCount = 0;
 
-    console.log(`\n🚀 Removing old fields from ${Object.values(oldFieldCounts).filter(c => c > 0).length} field types...`);
+    for (const bonsai of bonsaiToMigrate) {
+      try {
+        const oldDecorations = bonsai.customization.decorations || [];
+        console.log(`🔧 Migrating bonsai ${bonsai._id} with decorations:`, oldDecorations);
 
-    // Remove all old fields in one operation
-    const result = await bonsaiCollection.updateMany(
-      {}, // Update all documents
-      { $unset: fieldsToRemove }
-    );
+        // Map old decorations to new subcategory structure
+        const newDecorations = {
+          hats: null,
+          ambient: null,
+          background: null
+        };
 
-    console.log(`✅ Old fields cleanup completed!`);
-    console.log(`   - Documents modified: ${result.modifiedCount}`);
-    console.log(`   - Documents matched: ${result.matchedCount}`);
+        // Simple migration logic based on decoration names
+        oldDecorations.forEach(decorationId => {
+          if (decorationId.includes('cap') || decorationId.includes('crown') || decorationId.includes('hat')) {
+            newDecorations.hats = decorationId;
+          } else if (decorationId.includes('ambient') || decorationId.includes('sparkle') || decorationId.includes('firefly')) {
+            newDecorations.ambient = decorationId;
+          } else if (decorationId.includes('background') || decorationId.includes('sunset') || decorationId.includes('forest')) {
+            newDecorations.background = decorationId;
+          } else {
+            // Default unknown decorations to hats
+            if (!newDecorations.hats) {
+              newDecorations.hats = decorationId;
+            }
+          }
+        });
 
-    // Verify cleanup
-    console.log('\n🔍 Verification - checking remaining old fields:');
-    let remainingOldFields = 0;
-    for (const field of Object.keys(fieldsToRemove)) {
-      const remaining = await bonsaiCollection.countDocuments({ [field]: { $exists: true } });
-      if (remaining > 0) {
-        console.log(`⚠️  '${field}' still exists in ${remaining} documents`);
-        remainingOldFields += remaining;
-      } else {
-        console.log(`✅ '${field}' successfully removed`);
+        // Update the document using unset and set to avoid type conflicts
+        await Bonsai.updateOne(
+          { _id: bonsai._id },
+          {
+            $unset: { 'customization.decorations': '' }
+          }
+        );
+
+        await Bonsai.updateOne(
+          { _id: bonsai._id },
+          {
+            $set: { 
+              'customization.decorations': newDecorations,
+              'updatedAt': new Date()
+            }
+          }
+        );
+
+        migratedCount++;
+        console.log(`✅ Successfully migrated bonsai ${bonsai._id}`);
+        console.log(`   Old: [${oldDecorations.join(', ')}]`);
+        console.log(`   New:`, newDecorations);
+
+      } catch (error) {
+        errorCount++;
+        console.error(`❌ Error migrating bonsai ${bonsai._id}:`, error.message);
       }
     }
 
-    if (remainingOldFields === 0) {
-      console.log('🎉 All old fields successfully removed!');
+    console.log('\n📈 Migration Summary:');
+    console.log(`✅ Successfully migrated: ${migratedCount} records`);
+    console.log(`❌ Failed migrations: ${errorCount} records`);
+    console.log(`📊 Total processed: ${bonsaiToMigrate.length} records`);
+
+    // Verify migration results
+    const remainingArrayDecorations = await Bonsai.countDocuments({
+      'customization.decorations': { $type: 'array' }
+    });
+
+    const newObjectDecorations = await Bonsai.countDocuments({
+      'customization.decorations': { $type: 'object' }
+    });
+
+    console.log('\n🔍 Post-migration verification:');
+    console.log(`   Remaining array decorations: ${remainingArrayDecorations}`);
+    console.log(`   New object decorations: ${newObjectDecorations}`);
+
+    if (remainingArrayDecorations === 0) {
+      console.log('🎉 Migration completed successfully!');
     } else {
-      console.log(`⚠️  ${remainingOldFields} old field instances still remain`);
-    }
-
-    // Show a sample of the cleaned document
-    const cleanedSample = await bonsaiCollection.findOne({});
-    console.log('\n📋 Sample cleaned document structure:');
-    console.log('Current fields:', Object.keys(cleanedSample || {}));
-
-    return { removed: result.modifiedCount, errors: remainingOldFields };
-
-  } catch (error) {
-    console.error('❌ Old fields cleanup failed:', error);
-    throw error;
-  }
-};
-
-// Main migration function
-const runCleanup = async () => {
-  try {
-    console.log('🧹 Starting Bonsai old fields cleanup...\n');
-    
-    // Connect to database
-    await connectDb();
-
-    // Run cleanup
-    console.log('='.repeat(60));
-    const result = await cleanupOldBonsaiFields();
-
-    // Print final summary
-    console.log('\n' + '='.repeat(60));
-    console.log('🎉 CLEANUP COMPLETED!');
-    console.log('📊 Final Summary:');
-    console.log(`   Documents cleaned: ${result.removed}`);
-    console.log(`   Remaining issues: ${result.errors}`);
-
-    if (result.errors === 0) {
-      console.log('✅ Database successfully cleaned! All old fields removed.');
-    } else {
-      console.log('⚠️  Some old fields still remain. Please review the logs above.');
+      console.log('⚠️  Some records still need migration. Please review the errors above.');
     }
 
   } catch (error) {
-    console.error('❌ Cleanup failed:', error);
+    console.error('💥 Migration failed:', error);
   } finally {
-    // Close the connection
-    await mongoose.connection.close();
-    console.log('🔌 Database connection closed');
-  }
-};
-
-// Run cleanup
-runCleanup()
-  .then(() => {
-    console.log('🏁 Cleanup script completed');
+    await mongoose.disconnect();
+    console.log('🔌 Disconnected from MongoDB');
     process.exit(0);
-  })
-  .catch((error) => {
-    console.error('💥 Cleanup script failed:', error);
-    process.exit(1);
-  });
+  }
+}
+
+// Run the migration
+migrateDecorations();
