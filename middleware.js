@@ -20,7 +20,8 @@ export default withAuth(
       '/courses',
       '/blogs',   // ← Public blogs page (uses /api/blogs)
       '/terms',
-      '/privacy'
+      '/privacy',
+      '/unauthorized'  // ← Make sure unauthorized is public
     ]
 
     // Public API routes that don't require authentication
@@ -36,12 +37,12 @@ export default withAuth(
       return NextResponse.next()
     }
 
-    // If no token, redirect to login
+    // If no token, redirect to unauthorized page instead of login
     if (!token) {
-      console.log('❌ No token, redirecting to login')
-      const loginUrl = new URL('/auth/login', req.url)
-      loginUrl.searchParams.set('callbackUrl', pathname)
-      return NextResponse.redirect(loginUrl)
+      console.log('❌ No token, redirecting to unauthorized page')
+      const unauthorizedUrl = new URL('/unauthorized', req.url)
+      unauthorizedUrl.searchParams.set('attemptedPath', pathname)
+      return NextResponse.redirect(unauthorizedUrl)
     }
 
     const userRole = token.role || 'student'
@@ -89,7 +90,7 @@ export default withAuth(
       // Only enrolled students or instructors/admins can access course content
       if (!['student', 'instructor', 'admin'].includes(userRole)) {
         console.log('❌ Course content access denied for role:', userRole)
-        return NextResponse.redirect(new URL('/auth/login', req.url))
+        return NextResponse.redirect(new URL('/unauthorized', req.url))
       }
       console.log('✅ Course content access granted')
       return NextResponse.next()
@@ -189,8 +190,9 @@ export default withAuth(
           return true
         }
 
-        // For protected routes, require token
-        return !!token
+        // For protected routes, allow the middleware to handle unauthorized redirects
+        // Return true here so the middleware function runs and can redirect to /unauthorized
+        return true
       },
     },
   }
