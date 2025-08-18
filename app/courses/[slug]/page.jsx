@@ -21,6 +21,7 @@ import { CourseInfo } from "./components/CourseInfo"
 import { ModuleCompleteNotif } from "./components/ModuleCompleteNotif"
 import { EnrollmentPrompt } from "./components/EnrollmentPrompt"
 import { InstructorPreviewToggle } from "./components/InstructorPreviewToggle"
+import { RewardModal } from "@/components/RewardModal"
 
 // ============ LOADING & ERROR LAYOUTS ============
 
@@ -137,11 +138,24 @@ export default function LessonPage() {
     isInitialized: progressInitialized,
     updateLessonProgress, 
     updateVideoProgress, 
-    updateModuleProgress, 
+    updateModuleProgress: originalUpdateModuleProgress, 
     getLessonCurrentTime 
   } = useProgress(
     (effectiveIsLoggedIn && effectiveIsEnrolled) ? lessonSlug : null
   )
+  
+  // Custom updateModuleProgress that handles reward modal
+  const updateModuleProgress = useCallback(async (moduleId, quizScore) => {
+    const result = await originalUpdateModuleProgress(moduleId, quizScore)
+    
+    // Check if course was completed and rewards were given
+    if (result?.success && result?.rewardData) {
+      setRewardData(result.rewardData)
+      setShowRewardModal(true)
+    }
+    
+    return result
+  }, [originalUpdateModuleProgress])
   
   // Only run like functionality if user is logged in
   const { likeState, toggleLike } = useCourseLike(
@@ -172,6 +186,10 @@ export default function LessonPage() {
   const [activeVideoId, setActiveVideoId] = useState(null)
   const [completedItems, setCompletedItems] = useState([])
   const [moduleQuizCompleted, setModuleQuizCompleted] = useState([])
+  
+  // Reward modal state
+  const [showRewardModal, setShowRewardModal] = useState(false)
+  const [rewardData, setRewardData] = useState(null)
 
   const isModuleAccessible = useCallback((moduleIndex) => {
     if (!effectiveIsLoggedIn || !effectiveIsEnrolled) return false
@@ -431,9 +449,16 @@ export default function LessonPage() {
         // 🔧 FIX: Store the full objects instead of just indices
         setModuleQuizCompleted(completedModuleData)
       }
+      
+      // 🔧 FIX: Sync reward data from progress
+      if (progress.rewardData) {
+        console.log('🎁 Syncing reward data from progress:', progress.rewardData)
+        setRewardData(progress.rewardData)
+      }
     } else if (!effectiveIsLoggedIn || !effectiveIsEnrolled) {
       setCompletedItems([])
       setModuleQuizCompleted([])
+      setRewardData(null)
     }
   }, [effectiveIsLoggedIn, effectiveIsEnrolled, progressInitialized, progress, lessonData?.modules])
 
@@ -751,29 +776,37 @@ export default function LessonPage() {
             </div>
 
             {/* Sidebar */}
-            <div className="mt-4 w-full lg:mt-0 lg:w-1/3 lg:pl-4">
-              <CourseSidebar
-                modules={lessonData.modules}
-                activeModule={activeModule}
-                activeVideoId={activeVideoId}
-                completedItems={completedItems}
-                moduleQuizCompleted={moduleQuizCompleted}
-                currentModuleCompleted={currentModuleCompleted}
-                showModuleQuiz={quizState.showModuleQuiz}
-                onSelectItem={handleSelectItem}
-                onToggleCompletion={handleToggleCompletion}
-                onTakeQuiz={showQuiz}
-                onBackToModule={handleBackToModule}
-                isEnrolled={effectiveIsEnrolled}
-                previewVideoUrl={lessonData.previewVideoUrl}
-                courseData={lessonData}
-                progress={progress || { courseProgress: 0 }}
-                isModuleAccessible={isModuleAccessible}
-              />
-            </div>
+                         <div className="mt-4 w-full lg:mt-0 lg:w-1/3 lg:pl-4">
+               <CourseSidebar
+                 modules={lessonData.modules}
+                 activeModule={activeModule}
+                 activeVideoId={activeVideoId}
+                 completedItems={completedItems}
+                 moduleQuizCompleted={moduleQuizCompleted}
+                 currentModuleCompleted={currentModuleCompleted}
+                 showModuleQuiz={quizState.showModuleQuiz}
+                 onSelectItem={handleSelectItem}
+                 onToggleCompletion={handleToggleCompletion}
+                 onTakeQuiz={showQuiz}
+                 onBackToModule={handleBackToModule}
+                 isEnrolled={effectiveIsEnrolled}
+                 previewVideoUrl={lessonData.previewVideoUrl}
+                 courseData={lessonData}
+                 progress={progress || { courseProgress: 0 }}
+                 isModuleAccessible={isModuleAccessible}
+                 rewardData={rewardData}
+               />
+             </div>
           </div>
         </div>
       </main>
+
+      {/* Reward Modal */}
+      <RewardModal
+        isOpen={showRewardModal}
+        onClose={() => setShowRewardModal(false)}
+        rewardData={rewardData}
+      />
 
     </div>
   )

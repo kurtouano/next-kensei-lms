@@ -480,7 +480,8 @@ export function useProgress(slug) {
     courseProgress: 0,
     status: 'not_started',
     isCompleted: false,
-    lessonProgress: []
+    lessonProgress: [],
+    rewardData: null
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -522,7 +523,8 @@ export function useProgress(slug) {
           courseProgress: data.progress.courseProgress || 0,
           status: data.progress.status || 'not_started',
           isCompleted: data.progress.isCompleted || false,
-          lessonProgress: data.progress.lessonProgress || []
+          lessonProgress: data.progress.lessonProgress || [],
+          rewardData: data.progress.rewardData || null
         })
       } else {
         setError(data.error)
@@ -532,7 +534,8 @@ export function useProgress(slug) {
           courseProgress: 0,
           status: 'not_started',
           isCompleted: false,
-          lessonProgress: []
+          lessonProgress: [],
+          rewardData: null
         })
       }
       setInitializationState('completed')
@@ -546,7 +549,8 @@ export function useProgress(slug) {
         courseProgress: 0,
         status: 'not_started',
         isCompleted: false,
-        lessonProgress: []
+        lessonProgress: [],
+        rewardData: null
       })
     } finally {
       setLoading(false)
@@ -566,7 +570,8 @@ export function useProgress(slug) {
         courseProgress: 0,
         status: 'not_started',
         isCompleted: false,
-        lessonProgress: []
+        lessonProgress: [],
+        rewardData: null
       }
     }
     
@@ -574,7 +579,8 @@ export function useProgress(slug) {
       ...progress,
       completedLessons: progress.completedLessons || [],
       completedModules: progress.completedModules || [],
-      lessonProgress: progress.lessonProgress || []
+      lessonProgress: progress.lessonProgress || [],
+      rewardData: progress.rewardData || null
     }
   }, [progress, isFullyInitialized])
 

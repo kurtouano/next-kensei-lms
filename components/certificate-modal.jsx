@@ -587,38 +587,38 @@ export function CertificateModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-2xl max-h-[85vh] overflow-auto rounded-xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-sm sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-auto rounded-xl bg-white shadow-2xl">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white">
-          <div className="flex items-center justify-between py-6 px-8">
+          <div className="flex items-center justify-between py-4 sm:py-6 px-4 sm:px-8">
             <div>
-              <h2 className="text-xl font-bold">Certificate of Completion</h2>
-              <p className="text-sm opacity-90 mt-1">Jotatsu - Japanese Language Learning Academy</p>
+              <h2 className="text-lg sm:text-xl font-bold">Certificate of Completion</h2>
+              <p className="text-xs sm:text-sm opacity-90 mt-1">Jotatsu - Japanese Language Learning Academy</p>
             </div>
             <button
               onClick={onClose}
-              className="rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-colors"
+              className="rounded-full bg-white/20 p-1.5 sm:p-2 text-white hover:bg-white/30 transition-colors"
               disabled={downloading || viewing}
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-4 sm:p-8">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="h-12 w-12 animate-spin text-[#4a7c59] mb-4" />
-              <span className="text-lg text-[#5c6d5e]">Loading your certificate...</span>
-              <p className="text-sm text-[#6b8e6b] mt-2">Please wait while we prepare your certificate</p>
+            <div className="flex flex-col items-center justify-center py-8 sm:py-16">
+              <Loader2 className="h-8 w-8 sm:h-12 sm:w-12 animate-spin text-[#4a7c59] mb-3 sm:mb-4" />
+              <span className="text-base sm:text-lg text-[#5c6d5e] text-center">Loading your certificate...</span>
+              <p className="text-xs sm:text-sm text-[#6b8e6b] mt-2 text-center">Please wait while we prepare your certificate</p>
             </div>
           ) : error ? (
-            <div className="text-center py-16">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-                <p className="text-red-600 mb-4 font-medium">{error}</p>
-                <Button onClick={fetchCertificateData} variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
+            <div className="text-center py-8 sm:py-16">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-6 max-w-md mx-auto">
+                <p className="text-red-600 mb-3 sm:mb-4 font-medium text-sm sm:text-base">{error}</p>
+                <Button onClick={fetchCertificateData} variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 text-sm">
                   Try Again
                 </Button>
               </div>
@@ -626,28 +626,28 @@ export function CertificateModal({
           ) : certificateData ? (
             <>
               {/* Certificate Success Message */}
-              <div className="text-center mb-6">
-                <p className="text-[#5c6d5e] mb-1">You have successfully completed</p>
-                <p className="text-lg font-semibold text-[#4a7c59]">"{certificateData.courseTitle}"</p>
+              <div className="text-center mb-4 sm:mb-6">
+                <p className="text-[#5c6d5e] mb-1 text-sm sm:text-base">You have successfully completed</p>
+                <p className="text-base sm:text-lg font-semibold text-[#4a7c59]">"{certificateData.courseTitle}"</p>
               </div>
 
               {/* Action buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-4 sm:mb-6">
                 <Button 
                   onClick={handleView} 
                   size="lg"
                   variant="outline"
-                  className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb] px-8 py-3"
+                  className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb] px-4 sm:px-8 py-2 sm:py-3 text-sm sm:text-base"
                   disabled={viewing || downloading}
                 >
                   {viewing ? (
                     <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                       Opening...
                     </>
                   ) : (
                     <>
-                      <ExternalLink className="mr-2 h-5 w-5" />
+                      <ExternalLink className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                       View Certificate
                     </>
                   )}
@@ -656,17 +656,17 @@ export function CertificateModal({
                 <Button 
                   onClick={handleDownload} 
                   size="lg"
-                  className="bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white hover:from-[#3a6147] hover:to-[#5a7a5a] px-8 py-3"
+                  className="bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white hover:from-[#3a6147] hover:to-[#5a7a5a] px-4 sm:px-8 py-2 sm:py-3 text-sm sm:text-base"
                   disabled={downloading || viewing}
                 >
                   {downloading ? (
                     <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                       Downloading...
                     </>
                   ) : (
                     <>
-                      <Download className="mr-2 h-5 w-5" />
+                      <Download className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                       Download Certificate
                     </>
                   )}
@@ -683,7 +683,7 @@ export function CertificateModal({
 
               {/* Profile link */}
               <div className="text-center">
-                <p className="text-sm text-[#6b8e6b]">
+                <p className="text-xs sm:text-sm text-[#6b8e6b]">
                   You can also view all your certificates anytime in your{" "}
                   <a 
                     href="/profile?tab=certifications" 

@@ -2,6 +2,7 @@
 import { memo, useCallback, useMemo, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { CertificateModal } from "@/components/certificate-modal"
+import { RewardModal } from "@/components/RewardModal"
 import { 
   CheckCircle2, 
   PlayCircle, 
@@ -13,7 +14,9 @@ import {
   ChevronLeft,
   Play,
   Award,
-  Loader2
+  Loader2,
+  Gift,
+  Coins
 } from "lucide-react"
 
 export const CourseSidebar = memo(function CourseSidebar({
@@ -31,11 +34,13 @@ export const CourseSidebar = memo(function CourseSidebar({
   isEnrolled,
   previewVideoUrl,
   courseData,
-  progress
+  progress,
+  rewardData
 }) {
   const [claimingCertificate, setClaimingCertificate] = useState(false)
   const [showCertificateModal, setShowCertificateModal] = useState(false)
   const [hasCertificate, setHasCertificate] = useState(false)
+  const [showRewardModal, setShowRewardModal] = useState(false)
 
   const totalItems = useMemo(() => 
     modules.flatMap(m => m.items).length,
@@ -83,7 +88,14 @@ const isModuleAccessible = useCallback((moduleIndex) => {
     if (isCourseCompleted && courseData?.id) {
       checkExistingCertificate()
     }
-  }, [isCourseCompleted, courseData?.id])
+  }, [isCourseCompleted, courseData?.id, progress])
+
+  // Check certificate status immediately when component loads with completed course
+  useEffect(() => {
+    if (isCourseCompleted && courseData?.id && progress?.isCompleted) {
+      checkExistingCertificate()
+    }
+  }, [courseData?.id, progress?.isCompleted])
 
   const checkExistingCertificate = async () => {
     try {
@@ -214,6 +226,8 @@ const isModuleAccessible = useCallback((moduleIndex) => {
         ))}
       </div>
 
+
+
       {/* Certificate Section - Only show for logged in users */}
       {isEnrolled && (
         <div className="border-t border-[#dce4d7] p-4 bg-gradient-to-r from-[#eef2eb] to-white">
@@ -234,33 +248,24 @@ const isModuleAccessible = useCallback((moduleIndex) => {
                   }
                 </p>
                 
-                {hasCertificate ? (
+                <Button 
+                  size="sm" 
+                  className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+                  onClick={handleViewCertificate}
+                >
+                  <Award className="mr-2 h-4 w-4" />
+                  View Certificate
+                </Button>
+                
+                {/* View Course Rewards Button */}
+                {rewardData && (
                   <Button 
                     size="sm" 
-                    className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
-                    onClick={handleViewCertificate}
+                    className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147] mt-2"
+                    onClick={() => setShowRewardModal(true)}
                   >
-                    <Award className="mr-2 h-4 w-4" />
-                    View Certificate
-                  </Button>
-                ) : (
-                  <Button 
-                    size="sm" 
-                    className="w-full bg-[#4a7c59] text-white hover:bg-[#3a6147]"
-                    onClick={handleClaimCertificate}
-                    disabled={claimingCertificate}
-                  >
-                    {claimingCertificate ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Award className="mr-2 h-4 w-4" />
-                        Claim Certificate
-                      </>
-                    )}
+                    <Gift className="mr-2 h-4 w-4" />
+                    View Course Rewards
                   </Button>
                 )}
               </>
@@ -288,6 +293,13 @@ const isModuleAccessible = useCallback((moduleIndex) => {
         isOpen={showCertificateModal}
         onClose={() => setShowCertificateModal(false)}
         courseId={courseData?.id}
+      />
+
+      {/* Reward Modal */}
+      <RewardModal
+        isOpen={showRewardModal}
+        onClose={() => setShowRewardModal(false)}
+        rewardData={rewardData}
       />
 
       {/* Enrollment prompt in sidebar for non-enrolled users */}

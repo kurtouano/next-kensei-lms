@@ -120,7 +120,12 @@ export async function PUT(request, { params }) {
         console.log('🏆 Course completed!')
         
         // Handle course completion rewards
-        await handleCourseCompletionRewards(user, course)
+        const rewardData = await handleCourseCompletionRewards(user, course)
+        
+        // Store reward data in progress record
+        if (rewardData) {
+          progress.rewardData = rewardData
+        }
       } else if (passedModules.length > 0) {
         progress.status = 'in_progress'
       } else {
@@ -151,7 +156,8 @@ export async function PUT(request, { params }) {
           completedAt: module.completedAt
         })),
       courseStatus: progress.status,
-      isCompleted: progress.isCompleted
+      isCompleted: progress.isCompleted,
+      rewardData: rewardData || null
     })
   } catch (error) {
     console.error('Error updating module progress:', error)
@@ -207,7 +213,8 @@ export async function GET(request, { params }) {
           completedAt: module.completedAt
         })),
       courseStatus: progress.status,
-      isCompleted: progress.isCompleted
+      isCompleted: progress.isCompleted,
+      rewardData: progress.rewardData || null
     })
   } catch (error) {
     console.error('Error fetching module progress:', error)
@@ -355,11 +362,17 @@ async function handleCourseCompletionRewards(user, course) {
     
     let totalCreditsEarned = 0
     let itemReward = null
+    let rewardData = {
+      creditsEarned: 0,
+      itemsEarned: [],
+      courseTitle: course.title
+    }
     
     // 1. Give credit reward if course has one
     if (course.creditReward > 0) {
       user.credits += course.creditReward
       totalCreditsEarned += course.creditReward
+      rewardData.creditsEarned += course.creditReward
       console.log(`💰 Added ${course.creditReward} credits from course reward`)
     }
     
@@ -392,6 +405,11 @@ async function handleCourseCompletionRewards(user, course) {
         })
         await bonsai.save()
         itemReward = randomItems
+        rewardData.itemsEarned = randomItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          image: item.image
+        }))
         console.log(`🎁 Gave 2 random items: ${randomItems.map(item => item.name).join(', ')}`)
       } else if (availableItems.length === 1) {
         // Only 1 item available, give that + credits
@@ -401,11 +419,18 @@ async function handleCourseCompletionRewards(user, course) {
         itemReward = [randomItem]
         user.credits += 150 // Give half the credits since only 1 item
         totalCreditsEarned += 150
+        rewardData.creditsEarned += 150
+        rewardData.itemsEarned = [{
+          id: randomItem.id,
+          name: randomItem.name,
+          image: randomItem.image
+        }]
         console.log(`🎁 Gave 1 random item: ${randomItem.name} + 150 credits`)
       } else {
         // User owns all items, give 300 credits instead
         user.credits += 300
         totalCreditsEarned += 300
+        rewardData.creditsEarned += 300
         console.log('🎁 User owns all items, gave 300 credits instead')
       }
     }
@@ -415,8 +440,11 @@ async function handleCourseCompletionRewards(user, course) {
     
     console.log(`✅ Course completion rewards processed: ${totalCreditsEarned} credits${itemReward ? ` + ${Array.isArray(itemReward) ? itemReward.map(item => item.name).join(', ') : itemReward.name}` : ''}`)
     
+    return rewardData
+    
   } catch (error) {
     console.error('❌ Error processing course completion rewards:', error)
     // Don't fail the course completion if rewards fail
+    return null
   }
 }

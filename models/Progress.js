@@ -48,6 +48,15 @@ const ProgressSchema = new mongoose.Schema( // Individual Progress Record for a 
       type: Date,
       default: Date.now,
     },
+    rewardData: {
+      creditsEarned: { type: Number, default: 0 },
+      itemsEarned: [{ 
+        id: String,
+        name: String,
+        image: String
+      }],
+      courseTitle: String
+    },
   },
   { timestamps: true },
 )

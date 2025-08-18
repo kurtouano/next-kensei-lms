@@ -81,7 +81,8 @@ export async function GET(request, { params }) {
           currentTime: lp.currentTime || 0,
           isCompleted: lp.isCompleted || false,
           completedAt: lp.completedAt
-        }))
+        })),
+        rewardData: progress.rewardData || null
       }
     })
   } catch (error) {
