@@ -53,7 +53,7 @@ export async function POST(req) {
       instructor: session.user.id,
       price: courseInfo.price || 0,
       creditReward: courseInfo.creditReward || 0,
-      itemsReward: courseInfo.itemsReward || [],
+      randomReward: courseInfo.randomReward || false,
       tags: courseInfo.tags || [],
       isPublished: courseInfo.isPublished || false,
       modules: [] // Will be populated after module creation

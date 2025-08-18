@@ -34,7 +34,7 @@ export const useSubmission = (courseData, modules, validateForm, setCurrentStep,
         isPublished: !isDraft,
         tags: courseData.tags.filter(tag => tag.trim() !== ''),
         highlights: courseData.highlights.filter(h => h.description.trim() !== ''),
-        itemsReward: courseData.itemsReward.filter(item => item && item.trim() !== ''),
+        randomReward: courseData.randomReward || false,
       }
 
       // Choose endpoint based on edit mode

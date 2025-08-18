@@ -7,6 +7,7 @@ import { connectDb } from "@/lib/mongodb"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { NextResponse } from "next/server"
+import mongoose from "mongoose"
 
 export async function GET(req, { params }) {
   try {
@@ -70,9 +71,7 @@ export async function GET(req, { params }) {
       previewVideoUrl: course.previewVideoUrl,
       price: course.price || 0,
       creditReward: course.creditReward || 0,
-      itemsReward: course.itemsReward && course.itemsReward.length > 0 
-        ? course.itemsReward 
-        : [""],
+      randomReward: course.randomReward || false,
       tags: course.tags && course.tags.length > 0 
         ? course.tags 
         : [""],
@@ -210,7 +209,7 @@ export async function PUT(req, { params }) {
       thumbnail: courseInfo.thumbnail,
       price: courseInfo.price || 0,
       creditReward: courseInfo.creditReward || 0,
-      itemsReward: courseInfo.itemsReward || [],
+      randomReward: courseInfo.randomReward || false,
       tags: courseInfo.tags || [],
       isPublished: courseInfo.isPublished || false,
     })

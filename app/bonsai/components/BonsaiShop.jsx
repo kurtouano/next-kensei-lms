@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ShoppingBag, Eye, Sparkles, Crown } from "lucide-react"
 import { BonsaiSVG } from "./BonsaiSVG"
@@ -24,10 +24,34 @@ export const BonsaiShop = ({
 }) => {
   const [shopCategory, setShopCategory] = useState("all")
 
-  // ✅ CLEAN: Get shop items from centralized config
-  const allShopItems = useMemo(() => {
-    return getPurchasableItems(bonsaiData?.ownedItems || []);
-  }, [bonsaiData?.ownedItems]);
+  // ✅ CLEAN: Get shop items from centralized config with course reward status
+  const [allShopItems, setAllShopItems] = useState([]);
+  const [loadingShopItems, setLoadingShopItems] = useState(true);
+
+  // Fetch shop items (simplified - no course reward logic needed)
+  useEffect(() => {
+    const fetchShopItems = async () => {
+      if (!bonsaiData?.userRef) return;
+      
+      try {
+        setLoadingShopItems(true);
+        // Get purchasable items (excluding free/unlocked/owned ones)
+        const response = await fetch(`/api/bonsai/shop-items?purchasable=true&owned=${bonsaiData.ownedItems.join(',')}`);
+        if (response.ok) {
+          const data = await response.json();
+          setAllShopItems(data.items || []);
+        }
+      } catch (error) {
+        console.error('Error fetching shop items:', error);
+        // Fallback to local function
+        setAllShopItems(getPurchasableItems(bonsaiData?.ownedItems || []));
+      } finally {
+        setLoadingShopItems(false);
+      }
+    };
+
+    fetchShopItems();
+  }, [bonsaiData?.userRef, bonsaiData?.ownedItems]);
 
   // ✅ NEW: Function to get the pot style for preview
   const getPotStyle = () => {
@@ -63,8 +87,9 @@ export const BonsaiShop = ({
     setPreviewItem(null)
   }
 
-  // ✅ Purchase item function (unchanged)
+  // ✅ Purchase item function (simplified - no course reward logic needed)
   const purchaseItem = async (item) => {
+
     if (credits < item.credits) {
       alert("Not enough credits to purchase this item!")
       return

@@ -362,9 +362,13 @@ export const getPurchasableItems = (userOwnedItems = []) => {
     if (item.credits === 0 || item.unlocked) return false;
     
     // Hide if user already owns the item
-    return !userOwnedItems.includes(item.id);
+    if (userOwnedItems.includes(item.id)) return false;
+    
+    return true;
   });
 };
+
+
 
 export const getItemsByCategory = (category) => {
   return getAllShopItems().filter(item => 

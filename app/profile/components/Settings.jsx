@@ -65,8 +65,7 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
   }
 
   const handleLogout = async () => {
-    await signOut()
-    router.push('/')
+    await signOut({ callbackUrl: '/' })
   }
 
   const handleEditModeToggle = () => {

@@ -13,7 +13,7 @@ const initialCourseData = {
   previewVideoUrl: "", 
   price: 0,
   creditReward: 0,
-  itemsReward: [""],
+  randomReward: false,
   tags: [""],
   isPublished: false,
 }
@@ -22,7 +22,6 @@ const initialCourseData = {
 const LIMITS = {
   highlights: 4,
   tags: 5,
-  itemsReward: 3
 }
 
 export const useCourseData = () => {

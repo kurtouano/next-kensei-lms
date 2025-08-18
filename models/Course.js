@@ -56,12 +56,10 @@ const CourseSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    itemsReward: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ShopItem", 
-      }
-    ],
+    randomReward: {
+      type: Boolean,
+      default: false,
+    },
     modules: [ // Module Schema Ref
       {
        type: mongoose.Schema.Types.ObjectId,

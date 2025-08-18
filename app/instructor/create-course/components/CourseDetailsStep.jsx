@@ -3,6 +3,7 @@ import { memo, useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, LoaderCircle } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 // Reusable components
 import FileUploadInput from "./FileUploadInput"
@@ -19,29 +20,12 @@ const CourseDetailsStep = memo(({
   showValidation,
   renderValidationError 
 }) => {
-  const [shopItems, setShopItems] = useState([])
-
-  // Load shop items on mount
-  useEffect(() => {
-    const fetchShopItems = async () => {
-      try {
-        const response = await fetch('/api/bonsai/shop-items')
-        if (response.ok) {
-          const data = await response.json()
-          setShopItems(data)
-        }
-      } catch (error) {
-        console.error('Error fetching shop items:', error)
-      }
-    }
-    fetchShopItems()
-  }, [])
+  const { user } = useAuth()
 
   // Constants for limits
   const LIMITS = {
     highlights: 3,
     tags: 5,
-    itemsReward: 3
   }
 
   // File upload handlers
@@ -71,10 +55,6 @@ const CourseDetailsStep = memo(({
   const addTag = () => updateCourseArray('tags', null, "", 'add')
   const updateTag = (index, value) => updateCourseArray('tags', index, value)
   const removeTag = (index) => updateCourseArray('tags', index, null, 'remove')
-
-  const addItemReward = () => updateCourseArray('itemsReward', null, "", 'add')
-  const updateItemReward = (index, value) => updateCourseArray('itemsReward', index, value)
-  const removeItemReward = (index) => updateCourseArray('itemsReward', index, null, 'remove')
 
   return (
     <Card>
@@ -182,46 +162,29 @@ const CourseDetailsStep = memo(({
             />
           </div>
 
-          {/* Item Rewards */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Item Rewards (Max {LIMITS.itemsReward})</label>
-            {courseData.itemsReward.map((reward, index) => (
-              <div key={index} className="flex gap-2">
-                <select
-                  className="flex-1 rounded-md border border-gray-300 p-2"
-                  value={reward}
-                  onChange={(e) => updateItemReward(index, e.target.value)}
-                >
-                  <option value="">Select a reward item</option>
-                  {shopItems.map((item) => (
-                    <option key={item._id} value={item._id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => removeItemReward(index)}
-                  disabled={courseData.itemsReward.length === 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
+          {/* Random Item Reward */}
+          <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={addItemReward}
-                disabled={courseData.itemsReward.length >= LIMITS.itemsReward}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add Item Reward
-              </Button>
-              <span className="text-sm text-gray-500">
-                ({courseData.itemsReward.length}/{LIMITS.itemsReward})
-              </span>
+              <label className="text-sm font-medium">Random Item Reward</label>
+              <div className="group relative">
+                <span className="cursor-help text-gray-500 hover:text-gray-700 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-full w-5 h-5 flex items-center justify-center font-bold">?</span>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                  Students will receive 2 random items upon course completion. If they own all items, they'll get 300 credits instead.
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="randomReward"
+                className="rounded border-gray-300 w-6 h-6"
+                checked={courseData.randomReward || false}
+                onChange={(e) => updateCourseData("randomReward", e.target.checked)}
+              />
+              <label htmlFor="randomReward" className="text-sm text-gray-700">
+                Random 2 items reward
+              </label>
             </div>
           </div>
         </div>

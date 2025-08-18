@@ -118,6 +118,9 @@ export async function PUT(request, { params }) {
         progress.isCompleted = true
         progress.completedAt = new Date()
         console.log('🏆 Course completed!')
+        
+        // Handle course completion rewards
+        await handleCourseCompletionRewards(user, course)
       } else if (passedModules.length > 0) {
         progress.status = 'in_progress'
       } else {
@@ -343,4 +346,77 @@ async function ensureAllContentInProgress(progress, course) {
   }
   
   return progress
+}
+
+// Handle course completion rewards (credits and random items)
+async function handleCourseCompletionRewards(user, course) {
+  try {
+    console.log('🎁 Processing course completion rewards for:', course.title)
+    
+    let totalCreditsEarned = 0
+    let itemReward = null
+    
+    // 1. Give credit reward if course has one
+    if (course.creditReward > 0) {
+      user.credits += course.creditReward
+      totalCreditsEarned += course.creditReward
+      console.log(`💰 Added ${course.creditReward} credits from course reward`)
+    }
+    
+    // 2. Handle random item reward if enabled
+    if (course.randomReward) {
+      // Get user's bonsai data to check owned items
+      const Bonsai = (await import('@/models/Bonsai')).default
+      let bonsai = await Bonsai.findOne({ userRef: user._id })
+      
+      if (!bonsai) {
+        // Create bonsai if it doesn't exist
+        bonsai = new Bonsai({ userRef: user._id })
+        await bonsai.save()
+      }
+      
+      // Get all shop items and filter out owned/unlocked ones
+      const { getAllShopItems } = await import('@/components/bonsai/shopItems.js')
+      const allItems = getAllShopItems()
+      const availableItems = allItems.filter(item => 
+        !item.unlocked && !bonsai.ownedItems.includes(item.id)
+      )
+      
+      if (availableItems.length >= 2) {
+        // Give 2 random different items
+        const shuffledItems = [...availableItems].sort(() => Math.random() - 0.5)
+        const randomItems = shuffledItems.slice(0, 2)
+        
+        randomItems.forEach(item => {
+          bonsai.ownedItems.push(item.id)
+        })
+        await bonsai.save()
+        itemReward = randomItems
+        console.log(`🎁 Gave 2 random items: ${randomItems.map(item => item.name).join(', ')}`)
+      } else if (availableItems.length === 1) {
+        // Only 1 item available, give that + credits
+        const randomItem = availableItems[0]
+        bonsai.ownedItems.push(randomItem.id)
+        await bonsai.save()
+        itemReward = [randomItem]
+        user.credits += 150 // Give half the credits since only 1 item
+        totalCreditsEarned += 150
+        console.log(`🎁 Gave 1 random item: ${randomItem.name} + 150 credits`)
+      } else {
+        // User owns all items, give 300 credits instead
+        user.credits += 300
+        totalCreditsEarned += 300
+        console.log('🎁 User owns all items, gave 300 credits instead')
+      }
+    }
+    
+    // Save user changes
+    await user.save()
+    
+    console.log(`✅ Course completion rewards processed: ${totalCreditsEarned} credits${itemReward ? ` + ${Array.isArray(itemReward) ? itemReward.map(item => item.name).join(', ') : itemReward.name}` : ''}`)
+    
+  } catch (error) {
+    console.error('❌ Error processing course completion rewards:', error)
+    // Don't fail the course completion if rewards fail
+  }
 }

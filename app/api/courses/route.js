@@ -3,7 +3,6 @@ import { connectDb } from "@/lib/mongodb"
 import Course from "@/models/Course"
 import Module from "@/models/Module"
 import Lesson from "@/models/Lesson"
-import ShopItem from "@/models/ShopItem"
 
 export async function GET() {
   await connectDb()
@@ -16,7 +15,7 @@ export async function GET() {
           path: "lessons",
         },
       })
-      .populate("itemsReward")
+
       .populate({
         path: "instructor",
         select: "name image icon email"
@@ -46,10 +45,8 @@ export async function GET() {
         creditReward: course.creditReward || 0,
         credits: course.creditReward || 0, // Backward compatibility
         
-        // Items reward - handle both populated and non-populated cases
-        itemsReward: course.itemsReward?.map(item => 
-          typeof item === 'object' ? item.name : item
-        ) || [],
+        // Random reward flag
+        randomReward: course.randomReward || false,
         
         // Course structure
         modules: totalModules,
