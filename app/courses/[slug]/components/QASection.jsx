@@ -231,7 +231,7 @@ export const QASection = memo(function QASection({
               <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
                 <Button
                   variant="outline"
-                  className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                  className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb] w-full sm:w-auto"
                   onClick={handleLoadMore}
                   disabled={loadingMore}
                 >
@@ -309,36 +309,40 @@ const QAHeader = memo(function QAHeader({
 }) {
   return (
     <div className="border-b border-[#dce4d7] pb-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <h3 className="font-medium text-[#2c3e2d]">Questions & Answers</h3>
-          <span className="text-sm text-[#5c6d5e]">
-            {loadedQuestions > 0 && loadedQuestions !== totalQuestions 
-              ? `${loadedQuestions} of ${totalQuestions} questions`
-              : `${totalQuestions} questions`
-            }
-          </span>
+      <div className="flex items-center justify-between flex-col sm:flex-row">
+        <div className="flex w-full sm:w-max justify-between gap-4 min-w-0 pb-4 sm:pb-0"> 
+          <h3 className="text-sm sm:text-base font-medium text-[#2c3e2d]">Questions & Answers</h3>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs sm:text-sm text-[#5c6d5e] whitespace-nowrap">
+              {loadedQuestions > 0 && loadedQuestions !== totalQuestions 
+                ? `${loadedQuestions} of ${totalQuestions} questions`
+                : `${totalQuestions} questions`
+              }
+            </span>
+          </div>
         </div>
         
         {isLoggedIn && isEnrolled && !showForm && (
-          <Button
-            variant="outline"
-            className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
-            onClick={onAskQuestion}
-          >
-            <MessageCircle className="mr-2 h-4 w-4" />
-            Ask a Question
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto sm:flex-shrink-0">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto border-[#4a7c59] text-[#4a7c59]"
+              onClick={onAskQuestion}
+            >
+              <MessageCircle className="mr-2 h-4 w-4" />
+              Ask a Question
+            </Button>
+          </div>
         )}
       </div>
 
       {totalQuestions > 0 && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-4">
           <span className="text-sm text-[#5c6d5e]">Sort by:</span>
           <select
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value)}
-            className="text-sm border border-[#dce4d7] rounded px-2 py-1 bg-white focus:outline-none focus:border-[#4a7c59]"
+            className="text-sm border border-[#dce4d7] rounded px-2 py-1 bg-white focus:outline-none focus:border-[#4a7c59] w-full sm:w-auto"
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
@@ -424,9 +428,9 @@ const QuestionForm = memo(function QuestionForm({
         </p>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <Button
-          className="bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+          className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full sm:w-auto"
           onClick={onSubmitQuestion}
           disabled={!canSubmit}
         >
@@ -434,7 +438,7 @@ const QuestionForm = memo(function QuestionForm({
         </Button>
         <Button
           variant="outline"
-          className="border-[#4a7c59] text-[#4a7c59]"
+          className="border-[#4a7c59] text-[#4a7c59] w-full sm:w-auto"
           onClick={onCancelQuestion}
           disabled={submitting}
         >
@@ -603,7 +607,7 @@ const QuestionItem = memo(function QuestionItem({
             {question.question}
           </p>
 
-          <div className="flex items-center gap-4 text-sm mb-3">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm mb-3">
             <button
               className={`flex items-center gap-1 transition-colors ${
                 question.isLiked 
@@ -646,12 +650,12 @@ const QuestionItem = memo(function QuestionItem({
                 onChange={(e) => setCommentText(e.target.value)}
                 maxLength={500}
               />
-              <div className="flex justify-between items-center mt-2">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mt-2">
                 <span className="text-xs text-[#5c6d5e]">{commentText.length}/500</span>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     size="sm"
-                    className="bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+                    className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full sm:w-auto"
                     onClick={() => onSubmitComment(question.id)}
                     disabled={!commentText.trim()}
                   >
@@ -661,6 +665,7 @@ const QuestionItem = memo(function QuestionItem({
                   <Button
                     size="sm"
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={() => {
                       setReplyingTo(null)
                       setCommentText("")
@@ -755,8 +760,8 @@ const CommentItem = memo(function CommentItem({
         </div>
 
         <div className="flex-1 min-w-0"> {/* FIXED: Added min-w-0 for proper flex shrinking */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 min-w-0"> {/* FIXED: Added min-w-0 */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 min-w-0"> {/* FIXED: Added min-w-0 */}
               <h6 className="font-medium text-[#2c3e2d] text-sm truncate">{comment.user.name}</h6> {/* FIXED: Added truncate */}
               {comment.isInstructorReply && (
                 <span className="bg-[#4a7c59] text-white text-xs px-2 py-1 rounded-full flex-shrink-0">
@@ -766,7 +771,7 @@ const CommentItem = memo(function CommentItem({
               <span className="text-xs text-[#5c6d5e] whitespace-nowrap">{comment.createdAt}</span>
             </div>
             {comment.user.email === comment.currentUserEmail && (
-              <div className="flex gap-1 flex-shrink-0"> {/* FIXED: Added flex-shrink-0 */}
+              <div className="flex gap-1 flex-shrink-0 self-start sm:self-auto"> {/* FIXED: Added flex-shrink-0 */}
                 <Button
                   size="sm"
                   variant="outline"
@@ -796,12 +801,12 @@ const CommentItem = memo(function CommentItem({
                 onChange={(e) => setCommentText(e.target.value)}
                 maxLength={500}
               />
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <span className="text-xs text-[#5c6d5e]">{commentText.length}/500</span>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     size="sm"
-                    className="bg-[#4a7c59] text-white hover:bg-[#3a6147]"
+                    className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full sm:w-auto"
                     onClick={() => onUpdateComment(questionId, comment._id)}
                     disabled={!commentText.trim()}
                   >
@@ -810,6 +815,7 @@ const CommentItem = memo(function CommentItem({
                   <Button
                     size="sm"
                     variant="outline"
+                    className="w-full sm:w-auto"
                     onClick={onCancelEdit}
                   >
                     Cancel
