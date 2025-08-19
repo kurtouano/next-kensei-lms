@@ -682,9 +682,7 @@ export function useProgress(slug) {
 
   // ENHANCED: updateModuleProgress with better feedback
   const updateModuleProgress = useCallback(async (moduleId, quizScore) => {
-    if (!session?.user || !slug) return false
-    
-    console.log('📊 Updating module progress:', { moduleId, quizScore })
+    if (!session?.user || !slug) return { success: false, error: 'No auth' }
     
     try {
       const response = await fetch(`/api/courses/progress/${slug}/module-progress`, {
@@ -699,21 +697,26 @@ export function useProgress(slug) {
         if (data.updated) {
           setProgress(prev => ({
             ...prev,
-            completedModules: data.completedModules || []
+            completedModules: data.completedModules || [],
+            rewardData: data.rewardData || prev.rewardData
           }))
-          console.log('✅ Module progress updated successfully')
-        } else {
-          console.log('📊 Quiz completed but score not improved')
         }
-        return { success: true, updated: data.updated, message: data.message }
+        
+        return { 
+          success: true, 
+          updated: data.updated, 
+          message: data.message,
+          completedModules: data.completedModules,
+          rewardData: data.rewardData,
+          courseCompleted: data.courseCompleted,
+          isCompleted: data.isCompleted
+        }
       } else {
         setError(data.error)
-        console.error('❌ Failed to update module progress:', data.error)
         return { success: false, error: data.error }
       }
     } catch (err) {
       setError('Failed to update module progress')
-      console.error('❌ Error updating module progress:', err)
       return { success: false, error: 'Network error' }
     }
   }, [session, slug])
@@ -1052,11 +1055,7 @@ export function useQuiz(lessonData, activeModule, updateModuleProgress, moduleQu
       const moduleId = lessonData.modules[activeModule].id
       const result = await updateModuleProgress(moduleId, score)
       
-      if (result?.success && result?.updated) {
-        console.log('✅ Quiz score saved to database:', score)
-      } else if (result?.success && !result?.updated) {
-        console.log('📊 Quiz completed but score not saved (not an improvement)')
-      }
+      // The confetti and reward modal will be handled by the custom updateModuleProgress in the main page
     }
   }, [quizState.randomizedQuiz, quizState.selectedAnswers, currentQuiz, lessonData, activeModule, updateModuleProgress, calculateScore, existingScore])
 

@@ -107,6 +107,9 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Module not found in progress tracking' }, { status: 500 })
     }
 
+    // Initialize rewardData variable
+    let rewardData = null
+    
     // Only save if we made changes
     if (shouldUpdate) {
       // Update overall progress status
@@ -120,12 +123,14 @@ export async function PUT(request, { params }) {
         console.log('🏆 Course completed!')
         
         // Handle course completion rewards
-        const rewardData = await handleCourseCompletionRewards(user, course)
+        rewardData = await handleCourseCompletionRewards(user, course)
         
         // Store reward data in progress record
         if (rewardData) {
           progress.rewardData = rewardData
         }
+        
+
       } else if (passedModules.length > 0) {
         progress.status = 'in_progress'
       } else {
@@ -157,6 +162,7 @@ export async function PUT(request, { params }) {
         })),
       courseStatus: progress.status,
       isCompleted: progress.isCompleted,
+      courseCompleted: progress.isCompleted && wasUpdated, // ✅ Flag if course was just completed
       rewardData: rewardData || null
     })
   } catch (error) {
@@ -448,3 +454,4 @@ async function handleCourseCompletionRewards(user, course) {
     return null
   }
 }
+

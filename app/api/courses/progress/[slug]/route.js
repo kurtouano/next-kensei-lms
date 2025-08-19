@@ -181,10 +181,22 @@ export async function POST(request, { params }) {
     progress.courseProgress = courseProgress
     
     // Check if course is completed
+    const wasCompleted = progress.isCompleted
     if (progress.courseProgress === 100) {
       progress.isCompleted = true
       progress.status = 'completed'
       progress.completedAt = new Date()
+      
+      // 🆕 NEW: Automatically create certificate when course is completed via lesson progress
+      if (!wasCompleted) {
+        try {
+          await createCertificateForUser(user, course)
+          console.log('🎓 Certificate automatically created for course completion via lesson progress')
+        } catch (certError) {
+          console.error('❌ Error creating certificate:', certError)
+          // Don't fail the course completion if certificate creation fails
+        }
+      }
     } else if (progress.courseProgress > 0) {
       progress.status = 'in_progress'
     } else {
@@ -357,4 +369,49 @@ async function ensureAllContentInProgress(progress, course) {
   }
   
   return progress
+}
+
+// 🆕 NEW: Create certificate for user when course is completed
+async function createCertificateForUser(user, course) {
+  try {
+    console.log('🎓 Creating certificate for user:', user.name, 'course:', course.title)
+    
+    // Import Certificate model
+    const Certificate = (await import('@/models/Certificate')).default
+    
+    // Check if certificate already exists
+    const existingCertificate = await Certificate.findOne({
+      user: user._id,
+      course: course._id
+    })
+    
+    if (existingCertificate) {
+      console.log('✅ Certificate already exists for this user and course')
+      return existingCertificate
+    }
+    
+    // Generate certificate ID
+    const timestamp = Date.now().toString(36)
+    const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
+    const certificateId = `BONSAI-CERT-${timestamp}-${randomStr}`
+    
+    // Create new certificate
+    const newCertificate = new Certificate({
+      user: user._id,
+      course: course._id,
+      certificateId: certificateId,
+      courseTitle: course.title,
+      instructorName: course.instructor?.name || "Instructor",
+      completionDate: new Date()
+    })
+    
+    await newCertificate.save()
+    console.log('✅ Certificate created successfully:', certificateId)
+    
+    return newCertificate
+    
+  } catch (error) {
+    console.error('❌ Error creating certificate:', error)
+    throw error
+  }
 }

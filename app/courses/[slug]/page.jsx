@@ -22,6 +22,7 @@ import { ModuleCompleteNotif } from "./components/ModuleCompleteNotif"
 import { EnrollmentPrompt } from "./components/EnrollmentPrompt"
 import { InstructorPreviewToggle } from "./components/InstructorPreviewToggle"
 import { RewardModal } from "@/components/RewardModal"
+import { Confetti } from "@/components/Confetti"
 
 // ============ LOADING & ERROR LAYOUTS ============
 
@@ -148,14 +149,39 @@ export default function LessonPage() {
   const updateModuleProgress = useCallback(async (moduleId, quizScore) => {
     const result = await originalUpdateModuleProgress(moduleId, quizScore)
     
-    // Check if course was completed and rewards were given
-    if (result?.success && result?.rewardData) {
+    // Update local moduleQuizCompleted state immediately
+    if (result?.success && result?.completedModules) {
+      const updatedModuleQuizCompleted = result.completedModules.map(completedModule => {
+        const moduleIndex = lessonData?.modules?.findIndex(module => module.id === completedModule.moduleId)
+        return moduleIndex >= 0 ? {
+          moduleIndex,
+          moduleId: completedModule.moduleId,
+          quizScore: completedModule.quizScore,
+          completedAt: completedModule.completedAt
+        } : null
+      }).filter(Boolean)
+      
+      setModuleQuizCompleted(updatedModuleQuizCompleted)
+    }
+    
+    // Check for course completion and trigger rewards
+    if (result?.success && result?.courseCompleted && result?.rewardData) {
+      // Set reward data first
+      setRewardData(result.rewardData)
+      
+      // Small delay to ensure state is set, then trigger effects
+      setTimeout(() => {
+        setShowConfetti(true)
+        setShowRewardModal(true)
+      }, 100)
+    } else if (result?.success && result?.rewardData) {
       setRewardData(result.rewardData)
       setShowRewardModal(true)
+      setShowConfetti(true)
     }
     
     return result
-  }, [originalUpdateModuleProgress])
+  }, [originalUpdateModuleProgress, lessonData?.modules])
   
   // Only run like functionality if user is logged in
   const { likeState, toggleLike } = useCourseLike(
@@ -190,6 +216,9 @@ export default function LessonPage() {
   // Reward modal state
   const [showRewardModal, setShowRewardModal] = useState(false)
   const [rewardData, setRewardData] = useState(null)
+  
+  // Confetti state
+  const [showConfetti, setShowConfetti] = useState(false)
 
   const isModuleAccessible = useCallback((moduleIndex) => {
     if (!effectiveIsLoggedIn || !effectiveIsEnrolled) return false
@@ -613,6 +642,9 @@ export default function LessonPage() {
     if (quizState.score >= 70 || existingScore >= 70) {
       hideQuiz()
       
+      // No need to force refresh - the progress is already updated by updateModuleProgress
+      // The sidebar will update automatically when the progress state changes
+      
       if (lessonData?.modules?.[activeModule + 1]) {
         setActiveModule(prev => prev + 1)
         const firstVideo = lessonData.modules[activeModule + 1].items.find(item => item.type === "video")
@@ -804,9 +836,21 @@ export default function LessonPage() {
       {/* Reward Modal */}
       <RewardModal
         isOpen={showRewardModal}
-        onClose={() => setShowRewardModal(false)}
+        onClose={() => {
+          setShowRewardModal(false)
+          setShowConfetti(false) // Stop confetti when modal closes
+        }}
         rewardData={rewardData}
       />
+
+      {/* Confetti Animation */}
+      <Confetti 
+        isActive={showConfetti} 
+        duration={4000}
+        onComplete={() => setShowConfetti(false)}
+      />
+      
+
 
     </div>
   )
