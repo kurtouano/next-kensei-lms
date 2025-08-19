@@ -151,6 +151,10 @@ export default function BonsaiPage() {
       if (response.ok) {
         alert('Bonsai customization saved successfully!')
         await loadBonsaiData()
+        
+        // Dispatch events to notify header component to update profile icon
+        window.dispatchEvent(new CustomEvent('profile-updated'))
+        window.dispatchEvent(new CustomEvent('bonsai-updated'))
       } else {
         const errorData = await response.json()
         alert(`Failed to save: ${errorData.error}`)

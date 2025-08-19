@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { BonsaiIcon } from "@/components/bonsai-icon"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { BannerCropper } from "./BannerCropper"
 import { User, Award, BookOpen, Flag, Check, Loader2, Upload, Camera, Image, Plus, Trash2 } from "lucide-react"
 
@@ -272,7 +273,21 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
             <div className="flex flex-col sm:flex-row items-center sm:items-center">
               <div className="mb-2 sm:mb-0 sm:mr-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-2 sm:border-4 border-white shadow-lg">
                 {userData.icon ? (
-                  userData.icon.startsWith('http') ? (
+                                     userData.icon === 'bonsai' ? (
+                     <div className="h-full w-full flex items-center justify-center">
+                       <BonsaiSVG 
+                         level={userData.bonsai?.level || 1}
+                         treeColor={userData.bonsai?.customization?.foliageColor || '#77DD82'} 
+                         potColor={userData.bonsai?.customization?.potColor || '#FD9475'} 
+                         selectedEyes={userData.bonsai?.customization?.eyes || 'default_eyes'}
+                         selectedMouth={userData.bonsai?.customization?.mouth || 'default_mouth'}
+                         selectedPotStyle={userData.bonsai?.customization?.potStyle || 'default_pot'}
+                         selectedGroundStyle={userData.bonsai?.customization?.groundStyle || 'default_ground'}
+                         decorations={userData.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
+                         zoomed={true}
+                       />
+                     </div>
+                  ) : userData.icon.startsWith('http') ? (
                     <img 
                       src={userData.icon} 
                       alt="Profile" 

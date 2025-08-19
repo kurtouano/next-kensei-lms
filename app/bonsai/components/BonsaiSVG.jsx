@@ -14,6 +14,7 @@ export const BonsaiSVG = ({
   selectedPotStyle = "default_pot",
   selectedGroundStyle = "default_ground", 
   decorations = [],
+  zoomed = false,
   }) => {
 
   // Function to darken a color for shadows
@@ -74,7 +75,7 @@ export const BonsaiSVG = ({
   <div className="flex items-center justify-center w-full h-full">
     <svg 
       className="w-full h-full max-w-[370px] max-h-[450px]" 
-      viewBox="-25 0 500 500" 
+      viewBox={zoomed ? "150 250 150 150" : "-25 0 500 500"}
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
       preserveAspectRatio="xMidYMid meet"

@@ -6,15 +6,18 @@ import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Menu, X, User, Users } from "lucide-react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useSession } from "next-auth/react"
 import { useRoleAccess, RoleGuard } from "@/hooks/useRoleAccess"
 
-// Cache for user icon to persist across navigation
+// Cache for user icon and bonsai data to persist across navigation
 let cachedUserIcon = null;
+let cachedUserData = null;
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userIcon, setUserIcon] = useState(cachedUserIcon);
+  const [userData, setUserData] = useState(cachedUserData);
   const [iconLoading, setIconLoading] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -30,9 +33,9 @@ export function Header() {
     setIsMenuOpen(false);
   }, [pathname]);
 
-  // Fetch user profile data to get the icon
+  // Fetch user profile data to get the icon and bonsai data
   useEffect(() => {
-    const fetchUserIcon = async () => {
+    const fetchUserData = async () => {
       if (status === "authenticated") {
         if (!cachedUserIcon) {
           setIconLoading(true);
@@ -44,33 +47,48 @@ export function Header() {
           if (data.success) {
             const newIcon = data.user.icon || null;
             setUserIcon(newIcon);
+            setUserData(data.user);
             cachedUserIcon = newIcon;
+            cachedUserData = data.user;
           }
         } catch (error) {
-          console.error("Failed to fetch user icon:", error);
+          console.error("Failed to fetch user data:", error);
           setUserIcon(null);
+          setUserData(null);
           cachedUserIcon = null;
+          cachedUserData = null;
         } finally {
           setIconLoading(false);
         }
       } else {
         setUserIcon(null);
+        setUserData(null);
         cachedUserIcon = null;
+        cachedUserData = null;
         setIconLoading(false);
       }
     };
 
-    fetchUserIcon();
+    fetchUserData();
 
     const handleProfileUpdate = () => {
       cachedUserIcon = null;
-      fetchUserIcon();
+      cachedUserData = null;
+      fetchUserData();
+    };
+
+    const handleBonsaiUpdate = () => {
+      cachedUserIcon = null;
+      cachedUserData = null;
+      fetchUserData();
     };
 
     window.addEventListener('profile-updated', handleProfileUpdate);
+    window.addEventListener('bonsai-updated', handleBonsaiUpdate);
 
     return () => {
       window.removeEventListener('profile-updated', handleProfileUpdate);
+      window.removeEventListener('bonsai-updated', handleBonsaiUpdate);
     };
   }, [status]);
 
@@ -87,15 +105,33 @@ export function Header() {
     }
     
     if (userIcon) {
-      return userIcon.startsWith('http') ? (
-        <img 
-          src={userIcon} 
-          alt="Profile" 
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <span className="text-lg">{userIcon}</span>
-      );
+      if (userIcon === 'bonsai') {
+        return (
+          <div className="h-full w-full flex items-center justify-center">
+            <BonsaiSVG 
+              level={userData?.bonsai?.level || 1}
+              treeColor={userData?.bonsai?.customization?.foliageColor || '#77DD82'} 
+              potColor={userData?.bonsai?.customization?.potColor || '#FD9475'} 
+              selectedEyes={userData?.bonsai?.customization?.eyes || 'default_eyes'}
+              selectedMouth={userData?.bonsai?.customization?.mouth || 'default_mouth'}
+              selectedPotStyle={userData?.bonsai?.customization?.potStyle || 'default_pot'}
+              selectedGroundStyle={userData?.bonsai?.customization?.groundStyle || 'default_ground'}
+              decorations={userData?.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
+              zoomed={true}
+            />
+          </div>
+        );
+      } else if (userIcon.startsWith('http')) {
+        return (
+          <img 
+            src={userIcon} 
+            alt="Profile" 
+            className="h-full w-full object-cover"
+          />
+        );
+      } else {
+        return <span className="text-lg">{userIcon}</span>;
+      }
     }
     
     return <User size={18} className="text-[#4a7c59]" />;
@@ -107,15 +143,33 @@ export function Header() {
     }
     
     if (userIcon) {
-      return userIcon.startsWith('http') ? (
-        <img 
-          src={userIcon} 
-          alt="Profile" 
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <span className="text-sm">{userIcon}</span>
-      );
+      if (userIcon === 'bonsai') {
+        return (
+          <div className="h-full w-full flex items-center justify-center">
+            <BonsaiSVG 
+              level={userData?.bonsai?.level || 1}
+              treeColor={userData?.bonsai?.customization?.foliageColor || '#77DD82'} 
+              potColor={userData?.bonsai?.customization?.potColor || '#FD9475'} 
+              selectedEyes={userData?.bonsai?.customization?.eyes || 'default_eyes'}
+              selectedMouth={userData?.bonsai?.customization?.mouth || 'default_mouth'}
+              selectedPotStyle={userData?.bonsai?.customization?.potStyle || 'default_pot'}
+              selectedGroundStyle={userData?.bonsai?.customization?.groundStyle || 'default_ground'}
+              decorations={userData?.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
+              zoomed={true}
+            />
+          </div>
+        );
+      } else if (userIcon.startsWith('http')) {
+        return (
+          <img 
+            src={userIcon} 
+            alt="Profile" 
+            className="h-full w-full object-cover"
+          />
+        );
+      } else {
+        return <span className="text-sm">{userIcon}</span>;
+      }
     }
     
     return <User size={16} className="text-[#4a7c59]" />;

@@ -4,7 +4,8 @@
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { BonsaiIcon } from "@/components/bonsai-icon"
-import { Mail, LogOut, Loader2, Upload, Image } from "lucide-react"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
+import { Mail, LogOut, Loader2, Upload, Image, TreePine } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { compressImage } from '@/lib/imageCompression'
@@ -19,6 +20,7 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
     icon: userData.icon,
     banner: userData.banner
   })
+  const [useBonsaiAsIcon, setUseBonsaiAsIcon] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
   const [compressionStatus, setCompressionStatus] = useState('')
@@ -79,12 +81,23 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
       })
       onError("")
       setCompressionStatus('')
+      setUseBonsaiAsIcon(false)
     }
     setEditMode(!editMode)
   }
 
   const handleIconUploadClick = () => {
     fileInputRef.current?.click()
+  }
+
+  const handleUseBonsaiAsIcon = () => {
+    setUseBonsaiAsIcon(true)
+    setEditData(prev => ({ ...prev, icon: 'bonsai' }))
+  }
+
+  const handleRemoveBonsaiIcon = () => {
+    setUseBonsaiAsIcon(false)
+    setEditData(prev => ({ ...prev, icon: null }))
   }
 
   const handleIconUpload = async (event) => {
@@ -229,7 +242,21 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
             <div className="flex items-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-2 border-[#dce4d7]">
                 {editData.icon ? (
-                  editData.icon.startsWith('http') ? (
+                  editData.icon === 'bonsai' ? (
+                                         <div className="h-full w-full flex items-center justify-center">
+                       <BonsaiSVG 
+                         level={userData.bonsai?.level || 1}
+                         treeColor={userData.bonsai?.customization?.foliageColor || '#77DD82'} 
+                         potColor={userData.bonsai?.customization?.potColor || '#FD9475'} 
+                         selectedEyes={userData.bonsai?.customization?.eyes || 'default_eyes'}
+                         selectedMouth={userData.bonsai?.customization?.mouth || 'default_mouth'}
+                         selectedPotStyle={userData.bonsai?.customization?.potStyle || 'default_pot'}
+                         selectedGroundStyle={userData.bonsai?.customization?.groundStyle || 'default_ground'}
+                         decorations={userData.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
+                         zoomed={true}
+                       />
+                     </div>
+                  ) : editData.icon.startsWith('http') ? (
                     <img 
                       src={editData.icon} 
                       alt="Profile" 
@@ -255,7 +282,7 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
                     disabled={uploadingIcon}
                   />
                   
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {/* Upload button */}
                     <Button 
                       variant="outline" 
@@ -272,16 +299,36 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
                       Upload
                     </Button>
                     
-                    {/* Remove button */}
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
-                      onClick={() => setEditData(prev => ({ ...prev, icon: null }))}
-                      disabled={uploadingIcon}
-                    >
-                      Remove
-                    </Button>
+                    {/* Use My Bonsai button */}
+                    {userData.bonsai && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className={`${
+                          editData.icon === 'bonsai' 
+                            ? 'bg-[#4a7c59] text-white border-[#4a7c59]' 
+                            : 'border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]'
+                        }`}
+                        onClick={editData.icon === 'bonsai' ? handleRemoveBonsaiIcon : handleUseBonsaiAsIcon}
+                        disabled={uploadingIcon}
+                      >
+                        <TreePine className="mr-1 h-3 w-3" />
+                        {editData.icon === 'bonsai' ? 'Remove Bonsai' : 'Use My Bonsai'}
+                      </Button>
+                    )}
+                    
+                    {/* Remove button - only show if not using bonsai */}
+                    {editData.icon && editData.icon !== 'bonsai' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                        onClick={() => setEditData(prev => ({ ...prev, icon: null }))}
+                        disabled={uploadingIcon}
+                      >
+                        Remove
+                      </Button>
+                    )}
                   </div>
                   
                   {/* ✅ NEW: Compression Status */}
@@ -297,7 +344,7 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
             {/* Help text */}
             {!editMode && (
               <p className="text-xs text-[#5c6d5e] mt-2">
-                Click "Edit" above to change your personal details
+                Click "Edit" above to change your profile icon, banner, and personal details
               </p>
             )}
             

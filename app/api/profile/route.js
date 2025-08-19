@@ -107,7 +107,7 @@ export async function GET() {
                         potStyle: bonsai.customization?.potStyle || 'default_pot',
                         potColor: bonsai.customization?.potColor || '#FD9475',
                         groundStyle: bonsai.customization?.groundStyle || 'default_ground',
-                        decorations: bonsai.customization?.decorations || []
+                        decorations: bonsai.customization?.decorations || {}
                     },
                     ownedItems: bonsai.ownedItems || []
                 } : {
@@ -120,7 +120,7 @@ export async function GET() {
                         potStyle: 'default_pot',
                         potColor: '#FD9475',
                         groundStyle: 'default_ground',
-                        decorations: []
+                        decorations: {}
                     },
                     ownedItems: []
                 },

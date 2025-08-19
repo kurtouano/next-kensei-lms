@@ -63,7 +63,7 @@ export function MyProfile({ userData, certificates }) {
                     selectedMouth={userData.bonsai.customization?.mouth || 'default_mouth'}
                     selectedPotStyle={userData.bonsai.customization?.potStyle || 'default_pot'}
                     selectedGroundStyle={userData.bonsai.customization?.groundStyle || 'default_ground'}
-                    decorations={userData.bonsai.customization?.decorations || []}
+                    decorations={userData.bonsai.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
                   />
                 </div>
               </div>
