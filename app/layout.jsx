@@ -5,6 +5,7 @@ import { AuthProvider } from "./providers"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Analytics } from "@vercel/analytics/next"
+import { StructuredData } from "@/components/structured-data"
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
@@ -18,19 +19,120 @@ const poppins = Poppins({
 })
 
 export const metadata = {
-  title: "Jotatsu - Learn Japanese Online",
-  description: "Master Japanese with Jotatsu Academy's comprehensive online courses. From beginner basics to JLPT test prep, learn through interactive lessons, grammar drills, and real-world conversation practice. Join thousands of successful students.",
-  keywords: "learn Japanese online, Japanese course, JLPT test prep, Japanese grammar, hiragana katakana, Japanese conversation, N5 N4 N3 N2 N1, Japanese vocabulary, kanji learning, Japanese tutor online, speak Japanese fluently",
-  authors: [{ name: "Jotatsu" }],
-  robots: "index, follow",
+  title: "Learn Japanese Online - Hiragana, Katakana, Kanji & JLPT Prep | Jotatsu Academy",
+  description: "Master Japanese online with Jotatsu Academy! Learn hiragana, katakana, kanji, and JLPT N5-N1 preparation. Interactive lessons, grammar practice, and real conversation skills. Start your Japanese learning journey today with expert instructors.",
+  keywords: [
+    "learn Japanese online",
+    "Japanese course",
+    "hiragana learning",
+    "katakana practice", 
+    "kanji study",
+    "JLPT test prep",
+    "JLPT N5",
+    "JLPT N4",
+    "JLPT N3",
+    "JLPT N2",
+    "JLPT N1",
+    "Japanese grammar",
+    "Japanese vocabulary",
+    "Japanese conversation",
+    "Japanese pronunciation",
+    "Japanese writing",
+    "Japanese reading",
+    "Japanese speaking",
+    "Japanese listening",
+    "Japanese tutor online",
+    "Japanese language school",
+    "Japanese for beginners",
+    "Japanese intermediate",
+    "Japanese advanced",
+    "Japanese online course",
+    "Japanese learning app",
+    "Japanese study materials",
+    "Japanese practice exercises",
+    "Japanese language learning",
+    "Japanese culture",
+    "Japanese business",
+    "Japanese travel phrases",
+    "Japanese numbers",
+    "Japanese colors",
+    "Japanese family words",
+    "Japanese food vocabulary",
+    "Japanese time expressions",
+    "Japanese particles",
+    "Japanese verb conjugation",
+    "Japanese adjectives",
+    "Japanese honorifics",
+    "Japanese keigo"
+  ].join(", "),
+  authors: [{ name: "Jotatsu Academy", url: "https://jotatsu.com" }],
+  creator: "Jotatsu Academy",
+  publisher: "Jotatsu Academy",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   alternates: {
     canonical: "https://jotatsu.com"
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://jotatsu.com',
+    siteName: 'Jotatsu Academy',
+    title: 'Learn Japanese Online - Hiragana, Katakana, Kanji & JLPT Prep',
+    description: 'Master Japanese online with Jotatsu Academy! Learn hiragana, katakana, kanji, and JLPT preparation. Interactive lessons and expert instruction.',
+    images: [
+      {
+        url: 'https://jotatsu.com/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Learn Japanese Online with Jotatsu Academy',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Learn Japanese Online - Hiragana, Katakana, Kanji & JLPT Prep',
+    description: 'Master Japanese online with Jotatsu Academy! Interactive lessons and expert instruction.',
+    images: ['https://jotatsu.com/og-image.jpg'],
+    creator: '@jotatsu_academy',
+  },
+  category: 'Education',
+  classification: 'Japanese Language Learning',
+  other: {
+    'google-site-verification': 'your-verification-code-here',
+    'msvalidate.01': 'your-bing-verification-code-here',
   }
 }
 
 export default async function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <meta name="theme-color" content="#4a7c59" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Jotatsu Academy" />
+        <meta name="application-name" content="Jotatsu Academy" />
+        <meta name="msapplication-TileColor" content="#4a7c59" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+        
+        {/* Structured Data for SEO */}
+        <StructuredData type="organization" />
+        <StructuredData type="website" />
+      </head>
       <body className={`${notoSansJP.variable} ${poppins.variable} font-sans`}>
         <AuthProvider>
           <ThemeProvider attribute="class" defaultTheme="light">
