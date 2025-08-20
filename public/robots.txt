@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://jotatsu.com/sitemap.xml
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /instructor/
+Disallow: /dashboard/
+Disallow: /my-learning/
+Disallow: /profile/
+Disallow: /api/
+Disallow: /auth/
+
+# Allow important public pages
+Allow: /courses/
+Allow: /blogs/
+Allow: /about/
+Allow: /subscription/
+Allow: /users/
+Allow: /bonsai/
+
+# Crawl delay (optional - be respectful to your server)
+Crawl-delay: 1
