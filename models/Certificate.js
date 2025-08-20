@@ -48,7 +48,7 @@ CertificateSchema.pre('save', function(next) {
   if (!this.certificateId || this.certificateId === '') {
     const timestamp = Date.now().toString(36)
     const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase()
-    this.certificateId = `BONSAI-CERT-${timestamp}-${randomSuffix}`
+    this.certificateId = `jotatsu-${timestamp}-${randomSuffix}`
     console.log('🆔 Auto-generated certificate ID:', this.certificateId)
   }
   next()

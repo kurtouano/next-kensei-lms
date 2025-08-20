@@ -393,7 +393,7 @@ async function createCertificateForUser(user, course) {
     // Generate certificate ID
     const timestamp = Date.now().toString(36)
     const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
-    const certificateId = `BONSAI-CERT-${timestamp}-${randomStr}`
+    const certificateId = `jotatsu-${timestamp}-${randomStr}`
     
     // Create new certificate
     const newCertificate = new Certificate({

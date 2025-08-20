@@ -79,7 +79,7 @@ export async function GET(request, { params }) {
 function generateCertificateId() {
   const timestamp = Date.now().toString(36)
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
-  return `BONSAI-CERT-${timestamp}-${randomStr}`
+  return `jotatsu-${timestamp}-${randomStr}`
 }
 
 // POST - Create certificate for course completion
