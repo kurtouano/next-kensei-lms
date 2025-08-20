@@ -19,6 +19,7 @@ export default withAuth(
       '/contact',
       '/courses',
       '/blogs',   // ← Public blogs page (uses /api/blogs)
+      '/learn-japanese',  // ← Public learn Japanese page
       '/terms',
       '/privacy',
       '/unauthorized'  // ← Make sure unauthorized is public
@@ -172,6 +173,7 @@ export default withAuth(
           '/contact',
           '/courses',
           '/blogs',  // ← Public blogs page
+          '/learn-japanese',  // ← Public learn Japanese page
           '/terms',
           '/privacy',
           '/demo',
