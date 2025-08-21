@@ -152,32 +152,26 @@ function UsersPage() {
                   {/* User Header */}
                   <div className="flex items-center mb-4">
                                          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-2 border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden mr-3 sm:mr-4 flex-shrink-0">
-                       {user.icon ? (
-                         user.icon.startsWith('http') ? (
-                           <img 
-                             src={user.icon} 
-                             alt={user.name} 
-                             className="h-full w-full object-cover"
-                           />
-                         ) : user.icon === 'bonsai' ? (
-                           <div className="h-full w-full flex items-center justify-center">
-                             <BonsaiSVG 
-                               level={user.bonsai?.level || 1}
-                               treeColor={user.bonsai?.customization?.foliageColor || '#77DD82'} 
-                               potColor={user.bonsai?.customization?.potColor || '#FD9475'} 
-                               selectedEyes={user.bonsai?.customization?.eyes || 'default_eyes'}
-                               selectedMouth={user.bonsai?.customization?.mouth || 'default_mouth'}
-                               selectedPotStyle={user.bonsai?.customization?.potStyle || 'default_pot'}
-                               selectedGroundStyle={user.bonsai?.customization?.groundStyle || 'default_ground'}
-                               decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
-                               zoomed={true}
-                             />
-                           </div>
-                         ) : (
-                           <span className="text-lg sm:text-2xl">{user.icon}</span>
-                         )
+                       {user.icon && user.icon.startsWith('http') ? (
+                         <img 
+                           src={user.icon} 
+                           alt={user.name} 
+                           className="h-full w-full object-cover"
+                         />
                        ) : (
-                         <BonsaiIcon className="h-6 w-6 sm:h-8 sm:w-8 text-[#4a7c59]" />
+                                                   <div className="h-full w-full flex items-center justify-center">
+                            <BonsaiSVG 
+                              level={user.bonsai?.level || 1}
+                              treeColor={user.bonsai?.customization?.foliageColor} 
+                              potColor={user.bonsai?.customization?.potColor} 
+                              selectedEyes={user.bonsai?.customization?.eyes}
+                              selectedMouth={user.bonsai?.customization?.mouth}
+                              selectedPotStyle={user.bonsai?.customization?.potStyle}
+                              selectedGroundStyle={user.bonsai?.customization?.groundStyle}
+                              decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
+                              zoomed={true}
+                            />
+                          </div>
                        )}
                      </div>
                     <div className="min-w-0 flex-1">
@@ -207,16 +201,6 @@ function UsersPage() {
                        </div>
                        <span className="font-medium text-[#4a7c59]">
                          {user.mutualFriends || 0}
-                       </span>
-                     </div>
-                     
-                     <div className="flex items-center justify-between text-xs sm:text-sm">
-                       <div className="flex items-center">
-                         <Flag className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59] mr-1 sm:mr-2" />
-                         <span className="text-[#5c6d5e]">Country</span>
-                       </div>
-                       <span className="font-medium text-[#2c3e2d] text-xs">
-                         {user.country}
                        </span>
                      </div>
                    </div>

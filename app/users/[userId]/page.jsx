@@ -129,18 +129,26 @@ function PublicProfilePage() {
               <div className="relative z-10 w-full flex flex-col items-center justify-center gap-3 sm:gap-4 sm:flex-row sm:justify-between sm:items-center">
                 <div className="flex flex-col sm:flex-row items-center sm:items-center">
                   <div className="mb-2 sm:mb-0 sm:mr-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-2 sm:border-4 border-white shadow-lg">
-                    {userData.icon ? (
-                      userData.icon.startsWith('http') ? (
-                        <img 
-                          src={userData.icon} 
-                          alt="Profile" 
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-2xl sm:text-4xl">{userData.icon}</span>
-                      )
+                    {userData.icon && userData.icon.startsWith('http') ? (
+                      <img 
+                        src={userData.icon} 
+                        alt="Profile" 
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
-                      <BonsaiIcon className="h-8 w-8 sm:h-12 sm:w-12 text-[#4a7c59]" />
+                      <div className="h-full w-full flex items-center justify-center">
+                        <BonsaiSVG 
+                          level={userData.bonsai?.level || 1}
+                          treeColor={userData.bonsai?.customization?.foliageColor} 
+                          potColor={userData.bonsai?.customization?.potColor} 
+                          selectedEyes={userData.bonsai?.customization?.eyes}
+                          selectedMouth={userData.bonsai?.customization?.mouth}
+                          selectedPotStyle={userData.bonsai?.customization?.potStyle}
+                          selectedGroundStyle={userData.bonsai?.customization?.groundStyle}
+                          decorations={userData.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
+                          zoomed={true}
+                        />
+                      </div>
                     )}
                   </div>
                   <div className="text-center sm:text-left min-w-0 flex-1">

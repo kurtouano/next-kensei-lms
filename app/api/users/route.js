@@ -31,7 +31,7 @@ export async function GET() {
                 role: 1
             }
         )
-        .populate('bonsai', 'level totalCredits')
+        .populate('bonsai', 'level totalCredits customization')
         .sort({ createdAt: -1 }) // Newest users first
         .limit(50); // Limit to 50 users for performance
 
@@ -63,10 +63,12 @@ export async function GET() {
                     role: user.role,
                     bonsai: user.bonsai ? {
                         level: user.bonsai.level || 1,
-                        totalCredits: user.bonsai.totalCredits || 0
+                        totalCredits: user.bonsai.totalCredits || 0,
+                        customization: user.bonsai.customization || {}
                     } : {
                         level: 1,
-                        totalCredits: 0
+                        totalCredits: 0,
+                        customization: {}
                     },
                     certificateCount,
                     friendStatus: friendStatus ? friendStatus.status : null,
