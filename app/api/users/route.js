@@ -3,8 +3,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { connectDb } from "@/lib/mongodb";
-import User from "@/models/User.js";
-import Certificate from "@/models/Certificate.js";
+import User from "@/models/User";
+import Certificate from "@/models/Certificate";
+import Friend from "@/models/Friend";
 
 export async function GET() {
     try {
@@ -34,10 +35,24 @@ export async function GET() {
         .sort({ createdAt: -1 }) // Newest users first
         .limit(50); // Limit to 50 users for performance
 
-        // Get certificate counts for each user
+        // Get certificate counts and friend status for each user
         const usersWithStats = await Promise.all(
             users.map(async (user) => {
                 const certificateCount = await Certificate.countDocuments({ user: user._id });
+                
+                // Get friend status between current user and this user
+                const friendStatus = await Friend.findOne({
+                    $or: [
+                        { requester: session.user.id, recipient: user._id },
+                        { requester: user._id, recipient: session.user.id }
+                    ]
+                });
+
+                // Calculate mutual friends count
+                let mutualFriends = 0;
+                if (friendStatus && friendStatus.status === 'accepted') {
+                    mutualFriends = await Friend.getMutualFriendsCount(session.user.id, user._id.toString());
+                }
                 
                 return {
                     id: user._id,
@@ -53,7 +68,9 @@ export async function GET() {
                         level: 1,
                         totalCredits: 0
                     },
-                    certificateCount
+                    certificateCount,
+                    friendStatus: friendStatus ? friendStatus.status : null,
+                    mutualFriends
                 };
             })
         );

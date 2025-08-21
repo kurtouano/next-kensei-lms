@@ -143,12 +143,12 @@ function PublicProfilePage() {
                       <BonsaiIcon className="h-8 w-8 sm:h-12 sm:w-12 text-[#4a7c59]" />
                     )}
                   </div>
-                  <div className="text-center sm:text-left">
+                  <div className="text-center sm:text-left min-w-0 flex-1">
                     <div className="flex items-center justify-center sm:justify-start">
-                      <h1 className="text-xl sm:text-2xl font-bold text-white">
+                      <h1 className="text-xl sm:text-2xl font-bold text-white truncate max-w-full">
                         {userData.name}
                       </h1>
-                      <div className="ml-2 rounded-full px-1.5 sm:px-2 py-0.5 bg-white/20">
+                      <div className="ml-2 rounded-full px-1.5 sm:px-2 py-0.5 bg-white/20 flex-shrink-0">
                         <Check className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                       </div>
                     </div>

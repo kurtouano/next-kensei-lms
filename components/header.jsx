@@ -4,7 +4,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
-import { Menu, X, User, Users } from "lucide-react"
+import { Menu, X, User, Users, Bell } from "lucide-react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useSession } from "next-auth/react"
@@ -19,6 +19,7 @@ export function Header() {
   const [userIcon, setUserIcon] = useState(cachedUserIcon);
   const [userData, setUserData] = useState(cachedUserData);
   const [iconLoading, setIconLoading] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const {
@@ -69,7 +70,22 @@ export function Header() {
       }
     };
 
+    const fetchNotificationCount = async () => {
+      if (status === "authenticated") {
+        try {
+          const response = await fetch("/api/notifications/count");
+          const data = await response.json();
+          if (data.success) {
+            setNotificationCount(data.count);
+          }
+        } catch (error) {
+          console.error("Failed to fetch notification count:", error);
+        }
+      }
+    };
+
     fetchUserData();
+    fetchNotificationCount();
 
     const handleProfileUpdate = () => {
       cachedUserIcon = null;
@@ -83,12 +99,18 @@ export function Header() {
       fetchUserData();
     };
 
+    const handleNotificationUpdate = () => {
+      fetchNotificationCount();
+    };
+
     window.addEventListener('profile-updated', handleProfileUpdate);
     window.addEventListener('bonsai-updated', handleBonsaiUpdate);
+    window.addEventListener('notification-updated', handleNotificationUpdate);
 
     return () => {
       window.removeEventListener('profile-updated', handleProfileUpdate);
       window.removeEventListener('bonsai-updated', handleBonsaiUpdate);
+      window.removeEventListener('notification-updated', handleNotificationUpdate);
     };
   }, [status]);
 
@@ -307,6 +329,21 @@ export function Header() {
                 <Users size={18} className="text-[#4a7c59]" />
               </Link>
               
+              {/* Notifications Button */}
+              <Link 
+                href="/notifications" 
+                className="h-9 w-9 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
+                title="Notifications"
+              >
+                <Bell size={18} className="text-[#4a7c59]" />
+                {/* Notification Badge */}
+                {notificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {notificationCount > 9 ? '9+' : notificationCount}
+                  </span>
+                )}
+              </Link>
+              
               {/* Profile Button */}
               <Link href="/profile" className="flex flex-row items-center gap-2">
                 <div className="h-9 w-9 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden hover:bg-[#eef2eb] transition-colors">
@@ -397,6 +434,20 @@ export function Header() {
                   onClick={closeMobileMenu}
                 >
                   Find Friends
+                </Link>
+                
+                {/* Mobile Notifications Link */}
+                <Link 
+                  href="/notifications" 
+                  className={`block text-sm font-medium ${isActive("/notifications") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  Notifications
+                  {notificationCount > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center h-5 w-5 bg-red-500 text-white text-xs rounded-full">
+                      {notificationCount > 9 ? '9+' : notificationCount}
+                    </span>
+                  )}
                 </Link>
                 
                 {/* Mobile Profile Link */}

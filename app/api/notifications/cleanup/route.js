@@ -1,0 +1,56 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/route";
+import { connectDb } from "@/lib/mongodb";
+import Notification from "@/models/Notification";
+import Friend from "@/models/Friend";
+
+export async function POST(req) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    await connectDb();
+
+    // Find all friend request notifications for the current user
+    const friendRequestNotifications = await Notification.find({
+      recipient: session.user.id,
+      type: 'friend_request'
+    });
+
+    let cleanedCount = 0;
+
+    // Check each notification to see if the friend request is already accepted
+    for (const notification of friendRequestNotifications) {
+      const friendRequestId = notification.relatedData?.friendRequestId;
+      
+      if (friendRequestId) {
+        const friendRequest = await Friend.findById(friendRequestId);
+        
+        // If the friend request exists and is accepted, remove the notification
+        if (friendRequest && friendRequest.status === 'accepted') {
+          await Notification.findByIdAndDelete(notification._id);
+          cleanedCount++;
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Cleaned up ${cleanedCount} notifications`,
+      cleanedCount
+    });
+
+  } catch (error) {
+    console.error("Cleanup error:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to cleanup notifications" },
+      { status: 500 }
+    );
+  }
+}
