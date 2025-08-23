@@ -40,29 +40,27 @@ export function StructuredData({ type, data }) {
           ],
           "hasOfferCatalog": {
             "@type": "OfferCatalog",
-            "name": "Japanese Language Courses",
+            "name": "Japanese Language Learning Resources",
+            "description": "Comprehensive Japanese language learning materials and educational content",
             "itemListElement": [
               {
                 "@type": "Offer",
                 "itemOffered": {
-                  "@type": "Course",
-                  "name": "Japanese Basics - Hiragana & Katakana",
-                  "description": "Learn the Japanese writing systems: hiragana and katakana",
+                  "@type": "Service",
+                  "name": "Japanese Language Learning",
+                  "description": "Learn Japanese online with comprehensive resources in hiragana, katakana, kanji, and JLPT preparation",
                   "provider": {
                     "@type": "Organization",
                     "name": "Jotatsu Academy"
-                  }
-                }
-              },
-              {
-                "@type": "Offer", 
-                "itemOffered": {
-                  "@type": "Course",
-                  "name": "JLPT N5 Preparation",
-                  "description": "Complete preparation for Japanese Language Proficiency Test N5",
-                  "provider": {
-                    "@type": "Organization",
-                    "name": "Jotatsu Academy"
+                  },
+                  "offers": {
+                    "@type": "Offer",
+                    "availability": "https://schema.org/InStock",
+                    "url": "https://jotatsu.com/learn-japanese",
+                    "seller": {
+                      "@type": "Organization",
+                      "name": "Jotatsu Academy"
+                    }
                   }
                 }
               }
@@ -97,14 +95,75 @@ export function StructuredData({ type, data }) {
           "educationalCredentialAwarded": "Certificate of Completion",
           "timeRequired": data.duration || "PT10H",
           "numberOfCredits": data.credits || 1,
+          "offers": {
+            "@type": "Offer",
+            "price": data.price || 0,
+            "priceCurrency": "USD",
+            "availability": "https://schema.org/InStock",
+            "url": `https://jotatsu.com/courses/${data.slug || 'course'}`,
+            "seller": {
+              "@type": "Organization",
+              "name": "Jotatsu Academy"
+            }
+          },
           "hasCourseInstance": {
             "@type": "CourseInstance",
             "courseMode": "online",
             "instructor": {
               "@type": "Person",
               "name": data.instructor?.name || "Japanese Instructor"
-            }
+            },
+            "startDate": data.startDate || "2024-01-01",
+            "endDate": data.endDate || "2025-12-31"
           }
+        }
+
+      case 'courseCatalog':
+        return {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "name": "Japanese Language Learning Resources",
+          "description": "Comprehensive collection of Japanese language learning materials and educational content",
+          "itemListElement": [
+            {
+              "@type": "Service",
+              "position": 1,
+              "name": "Japanese Writing Systems",
+              "description": "Learn hiragana, katakana, and kanji writing systems",
+              "provider": {
+                "@type": "Organization",
+                "name": "Jotatsu Academy"
+              },
+              "offers": {
+                "@type": "Offer",
+                "availability": "https://schema.org/InStock",
+                "url": "https://jotatsu.com/learn-japanese",
+                "seller": {
+                  "@type": "Organization",
+                  "name": "Jotatsu Academy"
+                }
+              }
+            },
+            {
+              "@type": "Service",
+              "position": 2,
+              "name": "JLPT Preparation",
+              "description": "Prepare for Japanese Language Proficiency Test levels N5-N1",
+              "provider": {
+                "@type": "Organization",
+                "name": "Jotatsu Academy"
+              },
+              "offers": {
+                "@type": "Offer",
+                "availability": "https://schema.org/InStock",
+                "url": "https://jotatsu.com/learn-japanese",
+                "seller": {
+                  "@type": "Organization",
+                  "name": "Jotatsu Academy"
+                }
+              }
+            }
+          ]
         }
 
       case 'blog':
@@ -135,6 +194,18 @@ export function StructuredData({ type, data }) {
           "keywords": data.tags?.join(", ") || "Japanese learning, Japanese language, Japanese culture",
           "articleSection": data.category || "Japanese Learning",
           "wordCount": data.wordCount || 500
+        }
+
+      case 'breadcrumb':
+        return {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": data.items.map((item, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "name": item.name,
+            "item": item.url
+          }))
         }
 
       case 'website':
