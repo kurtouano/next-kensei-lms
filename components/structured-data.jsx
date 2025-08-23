@@ -37,35 +37,7 @@ export function StructuredData({ type, data }) {
             "Japanese Grammar",
             "Japanese Conversation",
             "Japanese Culture"
-          ],
-          "hasOfferCatalog": {
-            "@type": "OfferCatalog",
-            "name": "Japanese Language Learning Resources",
-            "description": "Comprehensive Japanese language learning materials and educational content",
-            "itemListElement": [
-              {
-                "@type": "Offer",
-                "itemOffered": {
-                  "@type": "Service",
-                  "name": "Japanese Language Learning",
-                  "description": "Learn Japanese online with comprehensive resources in hiragana, katakana, kanji, and JLPT preparation",
-                  "provider": {
-                    "@type": "Organization",
-                    "name": "Jotatsu Academy"
-                  },
-                  "offers": {
-                    "@type": "Offer",
-                    "availability": "https://schema.org/InStock",
-                    "url": "https://jotatsu.com/learn-japanese",
-                    "seller": {
-                      "@type": "Organization",
-                      "name": "Jotatsu Academy"
-                    }
-                  }
-                }
-              }
-            ]
-          }
+          ]
         }
 
       case 'course':
@@ -126,42 +98,26 @@ export function StructuredData({ type, data }) {
           "description": "Comprehensive collection of Japanese language learning materials and educational content",
           "itemListElement": [
             {
-              "@type": "Service",
+              "@type": "CreativeWork",
               "position": 1,
-              "name": "Japanese Writing Systems",
-              "description": "Learn hiragana, katakana, and kanji writing systems",
-              "provider": {
+              "name": "Japanese Writing Systems Guide",
+              "description": "Educational content about hiragana, katakana, and kanji writing systems",
+              "creator": {
                 "@type": "Organization",
                 "name": "Jotatsu Academy"
               },
-              "offers": {
-                "@type": "Offer",
-                "availability": "https://schema.org/InStock",
-                "url": "https://jotatsu.com/learn-japanese",
-                "seller": {
-                  "@type": "Organization",
-                  "name": "Jotatsu Academy"
-                }
-              }
+              "url": "https://jotatsu.com/learn-japanese"
             },
             {
-              "@type": "Service",
+              "@type": "CreativeWork",
               "position": 2,
-              "name": "JLPT Preparation",
-              "description": "Prepare for Japanese Language Proficiency Test levels N5-N1",
-              "provider": {
+              "name": "JLPT Study Materials",
+              "description": "Study resources for Japanese Language Proficiency Test preparation",
+              "creator": {
                 "@type": "Organization",
                 "name": "Jotatsu Academy"
               },
-              "offers": {
-                "@type": "Offer",
-                "availability": "https://schema.org/InStock",
-                "url": "https://jotatsu.com/learn-japanese",
-                "seller": {
-                  "@type": "Organization",
-                  "name": "Jotatsu Academy"
-                }
-              }
+              "url": "https://jotatsu.com/learn-japanese"
             }
           ]
         }

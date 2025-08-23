@@ -68,47 +68,4 @@
     <priority>0.6</priority>
   </url>
   
-  <!-- Example Course URLs (Replace with your actual courses) -->
-  <url>
-    <loc>https://jotatsu.com/courses/hiragana-mastery</loc>
-    <lastmod>2024-12-19T00:00:00.000Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <url>
-    <loc>https://jotatsu.com/courses/katakana-essentials</loc>
-    <lastmod>2024-12-19T00:00:00.000Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <url>
-    <loc>https://jotatsu.com/courses/jlpt-n5-preparation</loc>
-    <lastmod>2024-12-19T00:00:00.000Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <!-- Example Blog URLs (Replace with your actual blogs) -->
-  <url>
-    <loc>https://jotatsu.com/blogs/complete-guide-to-learning-hiragana</loc>
-    <lastmod>2024-12-19T00:00:00.000Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  
-  <url>
-    <loc>https://jotatsu.com/blogs/jlpt-n5-study-plan</loc>
-    <lastmod>2024-12-19T00:00:00.000Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  
-  <url>
-    <loc>https://jotatsu.com/blogs/japanese-grammar-basics</loc>
-    <lastmod>2024-12-19T00:00:00.000Z</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
 </urlset>
