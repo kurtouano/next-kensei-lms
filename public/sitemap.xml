@@ -8,12 +8,12 @@
     <priority>1.0</priority>
   </url>
   
-  <!-- Learn Japanese Page (High Priority for SEO) -->
+  <!-- Learn Japanese Page (Highest Priority for SEO) -->
   <url>
     <loc>https://jotatsu.com/learn-japanese</loc>
     <lastmod>2024-12-19T00:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>1.0</priority>
   </url>
   
   <!-- Main Pages -->

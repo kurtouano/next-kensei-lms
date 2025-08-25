@@ -164,6 +164,52 @@ export function StructuredData({ type, data }) {
           }))
         }
 
+      case 'learnJapanese':
+        return {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "name": data.name,
+          "description": data.description,
+          "url": data.url,
+          "mainEntity": {
+            "@type": "FAQPage",
+            "mainEntity": data.faqs.map(faq => ({
+              "@type": "Question",
+              "name": faq.question,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": faq.answer
+              }
+            }))
+          },
+          "about": {
+            "@type": "Thing",
+            "name": "Japanese Language Learning"
+          },
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Jotatsu Academy",
+            "url": "https://jotatsu.com"
+          },
+          "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://jotatsu.com"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Learn Japanese",
+                "item": "https://jotatsu.com/learn-japanese"
+              }
+            ]
+          }
+        }
+
       case 'website':
         return {
           "@context": "https://schema.org",

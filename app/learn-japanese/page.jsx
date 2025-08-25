@@ -13,24 +13,97 @@ export const metadata = {
     "JLPT test prep",
     "Japanese for beginners",
     "Japanese course online",
-    "Japanese language learning"
+    "Japanese language learning",
+    "how to learn Japanese",
+    "Japanese alphabet",
+    "Japanese writing systems",
+    "Japanese pronunciation guide",
+    "Japanese grammar basics",
+    "Japanese vocabulary list",
+    "Japanese conversation practice",
+    "Japanese study plan",
+    "Japanese learning resources",
+    "Japanese online lessons",
+    "Japanese language course",
+    "Japanese for English speakers",
+    "Japanese learning tips",
+    "Japanese practice exercises",
+    "Japanese reading practice",
+    "Japanese writing practice"
   ].join(", "),
+  authors: [{ name: "Jotatsu Academy", url: "https://jotatsu.com" }],
+  creator: "Jotatsu Academy",
+  publisher: "Jotatsu Academy",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: "https://jotatsu.com/learn-japanese"
+  },
   openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://jotatsu.com/learn-japanese',
+    siteName: 'Jotatsu Academy',
     title: 'Learn Japanese Online - Complete Guide to Hiragana, Katakana & Kanji',
     description: 'Master Japanese online with Jotatsu Academy! Complete guide to learning Japanese writing systems and JLPT preparation.',
-    url: 'https://jotatsu.com/learn-japanese',
+    images: [
+      {
+        url: 'https://jotatsu.com/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Learn Japanese Online with Jotatsu Academy - Complete Guide',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Learn Japanese Online - Complete Guide to Hiragana, Katakana & Kanji',
+    description: 'Master Japanese online with Jotatsu Academy! Complete guide to learning Japanese writing systems and JLPT preparation.',
+    images: ['https://jotatsu.com/og-image.jpg'],
   }
 }
 
 export default function LearnJapanesePage() {
   return (
     <>
-      {/* Structured Data for Learn Japanese Page */}
+      {/* Enhanced Structured Data for Learn Japanese Page */}
       <StructuredData 
-        type="website" 
+        type="learnJapanese" 
         data={{
-          name: "Learn Japanese Online - Jotatsu Academy",
-          description: "Complete guide to learning Japanese online with hiragana, katakana, kanji, and JLPT preparation."
+          name: "Learn Japanese Online - Complete Guide",
+          description: "Complete guide to learning Japanese online with hiragana, katakana, kanji, and JLPT preparation.",
+          url: "https://jotatsu.com/learn-japanese",
+          faqs: [
+            {
+              question: "How do I start learning Japanese?",
+              answer: "Start with hiragana, then katakana, followed by basic grammar and vocabulary. Our structured learning path takes you from complete beginner to advanced levels."
+            },
+            {
+              question: "How long does it take to learn Japanese?",
+              answer: "Basic proficiency (JLPT N5) takes 6-12 months with regular study. Advanced levels (JLPT N1) typically require 3-5 years of dedicated learning."
+            },
+            {
+              question: "What are the three Japanese writing systems?",
+              answer: "Hiragana (ひらがな) for native words and grammar, Katakana (カタカナ) for foreign words, and Kanji (漢字) for meaning-based writing."
+            },
+            {
+              question: "How do I prepare for the JLPT test?",
+              answer: "Study systematically through our JLPT preparation courses, practice with mock tests, and focus on the specific skills required for your target level."
+            },
+            {
+              question: "Can I learn Japanese online effectively?",
+              answer: "Yes! Our online platform provides interactive lessons, real-time feedback, and comprehensive resources that make learning Japanese online both effective and engaging."
+            }
+          ]
         }} 
       />
 
@@ -42,8 +115,9 @@ export default function LearnJapanesePage() {
               Learn Japanese Online
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
-              Master the Japanese language with our comprehensive online courses. From beginner hiragana and katakana 
-              to advanced JLPT N1 preparation, start your journey to Japanese fluency today.
+              Master the Japanese language with our comprehensive online courses. From beginner <strong>hiragana</strong> and <strong>katakana</strong> 
+              to advanced <strong>JLPT N1</strong> preparation, start your journey to Japanese fluency today. Our proven learning methods 
+              help thousands of students achieve their Japanese language goals faster and more effectively.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href="/courses" className="bg-white text-[#4a7c59] hover:bg-gray-100 px-8 py-4 text-lg font-semibold rounded-lg transition-colors">
@@ -52,6 +126,20 @@ export default function LearnJapanesePage() {
               <a href="/about" className="border-2 border-white text-white hover:bg-white hover:text-[#4a7c59] px-8 py-4 text-lg font-semibold rounded-lg transition-colors">
                 About Our Academy
               </a>
+            </div>
+            
+            {/* Additional internal links for SEO */}
+            <div className="mt-8 text-center">
+              <p className="text-white/80 mb-4">Quick Navigation:</p>
+              <div className="flex flex-wrap justify-center gap-3 text-sm">
+                <a href="/courses" className="text-white/90 hover:text-white underline">Japanese Courses</a>
+                <span className="text-white/60">•</span>
+                <a href="/blogs" className="text-white/90 hover:text-white underline">Japanese Learning Blog</a>
+                <span className="text-white/60">•</span>
+                <a href="/subscription" className="text-white/90 hover:text-white underline">Learning Plans</a>
+                <span className="text-white/60">•</span>
+                <a href="/about" className="text-white/90 hover:text-white underline">About Jotatsu</a>
+              </div>
             </div>
           </div>
         </section>
@@ -206,6 +294,66 @@ export default function LearnJapanesePage() {
           </div>
         </section>
 
+        {/* Learning Resources Section for SEO */}
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-[#2c3e2d] mb-6">
+                Complete Japanese Learning Resources
+              </h2>
+              <p className="text-xl text-[#5c6d5e] max-w-3xl mx-auto">
+                Access comprehensive learning materials designed to take you from beginner to advanced Japanese proficiency. 
+                Our resources cover every aspect of Japanese language learning.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              {[
+                {
+                  title: "Interactive Lessons",
+                  description: "Engage with multimedia content including videos, audio, and interactive exercises that adapt to your learning pace.",
+                  features: ["Video tutorials", "Audio pronunciation", "Interactive quizzes", "Progress tracking"]
+                },
+                {
+                  title: "Writing Practice",
+                  description: "Master Japanese writing systems with step-by-step guides and practice worksheets for hiragana, katakana, and kanji.",
+                  features: ["Stroke order guides", "Practice worksheets", "Writing exercises", "Character recognition"]
+                },
+                {
+                  title: "Grammar Guides",
+                  description: "Comprehensive grammar explanations with examples, practice sentences, and common usage patterns.",
+                  features: ["Grammar explanations", "Example sentences", "Practice exercises", "Usage patterns"]
+                },
+                {
+                  title: "Vocabulary Building",
+                  description: "Systematic vocabulary learning organized by themes, JLPT levels, and practical usage scenarios.",
+                  features: ["Themed vocabulary", "JLPT level organization", "Context examples", "Memory techniques"]
+                },
+                {
+                  title: "Conversation Practice",
+                  description: "Real-world conversation scenarios, pronunciation practice, and speaking exercises with native speakers.",
+                  features: ["Real scenarios", "Pronunciation practice", "Speaking exercises", "Native speaker audio"]
+                },
+                {
+                  title: "JLPT Preparation",
+                  description: "Targeted study materials and practice tests for all JLPT levels from N5 to N1.",
+                  features: ["Level-specific content", "Practice tests", "Study strategies", "Progress assessment"]
+                }
+              ].map((resource, index) => (
+                <div key={index} className="bg-[#f8f7f4] p-6 rounded-lg border border-[#dce4d7]">
+                  <h3 className="text-xl font-semibold text-[#2c3e2d] mb-3">{resource.title}</h3>
+                  <p className="text-[#5c6d5e] mb-4 leading-relaxed">{resource.description}</p>
+                  <ul className="text-sm text-[#4a7c59] space-y-1">
+                    {resource.features.map((feature, idx) => (
+                      <li key={idx}>• {feature}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Why Choose Jotatsu Section */}
         <section className="py-16 bg-[#eef2eb]">
           <div className="container mx-auto px-4">
@@ -256,6 +404,66 @@ export default function LearnJapanesePage() {
                   <div className="text-4xl mb-4">{feature.icon}</div>
                   <h3 className="text-xl font-semibold text-[#2c3e2d] mb-3">{feature.title}</h3>
                   <p className="text-[#5c6d5e] leading-relaxed">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section for SEO */}
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-[#2c3e2d] mb-6">
+                Frequently Asked Questions About Learning Japanese
+              </h2>
+              <p className="text-xl text-[#5c6d5e] max-w-3xl mx-auto">
+                Get answers to the most common questions about learning Japanese online and how to get started on your language learning journey.
+              </p>
+            </div>
+
+            <div className="max-w-4xl mx-auto space-y-6">
+              {[
+                {
+                  question: "How do I start learning Japanese?",
+                  answer: "Start with hiragana, then katakana, followed by basic grammar and vocabulary. Our structured learning path takes you from complete beginner to advanced levels with interactive lessons and practice exercises."
+                },
+                {
+                  question: "How long does it take to learn Japanese?",
+                  answer: "Basic proficiency (JLPT N5) takes 6-12 months with regular study. Advanced levels (JLPT N1) typically require 3-5 years of dedicated learning. Our courses are designed to accelerate your progress."
+                },
+                {
+                  question: "What are the three Japanese writing systems?",
+                  answer: "Hiragana (ひらがな) for native words and grammar, Katakana (カタカナ) for foreign words, and Kanji (漢字) for meaning-based writing. Each system serves a specific purpose in Japanese communication."
+                },
+                {
+                  question: "How do I prepare for the JLPT test?",
+                  answer: "Study systematically through our JLPT preparation courses, practice with mock tests, and focus on the specific skills required for your target level. We provide comprehensive study materials for all JLPT levels."
+                },
+                {
+                  question: "Can I learn Japanese online effectively?",
+                  answer: "Yes! Our online platform provides interactive lessons, real-time feedback, and comprehensive resources that make learning Japanese online both effective and engaging. Many students achieve fluency through our online courses."
+                },
+                {
+                  question: "What's the best way to practice Japanese pronunciation?",
+                  answer: "Practice with our audio lessons, repeat after native speakers, and use our pronunciation guides. Regular practice with audio content helps develop accurate Japanese pronunciation."
+                },
+                {
+                  question: "How many kanji do I need to know?",
+                  answer: "JLPT N5 requires about 100 kanji, N4 about 300, N3 about 650, N2 about 1000, and N1 about 2000. We teach kanji systematically with memory techniques and practice exercises."
+                },
+                {
+                  question: "Is Japanese grammar difficult to learn?",
+                  answer: "Japanese grammar has different patterns than English, but our courses break it down into manageable concepts. With practice and our structured approach, Japanese grammar becomes much easier to understand."
+                }
+              ].map((faq, index) => (
+                <div key={index} className="bg-[#f8f7f4] p-6 rounded-lg border border-[#dce4d7]">
+                  <h3 className="text-xl font-semibold text-[#2c3e2d] mb-3">
+                    {faq.question}
+                  </h3>
+                  <p className="text-[#5c6d5e] leading-relaxed">
+                    {faq.answer}
+                  </p>
                 </div>
               ))}
             </div>
