@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Users, Search, User, Award, TreePine, Flag, UserPlus, Eye, Clock, Check } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Users, Search, User, Award, TreePine, Flag, UserPlus, Eye, Clock, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { BonsaiIcon } from "@/components/bonsai-icon";
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
 import Link from "next/link";
@@ -12,9 +12,12 @@ function UsersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState([]);
+  const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [friendsLoading, setFriendsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const friendsScrollRef = useRef(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -24,6 +27,8 @@ function UsersPage() {
 
     if (status === "authenticated") {
       fetchUsers();
+      fetchFriends();
+      updateLastSeen();
     }
   }, [status, router]);
 
@@ -41,6 +46,47 @@ function UsersPage() {
       console.error("Error fetching users:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFriends = async () => {
+    try {
+      setFriendsLoading(true);
+      const response = await fetch("/api/friends");
+      const data = await response.json();
+      
+      if (data.success) {
+        setFriends(data.friends);
+      }
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+    } finally {
+      setFriendsLoading(false);
+    }
+  };
+
+  const scrollFriends = (direction) => {
+    if (friendsScrollRef.current) {
+      const scrollAmount = 300; // Scroll by 300px
+      const newScrollLeft = friendsScrollRef.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+      friendsScrollRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const updateLastSeen = async () => {
+    try {
+      await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ lastSeen: new Date().toISOString() }),
+      });
+    } catch (error) {
+      console.error('Error updating last seen:', error);
     }
   };
 
@@ -123,24 +169,132 @@ function UsersPage() {
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center gap-3 mb-4">
               <Users className="h-8 w-8 text-[#4a7c59]" />
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#2c3e2d]">Find Friends</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#2c3e2d]">Community</h1>
             </div>
             <p className="text-[#5c6d5e] text-sm sm:text-base">
-              Discover and connect with other learners in the Jotatsu community
+              Connect with friends and discover new learners in the Jotatsu community
             </p>
           </div>
 
-          {/* Search Bar */}
+          {/* Friends Section */}
+          {friendsLoading ? (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-[#2c3e2d]">Your Friends</h2>
+              </div>
+              <div className="flex gap-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[100px] animate-pulse">
+                    <div className="h-16 w-16 rounded-full bg-gray-200"></div>
+                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : friends.length > 0 ? (
+            <div className="mb-8">
+              <div className="mb-4">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-[#2c3e2d]">
+                    Your Friends ({friends.length})
+                  </h2>
+                  {friends.length > 0 && (
+                    <span className="text-sm text-[#5c6d5e]">
+                      {friends.filter(friend => friend.isOnline).length} online
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="relative">
+                {/* Left Arrow */}
+                <button
+                  onClick={() => scrollFriends('left')}
+                  className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full bg-white border border-[#dce4d7] hover:bg-[#eef2eb] transition-colors shadow-sm"
+                  title="Scroll left"
+                >
+                  <ChevronLeft className="h-4 w-4 text-[#4a7c59]" />
+                </button>
+                
+                {/* Right Arrow */}
+                <button
+                  onClick={() => scrollFriends('right')}
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full bg-white border border-[#dce4d7] hover:bg-[#eef2eb] transition-colors shadow-sm"
+                  title="Scroll right"
+                >
+                  <ChevronRight className="h-4 w-4 text-[#4a7c59]" />
+                </button>
+                
+                <div 
+                  ref={friendsScrollRef}
+                  className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 px-12"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {friends.map((friend) => (
+                    <Link
+                      key={friend.id}
+                      href={`/users/${friend.id}`}
+                      className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[100px]"
+                    >
+                      {/* Friend Icon */}
+                      <div className="relative">
+                        <div className="h-16 w-16 rounded-full border-2 border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden">
+                          {friend.icon && friend.icon.startsWith('http') ? (
+                            <img 
+                              src={friend.icon} 
+                              alt={friend.name} 
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <BonsaiSVG 
+                                level={friend.bonsai?.level || 1}
+                                treeColor={friend.bonsai?.customization?.foliageColor} 
+                                potColor={friend.bonsai?.customization?.potColor} 
+                                selectedEyes={friend.bonsai?.customization?.eyes}
+                                selectedMouth={friend.bonsai?.customization?.mouth}
+                                selectedPotStyle={friend.bonsai?.customization?.potStyle}
+                                selectedGroundStyle={friend.bonsai?.customization?.groundStyle}
+                                decorations={friend.bonsai?.customization?.decorations ? Object.values(friend.bonsai.customization.decorations).filter(Boolean) : []}
+                                zoomed={true}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        {/* Online Status Indicator */}
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                          friend.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                        }`} />
+                      </div>
+                      
+                      {/* Friend Name */}
+                      <div className="text-center">
+                        <h3 className="font-medium text-[#2c3e2d] text-sm truncate max-w-[100px]">{friend.name}</h3>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Find Friends Section */}
           <div className="mb-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
-              <input
-                type="text"
-                placeholder="Search by name or country..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-[#dce4d7] rounded-lg bg-white text-[#2c3e2d] placeholder-[#5c6d5e] focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
-              />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <UserPlus className="h-6 w-6 text-[#4a7c59]" />
+                <h2 className="text-xl font-semibold text-[#2c3e2d]">Find Friends</h2>
+              </div>
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
+                <input
+                  type="text"
+                  placeholder="Search by name or country..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-[#dce4d7] rounded-lg bg-white text-[#2c3e2d] placeholder-[#5c6d5e] focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
+                />
+              </div>
             </div>
           </div>
 

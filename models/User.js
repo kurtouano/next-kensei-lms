@@ -105,6 +105,10 @@ const UserSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+    },
     emailVerified: {
       type: Date,
       default: null,
