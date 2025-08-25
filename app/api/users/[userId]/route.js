@@ -7,6 +7,7 @@ import User from "@/models/User.js";
 import Bonsai from "@/models/Bonsai.js";
 import Progress from "@/models/Progress.js";
 import Certificate from "@/models/Certificate.js";
+import Friend from "@/models/Friend.js";
 
 export async function GET(req, { params }) {
     try {
@@ -70,6 +71,14 @@ export async function GET(req, { params }) {
         // Get bonsai data
         const bonsai = user.bonsai || null;
 
+        // Check friendship status between current user and profile user
+        const friendStatus = await Friend.findOne({
+            $or: [
+                { requester: session.user.id, recipient: user._id },
+                { requester: user._id, recipient: session.user.id }
+            ]
+        });
+
         // Prepare public profile response (no sensitive data)
         const publicUserData = {
             id: user._id,
@@ -108,7 +117,8 @@ export async function GET(req, { params }) {
                     groundStyle: 'default_ground',
                     decorations: []
                 }
-            }
+            },
+            friendStatus: friendStatus ? friendStatus.status : null
         };
 
         return NextResponse.json({

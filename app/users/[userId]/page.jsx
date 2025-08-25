@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BonsaiIcon } from "@/components/bonsai-icon";
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
-import { Award, BookOpen, User, TreePine, Flag, Check, Loader2, UserPlus, ArrowLeft } from "lucide-react";
+import { Award, BookOpen, User, TreePine, Flag, Check, Loader2, UserPlus, ArrowLeft, Clock } from "lucide-react";
 import Link from "next/link";
 
 function PublicProfilePage() {
@@ -57,6 +57,31 @@ function PublicProfilePage() {
 
   const capitalizeFirst = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
+  const handleFriendRequest = async () => {
+    try {
+      const response = await fetch('/api/friends/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ recipientId: params.userId }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update the local state to reflect the pending request
+        setUserData(prev => ({ ...prev, friendStatus: 'pending' }));
+        // Update notification count in header for the recipient
+        window.dispatchEvent(new Event('notification-updated'));
+      } else {
+        console.error('Failed to send friend request:', data.message);
+      }
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+    }
   };
 
   if (loading) {
@@ -163,61 +188,78 @@ function PublicProfilePage() {
                   </div>
                 </div>
                 
-                {/* Stats */}
-                <div className="flex flex-wrap justify-center sm:justify-end gap-1.5 sm:gap-2 w-full sm:w-auto">
-                  <div className="flex items-center rounded-full px-2 sm:px-4 py-1 sm:py-2 bg-white/20 backdrop-blur-sm">
-                    <BookOpen className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                    <span className="text-xs sm:text-sm font-medium text-white">
-                      {userData.bonsai ? `Level ${userData.bonsai.level}` : 'Level 1'} Learner
-                    </span>
-                  </div>
-                  <div className="flex items-center rounded-full px-2 sm:px-4 py-1 sm:py-2 bg-white/20 backdrop-blur-sm">
-                    <Flag className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                    <span className="text-xs sm:text-sm font-medium text-white">
-                      {userData.country}
-                    </span>
-                  </div>
-                </div>
+                                 {/* Stats */}
+                 <div className="flex flex-wrap justify-center sm:justify-end gap-1.5 sm:gap-2 w-full sm:w-auto items-center">
+                   <div className="flex items-center rounded-full px-2 sm:px-4 py-1 sm:py-2 bg-white/20 backdrop-blur-sm">
+                     <BookOpen className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                     <span className="text-xs sm:text-sm font-medium text-white">
+                       {userData.bonsai ? `Level ${userData.bonsai.level}` : 'Level 1'} Learner
+                     </span>
+                   </div>
+                   <div className="flex items-center rounded-full px-2 sm:px-4 py-1 sm:py-2 bg-white/20 backdrop-blur-sm">
+                     <Flag className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                     <span className="text-xs sm:text-sm font-medium text-white">
+                       {userData.country}
+                     </span>
+                   </div>
+                 </div>
               </div>
             </div>
           </div>
 
-          {/* Add Friend Button */}
-          <div className="mb-6 flex justify-center">
-            <button className="flex items-center gap-2 bg-[#4a7c59] text-white px-6 py-2 rounded-lg hover:bg-[#3a6147] transition-colors">
-              <UserPlus className="h-4 w-4" />
-              Add Friend
-            </button>
-          </div>
+
 
           {/* Profile Content */}
           <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-              {/* Learning Progress */}
-              <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
-                <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Learning Progress</h2>
-                <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
-                  <div className="rounded-lg bg-[#eef2eb] p-3 sm:p-4 text-center">
-                    <p className="text-lg sm:text-2xl font-bold text-[#4a7c59]">{userData.progress?.enrolledCourses || 0}</p>
-                    <p className="text-xs sm:text-sm text-[#5c6d5e]">Courses Enrolled</p>
-                  </div>
-                  <div className="rounded-lg bg-[#eef2eb] p-3 sm:p-4 text-center">
-                    <p className="text-lg sm:text-2xl font-bold text-[#4a7c59]">{userData.progress?.coursesCompleted || 0}</p>
-                    <p className="text-xs sm:text-sm text-[#5c6d5e]">Courses Completed</p>
-                  </div>
-                  <div className="rounded-lg bg-[#eef2eb] p-3 sm:p-4 text-center">
-                    <p className="text-lg sm:text-2xl font-bold text-[#4a7c59]">{userData.progress?.lessonsCompleted || 0}</p>
-                    <p className="text-xs sm:text-sm text-[#5c6d5e]">Lessons Completed</p>
-                  </div>
-                  <div className="rounded-lg bg-[#eef2eb] p-3 sm:p-4 text-center">
-                    <p className="text-lg sm:text-2xl font-bold text-[#4a7c59]">
-                      {userData.bonsai ? userData.bonsai.totalCredits : 0}
-                    </p>
-                    <p className="text-xs sm:text-sm text-[#5c6d5e]">Total Credits Earned</p>
-                  </div>
-                </div>
-              </div>
+                             {/* Learning Progress */}
+               <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+                 <div className="flex items-center justify-between mb-3 sm:mb-4">
+                   <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Learning Progress</h2>
+                   
+                   {/* Friend Status Button */}
+                   {userData.friendStatus === 'pending' ? (
+                     <button className="flex items-center gap-2 bg-[#4a7c59] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#3a6147] transition-colors">
+                       <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                       <span className="text-xs sm:text-sm font-medium">Pending</span>
+                     </button>
+                   ) : userData.friendStatus === 'accepted' ? (
+                     <button className="flex items-center gap-2 bg-[#4a7c59] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg cursor-default">
+                       <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                       <span className="text-xs sm:text-sm font-medium">Friends</span>
+                     </button>
+                   ) : (
+                     <button 
+                       onClick={handleFriendRequest}
+                       className="flex items-center gap-2 bg-[#4a7c59] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#3a6147] transition-colors"
+                     >
+                       <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                       <span className="text-xs sm:text-sm font-medium">Add Friend</span>
+                     </button>
+                   )}
+                 </div>
+                 <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
+                   <div className="rounded-lg bg-[#eef2eb] p-3 sm:p-4 text-center">
+                     <p className="text-lg sm:text-2xl font-bold text-[#4a7c59]">{userData.progress?.enrolledCourses || 0}</p>
+                     <p className="text-xs sm:text-sm text-[#5c6d5e]">Courses Enrolled</p>
+                   </div>
+                   <div className="rounded-lg bg-[#eef2eb] p-3 sm:p-4 text-center">
+                     <p className="text-lg sm:text-2xl font-bold text-[#4a7c59]">{userData.progress?.coursesCompleted || 0}</p>
+                     <p className="text-xs sm:text-sm text-[#5c6d5e]">Courses Completed</p>
+                   </div>
+                   <div className="rounded-lg bg-[#eef2eb] p-3 sm:p-4 text-center">
+                     <p className="text-lg sm:text-2xl font-bold text-[#4a7c59]">{userData.progress?.lessonsCompleted || 0}</p>
+                     <p className="text-xs sm:text-sm text-[#5c6d5e]">Lessons Completed</p>
+                   </div>
+                   <div className="rounded-lg bg-[#eef2eb] p-3 sm:p-4 text-center">
+                     <p className="text-lg sm:text-2xl font-bold text-[#4a7c59]">
+                       {userData.bonsai ? userData.bonsai.totalCredits : 0}
+                     </p>
+                     <p className="text-xs sm:text-sm text-[#5c6d5e]">Total Credits Earned</p>
+                   </div>
+                 </div>
+               </div>
 
               {/* Bonsai Display */}
               <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 flex flex-col h-fit">
