@@ -43,8 +43,8 @@ export default function OnlineStatusTracker() {
     // Update lastSeen immediately when component mounts
     updateLastSeen();
 
-    // Set up periodic updates (every 2 minutes)
-    intervalId = setInterval(updateLastSeen, 2 * 60 * 1000);
+    // Set up periodic updates (every 1 minute)
+    intervalId = setInterval(updateLastSeen, 1 * 60 * 1000);
 
     // Track user activity
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
@@ -64,9 +64,22 @@ export default function OnlineStatusTracker() {
     // Handle beforeunload (when user closes tab/window)
     const handleBeforeUnload = () => {
       // Send a final update before leaving
-      navigator.sendBeacon('/api/profile', JSON.stringify({
-        lastSeen: new Date().toISOString()
-      }));
+      try {
+        navigator.sendBeacon('/api/profile', JSON.stringify({
+          lastSeen: new Date().toISOString()
+        }));
+      } catch (error) {
+        // Fallback: try to send a regular fetch request
+        fetch('/api/profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ lastSeen: new Date().toISOString() }),
+        }).catch(() => {
+          // Ignore errors on page unload
+        });
+      }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
