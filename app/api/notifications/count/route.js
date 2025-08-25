@@ -16,10 +16,11 @@ export async function GET(req) {
 
     await connectDb();
 
-              // Count all notifications for the current user
-          const count = await Notification.countDocuments({
-            recipient: session.user.id
-          });
+              // Count only unread notifications for the current user
+    const count = await Notification.countDocuments({
+      recipient: session.user.id,
+      read: false
+    });
 
     return NextResponse.json({
       success: true,

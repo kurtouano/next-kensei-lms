@@ -74,11 +74,13 @@ export async function POST(req) {
     friendRequest.status = action === 'accept' ? 'accepted' : 'rejected';
     await friendRequest.save();
 
-    // Remove the original friend request notification for the recipient
-    await Notification.deleteMany({
+    // Mark the original friend request notification as read for the recipient
+    await Notification.updateMany({
       recipient: session.user.id,
       type: 'friend_request',
       'relatedData.friendRequestId': friendRequest._id
+    }, {
+      read: true
     });
 
     // Create notification for the requester

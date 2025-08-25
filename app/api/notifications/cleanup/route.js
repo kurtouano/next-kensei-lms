@@ -17,24 +17,29 @@ export async function POST(req) {
 
     await connectDb();
 
-    // Find all friend request notifications for the current user
-    const friendRequestNotifications = await Notification.find({
+    // Find all friend-related notifications for the current user
+    const friendNotifications = await Notification.find({
       recipient: session.user.id,
-      type: 'friend_request'
+      type: { $in: ['friend_request', 'friend_accepted', 'friend_rejected'] }
     });
 
     let cleanedCount = 0;
 
-    // Check each notification to see if the friend request is already accepted
-    for (const notification of friendRequestNotifications) {
+    // Check each notification to see if it should be marked as read
+    for (const notification of friendNotifications) {
       const friendRequestId = notification.relatedData?.friendRequestId;
       
       if (friendRequestId) {
         const friendRequest = await Friend.findById(friendRequestId);
         
-        // If the friend request exists and is accepted, remove the notification
+        // If the friend request exists and is accepted, mark all related notifications as read
         if (friendRequest && friendRequest.status === 'accepted') {
-          await Notification.findByIdAndDelete(notification._id);
+          await Notification.findByIdAndUpdate(notification._id, { read: true });
+          cleanedCount++;
+        }
+        // If the friend request is rejected, mark the notification as read
+        else if (friendRequest && friendRequest.status === 'rejected') {
+          await Notification.findByIdAndUpdate(notification._id, { read: true });
           cleanedCount++;
         }
       }
