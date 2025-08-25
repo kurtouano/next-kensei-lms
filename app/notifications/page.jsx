@@ -164,15 +164,15 @@ function NotificationsPage() {
           <div className="mb-6 sm:mb-8">
                          <div className="flex items-center gap-3 mb-4">
                <Bell className="h-8 w-8 text-[#4a7c59]" />
-               <h1 className="text-2xl sm:text-3xl font-bold text-[#2c3e2d]">Notifications</h1>
+               <h1 className="text-2xl font-bold text-[#2c3e2d]">Notifications</h1>
              </div>
                          <div className="flex items-center justify-between">
                <div>
-                 <p className="text-[#5c6d5e] text-sm sm:text-base">
+                 <p className="text-[#5c6d5e] text-base">
                    Stay updated with friend requests and activities
                  </p>
                  {notifications.length > 0 && (
-                   <p className="text-[#5c6d5e] text-xs mt-1">
+                   <p className="text-[#5c6d5e] text-sm mt-1">
                      Showing {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
                    </p>
                  )}

@@ -58,10 +58,10 @@ export const authOptions = {
   
   callbacks: {
     async signIn({ user, account }) {
-      if (account.provider === "google") {  
-        try {
-          await connectDb();
-          
+      try {
+        await connectDb();
+        
+        if (account.provider === "google") {  
           // Check if user exists
           const existingUser = await User.findOne({ email: user.email });
           
@@ -73,7 +73,9 @@ export const authOptions = {
               provider: account.provider,
               providerId: account.providerAccountId,
               role: "student", // Default role for new Google users
-              country: "Bonsai Garden Resident"
+              country: "Bonsai Garden Resident",
+              lastSeen: new Date(),
+              lastLogin: new Date()
             });
             
             // Create bonsai for new user
@@ -84,13 +86,27 @@ export const authOptions = {
             
             console.log("Created new Google user:", newUser.email, "with role:", newUser.role);
           } else {
+            // Update lastSeen and lastLogin for existing user
+            await User.findByIdAndUpdate(existingUser._id, {
+              lastSeen: new Date(),
+              lastLogin: new Date()
+            });
             console.log("Google user already exists:", existingUser.email, "role:", existingUser.role);
           }
-          
-        } catch (error){ 
-          console.error("Error in signIn callback:", error)
-          return false; // Block login on error
+        } else if (account.provider === "credentials") {
+          // Update lastSeen and lastLogin for credentials login
+          await User.findOneAndUpdate(
+            { email: user.email },
+            {
+              lastSeen: new Date(),
+              lastLogin: new Date()
+            }
+          );
         }
+        
+      } catch (error){ 
+        console.error("Error in signIn callback:", error)
+        return false; // Block login on error
       }
       return true; 
     },

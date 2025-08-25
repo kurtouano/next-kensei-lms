@@ -7,17 +7,20 @@ import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useRealTimeFriends } from "@/hooks/useRealTimeFriends";
+import { formatLastSeen } from "@/lib/utils";
 
 function UsersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState([]);
-  const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [friendsLoading, setFriendsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const friendsScrollRef = useRef(null);
+  
+  // Use real-time friends hook
+  const { friends, loading: friendsLoading, lastUpdate } = useRealTimeFriends();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -27,7 +30,6 @@ function UsersPage() {
 
     if (status === "authenticated") {
       fetchUsers();
-      fetchFriends();
       updateLastSeen();
     }
   }, [status, router]);
@@ -49,21 +51,7 @@ function UsersPage() {
     }
   };
 
-  const fetchFriends = async () => {
-    try {
-      setFriendsLoading(true);
-      const response = await fetch("/api/friends");
-      const data = await response.json();
-      
-      if (data.success) {
-        setFriends(data.friends);
-      }
-    } catch (error) {
-      console.error("Error fetching friends:", error);
-    } finally {
-      setFriendsLoading(false);
-    }
-  };
+
 
   const scrollFriends = (direction) => {
     if (friendsScrollRef.current) {
@@ -85,22 +73,29 @@ function UsersPage() {
         },
         body: JSON.stringify({ lastSeen: new Date().toISOString() }),
       });
+      
+
     } catch (error) {
       console.error('Error updating last seen:', error);
     }
   };
 
-  // Filter users based on search term
+  // Filter users based on search term and friend status
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredUsers(users);
-    } else {
-      const filtered = users.filter(user =>
+    let filtered = users;
+    
+    // Filter out users who are already friends, but keep pending requests
+    filtered = filtered.filter(user => user.friendStatus !== 'accepted');
+    
+    // Apply search filter
+    if (searchTerm.trim() !== "") {
+      filtered = filtered.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.country.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredUsers(filtered);
     }
+    
+    setFilteredUsers(filtered);
   }, [searchTerm, users]);
 
   const formatDate = (dateString) => {
@@ -169,9 +164,9 @@ function UsersPage() {
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center gap-3 mb-4">
               <Users className="h-8 w-8 text-[#4a7c59]" />
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#2c3e2d]">Community</h1>
+              <h1 className="text-2xl font-bold text-[#2c3e2d]">Community</h1>
             </div>
-            <p className="text-[#5c6d5e] text-sm sm:text-base">
+            <p className="text-[#5c6d5e] text-base">
               Connect with friends and discover new learners in the Jotatsu community
             </p>
           </div>
@@ -199,8 +194,10 @@ function UsersPage() {
                     Your Friends ({friends.length})
                   </h2>
                   {friends.length > 0 && (
-                    <span className="text-sm text-[#5c6d5e]">
-                      {friends.filter(friend => friend.isOnline).length} online
+                    <span className="text-base text-[#5c6d5e] transition-all duration-300">
+                      <span className="inline-block animate-pulse">
+                        {friends.filter(friend => friend.isOnline).length}
+                      </span> online
                     </span>
                   )}
                 </div>
@@ -262,14 +259,18 @@ function UsersPage() {
                           )}
                         </div>
                         {/* Online Status Indicator */}
-                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                          friend.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white transition-all duration-300 ${
+                          friend.isOnline ? 'bg-green-500 scale-110' : 'bg-gray-400 scale-100'
                         }`} />
                       </div>
                       
                       {/* Friend Name */}
                       <div className="text-center">
-                        <h3 className="font-medium text-[#2c3e2d] text-sm truncate max-w-[100px]">{friend.name}</h3>
+                        <h3 className="font-medium text-[#2c3e2d] text-base truncate max-w-[100px]">{friend.name}</h3>
+                                   {/* Last seen timestamp */}
+           <p className="text-xs text-[#5c6d5e] mt-1">
+             {formatLastSeen(friend.lastSeen)}
+           </p>
                       </div>
                     </Link>
                   ))}
@@ -283,9 +284,9 @@ function UsersPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <UserPlus className="h-6 w-6 text-[#4a7c59]" />
-                <h2 className="text-xl font-semibold text-[#2c3e2d]">Find Friends</h2>
+                <h2 className="text-lg font-semibold text-[#2c3e2d]">Find Friends</h2>
               </div>
-              <div className="relative max-w-md">
+              <div className="relative max-w-lg">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
                 <input
                   type="text"
@@ -329,8 +330,8 @@ function UsersPage() {
                        )}
                      </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-[#2c3e2d] text-sm sm:text-base truncate">{user.name}</h3>
-                      <p className="text-xs sm:text-sm text-[#5c6d5e]">
+                      <h3 className="font-semibold text-[#2c3e2d] text-base truncate">{user.name}</h3>
+                      <p className="text-sm text-[#5c6d5e]">
                         Joined {formatDate(user.joinDate)}
                       </p>
                     </div>
@@ -338,9 +339,9 @@ function UsersPage() {
 
                                      {/* User Stats */}
                    <div className="space-y-2 mb-4">
-                     <div className="flex items-center justify-between text-xs sm:text-sm">
+                     <div className="flex items-center justify-between text-sm">
                        <div className="flex items-center">
-                         <TreePine className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59] mr-1 sm:mr-2" />
+                         <TreePine className="h-4 w-4 text-[#4a7c59] mr-2" />
                          <span className="text-[#5c6d5e]">Bonsai Level</span>
                        </div>
                        <span className="font-medium text-[#4a7c59]">
@@ -348,9 +349,9 @@ function UsersPage() {
                        </span>
                      </div>
                      
-                     <div className="flex items-center justify-between text-xs sm:text-sm">
+                     <div className="flex items-center justify-between text-sm">
                        <div className="flex items-center">
-                         <Users className="h-3 w-3 sm:h-4 sm:w-4 text-[#5c6d5e] mr-1 sm:mr-2" />
+                         <Users className="h-4 w-4 text-[#5c6d5e] mr-2" />
                          <span className="text-[#5c6d5e]">Mutuals</span>
                        </div>
                        <span className="font-medium text-[#4a7c59]">
@@ -363,37 +364,37 @@ function UsersPage() {
                   <div className="flex gap-2">
                     <Link
                       href={`/users/${user.id}`}
-                      className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#4a7c59] text-white py-2 px-3 rounded-lg hover:bg-[#3a6147] transition-colors text-xs sm:text-sm"
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#4a7c59] text-white py-2 px-3 rounded-lg hover:bg-[#3a6147] transition-colors text-sm"
                     >
-                      <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <Eye className="h-4 w-4" />
                       View Profile
                     </Link>
                     
                     {user.friendStatus === 'pending' ? (
                       <button
-                        className="flex items-center justify-center gap-1 sm:gap-2 border border-[#5c6d5e] text-[#5c6d5e] py-2 px-3 rounded-lg bg-[#f8f7f4] cursor-not-allowed text-xs sm:text-sm"
+                        className="flex items-center justify-center gap-2 border border-[#5c6d5e] text-[#5c6d5e] py-2 px-3 rounded-lg bg-[#f8f7f4] cursor-not-allowed text-sm"
                         disabled
                         title="Friend request pending"
                       >
-                        <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <Clock className="h-4 w-4" />
                         <span className="hidden sm:inline">Pending</span>
                       </button>
                     ) : user.friendStatus === 'accepted' ? (
                       <button
-                        className="flex items-center justify-center gap-1 sm:gap-2 border border-[#4a7c59] text-[#4a7c59] py-2 px-3 rounded-lg bg-[#eef2eb] cursor-not-allowed text-xs sm:text-sm"
+                        className="flex items-center justify-center gap-2 border border-[#4a7c59] text-[#4a7c59] py-2 px-3 rounded-lg bg-[#eef2eb] cursor-not-allowed text-sm"
                         disabled
                         title="Already friends"
                       >
-                        <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <Check className="h-4 w-4" />
                         <span className="hidden sm:inline">Friends</span>
                       </button>
                     ) : (
                       <button
                         onClick={() => handleFriendRequest(user.id)}
-                        className="flex items-center justify-center gap-1 sm:gap-2 border border-[#4a7c59] text-[#4a7c59] py-2 px-3 rounded-lg hover:bg-[#eef2eb] transition-colors text-xs sm:text-sm"
+                        className="flex items-center justify-center gap-2 border border-[#4a7c59] text-[#4a7c59] py-2 px-3 rounded-lg hover:bg-[#eef2eb] transition-colors text-sm"
                         title="Add Friend"
                       >
-                        <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <UserPlus className="h-4 w-4" />
                         <span className="hidden sm:inline">Add</span>
                       </button>
                     )}

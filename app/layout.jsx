@@ -6,6 +6,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Analytics } from "@vercel/analytics/next"
 import { StructuredData } from "@/components/structured-data"
+import OnlineStatusTracker from "@/components/OnlineStatusTracker"
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
@@ -143,6 +144,7 @@ export default async function RootLayout({ children }) {
               </main>
               <Footer />
             </div>
+            <OnlineStatusTracker />
           </ThemeProvider>
         </AuthProvider>
         <Analytics/> {/* Vercel Analytics */}
