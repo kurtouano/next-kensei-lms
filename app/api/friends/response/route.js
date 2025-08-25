@@ -33,8 +33,8 @@ export async function POST(req) {
 
     await connectDb();
 
-    // Find the friend request
-    const friendRequest = await Friend.findById(friendRequestId);
+    // Find the friend request and populate requester info
+    const friendRequest = await Friend.findById(friendRequestId).populate('requester', 'name');
     
     if (!friendRequest) {
       return NextResponse.json(
@@ -74,12 +74,17 @@ export async function POST(req) {
     friendRequest.status = action === 'accept' ? 'accepted' : 'rejected';
     await friendRequest.save();
 
-    // Mark the original friend request notification as read for the recipient
+    // Update the original friend request notification for the recipient to show the action taken
     await Notification.updateMany({
       recipient: session.user.id,
       type: 'friend_request',
       'relatedData.friendRequestId': friendRequest._id
     }, {
+      type: action === 'accept' ? 'friend_accepted' : 'friend_rejected',
+      title: action === 'accept' ? 'Friend Request Accepted' : 'Friend Request Declined',
+      message: action === 'accept' 
+        ? `You accepted ${friendRequest.requester.name || 'their'} friend request`
+        : `You declined ${friendRequest.requester.name || 'their'} friend request`,
       read: true
     });
 
