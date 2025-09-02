@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Menu, X, User, Users, Bell } from "lucide-react"
 import { BonsaiIcon } from "@/components/bonsai-icon"
+import { JotatsuIconFull } from "@/components/jotatsu-icon-full"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useSession } from "next-auth/react"
 import { useRoleAccess, RoleGuard } from "@/hooks/useRoleAccess"
@@ -201,8 +202,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/90 backdrop-blur-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <BonsaiIcon className="h-8 w-8 text-[#4a7c59]" />
-             <span className="text-xl font-semibold text-[#2c3e2d]">Jotatsu</span>
+          <JotatsuIconFull className="h-8 w-28 text-[#4a7c59]" alt="Jotatsu Icon"/>
         </Link>
 
         {/* Desktop Navigation */}

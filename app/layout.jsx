@@ -7,6 +7,7 @@ import { Footer } from "@/components/footer"
 import { Analytics } from "@vercel/analytics/next"
 import { StructuredData } from "@/components/structured-data"
 import OnlineStatusTracker from "@/components/OnlineStatusTracker"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
@@ -65,6 +66,17 @@ export const metadata = {
   authors: [{ name: "Jotatsu Academy", url: "https://jotatsu.com" }],
   creator: "Jotatsu Academy",
   publisher: "Jotatsu Academy",
+  icons: {
+    icon: '/jotatsu_logo.png',
+    shortcut: '/jotatsu_logo.png',
+    apple: '/jotatsu_logo.png',
+    other: [
+      {
+        rel: 'apple-touch-icon-precomposed',
+        url: '/jotatsu_logo.png',
+      },
+    ],
+  },
   robots: {
     index: true,
     follow: true,
@@ -88,10 +100,10 @@ export const metadata = {
     description: 'Master Japanese online with Jotatsu Academy! Complete language courses covering grammar, vocabulary, conversation skills, and JLPT preparation. Interactive lessons and expert instruction.',
     images: [
       {
-        url: 'https://jotatsu.com/og-image.jpg',
+        url: 'https://jotatsu.com/jotatsu_logo_full.png',
         width: 1200,
         height: 630,
-        alt: 'Learn Japanese Online with Jotatsu Academy',
+        alt: 'Jotatsu Academy - Learn Japanese Online',
       },
     ],
   },
@@ -99,7 +111,7 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'Learn Japanese Online - Complete Language Courses & JLPT Prep',
     description: 'Master Japanese online with Jotatsu Academy! Complete language courses covering grammar, vocabulary, conversation skills, and JLPT preparation. Interactive lessons and expert instruction.',
-    images: ['https://jotatsu.com/og-image.jpg'],
+    images: ['https://jotatsu.com/jotatsu_logo_full.png'],
     creator: '@jotatsu_academy',
   },
   category: 'Education',
@@ -140,10 +152,11 @@ export default async function RootLayout({ children }) {
               </main>
               <Footer />
             </div>
-            <OnlineStatusTracker />
+            <OnlineStatusTracker /> {/* Online Status Tracker for User Activity */}
           </ThemeProvider>
         </AuthProvider>
         <Analytics/> {/* Vercel Analytics */}
+        <SpeedInsights/> {/* Vercel Speed Insights */}
       </body>
     </html>
   )
