@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, memo, useMemo } from "react"
-import { BookOpen, AlertCircle, Search, X, Filter, ChevronDown } from "lucide-react"
+import { BookOpen, AlertCircle, Search, X, Filter, ChevronDown, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useSession } from "next-auth/react"
@@ -17,6 +17,8 @@ export default function CoursesPage() {
     courses,
     loading,
     error,
+    retryCount,
+    isRetrying,
     selectedCategory,
     categories,
     courseStats,
@@ -140,7 +142,7 @@ export default function CoursesPage() {
   if (loading) {
     return (
       <PageLayout session={session}>
-        <LoadingSkeleton />
+        <LoadingSkeleton isRetrying={isRetrying} retryCount={retryCount} />
       </PageLayout>
     )
   }
@@ -381,13 +383,19 @@ const ErrorDisplay = memo(function ErrorDisplay({ error, onRetry }) {
   )
 })
 
-const LoadingSkeleton = memo(function LoadingSkeleton() {
+const LoadingSkeleton = memo(function LoadingSkeleton({ isRetrying = false, retryCount = 0 }) {
   return (
     <>
       {/* Page Title Skeleton */}
       <div className="mb-8">
         <div className="h-8 bg-gray-200 rounded w-80 animate-pulse mb-2"></div>
         <div className="h-5 bg-gray-200 rounded w-96 animate-pulse"></div>
+        {isRetrying && (
+          <div className="mt-4 flex items-center gap-2 text-sm text-[#5c6d5e]">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            Reconnecting to database... (Attempt {retryCount + 1})
+          </div>
+        )}
       </div>
 
       {/* Search and filter skeleton */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Users, Search, User, Award, TreePine, Flag, UserPlus, Eye, Clock, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Search, User, Award, TreePine, Flag, UserPlus, Eye, Clock, Check, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { BonsaiIcon } from "@/components/bonsai-icon";
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
 import Link from "next/link";
@@ -9,15 +9,22 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useRealTimeFriends } from "@/hooks/useRealTimeFriends";
 import { formatLastSeen } from "@/lib/utils";
+import { useApiWithRetry } from "@/hooks/useApiWithRetry";
 
 function UsersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const friendsScrollRef = useRef(null);
+  
+  // Use enhanced API hook with retry logic
+  const { loading, error, retryCount, get, clearError, isRetrying } = useApiWithRetry({
+    maxRetries: 5,
+    baseDelay: 1000,
+    showLoadingMinTime: 500
+  });
   
   // Use real-time friends hook
   const { friends, loading: friendsLoading, lastUpdate } = useRealTimeFriends();
@@ -36,18 +43,20 @@ function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      setLoading(true);
-      const response = await fetch("/api/users");
-      const data = await response.json();
+      const data = await get("/api/users", {
+        operationName: "Fetch Users List"
+      });
       
       if (data.success) {
         setUsers(data.users);
         setFilteredUsers(data.users);
+        clearError(); // Clear any previous errors
+      } else {
+        throw new Error(data.message || 'Failed to fetch users');
       }
     } catch (error) {
       console.error("Error fetching users:", error);
-    } finally {
-      setLoading(false);
+      // Error state is handled by the useApiWithRetry hook
     }
   };
 
@@ -90,8 +99,7 @@ function UsersPage() {
     // Apply search filter
     if (searchTerm.trim() !== "") {
       filtered = filtered.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.country.toLowerCase().includes(searchTerm.toLowerCase())
+        user.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
@@ -147,9 +155,52 @@ function UsersPage() {
     return (
       <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
         <main className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <Users className="h-6 w-6 animate-pulse text-[#4a7c59]" />
-            <span className="text-[#2c3e2d]">Loading users...</span>
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-6 w-6 animate-pulse text-[#4a7c59]" />
+              <span className="text-[#2c3e2d]">
+                {isRetrying ? `Connecting... (Attempt ${retryCount + 1})` : 'Loading users...'}
+              </span>
+            </div>
+            {isRetrying && (
+              <div className="text-sm text-[#5c6d5e] text-center">
+                <RefreshCw className="h-4 w-4 animate-spin inline mr-2" />
+                Reconnecting to database...
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Enhanced error state with retry option
+  if (error && !loading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto p-6">
+            <div className="mb-4">
+              <Users className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-[#2c3e2d] mb-2">
+                Unable to Load Users
+              </h2>
+              <p className="text-[#5c6d5e] mb-4">
+                {error}
+              </p>
+              {retryCount > 0 && (
+                <p className="text-sm text-[#5c6d5e] mb-4">
+                  Failed after {retryCount} attempts
+                </p>
+              )}
+            </div>
+            <button
+              onClick={fetchUsers}
+              className="bg-[#4a7c59] text-white px-6 py-2 rounded-lg hover:bg-[#3a6147] transition-colors flex items-center gap-2 mx-auto"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try Again
+            </button>
           </div>
         </main>
       </div>
@@ -286,14 +337,14 @@ function UsersPage() {
                 <UserPlus className="h-6 w-6 text-[#4a7c59]" />
                 <h2 className="text-lg font-semibold text-[#2c3e2d]">Find Friends</h2>
               </div>
-              <div className="relative max-w-lg">
+              <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
                 <input
                   type="text"
-                  placeholder="Search by name or country..."
+                  placeholder="Search users"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-[#dce4d7] rounded-lg bg-white text-[#2c3e2d] placeholder-[#5c6d5e] focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
+                  className="w-full pl-10 text-sm pr-4 py-2 border border-[#dce4d7] rounded-lg bg-white text-[#2c3e2d] placeholder-[#5c6d5e] focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
                 />
               </div>
             </div>

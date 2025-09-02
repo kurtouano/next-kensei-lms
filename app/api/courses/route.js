@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server"
-import { connectDb } from "@/lib/mongodb"
+import { withDbOperation, formatApiError } from "@/lib/apiWrapper"
 import Course from "@/models/Course"
 import Module from "@/models/Module"
 import Lesson from "@/models/Lesson"
 
 export async function GET() {
-  await connectDb()
-
   try {
+    const result = await withDbOperation(async () => {
     const courses = await Course.find({ isPublished: true })
       .populate({
         path: "modules",
@@ -102,22 +101,20 @@ export async function GET() {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-    return NextResponse.json({ 
+    return { 
       success: true,
       courses: sortedCourses,
       total: sortedCourses.length,
       message: "Courses fetched successfully"
-    })
+    };
+    }, {
+      maxRetries: 5,
+      operationName: 'Fetch Courses'
+    });
+
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("API error:", error)
-    return NextResponse.json(
-      { 
-        success: false,
-        error: "Failed to fetch courses",
-        message: error.message,
-        courses: []
-      },
-      { status: 500 }
-    )
+    const errorResponse = formatApiError(error, 'Courses API');
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }

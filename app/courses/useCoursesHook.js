@@ -1,16 +1,22 @@
 // hooks/useCourses.js
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useDebouncedCallback } from 'use-debounce'
+import { useApiWithRetry } from '@/hooks/useApiWithRetry'
 
 const COURSES_PER_PAGE = 6
 
 export function useCourses() {
   const [courses, setCourses] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
+  
+  // Use enhanced API hook with retry logic
+  const { loading, error, get, clearError, retryCount, isRetrying } = useApiWithRetry({
+    maxRetries: 5,
+    baseDelay: 1000,
+    showLoadingMinTime: 800
+  })
 
   // Categories
   const categories = useMemo(() => [
@@ -28,23 +34,15 @@ export function useCourses() {
     setCurrentPage(1)
   }, 300)
 
-  // Fetch courses
+  // Fetch courses with retry logic
   const fetchCourses = useCallback(async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await fetch('/api/courses', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const data = await get('/api/courses', {
+        operationName: "Fetch Courses"
       })
       
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`)
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch courses')
       }
       
       let coursesArray = [];
@@ -59,15 +57,14 @@ export function useCourses() {
       }
       
       setCourses(coursesArray)
+      clearError() // Clear any previous errors
       
     } catch (error) {
       console.error("Failed to fetch courses:", error)
-      setError(error.message)
       setCourses([])
-    } finally {
-      setLoading(false)
+      // Error state is handled by the useApiWithRetry hook
     }
-  }, [])
+  }, [get, clearError])
 
   // Filter and sort courses with fuzzy search capabilities
   const filteredAndSortedCourses = useMemo(() => {
@@ -207,6 +204,8 @@ export function useCourses() {
     courses: paginationData.courses,
     loading,
     error,
+    retryCount,
+    isRetrying,
     
     // Category stuff
     selectedCategory,
@@ -232,6 +231,6 @@ export function useCourses() {
     handlePageChange,
     handleNextPage,
     handlePrevPage,
-    handleRetry
+    handleRetry: fetchCourses  // Use fetchCourses as the retry function
   }
 }

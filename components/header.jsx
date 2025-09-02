@@ -204,7 +204,7 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2">
           <JotatsuIconFull className="h-8 w-28 text-[#4a7c59]" alt="Jotatsu Icon"/>
         </Link>
-
+ 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-6 md:flex">
           {isAuthenticated ? (

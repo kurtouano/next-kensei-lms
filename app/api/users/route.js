@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
-import { connectDb } from "@/lib/mongodb";
+import { withDbOperation, formatApiError } from "@/lib/apiWrapper";
 import User from "@/models/User";
 import Certificate from "@/models/Certificate";
 import Friend from "@/models/Friend";
@@ -17,76 +17,80 @@ export async function GET() {
             );
         }
 
-        await connectDb();
-        
-        // Get all users except the current user, with basic info only
-        const users = await User.find(
-            { email: { $ne: session.user.email } }, // Exclude current user
-            {
-                name: 1,
-                email: 1,
-                country: 1,
-                icon: 1,
-                createdAt: 1,
-                role: 1
-            }
-        )
-        .populate('bonsai', 'level totalCredits customization')
-        .sort({ createdAt: -1 }) // Newest users first
-        .limit(50); // Limit to 50 users for performance
-
-        // Get certificate counts and friend status for each user
-        const usersWithStats = await Promise.all(
-            users.map(async (user) => {
-                const certificateCount = await Certificate.countDocuments({ user: user._id });
-                
-                // Get friend status between current user and this user
-                const friendStatus = await Friend.findOne({
-                    $or: [
-                        { requester: session.user.id, recipient: user._id },
-                        { requester: user._id, recipient: session.user.id }
-                    ]
-                });
-
-                // Calculate mutual friends count
-                let mutualFriends = 0;
-                if (friendStatus && friendStatus.status === 'accepted') {
-                    mutualFriends = await Friend.getMutualFriendsCount(session.user.id, user._id.toString());
+        // Use robust database operation wrapper
+        const result = await withDbOperation(async () => {
+            // Get all users except the current user, with basic info only
+            const users = await User.find(
+                { email: { $ne: session.user.email } }, // Exclude current user
+                {
+                    name: 1,
+                    email: 1,
+                    country: 1,
+                    icon: 1,
+                    createdAt: 1,
+                    role: 1
                 }
-                
-                return {
-                    id: user._id,
-                    name: user.name,
-                    country: user.country,
-                    icon: user.icon,
-                    joinDate: user.createdAt,
-                    role: user.role,
-                    bonsai: user.bonsai ? {
-                        level: user.bonsai.level || 1,
-                        totalCredits: user.bonsai.totalCredits || 0,
-                        customization: user.bonsai.customization || {}
-                    } : {
-                        level: 1,
-                        totalCredits: 0,
-                        customization: {}
-                    },
-                    certificateCount,
-                    friendStatus: friendStatus ? friendStatus.status : null,
-                    mutualFriends
-                };
-            })
-        );
+            )
+            .populate('bonsai', 'level totalCredits customization')
+            .sort({ createdAt: -1 }) // Newest users first
+            .limit(50); // Limit to 50 users for performance
 
-        return NextResponse.json({
-            success: true,
-            users: usersWithStats
+            // Get certificate counts and friend status for each user
+            const usersWithStats = await Promise.all(
+                users.map(async (user) => {
+                    const certificateCount = await Certificate.countDocuments({ user: user._id });
+                    
+                        // Get friend status between current user and this user
+                    const friendStatus = await Friend.findOne({
+                        $or: [
+                            { requester: session.user.id, recipient: user._id },
+                            { requester: user._id, recipient: session.user.id }
+                        ]
+                    });
+
+                    // Calculate mutual friends count
+                    let mutualFriends = 0;
+                    if (friendStatus && friendStatus.status === 'accepted') {
+                        mutualFriends = await Friend.getMutualFriendsCount(session.user.id, user._id.toString());
+                    }
+                    
+                    return {
+                        id: user._id,
+                        name: user.name,
+                        country: user.country,
+                        icon: user.icon,
+                        joinDate: user.createdAt,
+                        role: user.role,
+                        bonsai: user.bonsai ? {
+                            level: user.bonsai.level || 1,
+                            totalCredits: user.bonsai.totalCredits || 0,
+                            customization: user.bonsai.customization || {}
+                        } : {
+                            level: 1,
+                            totalCredits: 0,
+                            customization: {}
+                        },
+                        certificateCount,
+                        friendStatus: friendStatus ? friendStatus.status : null,
+                        mutualFriends
+                    };
+                })
+            );
+
+            return {
+                success: true,
+                users: usersWithStats
+            };
+        }, {
+            maxRetries: 5,
+            operationName: 'Fetch Users'
         });
 
+        return NextResponse.json(result);
+
     } catch (error) {
-        console.error("Users API Error:", error);
-        return NextResponse.json(
-            { success: false, message: "Server error", error: error.message },
-            { status: 500 }
-        );
+        const errorResponse = formatApiError(error, 'Users API');
+        const statusCode = error.message.includes('Unauthorized') ? 401 : 500;
+        return NextResponse.json(errorResponse, { status: statusCode });
     }
 }
