@@ -7,6 +7,7 @@ import { ArrowRight, Search, X, LoaderCircle, Star, TrendingUp } from "lucide-re
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
+
 export default function BlogsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
@@ -18,6 +19,11 @@ export default function BlogsPage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Newsletter subscription state
+  const [newsletterEmail, setNewsletterEmail] = useState("")
+  const [isSubscribing, setIsSubscribing] = useState(false)
+  const [subscriptionMessage, setSubscriptionMessage] = useState("")
 
   // Search input ref to maintain focus
   const searchInputRef = useRef(null)
@@ -112,6 +118,43 @@ export default function BlogsPage() {
   useEffect(() => {
     fetchAllBlogs()
   }, [])
+  
+  // Handle newsletter subscription
+  const handleNewsletterSubscribe = async (e) => {
+    e.preventDefault()
+    
+    if (!newsletterEmail.trim()) {
+      setSubscriptionMessage("Please enter a valid email address")
+      return
+    }
+    
+    try {
+      setIsSubscribing(true)
+      setSubscriptionMessage("")
+      
+      const response = await fetch('/api/blogs/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: newsletterEmail.trim() })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setSubscriptionMessage("Successfully subscribed! Check your email for confirmation.")
+        setNewsletterEmail("")
+      } else {
+        setSubscriptionMessage(data.message || "Failed to subscribe. Please try again.")
+      }
+    } catch (error) {
+      console.error('Subscription error:', error)
+      setSubscriptionMessage("Failed to subscribe. Please try again.")
+    } finally {
+      setIsSubscribing(false)
+    }
+  }
 
   const clearAllFilters = () => {
     setSearchTerm("")
@@ -477,21 +520,40 @@ export default function BlogsPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="top-[70px] space-y-6">
-              {/* Newsletter Signup */}
-              <Card className="border-0 shadow-md">
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-gray-900 mb-2">Stay Updated</h3>
-                  <p className="text-sm text-gray-600 mb-4">Get the latest blogs delivered to your inbox.</p>
-                  <div className="space-y-3">
-                    <input
-                      type="email"
-                      placeholder="Enter your email"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
-                    />
-                    <Button className="w-full bg-[#4a7c59] hover:bg-[#3a6147] text-white">Subscribe</Button>
-                  </div>
-                </CardContent>
-              </Card>
+                             {/* Newsletter Signup */}
+               <Card className="border-0 shadow-md">
+                 <CardContent className="p-6">
+                   <h3 className="font-bold text-gray-900 mb-2">Stay Updated with Japanese Learning</h3>
+                   <p className="text-sm text-gray-600 mb-4">Get notified when we publish new blog posts about Japanese language, culture, and learning tips.</p>
+                   <form onSubmit={handleNewsletterSubscribe} className="space-y-3">
+                     <input
+                       type="email"
+                       placeholder="Enter your email"
+                       value={newsletterEmail}
+                       onChange={(e) => setNewsletterEmail(e.target.value)}
+                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
+                       required
+                     />
+                     <Button 
+                       type="submit" 
+                       className="w-full bg-[#4a7c59] hover:bg-[#3a6147] text-white"
+                       disabled={isSubscribing}
+                     >
+                       {isSubscribing ? "Subscribing..." : "Subscribe"}
+                     </Button>
+                   </form>
+                   {subscriptionMessage && (
+                     <p className={`text-xs text-center mt-3 ${
+                       subscriptionMessage.includes("Successfully") 
+                         ? "text-green-600" 
+                         : "text-red-600"
+                     }`}>
+                       {subscriptionMessage}
+                     </p>
+                   )}
+                   <p className="text-xs text-gray-500 text-center mt-3">We respect your privacy. Unsubscribe at any time.</p>
+                 </CardContent>
+               </Card>
 
               {/* Popular Posts */}
               {popularPosts.length > 0 && (
