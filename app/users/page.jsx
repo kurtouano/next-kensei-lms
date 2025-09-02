@@ -372,7 +372,7 @@ function UsersPage() {
                     
                     {user.friendStatus === 'pending' ? (
                       <button
-                        className="flex items-center justify-center gap-2 border border-[#5c6d5e] text-[#5c6d5e] py-2 px-3 rounded-lg bg-[#f8f7f4] cursor-not-allowed text-sm"
+                        className="flex items-center justify-center gap-2 bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] py-2 px-3 rounded-lg cursor-not-allowed text-sm"
                         disabled
                         title="Friend request pending"
                       >
@@ -381,8 +381,7 @@ function UsersPage() {
                       </button>
                     ) : user.friendStatus === 'accepted' ? (
                       <button
-                        className="flex items-center justify-center gap-2 border border-[#4a7c59] text-[#4a7c59] py-2 px-3 rounded-lg bg-[#eef2eb] cursor-not-allowed text-sm"
-                        disabled
+                        className="flex items-center justify-center gap-2 bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] py-2 px-3 rounded-lg cursor-not-allowed text-sm"
                         title="Already friends"
                       >
                         <Check className="h-4 w-4" />
@@ -391,7 +390,7 @@ function UsersPage() {
                     ) : (
                       <button
                         onClick={() => handleFriendRequest(user.id)}
-                        className="flex items-center justify-center gap-2 border border-[#4a7c59] text-[#4a7c59] py-2 px-3 rounded-lg hover:bg-[#eef2eb] transition-colors text-sm"
+                        className="flex items-center justify-center gap-2 bg-[#4a7c59] text-white py-2 px-3 rounded-lg hover:bg-[#3a6147] transition-colors text-sm shadow-sm"
                         title="Add Friend"
                       >
                         <UserPlus className="h-4 w-4" />

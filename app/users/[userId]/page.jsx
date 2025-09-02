@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BonsaiIcon } from "@/components/bonsai-icon";
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
-import { Award, BookOpen, User, TreePine, Flag, Check, Loader2, UserPlus, ArrowLeft, Clock } from "lucide-react";
+import { Award, BookOpen, User, TreePine, Flag, UserCheck, Loader2, UserPlus, ArrowLeft, Clock, Check } from "lucide-react";
 import Link from "next/link";
 
 function PublicProfilePage() {
@@ -219,23 +219,28 @@ function PublicProfilePage() {
                    <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Learning Progress</h2>
                    
                    {/* Friend Status Button */}
+                   {/* Friend Status Button */}
                    {userData.friendStatus === 'pending' ? (
-                     <button className="flex items-center gap-2 bg-[#4a7c59] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#3a6147] transition-colors">
-                       <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                       <span className="text-xs sm:text-sm font-medium">Pending</span>
+                     <button 
+                       className="flex items-center justify-center bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] w-10 h-10 rounded-full cursor-default"
+                       title="Friend request pending"
+                     >
+                       <Clock className="h-5 w-5" />
                      </button>
                    ) : userData.friendStatus === 'accepted' ? (
-                     <button className="flex items-center gap-2 bg-[#4a7c59] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg cursor-default">
-                       <Check className="h-3 w-3 sm:h-4 sm:w-4" />
-                       <span className="text-xs sm:text-sm font-medium">Friends</span>
+                     <button 
+                       className="flex items-center justify-center bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] w-10 h-10 rounded-full cursor-default"
+                       title="Already friends"
+                     >
+                       <UserCheck className="h-5 w-5" />
                      </button>
                    ) : (
                      <button 
                        onClick={handleFriendRequest}
-                       className="flex items-center gap-2 bg-[#4a7c59] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-[#3a6147] transition-colors"
+                       className="flex items-center justify-center bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] w-10 h-10 rounded-full hover:bg-[#dce4d7] transition-colors"
+                       title="Add Friend"
                      >
-                       <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
-                       <span className="text-xs sm:text-sm font-medium">Add Friend</span>
+                       <UserPlus className="h-5 w-5" />
                      </button>
                    )}
                  </div>
