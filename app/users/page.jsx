@@ -18,6 +18,7 @@ function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [sendingRequest, setSendingRequest] = useState(new Set()); // Track which buttons are loading
+  const [dataReady, setDataReady] = useState(false); // Track when data is fully processed
   const friendsScrollRef = useRef(null);
   
   // Use enhanced API hook with retry logic
@@ -44,19 +45,21 @@ function UsersPage() {
 
   const fetchUsers = async () => {
     try {
+      setDataReady(false); // Mark data as not ready
       const data = await get("/api/users", {
         operationName: "Fetch Users List"
       });
       
       if (data.success) {
         setUsers(data.users);
-        setFilteredUsers(data.users);
+        // Don't set dataReady here - let the filtering useEffect handle it
         clearError(); // Clear any previous errors
       } else {
         throw new Error(data.message || 'Failed to fetch users');
       }
     } catch (error) {
       console.error("Error fetching users:", error);
+      setDataReady(false);
       // Error state is handled by the useApiWithRetry hook
     }
   };
@@ -92,6 +95,11 @@ function UsersPage() {
 
   // Filter users based on search term and friend status
   useEffect(() => {
+    if (users.length === 0) {
+      setDataReady(false);
+      return;
+    }
+
     let filtered = users;
     
     // Filter out users who are already friends, but keep pending requests
@@ -105,6 +113,11 @@ function UsersPage() {
     }
     
     setFilteredUsers(filtered);
+    
+    // Mark data as ready after filtering is complete
+    setTimeout(() => {
+      setDataReady(true);
+    }, 50); // Small delay to ensure smooth transition
   }, [searchTerm, users]);
 
   const formatDate = (dateString) => {
@@ -382,7 +395,14 @@ function UsersPage() {
           </div>
 
           {/* Users Grid */}
-          {filteredUsers.length > 0 ? (
+          {!dataReady ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-2">
+                <Users className="h-6 w-6 animate-pulse text-[#4a7c59]" />
+                <span className="text-[#2c3e2d]">Preparing user list...</span>
+              </div>
+            </div>
+          ) : filteredUsers.length > 0 ? (
             <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredUsers.map((user) => (
                 <div key={user.id} className="bg-white rounded-lg border border-[#dce4d7] p-4 sm:p-6 hover:shadow-md transition-shadow">
