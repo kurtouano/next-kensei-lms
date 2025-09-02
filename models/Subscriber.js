@@ -42,7 +42,6 @@ const subscriberSchema = new mongoose.Schema({
 })
 
 // Index for faster queries
-subscriberSchema.index({ email: 1 })
 subscriberSchema.index({ isActive: 1 })
 subscriberSchema.index({ source: 1 })
 
