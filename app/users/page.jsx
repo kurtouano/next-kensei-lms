@@ -459,7 +459,7 @@ function UsersPage() {
                         title="Friend request pending"
                       >
                         <Clock className="h-4 w-4" />
-                        <span className="hidden sm:inline">Pending</span>
+                        <span className="whitespace-nowrap">Pending</span>
                       </button>
                     ) : user.friendStatus === 'accepted' ? (
                       <button

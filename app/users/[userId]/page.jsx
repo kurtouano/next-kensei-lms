@@ -16,6 +16,7 @@ function PublicProfilePage() {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -60,6 +61,13 @@ function PublicProfilePage() {
   };
 
   const handleFriendRequest = async () => {
+    // Prevent double-clicking
+    if (sendingRequest) return;
+
+    // 🚀 OPTIMISTIC UPDATE: Immediately show "Request Sent" state
+    setSendingRequest(true);
+    setUserData(prev => ({ ...prev, friendStatus: 'pending' }));
+
     try {
       const response = await fetch('/api/friends/request', {
         method: 'POST',
@@ -72,15 +80,26 @@ function PublicProfilePage() {
       const data = await response.json();
       
       if (data.success) {
-        // Update the local state to reflect the pending request
-        setUserData(prev => ({ ...prev, friendStatus: 'pending' }));
+        // Keep the pending state (already set optimistically)
         // Update notification count in header for the recipient
         window.dispatchEvent(new Event('notification-updated'));
       } else {
+        // ❌ Request failed - revert to original state
         console.error('Failed to send friend request:', data.message);
+        setUserData(prev => ({ ...prev, friendStatus: null }));
+        
+        // Show error feedback to user
+        alert('Failed to send friend request. Please try again.');
       }
     } catch (error) {
       console.error('Error sending friend request:', error);
+      // ❌ Network error - revert to original state
+      setUserData(prev => ({ ...prev, friendStatus: null }));
+      
+      // Show error feedback to user  
+      alert('Network error. Please check your connection and try again.');
+    } finally {
+      setSendingRequest(false);
     }
   };
 
@@ -219,13 +238,13 @@ function PublicProfilePage() {
                    <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Learning Progress</h2>
                    
                    {/* Friend Status Button */}
-                   {/* Friend Status Button */}
                    {userData.friendStatus === 'pending' ? (
                      <button 
-                       className="flex items-center justify-center bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] w-10 h-10 rounded-full cursor-default"
-                       title="Friend request pending"
+                       className="flex items-center justify-center gap-2 bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] px-4 py-2 rounded-full cursor-default text-sm font-medium"
+                       title="Friend request has been sent"
                      >
-                       <Clock className="h-5 w-5" />
+                       <Clock className="h-4 w-4" />
+                       <span className="whitespace-nowrap">Request Sent</span>
                      </button>
                    ) : userData.friendStatus === 'accepted' ? (
                      <button 
@@ -237,10 +256,11 @@ function PublicProfilePage() {
                    ) : (
                      <button 
                        onClick={handleFriendRequest}
-                       className="flex items-center justify-center bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] w-10 h-10 rounded-full hover:bg-[#dce4d7] transition-colors"
-                       title="Add Friend"
+                       className="flex items-center justify-center gap-2 bg-[#4a7c59] text-white px-4 py-2 rounded-full hover:bg-[#3a6147] transition-colors text-sm font-medium shadow-sm"
+                       title="Send friend request"
                      >
-                       <UserPlus className="h-5 w-5" />
+                       <UserPlus className="h-4 w-4" />
+                       <span className="whitespace-nowrap">Add Friend</span>
                      </button>
                    )}
                  </div>
