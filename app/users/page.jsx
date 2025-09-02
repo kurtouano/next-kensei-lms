@@ -17,6 +17,7 @@ function UsersPage() {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const [sendingRequest, setSendingRequest] = useState(new Set()); // Track which buttons are loading
   const friendsScrollRef = useRef(null);
   
   // Use enhanced API hook with retry logic
@@ -114,6 +115,33 @@ function UsersPage() {
   };
 
   const handleFriendRequest = async (userId) => {
+    // Prevent double-clicking
+    if (sendingRequest.has(userId)) return;
+
+    // 🚀 OPTIMISTIC UPDATE: Immediately show "Pending" state
+    const updateUserStatus = (status) => {
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId 
+            ? { ...user, friendStatus: status }
+            : user
+        )
+      );
+      setFilteredUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId 
+            ? { ...user, friendStatus: status }
+            : user
+        )
+      );
+    };
+
+    // Track that we're sending a request for this user
+    setSendingRequest(prev => new Set(prev).add(userId));
+
+    // Immediately update UI to show pending state
+    updateUserStatus('pending');
+
     try {
       const response = await fetch('/api/friends/request', {
         method: 'POST',
@@ -125,29 +153,32 @@ function UsersPage() {
 
       const data = await response.json();
       
-               if (data.success) {
-           // Update the local state to reflect the pending request
-           setUsers(prevUsers => 
-             prevUsers.map(user => 
-               user.id === userId 
-                 ? { ...user, friendStatus: 'pending' }
-                 : user
-             )
-           );
-           setFilteredUsers(prevUsers => 
-             prevUsers.map(user => 
-               user.id === userId 
-                 ? { ...user, friendStatus: 'pending' }
-                 : user
-             )
-           );
-           // Update notification count in header for the recipient
-           window.dispatchEvent(new Event('notification-updated'));
-         } else {
-           console.error('Failed to send friend request:', data.message);
-         }
+      if (data.success) {
+        // Keep the pending state (already set optimistically)
+        // Update notification count in header for the recipient
+        window.dispatchEvent(new Event('notification-updated'));
+      } else {
+        // ❌ Request failed - revert to original state
+        console.error('Failed to send friend request:', data.message);
+        updateUserStatus(null); // Revert to no friend status
+        
+        // Show error feedback to user
+        alert('Failed to send friend request. Please try again.');
+      }
     } catch (error) {
       console.error('Error sending friend request:', error);
+      // ❌ Network error - revert to original state
+      updateUserStatus(null); // Revert to no friend status
+      
+      // Show error feedback to user  
+      alert('Network error. Please check your connection and try again.');
+    } finally {
+      // Remove from sending requests set
+      setSendingRequest(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
     }
   };
 
