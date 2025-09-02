@@ -10,6 +10,7 @@ import { CourseCard } from "./CourseCard"
 import { InstructorCourseCard } from "./InstructorCourseCard"
 import { useCourses } from "./useCoursesHook"
 
+
 export default function CoursesPage() {
   const { data: session, status } = useSession()
   

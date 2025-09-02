@@ -1,4 +1,4 @@
-import { StructuredData } from "@/components/structured-data"
+
 
 export const metadata = {
   title: "Learn Japanese Online - Complete Guide to Hiragana, Katakana & Kanji | Jotatsu Academy",
@@ -75,37 +75,7 @@ export const metadata = {
 export default function LearnJapanesePage() {
   return (
     <>
-      {/* Enhanced Structured Data for Learn Japanese Page */}
-      <StructuredData 
-        type="learnJapanese" 
-        data={{
-          name: "Learn Japanese Online - Complete Guide",
-          description: "Complete guide to learning Japanese online with hiragana, katakana, kanji, and JLPT preparation.",
-          url: "https://jotatsu.com/learn-japanese",
-          faqs: [
-            {
-              question: "How do I start learning Japanese?",
-              answer: "Start with hiragana, then katakana, followed by basic grammar and vocabulary. Our structured learning path takes you from complete beginner to advanced levels."
-            },
-            {
-              question: "How long does it take to learn Japanese?",
-              answer: "Basic proficiency (JLPT N5) takes 6-12 months with regular study. Advanced levels (JLPT N1) typically require 3-5 years of dedicated learning."
-            },
-            {
-              question: "What are the three Japanese writing systems?",
-              answer: "Hiragana (ひらがな) for native words and grammar, Katakana (カタカナ) for foreign words, and Kanji (漢字) for meaning-based writing."
-            },
-            {
-              question: "How do I prepare for the JLPT test?",
-              answer: "Study systematically through our JLPT preparation courses, practice with mock tests, and focus on the specific skills required for your target level."
-            },
-            {
-              question: "Can I learn Japanese online effectively?",
-              answer: "Yes! Our online platform provides interactive lessons, real-time feedback, and comprehensive resources that make learning Japanese online both effective and engaging."
-            }
-          ]
-        }} 
-      />
+
 
       <div className="min-h-screen bg-gradient-to-b from-white to-[#f8f7f4]">
         {/* Hero Section */}
