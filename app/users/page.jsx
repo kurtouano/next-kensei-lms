@@ -17,8 +17,10 @@ function UsersPage() {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const [friendsSearchTerm, setFriendsSearchTerm] = useState(""); // Search term for friends
   const [sendingRequest, setSendingRequest] = useState(new Set()); // Track which buttons are loading
   const [dataReady, setDataReady] = useState(false); // Track when data is fully processed
+  const [visibleUsersCount, setVisibleUsersCount] = useState(8); // Number of users to show initially
   const friendsScrollRef = useRef(null);
   
   // Use enhanced API hook with retry logic
@@ -30,6 +32,11 @@ function UsersPage() {
   
   // Use real-time friends hook
   const { friends, loading: friendsLoading, lastUpdate } = useRealTimeFriends();
+
+  // Filter friends based on search term
+  const filteredFriends = friends.filter(friend =>
+    friend.name.toLowerCase().includes(friendsSearchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -114,11 +121,23 @@ function UsersPage() {
     
     setFilteredUsers(filtered);
     
+    // Reset visible count when search changes
+    setVisibleUsersCount(8);
+    
     // Mark data as ready after filtering is complete
     setTimeout(() => {
       setDataReady(true);
     }, 50); // Small delay to ensure smooth transition
   }, [searchTerm, users]);
+
+  // Get paginated users
+  const paginatedUsers = filteredUsers.slice(0, visibleUsersCount);
+  const hasMoreUsers = filteredUsers.length > visibleUsersCount;
+
+  // Load more users function
+  const loadMoreUsers = () => {
+    setVisibleUsersCount(prev => Math.min(prev + 8, filteredUsers.length));
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -284,25 +303,45 @@ function UsersPage() {
           ) : friends.length > 0 ? (
             <div className="mb-8">
               <div className="mb-4">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-[#2c3e2d]">
-                    Your Friends ({friends.length})
-                  </h2>
-                  {friends.length > 0 && (
-                    <span className="text-base text-[#5c6d5e] transition-all duration-300">
-                      <span className="inline-block animate-pulse">
-                        {friends.filter(friend => friend.isOnline).length}
-                      </span> online
-                    </span>
-                  )}
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-[#2c3e2d]">
+                      Your Friends ({friends.length})
+                    </h2>
+                    {friends.length > 0 && (
+                      <span className="text-base text-[#5c6d5e] transition-all duration-300">
+                        <span className="inline-block animate-pulse">
+                          {friends.filter(friend => friend.isOnline).length}
+                        </span> online
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Friends Search Input */}
+                  <div className="relative max-w-xs">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
+                    <input
+                      type="text"
+                      placeholder="Search friends..."
+                      value={friendsSearchTerm}
+                      onChange={(e) => setFriendsSearchTerm(e.target.value)}
+                      className="w-full pl-10 text-sm pr-4 py-2 border border-[#dce4d7] rounded-lg bg-white text-[#2c3e2d] placeholder-[#5c6d5e] focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
+                    />
+                  </div>
                 </div>
               </div>
               
               <div className="relative">
+                {/* Left Blur Gradient */}
+                <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[rgb(248,247,244)] to-transparent z-20 pointer-events-none" />
+                
+                {/* Right Blur Gradient */}
+                <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[rgb(248,247,244)] to-transparent z-20 pointer-events-none" />
+                
                 {/* Left Arrow */}
                 <button
                   onClick={() => scrollFriends('left')}
-                  className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full bg-white border border-[#dce4d7] hover:bg-[#eef2eb] transition-colors shadow-sm"
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 z-30 p-2 rounded-full bg-white border border-[#dce4d7] hover:bg-[#eef2eb] transition-colors shadow-sm"
                   title="Scroll left"
                 >
                   <ChevronLeft className="h-4 w-4 text-[#4a7c59]" />
@@ -311,22 +350,23 @@ function UsersPage() {
                 {/* Right Arrow */}
                 <button
                   onClick={() => scrollFriends('right')}
-                  className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 p-2 rounded-full bg-white border border-[#dce4d7] hover:bg-[#eef2eb] transition-colors shadow-sm"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 z-30 p-2 rounded-full bg-white border border-[#dce4d7] hover:bg-[#eef2eb] transition-colors shadow-sm"
                   title="Scroll right"
                 >
                   <ChevronRight className="h-4 w-4 text-[#4a7c59]" />
                 </button>
                 
-                <div 
-                  ref={friendsScrollRef}
-                  className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 px-12"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-                  {friends.map((friend) => (
+                {filteredFriends.length > 0 ? (
+                  <div 
+                    ref={friendsScrollRef}
+                    className="flex gap-7 overflow-x-auto scrollbar-hide pb-2 px-16"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    {filteredFriends.map((friend, index) => (
                     <Link
-                      key={friend.id}
+                      key={friend.id || `friend-${index}`}
                       href={`/users/${friend.id}`}
-                      className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[100px]"
+                      className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[120px]"
                     >
                       {/* Friend Icon */}
                       <div className="relative">
@@ -361,15 +401,22 @@ function UsersPage() {
                       
                       {/* Friend Name */}
                       <div className="text-center">
-                        <h3 className="font-medium text-[#2c3e2d] text-base truncate max-w-[100px]">{friend.name}</h3>
+                        <h3 className="font-medium text-[#2c3e2d] text-base truncate max-w-[120px]">{friend.name}</h3>
                                    {/* Last seen timestamp */}
            <p className="text-xs text-[#5c6d5e] mt-1">
              {formatLastSeen(friend.lastSeen)}
            </p>
                       </div>
                     </Link>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 px-16">
+                    <p className="text-[#5c6d5e] text-sm">
+                      {friendsSearchTerm ? `No friends found matching "${friendsSearchTerm}"` : "No friends to display"}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           ) : null}
@@ -385,7 +432,7 @@ function UsersPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
                 <input
                   type="text"
-                  placeholder="Search users"
+                  placeholder="Search users..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 text-sm pr-4 py-2 border border-[#dce4d7] rounded-lg bg-white text-[#2c3e2d] placeholder-[#5c6d5e] focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
@@ -404,8 +451,8 @@ function UsersPage() {
             </div>
           ) : filteredUsers.length > 0 ? (
             <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredUsers.map((user) => (
-                <div key={user.id} className="bg-white rounded-lg border border-[#dce4d7] p-4 sm:p-6 hover:shadow-md transition-shadow">
+              {paginatedUsers.map((user, index) => (
+                <div key={user.id || `user-${index}`} className="bg-white rounded-lg border border-[#dce4d7] p-4 sm:p-6 hover:shadow-md transition-shadow">
                   {/* User Header */}
                   <div className="flex items-center mb-4">
                                          <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-2 border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden mr-3 sm:mr-4 flex-shrink-0">
@@ -510,6 +557,19 @@ function UsersPage() {
               <p className="text-[#5c6d5e]">
                 {searchTerm ? "Try adjusting your search terms" : "No users to display"}
               </p>
+            </div>
+          )}
+          
+          {/* Load More Button */}
+          {dataReady && filteredUsers.length > 0 && hasMoreUsers && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={loadMoreUsers}
+                className="flex items-center gap-2 bg-[#4a7c59] text-white py-3 px-6 rounded-lg hover:bg-[#3a6147] transition-colors shadow-sm"
+              >
+                <Users className="h-4 w-4" />
+                Load More Users
+              </button>
             </div>
           )}
         </div>
