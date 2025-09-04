@@ -66,17 +66,6 @@ export const metadata = {
   authors: [{ name: "Jotatsu Academy", url: "https://jotatsu.com" }],
   creator: "Jotatsu Academy",
   publisher: "Jotatsu Academy",
-  icons: {
-    icon: '/jotatsu_logo.png',
-    shortcut: '/jotatsu_logo.png',
-    apple: '/jotatsu_logo.png',
-    other: [
-      {
-        rel: 'apple-touch-icon-precomposed',
-        url: '/jotatsu_logo.png',
-      },
-    ],
-  },
   robots: {
     index: true,
     follow: true,
