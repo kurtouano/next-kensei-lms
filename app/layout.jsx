@@ -126,7 +126,6 @@ export default async function RootLayout({ children }) {
         <meta name="application-name" content="Jotatsu Academy" />
         <meta name="msapplication-TileColor" content="#4a7c59" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
-        
 
       </head>
       <body className={`${notoSansJP.variable} ${poppins.variable} font-sans`}>
