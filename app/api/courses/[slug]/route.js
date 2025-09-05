@@ -29,7 +29,11 @@ export async function GET(request, { params }) {
       })
       .populate({
         path: 'instructor',
-        select: "name image icon email _id" // 🔧 ADDED: Include _id and email
+        select: "name image icon email _id",
+        populate: {
+          path: 'bonsai',
+          select: 'level customization'
+        }
       })
       .lean();
 
@@ -167,8 +171,7 @@ export async function GET(request, { params }) {
       fullDescription: course.fullDescription,
       previewVideoUrl: course.previewVideoUrl,
       progress: 0,
-      instructor: course.instructor?.name || "Japanese Instructor",
-      instructorImg: course.instructor?.image || course.instructor?.icon || null,
+      instructor: course.instructor || { name: "Japanese Instructor" },
       instructorId: course.instructor?._id?.toString(), // 🔧 ADDED: Include instructor ID
       lastUpdated: new Date(course.updatedAt).toLocaleDateString('en-US', {
         year: 'numeric',

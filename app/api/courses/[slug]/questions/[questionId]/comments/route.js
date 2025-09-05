@@ -117,10 +117,44 @@ export async function POST(request, { params }) {
       }
     }
 
+    // Populate the user data for the response
+    const populatedComment = await Question.findById(questionId)
+      .populate({
+        path: 'comments.user',
+        select: 'name email icon',
+        populate: {
+          path: 'bonsai',
+          select: 'level customization'
+        }
+      })
+      .select('comments')
+      .lean();
+
+    const latestComment = populatedComment.comments[populatedComment.comments.length - 1];
+
     return NextResponse.json({
       success: true,
       message: "Comment added successfully",
-      commentId: newComment._id?.toString() || "new-comment"
+      commentId: newComment._id?.toString() || "new-comment",
+      comment: {
+        _id: latestComment._id.toString(),
+        comment: latestComment.comment,
+        likeCount: latestComment.likeCount || 0,
+        likedBy: latestComment.likedBy || [],
+        isLiked: false, // Will be set by frontend
+        isInstructorReply: latestComment.isInstructorReply || false,
+        createdAt: new Date(latestComment.createdAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }),
+        user: {
+          name: latestComment.user?.name || 'Anonymous',
+          email: latestComment.user?.email || '',
+          icon: latestComment.user?.icon || null,
+          bonsai: latestComment.user?.bonsai || null
+        }
+      }
     });
 
   } catch (error) {

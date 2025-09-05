@@ -183,7 +183,7 @@ export const QASection = memo(function QASection({
   return (
     <>
       {isLoggedIn && isEnrolled ? (
-        <div className="mt-4 rounded-lg border border-[#dce4d7] bg-white p-4 shadow-sm">
+        <div className="mt-4 rounded-lg border border-[#dce4d7] bg-white shadow-sm p-4">
           <QAHeader
             totalQuestions={totalQuestions}
             loadedQuestions={questions.length}
@@ -232,6 +232,7 @@ export const QASection = memo(function QASection({
               <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
                 <Button
                   variant="outline"
+                  size="sm"
                   className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb] w-full sm:w-auto"
                   onClick={handleLoadMore}
                   disabled={loadingMore}
@@ -256,11 +257,8 @@ export const QASection = memo(function QASection({
 
             {!loading && questions.length > 0 && !hasMore && (
               <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
-                <p className="text-sm text-[#5c6d5e]">
-                  You've reached the end! 🎉
-                </p>
                 <p className="text-xs text-[#5c6d5e] mt-1">
-                  All {totalQuestions} questions loaded
+                  All questions loaded
                 </p>
               </div>
             )}
@@ -327,6 +325,7 @@ const QAHeader = memo(function QAHeader({
           <div className="flex gap-2 w-full sm:w-auto sm:flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
               className="w-full sm:w-auto border-[#4a7c59] text-[#4a7c59]"
               onClick={onAskQuestion}
             >
@@ -339,7 +338,6 @@ const QAHeader = memo(function QAHeader({
 
       {totalQuestions > 0 && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-4">
-          <span className="text-sm text-[#5c6d5e]">Sort by:</span>
           <select
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value)}
@@ -431,6 +429,7 @@ const QuestionForm = memo(function QuestionForm({
 
       <div className="flex flex-col sm:flex-row gap-3">
         <Button
+          size="sm"
           className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full sm:w-auto"
           onClick={onSubmitQuestion}
           disabled={!canSubmit}
@@ -439,6 +438,7 @@ const QuestionForm = memo(function QuestionForm({
         </Button>
         <Button
           variant="outline"
+          size="sm"
           className="border-[#4a7c59] text-[#4a7c59] w-full sm:w-auto"
           onClick={onCancelQuestion}
           disabled={submitting}
@@ -540,6 +540,14 @@ const QuestionItem = memo(function QuestionItem({
   }
 
   const renderAvatar = (user) => {
+    if (!user) {
+      return (
+        <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-gray-200 flex items-center justify-center">
+          <User className="h-5 w-5 text-gray-500" />
+        </div>
+      )
+    }
+    
     if (user.icon && !imageError) {
       if (user.icon === 'bonsai') {
         return (
@@ -583,16 +591,16 @@ const QuestionItem = memo(function QuestionItem({
   }
 
   return (
-    <div className="border-b border-[#dce4d7] pb-4 last:border-b-0">
+    <div className="border-b border-[#dce4d7] pb-3 last:border-b-0">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0">
           {renderAvatar(question.user)}
         </div>
 
         <div className="flex-1 min-w-0"> {/* FIXED: Added min-w-0 for proper flex shrinking */}
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2 min-w-0"> {/* FIXED: Added min-w-0 */}
-              <h5 className="font-medium text-[#2c3e2d] truncate">{question.user.name}</h5> {/* FIXED: Added truncate */}
+              <h5 className="font-medium text-[#2c3e2d] truncate">{question.user?.name || 'Anonymous'}</h5> {/* FIXED: Added truncate */}
               {question.isPinned && (
                 <Pin className="h-4 w-4 text-[#4a7c59] flex-shrink-0" />
               )}
@@ -605,7 +613,7 @@ const QuestionItem = memo(function QuestionItem({
                 <span className="text-xs text-[#5c6d5e] whitespace-nowrap">{question.createdAt}</span>
               </div>
             </div>
-            {question.user.email === question.currentUserEmail && (
+            {question.user?.email === question.currentUserEmail && (
               <div className="flex items-center gap-2 flex-shrink-0"> {/* FIXED: Added flex-shrink-0 */}
                 <Button
                   size="sm"
@@ -620,11 +628,11 @@ const QuestionItem = memo(function QuestionItem({
           </div>
 
           {/* FIXED: Question Content with proper text wrapping */}
-          <p className="text-sm text-[#5c6d5e] mb-3 leading-relaxed break-words overflow-wrap-anywhere">
+          <p className="text-sm text-[#5c6d5e] mb-2 leading-relaxed break-words overflow-wrap-anywhere">
             {question.question}
           </p>
 
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm mb-3">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm mb-4">
             <button
               className={`flex items-center gap-1 transition-colors ${
                 question.isLiked 
@@ -658,7 +666,7 @@ const QuestionItem = memo(function QuestionItem({
           </div>
 
           {replyingTo === question.id && isLoggedIn && isEnrolled && (
-            <div className="mb-4 bg-white border border-[#dce4d7] rounded-lg p-3">
+            <div className="mb-2 bg-white border border-[#dce4d7] rounded-lg p-2">
               <textarea
                 className="w-full border border-[#dce4d7] rounded p-2 text-sm focus:border-[#4a7c59] focus:outline-none resize-none"
                 rows="3"
@@ -743,6 +751,14 @@ const CommentItem = memo(function CommentItem({
   }
 
   const renderAvatar = (user) => {
+    if (!user) {
+      return (
+        <div className="h-8 w-8 rounded-full border border-[#4a7c59] bg-gray-200 flex items-center justify-center">
+          <User className="h-4 w-4 text-gray-500" />
+        </div>
+      )
+    }
+    
     if (user.icon && !imageError) {
       if (user.icon === 'bonsai') {
         return (
@@ -786,16 +802,16 @@ const CommentItem = memo(function CommentItem({
   }
 
   return (
-    <div className="border-b border-[#dce4d7] pb-3 last:border-b-0 last:pb-0 pl-0">
+    <div className="border-b border-[#dce4d7] pb-2 last:border-b-0 last:pb-0 pl-0">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0">
           {renderAvatar(comment.user)}
         </div>
 
         <div className="flex-1 min-w-0"> {/* FIXED: Added min-w-0 for proper flex shrinking */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1">
             <div className="flex flex-wrap items-center gap-2 min-w-0"> {/* FIXED: Added min-w-0 */}
-              <h6 className="font-medium text-[#2c3e2d] text-sm truncate">{comment.user.name}</h6> {/* FIXED: Added truncate */}
+              <h6 className="font-medium text-[#2c3e2d] text-sm truncate">{comment.user?.name || 'Anonymous'}</h6> {/* FIXED: Added truncate */}
               {comment.isInstructorReply && (
                 <span className="bg-[#4a7c59] text-white text-xs px-2 py-1 rounded-full flex-shrink-0">
                   Instructor
@@ -803,7 +819,7 @@ const CommentItem = memo(function CommentItem({
               )}
               <span className="text-xs text-[#5c6d5e] whitespace-nowrap">{comment.createdAt}</span>
             </div>
-            {comment.user.email === comment.currentUserEmail && (
+            {comment.user?.email === comment.currentUserEmail && (
               <div className="flex gap-1 flex-shrink-0 self-start sm:self-auto"> {/* FIXED: Added flex-shrink-0 */}
                 <Button
                   size="sm"
@@ -826,7 +842,7 @@ const CommentItem = memo(function CommentItem({
           </div>
 
           {editingComment === comment._id ? (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <textarea
                 className="w-full border border-[#dce4d7] rounded p-2 text-sm focus:border-[#4a7c59] focus:outline-none resize-none"
                 rows="3"
@@ -859,11 +875,11 @@ const CommentItem = memo(function CommentItem({
           ) : (
             <>
               {/* FIXED: Comment Content with proper text wrapping */}
-              <p className="text-sm text-[#5c6d5e] mb-2 leading-relaxed break-words overflow-wrap-anywhere">
+              <p className="text-sm text-[#5c6d5e] mb-1 leading-relaxed break-words overflow-wrap-anywhere">
                 {comment.comment}
               </p>
               
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-4 text-sm mb-2">
                 <button
                   className={`flex items-center gap-1 transition-colors ${
                     comment.isLiked 

@@ -23,14 +23,16 @@ export function useQA(courseSlug, session) {
   const userId = session?.user?.id
   const userEmail = session?.user?.email
 
-  const fetchQuestions = useCallback(async (page = 1, append = false) => {
+  const fetchQuestions = useCallback(async (page = 1, append = false, silent = false) => {
     if (!courseSlug) return
 
-    // Set appropriate loading state
-    if (append) {
-      setQAState(prev => ({ ...prev, loadingMore: true }))
-    } else {
-      setQAState(prev => ({ ...prev, loading: true }))
+    // Set appropriate loading state (skip if silent)
+    if (!silent) {
+      if (append) {
+        setQAState(prev => ({ ...prev, loadingMore: true }))
+      } else {
+        setQAState(prev => ({ ...prev, loading: true }))
+      }
     }
 
     try {
@@ -171,6 +173,38 @@ export function useQA(courseSlug, session) {
 
     setQAState(prev => ({ ...prev, submitting: true }))
     
+    // Create optimistic question
+    const optimisticQuestion = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      question: qaState.newQuestion.question.trim(),
+      likeCount: 0,
+      isLiked: false,
+      isInstructorReply: false,
+      createdAt: new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      user: {
+        name: session?.user?.name || session?.user?.email?.split('@')[0] || "You",
+        email: session?.user?.email || "",
+        icon: session?.user?.icon || null,
+        bonsai: session?.user?.bonsai || null
+      },
+      comments: [],
+      currentUserEmail: userEmail
+    }
+
+    // Optimistic update - add question immediately to UI
+    setQAState(prev => ({
+      ...prev,
+      questions: [optimisticQuestion, ...prev.questions],
+      totalQuestions: prev.totalQuestions + 1,
+      userHasAsked: true,
+      showForm: false,
+      newQuestion: { question: "" }
+    }))
+    
     try {
       const response = await fetch(`/api/courses/${courseSlug}/questions`, {
         method: 'POST',
@@ -188,23 +222,32 @@ export function useQA(courseSlug, session) {
       const data = await response.json()
 
       if (data.success) {
-        // Reset to first page and fetch fresh data (this is necessary for new questions)
-        await fetchQuestions(1, false)
-        setQAState(prev => ({ 
-          ...prev, 
-          showForm: false,
-          newQuestion: { question: "" }
-        }))
+        // Silent refresh - no loading state
+        await fetchQuestions(1, false, true)
       } else {
+        // Remove optimistic question on error
+        setQAState(prev => ({
+          ...prev,
+          questions: prev.questions.filter(q => q.id !== optimisticQuestion.id),
+          totalQuestions: prev.totalQuestions - 1,
+          userHasAsked: prev.questions.some(q => q.user.email === userEmail && q.id !== optimisticQuestion.id)
+        }))
         throw new Error(data.error || 'Failed to submit question');
       }
     } catch (error) {
       console.error("Error submitting question:", error)
+      // Remove optimistic question on error
+      setQAState(prev => ({
+        ...prev,
+        questions: prev.questions.filter(q => q.id !== optimisticQuestion.id),
+        totalQuestions: prev.totalQuestions - 1,
+        userHasAsked: prev.questions.some(q => q.user.email === userEmail && q.id !== optimisticQuestion.id)
+      }))
       alert(`Failed to submit question: ${error.message}`)
     } finally {
       setQAState(prev => ({ ...prev, submitting: false }))
     }
-  }, [qaState.newQuestion, session, courseSlug, fetchQuestions])
+  }, [qaState.newQuestion, session, courseSlug, userEmail, userId])
 
   const deleteQuestion = useCallback(async (questionId) => {
     if (!session?.user) return
@@ -250,29 +293,6 @@ export function useQA(courseSlug, session) {
       return;
     }
 
-    // Create optimistic comment
-    const optimisticComment = {
-      _id: `temp-${Date.now()}`, // Temporary ID
-      comment: comment.trim(),
-      likeCount: 0,
-      isLiked: false,
-      isInstructorReply: false, // Will be determined by server
-      createdAt: new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      }),
-      user: {
-        name: session.user.name || "You",
-        email: session.user.email,
-        avatar: session.user.image || null
-      },
-      currentUserEmail: userEmail
-    }
-
-    // Optimistic update
-    addCommentOptimistically(questionId, optimisticComment)
-
     try {
       const response = await fetch(`/api/courses/${courseSlug}/questions/${questionId}/comments`, {
         method: 'POST',
@@ -283,8 +303,6 @@ export function useQA(courseSlug, session) {
       });
 
       if (!response.ok) {
-        // Revert optimistic update on error
-        removeCommentOptimistically(questionId, optimisticComment._id)
         const errorText = await response.text();
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
@@ -292,18 +310,16 @@ export function useQA(courseSlug, session) {
       const data = await response.json();
 
       if (data.success) {
-        // Replace optimistic comment with real data by refetching
-        await fetchQuestions(1, false)
+        // Silent refresh - no loading state
+        await fetchQuestions(1, false, true)
       } else {
-        // Revert optimistic update on error
-        removeCommentOptimistically(questionId, optimisticComment._id)
         throw new Error(data.error || 'Failed to submit comment');
       }
     } catch (error) {
       console.error("Error submitting comment:", error);
       alert(`Failed to submit comment: ${error.message}`);
     }
-  }, [session, courseSlug, userEmail, addCommentOptimistically, removeCommentOptimistically, fetchQuestions])
+  }, [session, courseSlug, fetchQuestions])
 
   const deleteComment = useCallback(async (questionId, commentId) => {
     if (!session?.user) return

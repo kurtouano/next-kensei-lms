@@ -204,7 +204,7 @@ export default function LessonPage() {
     toggleForm: toggleQAForm 
   } = useQA(
     effectiveIsLoggedIn ? lessonSlug : null, 
-    effectiveIsLoggedIn ? session : null
+    session // Always pass session if it exists, for optimistic updates
   )
   
   // Navigation state

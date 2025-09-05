@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Star
 } from "lucide-react"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 
 export const CourseInfo = memo(function CourseInfo({ 
   lesson, 
@@ -110,19 +111,39 @@ export const CourseInfo = memo(function CourseInfo({
 
       {/* Instructor Section */}
       <div className="flex items-center gap-3 mb-6">
-        {lesson.instructorImg ? (
-          <img
-            src={lesson.instructorImg}
-            alt="Instructor"
-            className="h-10 w-10 rounded-full object-cover"
-          />
+        {lesson.instructor?.icon ? (
+          lesson.instructor.icon === 'bonsai' ? (
+            <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden">
+              <BonsaiSVG 
+                level={lesson.instructor?.bonsai?.level || 1}
+                treeColor={lesson.instructor?.bonsai?.customization?.foliageColor || '#77DD82'} 
+                potColor={lesson.instructor?.bonsai?.customization?.potColor || '#FD9475'} 
+                selectedEyes={lesson.instructor?.bonsai?.customization?.eyes || 'default_eyes'}
+                selectedMouth={lesson.instructor?.bonsai?.customization?.mouth || 'default_mouth'}
+                selectedPotStyle={lesson.instructor?.bonsai?.customization?.potStyle || 'default_pot'}
+                selectedGroundStyle={lesson.instructor?.bonsai?.customization?.groundStyle || 'default_ground'}
+                decorations={lesson.instructor?.bonsai?.customization?.decorations ? Object.values(lesson.instructor.bonsai.customization.decorations).filter(Boolean) : []}
+                zoomed={true}
+              />
+            </div>
+          ) : lesson.instructor.icon.startsWith('http') ? (
+            <img
+              src={lesson.instructor.icon}
+              alt="Instructor"
+              className="h-10 w-10 rounded-full border border-[#4a7c59] object-cover"
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-gray-100 flex items-center justify-center">
+              <span className="text-2xl">{lesson.instructor.icon}</span>
+            </div>
+          )
         ) : (
-          <div className="h-10 w-10 rounded-full bg-[#4a7c59] flex items-center justify-center">
+          <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-[#4a7c59] flex items-center justify-center">
             <User size={20} className="text-white" />
           </div>
         )}
         <div>
-          <h3 className="font-medium text-[#2c3e2d]">{lesson.instructor}</h3>
+          <h3 className="font-medium text-[#2c3e2d]">{lesson.instructor?.name || lesson.instructor}</h3>
           <p className="text-sm text-[#5c6d5e]">Japanese Language Instructor</p>
         </div>
       </div>
