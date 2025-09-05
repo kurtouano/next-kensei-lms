@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Users, Search, User, Award, TreePine, Flag, UserPlus, Eye, Clock, Check, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { Users, Search, User, Award, TreePine, Flag, UserPlus, Eye, Clock, Check, ChevronLeft, ChevronRight, RefreshCw, MessageCircle } from "lucide-react";
 import { BonsaiIcon } from "@/components/bonsai-icon";
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useRealTimeFriends } from "@/hooks/useRealTimeFriends";
 import { formatLastSeen } from "@/lib/utils";
 import { useApiWithRetry } from "@/hooks/useApiWithRetry";
+import { useChat } from "@/hooks/useChat";
 
 function UsersPage() {
   const { data: session, status } = useSession();
@@ -32,11 +33,39 @@ function UsersPage() {
   
   // Use real-time friends hook
   const { friends, loading: friendsLoading, lastUpdate } = useRealTimeFriends();
+  
+  // Use chat hook for starting conversations
+  const { startChatWithFriend } = useChat();
 
   // Filter friends based on search term
   const filteredFriends = friends.filter(friend =>
     friend.name.toLowerCase().includes(friendsSearchTerm.toLowerCase())
   );
+
+  // Handle starting a chat with a friend
+  const handleStartChat = async (friendId, friendName) => {
+    try {
+      console.log(`Attempting to start chat with ${friendName} (ID: ${friendId})`);
+      console.log('Friend ID type:', typeof friendId);
+      console.log('Friend ID value:', friendId);
+      
+      const result = await startChatWithFriend(friendId);
+      console.log('Chat creation result:', result);
+      
+      // Navigate to chat page
+      router.push('/chat');
+      
+      // Show success message
+      if (result.isNewChat) {
+        console.log(`Started new chat with ${friendName}`);
+      } else {
+        console.log(`Opened existing chat with ${friendName}`);
+      }
+    } catch (error) {
+      console.error("Failed to start chat:", error);
+      alert(`Failed to start chat with ${friendName}. ${error.message}`);
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -363,51 +392,62 @@ function UsersPage() {
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
                     {filteredFriends.map((friend, index) => (
-                    <Link
-                      key={friend.id || `friend-${index}`}
-                      href={`/users/${friend.id}`}
-                      className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-[120px]"
-                    >
-                      {/* Friend Icon */}
-                      <div className="relative">
-                        <div className="h-16 w-16 rounded-full border-2 border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden">
-                          {friend.icon && friend.icon.startsWith('http') ? (
-                            <img 
-                              src={friend.icon} 
-                              alt={friend.name} 
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center">
-                              <BonsaiSVG 
-                                level={friend.bonsai?.level || 1}
-                                treeColor={friend.bonsai?.customization?.foliageColor} 
-                                potColor={friend.bonsai?.customization?.potColor} 
-                                selectedEyes={friend.bonsai?.customization?.eyes}
-                                selectedMouth={friend.bonsai?.customization?.mouth}
-                                selectedPotStyle={friend.bonsai?.customization?.potStyle}
-                                selectedGroundStyle={friend.bonsai?.customization?.groundStyle}
-                                decorations={friend.bonsai?.customization?.decorations ? Object.values(friend.bonsai.customization.decorations).filter(Boolean) : []}
-                                zoomed={true}
+                      <div
+                        key={friend.id || `friend-${index}`}
+                        className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[120px]"
+                      >
+                        {/* Friend Icon - Clickable to view profile */}
+                        <Link href={`/users/${friend.id}`} className="relative cursor-pointer hover:opacity-80 transition-opacity">
+                          <div className="h-16 w-16 rounded-full border-2 border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden">
+                            {friend.icon && friend.icon.startsWith('http') ? (
+                              <img 
+                                src={friend.icon} 
+                                alt={friend.name} 
+                                className="h-full w-full object-cover"
                               />
-                            </div>
-                          )}
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center">
+                                <BonsaiSVG 
+                                  level={friend.bonsai?.level || 1}
+                                  treeColor={friend.bonsai?.customization?.foliageColor} 
+                                  potColor={friend.bonsai?.customization?.potColor} 
+                                  selectedEyes={friend.bonsai?.customization?.eyes}
+                                  selectedMouth={friend.bonsai?.customization?.mouth}
+                                  selectedPotStyle={friend.bonsai?.customization?.potStyle}
+                                  selectedGroundStyle={friend.bonsai?.customization?.groundStyle}
+                                  decorations={friend.bonsai?.customization?.decorations ? Object.values(friend.bonsai.customization.decorations).filter(Boolean) : []}
+                                  zoomed={true}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          {/* Online Status Indicator */}
+                          <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white transition-all duration-300 ${
+                            friend.isOnline ? 'bg-green-500 scale-110' : 'bg-gray-400 scale-100'
+                          }`} />
+                        </Link>
+                        
+                        {/* Friend Name - Clickable to view profile */}
+                        <div className="text-center">
+                          <Link href={`/users/${friend.id}`} className="hover:opacity-80 transition-opacity">
+                            <h3 className="font-medium text-[#2c3e2d] text-base truncate max-w-[120px]">{friend.name}</h3>
+                          </Link>
+                          {/* Last seen timestamp */}
+                          <p className="text-xs text-[#5c6d5e] mt-1">
+                            {formatLastSeen(friend.lastSeen)}
+                          </p>
                         </div>
-                        {/* Online Status Indicator */}
-                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white transition-all duration-300 ${
-                          friend.isOnline ? 'bg-green-500 scale-110' : 'bg-gray-400 scale-100'
-                        }`} />
+
+                        {/* Message Button */}
+                        <button
+                          onClick={() => handleStartChat(friend.id, friend.name)}
+                          className="mt-1 px-3 py-1.5 bg-[#4a7c59] text-white text-xs rounded-lg hover:bg-[#3a6147] transition-colors flex items-center gap-1.5"
+                          title={`Message ${friend.name}`}
+                        >
+                          <MessageCircle className="h-3 w-3" />
+                          Message
+                        </button>
                       </div>
-                      
-                      {/* Friend Name */}
-                      <div className="text-center">
-                        <h3 className="font-medium text-[#2c3e2d] text-base truncate max-w-[120px]">{friend.name}</h3>
-                                   {/* Last seen timestamp */}
-           <p className="text-xs text-[#5c6d5e] mt-1">
-             {formatLastSeen(friend.lastSeen)}
-           </p>
-                      </div>
-                    </Link>
                     ))}
                   </div>
                 ) : (

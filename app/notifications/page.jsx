@@ -22,6 +22,8 @@ function NotificationsPage() {
     }
 
     if (status === "authenticated") {
+      // Immediately reset notification count when visiting the page
+      window.dispatchEvent(new Event('notification-updated'));
       fetchNotifications();
     }
   }, [status, router]);
@@ -49,8 +51,11 @@ function NotificationsPage() {
         
         // Mark all unread notifications as read when viewing the page
         const unreadNotifications = data.notifications.filter(n => !n.read);
-        for (const notification of unreadNotifications) {
-          await markNotificationAsRead(notification._id);
+        if (unreadNotifications.length > 0) {
+          // Mark all unread notifications as read in batch
+          await markAllNotificationsAsRead(unreadNotifications.map(n => n._id));
+          // Update notification count in header immediately
+          window.dispatchEvent(new Event('notification-updated'));
         }
       }
     } catch (error) {
@@ -71,6 +76,20 @@ function NotificationsPage() {
       });
     } catch (error) {
       console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const markAllNotificationsAsRead = async (notificationIds) => {
+    try {
+      await fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notificationIds }),
+      });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
     }
   };
 

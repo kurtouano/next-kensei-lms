@@ -4,6 +4,7 @@ import { authOptions } from "../../auth/[...nextauth]/route";
 import { connectDb } from "@/lib/mongodb";
 import Friend from "@/models/Friend";
 import Notification from "@/models/Notification";
+import { handleFriendAcceptance } from "@/lib/friendChatIntegration";
 
 export async function POST(req) {
   try {
@@ -105,10 +106,30 @@ export async function POST(req) {
 
     await notification.save();
 
+    // If friend request was accepted, create a direct chat between the users
+    let chatResult = null;
+    if (action === 'accept') {
+      try {
+        chatResult = await handleFriendAcceptance(
+          friendRequest.requester._id, 
+          session.user.id
+        );
+      } catch (error) {
+        console.error("Failed to create friend chat:", error);
+        // Don't fail the entire request if chat creation fails
+        chatResult = { 
+          success: false, 
+          error: error.message,
+          message: "Friend request accepted, but failed to create chat"
+        };
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: `Friend request ${action}ed successfully`,
-      friendRequest: friendRequest
+      friendRequest: friendRequest,
+      ...(chatResult && { chat: chatResult })
     });
 
   } catch (error) {
