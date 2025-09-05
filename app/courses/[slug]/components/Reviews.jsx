@@ -1,6 +1,7 @@
 import { memo, useCallback, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Star, Edit, Trash2, MessageSquare, User, Heart, AlertTriangle, X, Lock } from "lucide-react"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 
 export const ReviewSection = memo(function ReviewSection({
   reviewsState,
@@ -132,10 +133,10 @@ const ReviewHeader = memo(function ReviewHeader({
     <div className="border-b border-[#dce4d7] pb-4">
       <div className="flex items-center justify-between flex-col sm:flex-row">
         <div className="flex w-full sm:w-max justify-between gap-4 min-w-0 pb-4 sm:pb-0"> 
-          <h3 className="text-sm sm:text-base font-medium text-[#2c3e2d]">Reviews & Ratings</h3>
+          <h3 className="font-medium text-[#2c3e2d]">Reviews & Ratings</h3>
           <div className="flex items-center gap-2 min-w-0">
-            <StarRating rating={Math.round(averageRating)} size="h-3.5 w-3.5 sm:h-4 sm:w-4"  />
-            <span className="text-xs sm:text-sm text-[#5c6d5e] whitespace-nowrap">
+            <StarRating rating={Math.round(averageRating)} size="h-4 w-4"  />
+            <span className="text-xs text-[#5c6d5e] whitespace-nowrap">
               {averageRating} ({totalReviews} reviews)
             </span>
           </div>
@@ -329,26 +330,42 @@ const ReviewItem = memo(function ReviewItem({ review }) {
   }
 
   const renderAvatar = () => {
-    if (review.user.avatar && !imageError) {
-      if (review.user.avatar.startsWith('http')) {
+    if (review.user.icon && !imageError) {
+      if (review.user.icon === 'bonsai') {
+        return (
+          <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden">
+            <BonsaiSVG 
+              level={review.user.bonsai?.level || 1}
+              treeColor={review.user.bonsai?.customization?.foliageColor || '#77DD82'} 
+              potColor={review.user.bonsai?.customization?.potColor || '#FD9475'} 
+              selectedEyes={review.user.bonsai?.customization?.eyes || 'default_eyes'}
+              selectedMouth={review.user.bonsai?.customization?.mouth || 'default_mouth'}
+              selectedPotStyle={review.user.bonsai?.customization?.potStyle || 'default_pot'}
+              selectedGroundStyle={review.user.bonsai?.customization?.groundStyle || 'default_ground'}
+              decorations={review.user.bonsai?.customization?.decorations ? Object.values(review.user.bonsai.customization.decorations).filter(Boolean) : []}
+              zoomed={true}
+            />
+          </div>
+        )
+      } else if (review.user.icon.startsWith('http')) {
         return (
           <img
-            src={review.user.avatar}
+            src={review.user.icon}
             alt={review.user.name}
-            className="h-10 w-10 rounded-full object-cover"
+            className="h-10 w-10 rounded-full border border-[#4a7c59] object-cover"
             onError={handleImageError}
           />
         )
       } else {
         return (
-          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-            <span className="text-2xl">{review.user.avatar}</span>
+          <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-gray-100 flex items-center justify-center">
+            <span className="text-2xl">{review.user.icon}</span>
           </div>
         )
       }
     } else {
       return (
-        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+        <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-gray-200 flex items-center justify-center">
           <User className="h-5 w-5 text-gray-500" />
         </div>
       )
@@ -365,10 +382,10 @@ const ReviewItem = memo(function ReviewItem({ review }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-2">
             <div className="min-w-0">
-              <h5 className="text-sm sm:text-base font-medium text-[#2c3e2d] truncate">{review.user.name}</h5>
+              <h5 className="font-medium text-[#2c3e2d] truncate">{review.user.name}</h5>
               <div className="flex items-center gap-2">
                 <StarRating rating={review.rating} />
-                <span className="text-xs sm:text-sm text-[#5c6d5e] whitespace-nowrap">{review.createdAt}</span>
+                <span className="text-xs text-[#5c6d5e] whitespace-nowrap">{review.createdAt}</span>
               </div>
             </div>
             {review.isLiked && (
@@ -378,7 +395,7 @@ const ReviewItem = memo(function ReviewItem({ review }) {
             )}
           </div>
           
-          <p className="text-sm sm:text-base text-[#5c6d5e] break-words overflow-wrap-anywhere">
+          <p className="text-sm text-[#5c6d5e] break-words overflow-wrap-anywhere">
             {review.comment}
           </p>
         </div>

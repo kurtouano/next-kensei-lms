@@ -25,7 +25,11 @@ export async function GET(request, { params }) {
     const ratings = await Rating.find({ courseId: course._id })
       .populate({
         path: 'user',
-        select: 'name email icon' // Changed from 'image' to 'icon'
+        select: 'name email icon',
+        populate: {
+          path: 'bonsai',
+          select: 'level customization'
+        }
       })
       .sort({ createdAt: -1 })
       .lean();
@@ -44,7 +48,8 @@ export async function GET(request, { params }) {
       user: {
         name: rating.user?.name || "Anonymous",
         email: rating.user?.email || "",
-        avatar: rating.user?.icon || null // Changed from 'image' to 'icon'
+        icon: rating.user?.icon || null,
+        bonsai: rating.user?.bonsai || null
       }
     }));
 

@@ -18,6 +18,7 @@ import {
   Loader2,
   ChevronDown
 } from "lucide-react"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 
 export const QASection = memo(function QASection({
   qaState,
@@ -539,26 +540,42 @@ const QuestionItem = memo(function QuestionItem({
   }
 
   const renderAvatar = (user) => {
-    if (user.avatar && !imageError) {
-      if (user.avatar.startsWith('http')) {
+    if (user.icon && !imageError) {
+      if (user.icon === 'bonsai') {
+        return (
+          <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden">
+            <BonsaiSVG 
+              level={user.bonsai?.level || 1}
+              treeColor={user.bonsai?.customization?.foliageColor || '#77DD82'} 
+              potColor={user.bonsai?.customization?.potColor || '#FD9475'} 
+              selectedEyes={user.bonsai?.customization?.eyes || 'default_eyes'}
+              selectedMouth={user.bonsai?.customization?.mouth || 'default_mouth'}
+              selectedPotStyle={user.bonsai?.customization?.potStyle || 'default_pot'}
+              selectedGroundStyle={user.bonsai?.customization?.groundStyle || 'default_ground'}
+              decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
+              zoomed={true}
+            />
+          </div>
+        )
+      } else if (user.icon.startsWith('http')) {
         return (
           <img
-            src={user.avatar}
+            src={user.icon}
             alt={user.name}
-            className="h-10 w-10 rounded-full object-cover"
+            className="h-10 w-10 rounded-full border border-[#4a7c59] object-cover"
             onError={handleImageError}
           />
         )
       } else {
         return (
-          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-            <span className="text-2xl">{user.avatar}</span>
+          <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-gray-100 flex items-center justify-center">
+            <span className="text-2xl">{user.icon}</span>
           </div>
         )
       }
     } else {
       return (
-        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+        <div className="h-10 w-10 rounded-full border border-[#4a7c59] bg-gray-200 flex items-center justify-center">
           <User className="h-5 w-5 text-gray-500" />
         </div>
       )
@@ -726,26 +743,42 @@ const CommentItem = memo(function CommentItem({
   }
 
   const renderAvatar = (user) => {
-    if (user.avatar && !imageError) {
-      if (user.avatar.startsWith('http')) {
+    if (user.icon && !imageError) {
+      if (user.icon === 'bonsai') {
+        return (
+          <div className="h-8 w-8 rounded-full border border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden">
+            <BonsaiSVG 
+              level={user.bonsai?.level || 1}
+              treeColor={user.bonsai?.customization?.foliageColor || '#77DD82'} 
+              potColor={user.bonsai?.customization?.potColor || '#FD9475'} 
+              selectedEyes={user.bonsai?.customization?.eyes || 'default_eyes'}
+              selectedMouth={user.bonsai?.customization?.mouth || 'default_mouth'}
+              selectedPotStyle={user.bonsai?.customization?.potStyle || 'default_pot'}
+              selectedGroundStyle={user.bonsai?.customization?.groundStyle || 'default_ground'}
+              decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
+              zoomed={true}
+            />
+          </div>
+        )
+      } else if (user.icon.startsWith('http')) {
         return (
           <img
-            src={user.avatar}
+            src={user.icon}
             alt={user.name}
-            className="h-8 w-8 rounded-full object-cover"
+            className="h-8 w-8 rounded-full border border-[#4a7c59] object-cover"
             onError={handleImageError}
           />
         )
       } else {
         return (
-          <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-            <span className="text-lg">{user.avatar}</span>
+          <div className="h-8 w-8 rounded-full border border-[#4a7c59] bg-gray-100 flex items-center justify-center">
+            <span className="text-lg">{user.icon}</span>
           </div>
         )
       }
     } else {
       return (
-        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+        <div className="h-8 w-8 rounded-full border border-[#4a7c59] bg-gray-200 flex items-center justify-center">
           <User className="h-4 w-4 text-gray-500" />
         </div>
       )

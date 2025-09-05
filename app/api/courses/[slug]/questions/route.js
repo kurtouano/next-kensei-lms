@@ -39,11 +39,19 @@ export async function GET(request, { params }) {
     const questions = await Question.find({ courseId: course._id })
       .populate({
         path: 'user',
-        select: 'name email avatar image icon'
+        select: 'name email icon',
+        populate: {
+          path: 'bonsai',
+          select: 'level customization'
+        }
       })
       .populate({
         path: 'comments.user',
-        select: 'name email avatar image icon'
+        select: 'name email icon',
+        populate: {
+          path: 'bonsai',
+          select: 'level customization'
+        }
       })
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -57,7 +65,8 @@ export async function GET(request, { params }) {
       user: {
         name: question.user?.name || 'Anonymous',
         email: question.user?.email || '',
-        avatar: question.user?.avatar || question.user?.image || question.user?.icon || null
+        icon: question.user?.icon || null,
+        bonsai: question.user?.bonsai || null
       },
       likeCount: question.likeCount || 0,
       isLiked: currentUser ? question.likedBy?.includes(currentUser._id) || false : false,
@@ -75,7 +84,8 @@ export async function GET(request, { params }) {
         user: {
           name: comment.user?.name || 'Anonymous',
           email: comment.user?.email || '',
-          avatar: comment.user?.avatar || comment.user?.image || comment.user?.icon || null
+          icon: comment.user?.icon || null,
+          bonsai: comment.user?.bonsai || null
         },
         likeCount: comment.likeCount || 0,
         isLiked: currentUser ? comment.likedBy?.includes(currentUser._id) || false : false,
