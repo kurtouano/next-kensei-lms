@@ -4,7 +4,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
-import { Menu, X, User, Users, Bell } from "lucide-react"
+import { Menu, X, User, Users, Bell, MessageCircleMore } from "lucide-react"
 import { JotatsuLogoFull } from "@/components/jotatsu-logo-full"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useSession } from "next-auth/react"
@@ -328,6 +328,15 @@ export function Header() {
                 <Users size={18} className="text-[#4a7c59]" />
               </Link>
               
+              {/* Chat Button */}
+              <Link 
+                href="/chat" 
+                className="h-9 w-9 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+                title="Chat"
+              >
+                <MessageCircleMore size={18} className="text-[#4a7c59]" />
+              </Link>
+              
               {/* Notifications Button */}
               <Link 
                 href="/notifications" 
@@ -433,6 +442,15 @@ export function Header() {
                   onClick={closeMobileMenu}
                 >
                   Find Friends
+                </Link>
+                
+                {/* Mobile Chat Link */}
+                <Link 
+                  href="/chat" 
+                  className={`block text-sm font-medium ${isActive("/chat") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  onClick={closeMobileMenu}
+                >
+                  Chat
                 </Link>
                 
                 {/* Mobile Notifications Link */}
