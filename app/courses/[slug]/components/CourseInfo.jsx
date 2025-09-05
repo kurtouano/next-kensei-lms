@@ -10,7 +10,6 @@ import {
   User,
   Calendar,
   Heart,
-  Loader2,
   MessageCircle,
   Star
 } from "lucide-react"
@@ -168,25 +167,15 @@ export const CourseInfo = memo(function CourseInfo({
                 : "text-[#4a7c59] hover:bg-[#eef2eb] hover:text-[#4a7c59] hover:border-[#4a7c59]"
             }`}
             onClick={handleLikeClick}
-            disabled={likeState?.loading}
           >
-            {likeState?.loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              <>
-                <ThumbsUp className={`mr-2 h-4 w-4 ${likeState?.isLiked ? "fill-current" : ""}`} />
-                {likeState?.isLiked ? "Liked" : "Like"}
-                {likeCount > 0 && (
-                  <span className={`text-sm font-medium ml-1 ${
-                    likeState?.isLiked ? "text-white" : "text-[#4a7c59]"
-                  }`}>
-                    ({formatLikeCount(likeCount)})
-                  </span>
-                )}
-              </>
+            <ThumbsUp className={`mr-2 h-4 w-4 ${likeState?.isLiked ? "fill-current" : ""}`} />
+            {likeState?.isLiked ? "Liked" : "Like"}
+            {likeCount > 0 && (
+              <span className={`text-sm font-medium ml-1 ${
+                likeState?.isLiked ? "text-white" : "text-[#4a7c59]"
+              }`}>
+                ({formatLikeCount(likeCount)})
+              </span>
             )}
           </Button>
         </div>

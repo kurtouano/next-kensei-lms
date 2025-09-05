@@ -337,6 +337,7 @@ const isModuleAccessible = useCallback((moduleIndex) => {
         isOpen={showRewardModal}
         onClose={() => setShowRewardModal(false)}
         rewardData={rewardData}
+        courseId={courseData?.id}
       />
 
       {/* Enrollment prompt in sidebar for non-enrolled users */}

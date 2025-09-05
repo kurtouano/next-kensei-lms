@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, Gift, Coins, ExternalLink } from 'lucide-react'
+import { X, Gift, Coins, ExternalLink, FileText } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { CertificateModal } from '@/components/certificate-modal'
 
-export function RewardModal({ isOpen, onClose, rewardData }) {
+export function RewardModal({ isOpen, onClose, rewardData, courseId }) {
   const router = useRouter()
   const [isClosing, setIsClosing] = useState(false)
+  const [showCertificateModal, setShowCertificateModal] = useState(false)
 
   if (!isOpen || !rewardData) return null
 
@@ -22,6 +24,10 @@ export function RewardModal({ isOpen, onClose, rewardData }) {
   const handleViewBonsai = () => {
     handleClose()
     router.push('/bonsai')
+  }
+
+  const handleViewCertificate = () => {
+    setShowCertificateModal(true)
   }
 
   const hasItems = rewardData.itemsEarned && rewardData.itemsEarned.length > 0
@@ -114,6 +120,15 @@ export function RewardModal({ isOpen, onClose, rewardData }) {
           {/* Action Buttons */}
           <div className="space-y-2 sm:space-y-3">
             <Button 
+              onClick={handleViewCertificate}
+              variant="outline"
+              className="w-full border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb] text-sm sm:text-base"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              View Certificate
+            </Button>
+            
+            <Button 
               onClick={handleViewBonsai}
               className="w-full bg-[#4a7c59] hover:bg-[#3a6147] text-white text-sm sm:text-base"
             >
@@ -131,6 +146,13 @@ export function RewardModal({ isOpen, onClose, rewardData }) {
           </div>
         </div>
       </div>
+
+      {/* Certificate Modal */}
+      <CertificateModal
+        isOpen={showCertificateModal}
+        onClose={() => setShowCertificateModal(false)}
+        courseId={courseId}
+      />
     </div>
   )
 }

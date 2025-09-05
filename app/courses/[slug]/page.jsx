@@ -841,6 +841,7 @@ export default function LessonPage() {
           setShowConfetti(false) // Stop confetti when modal closes
         }}
         rewardData={rewardData}
+        courseId={lessonData?.id}
       />
 
       {/* Confetti Animation */}

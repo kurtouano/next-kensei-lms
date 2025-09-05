@@ -1299,6 +1299,10 @@ export function useCourseLike(courseSlug, session) {
     loading: false,
     error: null
   })
+  
+  // Add refs to track request state
+  const requestInProgress = useRef(false)
+  const abortController = useRef(null)
 
   // Fetch like status when component mounts
   const fetchLikeStatus = useCallback(async () => {
@@ -1334,53 +1338,114 @@ export function useCourseLike(courseSlug, session) {
     }
   }, [courseSlug])
 
-  // Toggle like/unlike
+  // Toggle like/unlike with optimistic updates and debouncing
   const toggleLike = useCallback(async () => {
     if (!session?.user || !courseSlug) {
       setLikeState(prev => ({ ...prev, error: 'Please log in to like courses' }))
       return
     }
 
-    try {
-      setLikeState(prev => ({ ...prev, loading: true, error: null }))
+    // Prevent multiple simultaneous requests
+    if (requestInProgress.current) {
+      return
+    }
+
+    // Store previous state for potential rollback
+    const previousState = {
+      isLiked: likeState.isLiked,
+      likeCount: likeState.likeCount
+    }
+
+    // Optimistic update - immediately update UI
+    setLikeState(prev => {
+      const newIsLiked = !prev.isLiked
+      const newLikeCount = newIsLiked ? prev.likeCount + 1 : Math.max(0, prev.likeCount - 1)
       
+      return {
+        ...prev,
+        isLiked: newIsLiked,
+        likeCount: newLikeCount,
+        loading: false,
+        error: null
+      }
+    })
+
+    // Set request in progress flag
+    requestInProgress.current = true
+
+    // Cancel any previous request
+    if (abortController.current) {
+      abortController.current.abort()
+    }
+
+    // Create new abort controller
+    abortController.current = new AbortController()
+
+    try {
       const response = await fetch(`/api/courses/${courseSlug}/like`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: abortController.current.signal
       })
       
       const data = await response.json()
       
       if (data.success) {
+        // Server response matches our optimistic update, no need to change state
+        // Just ensure we have the correct values from server
         setLikeState(prev => ({
           ...prev,
           isLiked: data.isLiked,
           likeCount: data.likeCount,
-          loading: false
+          loading: false,
+          error: null
         }))
       } else {
+        // Server call failed, revert to previous state
         setLikeState(prev => ({
           ...prev,
-          error: data.error || 'Failed to toggle like',
-          loading: false
+          isLiked: previousState.isLiked,
+          likeCount: previousState.likeCount,
+          loading: false,
+          error: data.error || 'Failed to toggle like'
         }))
       }
     } catch (error) {
+      // Don't revert if request was aborted (user clicked again)
+      if (error.name === 'AbortError') {
+        return
+      }
+      
       console.error('Error toggling like:', error)
+      // Network error, revert to previous state
       setLikeState(prev => ({
         ...prev,
-        error: 'Failed to toggle like',
-        loading: false
+        isLiked: previousState.isLiked,
+        likeCount: previousState.likeCount,
+        loading: false,
+        error: 'Failed to toggle like'
       }))
+    } finally {
+      // Reset request in progress flag
+      requestInProgress.current = false
     }
-  }, [session, courseSlug])
+  }, [session, courseSlug, likeState.isLiked, likeState.likeCount])
 
   // Fetch like status on mount and when session changes
   useEffect(() => {
     fetchLikeStatus()
   }, [fetchLikeStatus])
+
+  // Cleanup: abort any pending requests when component unmounts
+  useEffect(() => {
+    return () => {
+      if (abortController.current) {
+        abortController.current.abort()
+      }
+    }
+  }, [])
 
   return {
     likeState,
