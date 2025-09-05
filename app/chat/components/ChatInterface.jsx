@@ -14,10 +14,12 @@ export default function ChatInterface() {
   const { data: session } = useSession()
   const [selectedChatId, setSelectedChatId] = useState(null)
   const [message, setMessage] = useState("")
+  const [isTyping, setIsTyping] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const fileInputRef = useRef(null)
   const generalFileInputRef = useRef(null)
   const messagesContainerRef = useRef(null)
+  const messageInputRef = useRef(null)
 
   // Chat hooks
   const { chats, loading: chatsLoading, error: chatsError, loadMoreChats } = useChat()
@@ -31,6 +33,7 @@ export default function ChatInterface() {
     hasMore 
   } = useChatMessages(selectedChatId)
   const [uploading, setUploading] = useState(false)
+  const [sending, setSending] = useState(false)
 
   // Auto-select first chat
   useEffect(() => {
@@ -62,41 +65,46 @@ export default function ChatInterface() {
 
   // Handle sending messages
   const handleSendMessage = async () => {
-    if (!message.trim() || !selectedChatId) return
+    const messageText = messageInputRef.current?.value?.trim()
+    if (!messageText || !selectedChatId || sending) return
 
     try {
-      await sendMessage(message.trim())
+      setSending(true)
+      await sendMessage(messageText)
+      if (messageInputRef.current) {
+        messageInputRef.current.value = ""
+      }
       setMessage("")
     } catch (error) {
       console.error("Failed to send message:", error)
       alert("Failed to send message")
+    } finally {
+      setSending(false)
     }
   }
 
-  // Handle key press
-  const handleKeyPress = (e) => {
+  // Optimized message change handler - direct state update
+  const handleMessageChange = useCallback((e) => {
+    setMessage(e.target.value)
+  }, [])
+
+  // Handle key press with useCallback to prevent re-renders
+  const handleKeyPress = useCallback((e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
     }
-  }
+  }, [handleSendMessage])
 
-  // Handle typing indicator
-  useEffect(() => {
-    if (!message || !selectedChatId) return
-
-    const timeoutId = setTimeout(() => {
-      sendTypingIndicator(false)
-    }, 2000)
-
-    sendTypingIndicator(true)
-
-    return () => clearTimeout(timeoutId)
-  }, [message, selectedChatId, sendTypingIndicator])
+  // Typing indicator disabled to prevent UI delays
+  // useEffect(() => {
+  //   if (!selectedChatId) return
+  //   // Typing indicator temporarily disabled to fix typing delays
+  // }, [message, selectedChatId, sendTypingIndicator])
 
   // Handle image upload
   const handleImageUpload = async (file) => {
-    if (!selectedChatId) return
+    if (!selectedChatId || uploading || sending) return
 
     try {
       setUploading(true)
@@ -145,7 +153,7 @@ export default function ChatInterface() {
   // Handle general file selection
   const handleGeneralFileChange = async (e) => {
     const file = e.target.files[0]
-    if (!file || !selectedChatId) return
+    if (!file || !selectedChatId || uploading || sending) return
 
     try {
       setUploading(true)
@@ -533,20 +541,26 @@ export default function ChatInterface() {
                       >
                         {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
                       </Button>
-                      <Input
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyPress={handleKeyPress}
+                      <input
+                        ref={messageInputRef}
+                        type="text"
+                        onKeyDown={handleKeyPress}
                         placeholder="Type a message..."
-                        className="flex-1"
-                        disabled={uploading}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        disabled={uploading || sending}
+                        autoComplete="off"
+                        autoFocus={false}
                       />
                       <Button 
                         onClick={handleSendMessage} 
                         className="bg-[#4a7c59] hover:bg-[#3a6147]"
-                        disabled={!message.trim() || uploading}
+                        disabled={uploading || sending}
                       >
-                        <Send className="h-4 w-4" />
+                        {sending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                     <input
