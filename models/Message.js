@@ -19,14 +19,14 @@ const MessageSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["text", "image", "file", "system"],
+      enum: ["text", "image", "file", "attachment", "system"],
       default: "text",
     },
     // For images and files
     attachments: [{
       type: {
         type: String,
-        enum: ["image", "file"],
+        enum: ["image", "file", "document", "general"],
       },
       url: String,
       filename: String,
