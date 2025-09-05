@@ -58,12 +58,15 @@ ChatSchema.index({ lastActivity: -1 })
 ChatSchema.index({ type: 1, isActive: 1 })
 ChatSchema.index({ createdBy: 1 })
 
-// For direct chats, ensure we don't create duplicates
+// For direct chats, ensure we don't create duplicates between the same two users
 ChatSchema.index(
   { participants: 1, type: 1 },
   { 
     unique: true,
-    partialFilterExpression: { type: "direct" }
+    partialFilterExpression: { 
+      type: "direct",
+      participants: { $size: 2 } // Only for 2-participant direct chats
+    }
   }
 )
 
