@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useSession } from "next-auth/react"
-import { Send, ImageIcon, Paperclip, MoreVertical, Smile, Loader2, User } from "lucide-react"
+import { Send, ImageIcon, Paperclip, MoreVertical, Smile, Loader2, User, Users, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useChat, useChatMessages } from "@/hooks/useChat"
 import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
+import CreateGroupChatModal from "./CreateGroupChatModal"
+import GroupInviteModal from "./GroupInviteModal"
 
 export default function ChatInterface() {
   const { data: session } = useSession()
@@ -23,7 +25,7 @@ export default function ChatInterface() {
   const scrollPositionRef = useRef(null)
 
   // Chat hooks
-  const { chats, loading: chatsLoading, error: chatsError, loadMoreChats, updateChatWithNewMessage } = useChat()
+  const { chats, loading: chatsLoading, error: chatsError, loadMoreChats, updateChatWithNewMessage, refetch: refetchChats } = useChat()
   const { 
     messages, 
     loading: messagesLoading, 
@@ -36,6 +38,8 @@ export default function ChatInterface() {
   } = useChatMessages(selectedChatId, updateChatWithNewMessage)
   const [uploading, setUploading] = useState(false)
   const [sending, setSending] = useState(false)
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
 
   // Auto-select first chat
   useEffect(() => {
@@ -293,7 +297,18 @@ export default function ChatInterface() {
           {/* Chat List Sidebar */}
           <Card className="h-full flex flex-col">
               <div className="p-4 border-b">
-                <h2 className="text-lg font-semibold text-[#2c3e2d] mb-3">Messages</h2>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-semibold text-[#2c3e2d]">Messages</h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCreateGroupModal(true)}
+                    className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
+                    title="Create Group Chat"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="relative">
                   <Input
                     placeholder="Search conversations..."
@@ -342,7 +357,7 @@ export default function ChatInterface() {
                             <h3 className="font-medium text-sm text-[#2c3e2d] truncate">
                               {chat.name}
                               {chat.type === "group" && (
-                                <span className="text-xs text-gray-500 ml-1">({chat.participants})</span>
+                                <span className="text-xs text-gray-500 ml-1">({chat.participants?.length || 0})</span>
                               )}
                             </h3>
                             <span className="text-xs text-gray-500">
@@ -382,7 +397,7 @@ export default function ChatInterface() {
                           <h3 className="font-semibold text-[#2c3e2d]">{selectedChat.name}</h3>
                           <p className="text-sm text-gray-500">
                             {selectedChat.type === "group"
-                              ? `${selectedChat.participants} members`
+                              ? `${selectedChat.participants?.length || 0} members`
                               : selectedChat.isOnline
                                 ? "Online"
                                 : "Last seen recently"}
@@ -390,6 +405,17 @@ export default function ChatInterface() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        {selectedChat.type === "group" && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setShowInviteModal(true)}
+                            title="Invite to Group"
+                            className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
+                          >
+                            <Users className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           size="sm"
@@ -406,7 +432,7 @@ export default function ChatInterface() {
                               }
                             }
                           }}
-                          title="View Profile"
+                          title={selectedChat.type === "group" ? "Group Info" : "View Profile"}
                         >
                           <User className="h-4 w-4" />
                         </Button>
@@ -640,6 +666,24 @@ export default function ChatInterface() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateGroupChatModal
+        isOpen={showCreateGroupModal}
+        onClose={() => setShowCreateGroupModal(false)}
+        onGroupCreated={(group) => {
+          console.log('Group created:', group)
+          refetchChats() // Refresh the chat list
+          setSelectedChatId(group.id)
+          setShowCreateGroupModal(false)
+        }}
+      />
+      
+      <GroupInviteModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        chat={selectedChat}
+      />
     </div>
   )
 }

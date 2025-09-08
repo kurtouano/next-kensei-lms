@@ -27,13 +27,17 @@ export function useChat() {
       console.log('Chats API response data:', data);
 
       if (data.success) {
+        // Sort chats by lastActivity (newest first)
+        const sortedChats = data.chats.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
+        console.log('Chat timestamps:', sortedChats.map(chat => ({ name: chat.name, lastActivity: chat.lastActivity })))
+        
         if (page === 1) {
-          setChats(data.chats)
+          setChats(sortedChats)
         } else {
-          setChats(prev => [...prev, ...data.chats])
+          setChats(prev => [...prev, ...sortedChats].sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)))
         }
         setPagination(data.pagination)
-        console.log('Successfully loaded chats:', data.chats.length);
+        console.log('Successfully loaded chats:', sortedChats.length);
       } else {
         throw new Error(data.error || "Failed to fetch chats")
       }
@@ -158,7 +162,10 @@ export function useChat() {
     startChatWithFriend,
     loadMoreChats,
     updateChatWithNewMessage,
-    refetch: () => fetchChats(1),
+    refetch: () => {
+      console.log('Refetching chats...')
+      return fetchChats(1)
+    },
   }
 }
 

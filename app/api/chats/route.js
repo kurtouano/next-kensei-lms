@@ -205,6 +205,7 @@ export async function POST(request) {
       createdBy: user._id,
       participants: allParticipantIds,
       participantCount: allParticipantIds.length,
+      lastActivity: new Date(), // Set current time as last activity
     })
 
     await chat.save()
@@ -223,9 +224,24 @@ export async function POST(request) {
       .populate("participants", "name email icon bonsai")
       .populate("createdBy", "name email")
 
+    // Format the response to match the expected format
+    const formattedChat = {
+      id: populatedChat._id,
+      name: populatedChat.name,
+      type: populatedChat.type,
+      avatar: populatedChat.avatar,
+      description: populatedChat.description,
+      createdBy: populatedChat.createdBy,
+      lastMessage: null,
+      lastActivity: populatedChat.lastActivity,
+      participants: populatedChat.participants,
+      participantCount: populatedChat.participantCount,
+      isActive: populatedChat.isActive,
+    }
+
     return NextResponse.json({
       success: true,
-      chat: populatedChat,
+      chat: formattedChat,
       message: "Chat created successfully",
     })
   } catch (error) {
