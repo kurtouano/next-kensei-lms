@@ -117,6 +117,30 @@ export function useChat() {
     }
   }, [pagination, loading, fetchChats])
 
+  // Update a specific chat when a new message arrives
+  const updateChatWithNewMessage = useCallback((chatId, newMessage) => {
+    setChats(prevChats => {
+      const updatedChats = prevChats.map(chat => {
+        if (chat.id === chatId) {
+          return {
+            ...chat,
+            lastMessage: {
+              content: newMessage.content,
+              sender: newMessage.sender?.name || "Unknown",
+              createdAt: newMessage.createdAt,
+              type: newMessage.type,
+            },
+            lastActivity: newMessage.createdAt,
+          }
+        }
+        return chat
+      })
+      
+      // Sort by lastActivity to maintain proper order
+      return updatedChats.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
+    })
+  }, [])
+
   // Initial load
   useEffect(() => {
     if (session?.user?.email) {
@@ -133,24 +157,30 @@ export function useChat() {
     createChat,
     startChatWithFriend,
     loadMoreChats,
+    updateChatWithNewMessage,
     refetch: () => fetchChats(1),
   }
 }
 
-export function useChatMessages(chatId) {
+export function useChatMessages(chatId, onNewMessage = null) {
   const { data: session } = useSession()
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [hasMore, setHasMore] = useState(true)
   const [eventSource, setEventSource] = useState(null)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const messagesEndRef = useRef(null)
 
   // Fetch messages for a chat
   const fetchMessages = useCallback(async (before = null, append = false) => {
     if (!session?.user?.email || !chatId) return
 
-    setLoading(true)
+    if (append) {
+      setIsLoadingMore(true)
+    } else {
+      setLoading(true)
+    }
     setError(null)
 
     try {
@@ -176,7 +206,11 @@ export function useChatMessages(chatId) {
       console.error("Error fetching messages:", error)
       setError(error.message)
     } finally {
-      setLoading(false)
+      if (append) {
+        setIsLoadingMore(false)
+      } else {
+        setLoading(false)
+      }
     }
   }, [session, chatId])
 
@@ -203,6 +237,12 @@ export function useChatMessages(chatId) {
       if (data.success) {
         // Add message to local state (optimistic update)
         setMessages(prev => [...prev, data.message])
+        
+        // Update chat list with new message
+        if (onNewMessage) {
+          onNewMessage(chatId, data.message)
+        }
+        
         return data.message
       } else {
         throw new Error(data.error || "Failed to send message")
@@ -211,7 +251,7 @@ export function useChatMessages(chatId) {
       console.error("Error sending message:", error)
       throw error
     }
-  }, [session, chatId])
+  }, [session, chatId, onNewMessage])
 
   // Send typing indicator
   const sendTypingIndicator = useCallback(async (isTyping) => {
@@ -232,11 +272,11 @@ export function useChatMessages(chatId) {
 
   // Load more messages (infinite scroll)
   const loadMoreMessages = useCallback(() => {
-    if (hasMore && !loading && messages.length > 0) {
+    if (hasMore && !loading && !isLoadingMore && messages.length > 0) {
       const oldestMessage = messages[0]
       fetchMessages(oldestMessage.createdAt, true)
     }
-  }, [hasMore, loading, messages, fetchMessages])
+  }, [hasMore, loading, isLoadingMore, messages, fetchMessages])
 
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -259,6 +299,11 @@ export function useChatMessages(chatId) {
             break
           case "new_message":
             setMessages(prev => [...prev, data.message])
+            
+            // Update chat list with new message
+            if (onNewMessage) {
+              onNewMessage(chatId, data.message)
+            }
             break
           case "message_edited":
             setMessages(prev => 
@@ -306,15 +351,19 @@ export function useChatMessages(chatId) {
   }, [chatId, fetchMessages])
 
   // Auto-scroll to bottom when new messages arrive
+  // Only scroll to bottom for new messages, not when loading more
   useEffect(() => {
-    scrollToBottom()
-  }, [messages, scrollToBottom])
+    if (!isLoadingMore) {
+      scrollToBottom()
+    }
+  }, [messages, scrollToBottom, isLoadingMore])
 
   return {
     messages,
     loading,
     error,
     hasMore,
+    isLoadingMore,
     messagesEndRef,
     fetchMessages,
     sendMessage,

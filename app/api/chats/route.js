@@ -106,7 +106,8 @@ export async function GET(request) {
         } : null,
         lastActivity: chat.lastActivity,
         unreadCount,
-        participants: chat.participants.length,
+        participants: chat.participants,
+        participantCount: chat.participants.length,
         isOnline: chat.type === "direct" ? 
           (otherParticipant?.lastSeen && 
            new Date() - new Date(otherParticipant.lastSeen) < 5 * 60 * 1000) : 

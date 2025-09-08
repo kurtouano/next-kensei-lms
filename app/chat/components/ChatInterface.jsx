@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useSession } from "next-auth/react"
-import { Send, ImageIcon, Paperclip, MoreVertical, Smile, Loader2 } from "lucide-react"
+import { Send, ImageIcon, Paperclip, MoreVertical, Smile, Loader2, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -20,18 +20,20 @@ export default function ChatInterface() {
   const generalFileInputRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const messageInputRef = useRef(null)
+  const scrollPositionRef = useRef(null)
 
   // Chat hooks
-  const { chats, loading: chatsLoading, error: chatsError, loadMoreChats } = useChat()
+  const { chats, loading: chatsLoading, error: chatsError, loadMoreChats, updateChatWithNewMessage } = useChat()
   const { 
     messages, 
     loading: messagesLoading, 
+    isLoadingMore,
     messagesEndRef, 
     sendMessage, 
     sendTypingIndicator,
     loadMoreMessages,
     hasMore 
-  } = useChatMessages(selectedChatId)
+  } = useChatMessages(selectedChatId, updateChatWithNewMessage)
   const [uploading, setUploading] = useState(false)
   const [sending, setSending] = useState(false)
 
@@ -45,14 +47,19 @@ export default function ChatInterface() {
   // Handle scroll for infinite loading
   const handleScroll = useCallback(() => {
     if (messagesContainerRef.current) {
-      const { scrollTop } = messagesContainerRef.current
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current
       
       // If user scrolled to top and there are more messages
-      if (scrollTop === 0 && hasMore && !messagesLoading) {
+      if (scrollTop === 0 && hasMore && !messagesLoading && !isLoadingMore) {
+        // Store current scroll position before loading more
+        scrollPositionRef.current = {
+          scrollHeight,
+          scrollTop
+        }
         loadMoreMessages()
       }
     }
-  }, [hasMore, messagesLoading, loadMoreMessages])
+  }, [hasMore, messagesLoading, isLoadingMore, loadMoreMessages])
 
   // Attach scroll listener
   useEffect(() => {
@@ -62,6 +69,20 @@ export default function ChatInterface() {
       return () => container.removeEventListener("scroll", handleScroll)
     }
   }, [handleScroll])
+
+  // Restore scroll position after loading more messages
+  useEffect(() => {
+    if (!isLoadingMore && scrollPositionRef.current && messagesContainerRef.current) {
+      const container = messagesContainerRef.current
+      const { scrollHeight: oldScrollHeight } = scrollPositionRef.current
+      const newScrollHeight = container.scrollHeight
+      const heightDifference = newScrollHeight - oldScrollHeight
+      
+      // Restore scroll position by adjusting for the new content height
+      container.scrollTop = heightDifference
+      scrollPositionRef.current = null
+    }
+  }, [isLoadingMore, messages])
 
   // Handle sending messages
   const handleSendMessage = async () => {
@@ -369,6 +390,26 @@ export default function ChatInterface() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            // Get the other participant's user ID for direct chats
+                            if (selectedChat.type === "direct" && Array.isArray(selectedChat.participants)) {
+                              const otherParticipant = selectedChat.participants.find(
+                                (p) => p._id?.toString() !== session?.user?.id?.toString()
+                              )
+                              
+                              if (otherParticipant?._id) {
+                                const profileUrl = `/users/${otherParticipant._id}`
+                                window.open(profileUrl, '_blank')
+                              }
+                            }
+                          }}
+                          title="View Profile"
+                        >
+                          <User className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="sm">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
@@ -407,8 +448,20 @@ export default function ChatInterface() {
                       <>
                         {hasMore && (
                           <div className="text-center py-2">
-                            <Button variant="ghost" size="sm" onClick={loadMoreMessages}>
-                              Load more messages
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={loadMoreMessages}
+                              disabled={isLoadingMore}
+                            >
+                              {isLoadingMore ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  Loading...
+                                </>
+                              ) : (
+                                "Load more messages"
+                              )}
                             </Button>
                           </div>
                         )}
