@@ -287,7 +287,7 @@ export default function ChatInterface() {
 
   return (
     <div className="bg-gray-50 min-h-[85vh]">
-      <div className="container mx-auto px-4 pt-6">
+      <div className="container mx-auto px-4 pt-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-12rem)]">
           <div className="lg:col-span-1">
           {/* Chat List Sidebar */}
@@ -304,7 +304,7 @@ export default function ChatInterface() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto max-h-[calc(100vh-12rem)]" style={{ scrollbarWidth: 'thin', scrollbarColor: '#4a7c59 #f1f1f1' }}>
+              <div className="flex-1 overflow-y-auto h-[calc(100vh-12rem)]">
                 {chatsLoading ? (
                   <div className="p-4">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
@@ -368,7 +368,7 @@ export default function ChatInterface() {
 
           {/* Chat Area */}
           <div className="lg:col-span-3">
-            <Card className="h-full flex flex-col">
+            <Card className="h-[calc(100vh-11rem)] flex flex-col">
               {selectedChat ? (
                 <>
                   {/* Chat Header */}
@@ -420,8 +420,7 @@ export default function ChatInterface() {
                   {/* Messages */}
                   <div 
                     ref={messagesContainerRef}
-                    className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-gray-50 max-h-[calc(100vh-20rem)]"
-                    style={{ scrollbarWidth: 'thin', scrollbarColor: '#4a7c59 #f1f1f1' }}
+                    className="flex-1 overflow-y-scroll overflow-x-hidden p-4 space-y-4 bg-gray-50"
                   >
                     {messagesLoading && messages.length === 0 ? (
                       <div className="flex justify-center items-center h-full">
