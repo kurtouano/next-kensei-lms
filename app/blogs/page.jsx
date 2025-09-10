@@ -428,47 +428,17 @@ export default function BlogsPage() {
               </Button>
             </div>
           )}
-
-          {/* Results Count */}
-          <div className="text-sm text-gray-600 mb-6">
-            Showing {featuredBlogs.length + recentBlogs.length} of {filteredBlogs.length} articles
-            {debouncedSearchTerm && ` for "${debouncedSearchTerm}"`}
-            {selectedCategory !== "all" && ` in ${categories.find(c => c.id === selectedCategory)?.name}`}
-          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-3">
-            {/* Static Hero Section */}
-            <div className="mb-8">
-              <Card className="overflow-hidden border-0 shadow-lg">
-                <div className="relative h-96">
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                    style={{ backgroundImage: 'url(/blogs_banner.png)' }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/50 to-black/60 backdrop-blur-sm"/>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center text-white px-8">
-                      <h1 className="text-4xl lg:text-5xl font-bold mb-4 leading-tight drop-shadow-lg">
-                        Japan Explorer: All About Japan
-                      </h1>
-                      <p className="text-xl text-gray-100 max-w-2xl mx-auto drop-shadow-md">
-                        Discover comprehensive guides, tips, and insights about Japan - from language and culture to travel and traditions.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
 
             {/* Featured Articles Section */}
             {featuredBlogs.length > 0 && (
-              <div className="mb-8">
+              <div className="mb-14">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
-                    <Star className="h-6 w-6 text-[#4a7c59]" />
                     <h2 className="text-2xl font-bold text-gray-900">Featured Articles</h2>
                   </div>
                   <Link href="/blogs/featured-articles">
@@ -543,7 +513,6 @@ export default function BlogsPage() {
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
-                    <TrendingUp className="h-6 w-6 text-[#4a7c59]" />
                     <h2 className="text-2xl font-bold text-gray-900">Recent Articles</h2>
                   </div>
                   <Link href="/blogs/recent-articles">
