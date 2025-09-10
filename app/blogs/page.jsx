@@ -3,9 +3,10 @@
 import { useState, useMemo, useEffect, useRef } from "react"
 import Link from "next/link"
 import Fuse from "fuse.js"
-import { ArrowRight, Search, X, LoaderCircle, Star, TrendingUp } from "lucide-react"
+import { ArrowRight, Search, X, LoaderCircle, Star, TrendingUp, User } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 
 
 export default function BlogsPage() {
@@ -27,6 +28,43 @@ export default function BlogsPage() {
 
   // Search input ref to maintain focus
   const searchInputRef = useRef(null)
+  
+  // Helper function to render author avatar
+  const renderAuthorAvatar = (author) => {
+    if (!author) return null
+    
+    if (author.icon === 'bonsai') {
+      return (
+        <div className="w-6 h-6 rounded-full border border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden">
+          <BonsaiSVG 
+            level={author.bonsai?.level || 1}
+            treeColor={author.bonsai?.customization?.foliageColor || '#77DD82'} 
+            potColor={author.bonsai?.customization?.potColor || '#FD9475'} 
+            selectedEyes={author.bonsai?.customization?.eyes || 'default_eyes'}
+            selectedMouth={author.bonsai?.customization?.mouth || 'default_mouth'}
+            selectedPotStyle={author.bonsai?.customization?.potStyle || 'default_pot'}
+            selectedGroundStyle={author.bonsai?.customization?.groundStyle || 'default_ground'}
+            decorations={author.bonsai?.customization?.decorations ? Object.values(author.bonsai.customization.decorations).filter(Boolean) : []}
+            zoomed={true}
+          />
+        </div>
+      )
+    } else if (author.icon && author.icon.startsWith('http')) {
+      return (
+        <img
+          src={author.icon}
+          alt={author.name || "Author"}
+          className="w-6 h-6 rounded-full object-cover"
+        />
+      )
+    } else {
+      return (
+        <div className="w-6 h-6 rounded-full border border-[#4a7c59] bg-gray-200 flex items-center justify-center">
+          <User className="h-3 w-3 text-gray-500" />
+        </div>
+      )
+    }
+  }
 
   // Fuse.js configuration for fuzzy search
   const fuseOptions = {
@@ -408,11 +446,7 @@ export default function BlogsPage() {
                           <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <img
-                                src={post.author?.icon || "/placeholder.svg"}
-                                alt={post.author?.name || "Author"}
-                                className="w-6 h-6 rounded-full object-cover"
-                              />
+                              {renderAuthorAvatar(post.author)}
                               <span className="text-sm text-gray-600">{post.author?.name || 'Unknown Author'}</span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -464,11 +498,7 @@ export default function BlogsPage() {
                           <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <img
-                                src={post.author?.icon || "/placeholder.svg"}
-                                alt={post.author?.name || "Author"}
-                                className="w-6 h-6 rounded-full object-cover"
-                              />
+                              {renderAuthorAvatar(post.author)}
                               <span className="text-sm text-gray-600">{post.author?.name || 'Unknown Author'}</span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-gray-500">

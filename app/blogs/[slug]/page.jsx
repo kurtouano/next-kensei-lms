@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { ArrowLeft, Calendar, Clock, Eye, Heart, Share2, User, LoaderCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 
 export default function BlogPostPage({ params }) {
   const { data: session, status } = useSession()
@@ -17,6 +18,15 @@ export default function BlogPostPage({ params }) {
   const [error, setError] = useState(null)
   const [slug, setSlug] = useState(null)
   const [showLoginMessage, setShowLoginMessage] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  
+  // Newsletter subscription state
+  const [newsletterEmail, setNewsletterEmail] = useState("")
+  const [isSubscribing, setIsSubscribing] = useState(false)
+  const [subscriptionMessage, setSubscriptionMessage] = useState("")
+  
+  // Debounce ref for like button
+  const likeTimeoutRef = useRef(null)
 
   // Resolve params first
   useEffect(() => {
@@ -64,7 +74,16 @@ export default function BlogPostPage({ params }) {
     }
   }, [slug, session])
 
-  const handleLike = async () => {
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (likeTimeoutRef.current) {
+        clearTimeout(likeTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const handleLike = useCallback(async () => {
     if (!blogPost) return
 
     // Check if user is authenticated
@@ -74,33 +93,54 @@ export default function BlogPostPage({ params }) {
       return
     }
 
-    try {
-      const response = await fetch(`/api/blogs/${blogPost.slug}/like`, {
-        method: 'POST'
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        setIsLiked(result.isLiked)
-        setLikes(result.likeCount)
-
-        // Update localStorage
-        const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]')
-        if (result.isLiked) {
-          likedPosts.push(blogPost._id)
-        } else {
-          const index = likedPosts.indexOf(blogPost._id)
-          if (index > -1) likedPosts.splice(index, 1)
-        }
-        localStorage.setItem('likedPosts', JSON.stringify(likedPosts))
-      }
-    } catch (error) {
-      console.error('Error toggling like:', error)
-      // For authenticated users, still allow optimistic update
-      setIsLiked(!isLiked)
-      setLikes(prev => isLiked ? prev - 1 : prev + 1)
+    // Clear any existing timeout
+    if (likeTimeoutRef.current) {
+      clearTimeout(likeTimeoutRef.current)
     }
-  }
+
+    // Optimistic update - immediately update UI
+    const previousIsLiked = isLiked
+    const previousLikes = likes
+    setIsLiked(!isLiked)
+    setLikes(prev => isLiked ? prev - 1 : prev + 1)
+
+    // Debounce the actual API call
+    likeTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/blogs/${blogPost.slug}/like`, {
+          method: 'POST'
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          // Update with server response
+          setIsLiked(result.isLiked)
+          setLikes(result.likeCount)
+
+          // Update localStorage
+          const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]')
+          if (result.isLiked) {
+            if (!likedPosts.includes(blogPost._id)) {
+              likedPosts.push(blogPost._id)
+            }
+          } else {
+            const index = likedPosts.indexOf(blogPost._id)
+            if (index > -1) likedPosts.splice(index, 1)
+          }
+          localStorage.setItem('likedPosts', JSON.stringify(likedPosts))
+        } else {
+          // Revert optimistic update on error
+          setIsLiked(previousIsLiked)
+          setLikes(previousLikes)
+        }
+      } catch (error) {
+        console.error('Error toggling like:', error)
+        // Revert optimistic update on error
+        setIsLiked(previousIsLiked)
+        setLikes(previousLikes)
+      }
+    }, 300) // 300ms debounce
+  }, [blogPost, isLiked, likes, session?.user?.id])
 
   const handleShare = () => {
     if (navigator.share) {
@@ -111,6 +151,43 @@ export default function BlogPostPage({ params }) {
     } else {
       navigator.clipboard.writeText(window.location.href)
       alert("Link copied to clipboard!")
+    }
+  }
+
+  // Handle newsletter subscription
+  const handleNewsletterSubscribe = async (e) => {
+    e.preventDefault()
+    
+    if (!newsletterEmail.trim()) {
+      setSubscriptionMessage("Please enter a valid email address")
+      return
+    }
+    
+    try {
+      setIsSubscribing(true)
+      setSubscriptionMessage("")
+      
+      const response = await fetch('/api/blogs/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: newsletterEmail.trim() })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setSubscriptionMessage("Successfully subscribed! Check your email for confirmation.")
+        setNewsletterEmail("")
+      } else {
+        setSubscriptionMessage(data.message || "Failed to subscribe. Please try again.")
+      }
+    } catch (error) {
+      console.error('Subscription error:', error)
+      setSubscriptionMessage("Failed to subscribe. Please try again.")
+    } finally {
+      setIsSubscribing(false)
     }
   }
 
@@ -384,11 +461,30 @@ export default function BlogPostPage({ params }) {
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                      <img
-                        src={blogPost.author.icon || "/placeholder.svg"}
-                        alt={blogPost.author.name}
-                        className="w-20 h-20 rounded-full"
-                      />
+                      <div className="w-20 h-20 rounded-full overflow-hidden border border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center">
+                        {blogPost.author.icon === 'bonsai' ? (
+                          <BonsaiSVG 
+                            level={blogPost.author.bonsai?.level || 1}
+                            treeColor={blogPost.author.bonsai?.customization?.foliageColor || '#77DD82'} 
+                            potColor={blogPost.author.bonsai?.customization?.potColor || '#FD9475'} 
+                            selectedEyes={blogPost.author.bonsai?.customization?.eyes || 'default_eyes'}
+                            selectedMouth={blogPost.author.bonsai?.customization?.mouth || 'default_mouth'}
+                            selectedPotStyle={blogPost.author.bonsai?.customization?.potStyle || 'default_pot'}
+                            selectedGroundStyle={blogPost.author.bonsai?.customization?.groundStyle || 'default_ground'}
+                            decorations={blogPost.author.bonsai?.customization?.decorations ? Object.values(blogPost.author.bonsai.customization.decorations).filter(Boolean) : []}
+                            zoomed={true}
+                          />
+                        ) : blogPost.author.icon && blogPost.author.icon.startsWith('http') ? (
+                          <img
+                            src={blogPost.author.icon}
+                            alt={blogPost.author.name}
+                            className="w-full h-full object-cover"
+                            onError={() => setImageError(true)}
+                          />
+                        ) : (
+                          <User className="h-8 w-8 text-gray-500" />
+                        )}
+                      </div>
                       <div className="flex-1">
                         <h3 className="text-xl font-semibold text-gray-900 mb-1">{blogPost.author.name}</h3>
                         <p className="text-[#4a7c59] font-medium mb-2">Blog Author</p>
@@ -434,18 +530,37 @@ export default function BlogPostPage({ params }) {
                 )}
 
                 {/* Newsletter Signup */}
-                <Card className="border-0 shadow-sm bg-gradient-to-br from-[#4a7c59] to-[#3a6147]">
-                  <CardContent className="p-6 text-white">
-                    <h3 className="font-semibold mb-2">Stay Updated</h3>
-                    <p className="text-sm text-green-100 mb-4">Get the latest articles delivered to your inbox.</p>
-                    <div className="space-y-3">
+                <Card className="border-0 shadow-md">
+                  <CardContent className="p-6">
+                    <h3 className="font-bold text-gray-900 mb-2">Stay Updated with Japanese Learning</h3>
+                    <p className="text-sm text-gray-600 mb-4">Get notified when we publish new blog posts about Japanese language, culture, and learning tips.</p>
+                    <form onSubmit={handleNewsletterSubscribe} className="space-y-3">
                       <input
                         type="email"
                         placeholder="Enter your email"
-                        className="w-full px-3 py-2 rounded-md text-gray-900 text-sm focus:ring-2 focus:ring-white focus:outline-none"
+                        value={newsletterEmail}
+                        onChange={(e) => setNewsletterEmail(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
+                        required
                       />
-                      <Button className="w-full bg-white text-[#4a7c59] hover:bg-gray-100">Subscribe</Button>
-                    </div>
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-[#4a7c59] hover:bg-[#3a6147] text-white"
+                        disabled={isSubscribing}
+                      >
+                        {isSubscribing ? "Subscribing..." : "Subscribe"}
+                      </Button>
+                    </form>
+                    {subscriptionMessage && (
+                      <p className={`text-xs text-center mt-3 ${
+                        subscriptionMessage.includes("Successfully") 
+                          ? "text-green-600" 
+                          : "text-red-600"
+                      }`}>
+                        {subscriptionMessage}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 text-center mt-3">We respect your privacy. Unsubscribe at any time.</p>
                   </CardContent>
                 </Card>
               </div>
