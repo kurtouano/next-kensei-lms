@@ -155,7 +155,6 @@ export default function BlogsPage() {
         setError(data.error || 'Failed to fetch blogs')
       }
     } catch (err) {
-      console.error('Error fetching all blogs:', err)
       setError('Failed to fetch blogs')
     } finally {
       setLoading(false)
@@ -197,7 +196,6 @@ export default function BlogsPage() {
         setSubscriptionMessage(data.message || "Failed to subscribe. Please try again.")
       }
     } catch (error) {
-      console.error('Subscription error:', error)
       setSubscriptionMessage("Failed to subscribe. Please try again.")
     } finally {
       setIsSubscribing(false)
@@ -260,16 +258,6 @@ export default function BlogsPage() {
     setHasMoreFeatured(featured.length > featuredPerPage)
     setHasMoreRecent(recent.length > recentPerPage)
     
-    // Debug logging
-    console.log('Pagination Debug:', {
-      totalFiltered: filteredBlogs.length,
-      featured: featured.length,
-      recent: recent.length,
-      featuredPerPage,
-      recentPerPage,
-      hasMoreFeatured: featured.length > featuredPerPage,
-      hasMoreRecent: recent.length > recentPerPage
-    })
   }, [filteredBlogs, featuredPerPage, recentPerPage])
 
   // Load more featured articles function
@@ -284,15 +272,6 @@ export default function BlogsPage() {
     setFeaturedPage(nextPage)
     setHasMoreFeatured(endIndex < featured.length)
     
-    console.log('Load More Featured:', {
-      featuredPage,
-      nextPage,
-      startIndex,
-      endIndex,
-      newArticlesLength: newFeaturedArticles.length,
-      totalFeatured: featured.length,
-      hasMore: endIndex < featured.length
-    })
   }
 
   // Load more recent articles function
@@ -307,15 +286,6 @@ export default function BlogsPage() {
     setRecentPage(nextPage)
     setHasMoreRecent(endIndex < recent.length)
     
-    console.log('Load More Recent:', {
-      recentPage,
-      nextPage,
-      startIndex,
-      endIndex,
-      newArticlesLength: newRecentArticles.length,
-      totalRecent: recent.length,
-      hasMore: endIndex < recent.length
-    })
   }
 
   // Use the displayed blogs directly
@@ -643,13 +613,6 @@ export default function BlogsPage() {
               </div>
             )}
 
-            {/* Debug Info */}
-            <div className="text-center text-sm text-gray-500 mb-4 p-4 bg-gray-100 rounded">
-              <div>Total Blogs: {filteredBlogs.length}</div>
-              <div>Featured: {featuredBlogs.length} | Recent: {recentBlogs.length}</div>
-              <div>Has More Featured: {hasMoreFeatured.toString()} | Has More Recent: {hasMoreRecent.toString()}</div>
-              <div>Featured Page: {featuredPage} | Recent Page: {recentPage}</div>
-            </div>
 
             {/* No Results Message */}
             {filteredBlogs.length === 0 && !loading && (
