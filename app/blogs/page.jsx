@@ -387,6 +387,25 @@ export default function BlogsPage() {
             </div>
           </div>
 
+          {/* Category Filter Row */}
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:shadow-sm ${
+                    selectedCategory === category.id
+                      ? "bg-[#4a7c59] text-white shadow-md"
+                      : "bg-white text-gray-600 border border-gray-300 hover:border-[#4a7c59] hover:text-[#4a7c59]"
+                  }`}
+                >
+                  <span>{category.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Active Filters Display */}
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -498,7 +517,7 @@ export default function BlogsPage() {
                   <div className="text-center mb-8">
                     <Button 
                       onClick={loadMoreFeatured}
-                      className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-6 py-2"
+                      className="bg-white hover:bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] hover:border-[#3a6147] px-6 py-2"
                     >
                       Load More Featured Articles
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -572,7 +591,7 @@ export default function BlogsPage() {
                   <div className="text-center mb-8">
                     <Button 
                       onClick={loadMoreRecent}
-                      className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-6 py-2"
+                      className="bg-white hover:bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] hover:border-[#3a6147] px-6 py-2"
                     >
                       Load More Recent Articles
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -666,32 +685,6 @@ export default function BlogsPage() {
                 </Card>
               )}
 
-              {/* Quick Category Filter */}
-              <Card className="border-0 shadow-md">
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-gray-900 mb-4">Browse by Category</h3>
-                  <div className="space-y-2">
-                    {categories.map((category) => (
-                      <button
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category.id)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors text-sm hover:bg-gray-50 ${
-                          selectedCategory === category.id
-                            ? "bg-[#eef2eb] text-[#4a7c59] font-medium"
-                            : "text-gray-600"
-                        }`}
-                      >
-                        <span>{category.name}</span>
-                        <span className={`text-xs ${
-                          selectedCategory === category.id ? "text-[#4a7c59]" : "text-gray-400"
-                        }`}>
-                          {category.count}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
 
             </div>
           </div>
