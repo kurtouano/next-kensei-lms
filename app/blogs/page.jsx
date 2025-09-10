@@ -21,6 +21,16 @@ export default function BlogsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
+  // Pagination state
+  const [displayedFeaturedBlogs, setDisplayedFeaturedBlogs] = useState([])
+  const [displayedRecentBlogs, setDisplayedRecentBlogs] = useState([])
+  const [featuredPage, setFeaturedPage] = useState(1)
+  const [recentPage, setRecentPage] = useState(1)
+  const [hasMoreFeatured, setHasMoreFeatured] = useState(false)
+  const [hasMoreRecent, setHasMoreRecent] = useState(false)
+  const featuredPerPage = 4 // Show 4 featured articles per load
+  const recentPerPage = 8 // Show 8 recent articles per load
+  
   // Newsletter subscription state
   const [newsletterEmail, setNewsletterEmail] = useState("")
   const [isSubscribing, setIsSubscribing] = useState(false)
@@ -233,16 +243,84 @@ export default function BlogsPage() {
     return results
   }, [allBlogs, debouncedSearchTerm, selectedCategory, sortBy, fuse])
 
-  // Separate filtered blogs into featured and recent
-  const { featuredBlogs, recentBlogs } = useMemo(() => {
-    const featured = filteredBlogs.filter(blog => blog.isFeatured).slice(0, 3)
-    const recent = filteredBlogs.filter(blog => !blog.isFeatured).slice(0, 6)
+  // Update displayed blogs and pagination when filters change
+  useEffect(() => {
+    const featured = filteredBlogs.filter(blog => blog.isFeatured)
+    const recent = filteredBlogs.filter(blog => !blog.isFeatured)
     
-    return {
-      featuredBlogs: featured,
-      recentBlogs: recent
-    }
-  }, [filteredBlogs])
+    // Reset to first page
+    setFeaturedPage(1)
+    setRecentPage(1)
+    
+    // Show first batch of featured and recent articles
+    setDisplayedFeaturedBlogs(featured.slice(0, featuredPerPage))
+    setDisplayedRecentBlogs(recent.slice(0, recentPerPage))
+    
+    // Check if there are more articles to load
+    setHasMoreFeatured(featured.length > featuredPerPage)
+    setHasMoreRecent(recent.length > recentPerPage)
+    
+    // Debug logging
+    console.log('Pagination Debug:', {
+      totalFiltered: filteredBlogs.length,
+      featured: featured.length,
+      recent: recent.length,
+      featuredPerPage,
+      recentPerPage,
+      hasMoreFeatured: featured.length > featuredPerPage,
+      hasMoreRecent: recent.length > recentPerPage
+    })
+  }, [filteredBlogs, featuredPerPage, recentPerPage])
+
+  // Load more featured articles function
+  const loadMoreFeatured = () => {
+    const featured = filteredBlogs.filter(blog => blog.isFeatured)
+    const nextPage = featuredPage + 1
+    const startIndex = featuredPage * featuredPerPage // Use current page, not next page
+    const endIndex = Math.min(startIndex + featuredPerPage, featured.length)
+    
+    const newFeaturedArticles = featured.slice(startIndex, endIndex)
+    setDisplayedFeaturedBlogs(prev => [...prev, ...newFeaturedArticles])
+    setFeaturedPage(nextPage)
+    setHasMoreFeatured(endIndex < featured.length)
+    
+    console.log('Load More Featured:', {
+      featuredPage,
+      nextPage,
+      startIndex,
+      endIndex,
+      newArticlesLength: newFeaturedArticles.length,
+      totalFeatured: featured.length,
+      hasMore: endIndex < featured.length
+    })
+  }
+
+  // Load more recent articles function
+  const loadMoreRecent = () => {
+    const recent = filteredBlogs.filter(blog => !blog.isFeatured)
+    const nextPage = recentPage + 1
+    const startIndex = recentPage * recentPerPage // Use current page, not next page
+    const endIndex = Math.min(startIndex + recentPerPage, recent.length)
+    
+    const newRecentArticles = recent.slice(startIndex, endIndex)
+    setDisplayedRecentBlogs(prev => [...prev, ...newRecentArticles])
+    setRecentPage(nextPage)
+    setHasMoreRecent(endIndex < recent.length)
+    
+    console.log('Load More Recent:', {
+      recentPage,
+      nextPage,
+      startIndex,
+      endIndex,
+      newArticlesLength: newRecentArticles.length,
+      totalRecent: recent.length,
+      hasMore: endIndex < recent.length
+    })
+  }
+
+  // Use the displayed blogs directly
+  const featuredBlogs = displayedFeaturedBlogs
+  const recentBlogs = displayedRecentBlogs
 
   // Handle search input change with focus preservation
   const handleSearchChange = (e) => {
@@ -383,7 +461,7 @@ export default function BlogsPage() {
 
           {/* Results Count */}
           <div className="text-sm text-gray-600 mb-6">
-            Showing {filteredBlogs.length} articles
+            Showing {featuredBlogs.length + recentBlogs.length} of {filteredBlogs.length} articles
             {debouncedSearchTerm && ` for "${debouncedSearchTerm}"`}
             {selectedCategory !== "all" && ` in ${categories.find(c => c.id === selectedCategory)?.name}`}
           </div>
@@ -464,6 +542,19 @@ export default function BlogsPage() {
                     </Link>
                   ))}
                 </div>
+                
+                {/* Load More Featured Articles Button */}
+                {hasMoreFeatured && (
+                  <div className="text-center mb-8">
+                    <Button 
+                      onClick={loadMoreFeatured}
+                      className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-6 py-2"
+                    >
+                      Load More Featured Articles
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -516,8 +607,29 @@ export default function BlogsPage() {
                     </Link>
                   ))}
                 </div>
+                
+                {/* Load More Recent Articles Button */}
+                {hasMoreRecent && (
+                  <div className="text-center mb-8">
+                    <Button 
+                      onClick={loadMoreRecent}
+                      className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-6 py-2"
+                    >
+                      Load More Recent Articles
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Debug Info */}
+            <div className="text-center text-sm text-gray-500 mb-4 p-4 bg-gray-100 rounded">
+              <div>Total Blogs: {filteredBlogs.length}</div>
+              <div>Featured: {featuredBlogs.length} | Recent: {recentBlogs.length}</div>
+              <div>Has More Featured: {hasMoreFeatured.toString()} | Has More Recent: {hasMoreRecent.toString()}</div>
+              <div>Featured Page: {featuredPage} | Recent Page: {recentPage}</div>
+            </div>
 
             {/* No Results Message */}
             {filteredBlogs.length === 0 && !loading && (
@@ -536,15 +648,6 @@ export default function BlogsPage() {
               </div>
             )}
 
-            {/* Load More Button */}
-            {filteredBlogs.length > 0 && (
-              <div className="text-center">
-                <Button className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-8 py-3">
-                  Load More Articles
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            )}
           </div>
 
           {/* Sidebar */}
