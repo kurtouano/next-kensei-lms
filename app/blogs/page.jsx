@@ -496,9 +496,19 @@ export default function BlogsPage() {
             {/* Featured Articles Section */}
             {featuredBlogs.length > 0 && (
               <div className="mb-8">
-                <div className="flex items-center gap-2 mb-6">
-                  <Star className="h-6 w-6 text-[#4a7c59]" />
-                  <h2 className="text-2xl font-bold text-gray-900">Featured Articles</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-6 w-6 text-[#4a7c59]" />
+                    <h2 className="text-2xl font-bold text-gray-900">Featured Articles</h2>
+                  </div>
+                  <Link href="/blogs/featured-articles">
+                    <Button 
+                      className="hover:bg-[#eef2eb] bg-transparent text-[#3a6147]"
+                    >
+                      View All
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -561,9 +571,19 @@ export default function BlogsPage() {
             {/* Recent Articles Section */}
             {recentBlogs.length > 0 && (
               <div className="mb-8">
-                <div className="flex items-center gap-2 mb-6">
-                  <TrendingUp className="h-6 w-6 text-[#4a7c59]" />
-                  <h2 className="text-2xl font-bold text-gray-900">Recent Articles</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-6 w-6 text-[#4a7c59]" />
+                    <h2 className="text-2xl font-bold text-gray-900">Recent Articles</h2>
+                  </div>
+                  <Link href="/blogs/recent-articles">
+                    <Button 
+                      className="hover:bg-[#eef2eb] bg-transparent text-[#3a6147]"
+                    >
+                      View All
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
