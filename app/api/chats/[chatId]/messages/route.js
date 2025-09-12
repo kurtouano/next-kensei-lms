@@ -21,9 +21,7 @@ export async function GET(request, { params }) {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get("page")) || 1
     const limit = parseInt(searchParams.get("limit")) || 20
-    const before = searchParams.get("before") // For infinite scroll
-    const cursor = searchParams.get("cursor") // Cursor-based pagination
-    const direction = searchParams.get("direction") || "before" // before or after
+    const skip = (page - 1) * limit
 
     // Find user
     const user = await User.findOne({ email: session.user.email })
@@ -43,24 +41,15 @@ export async function GET(request, { params }) {
     }
 
     // Build query for messages
-    let query = {
+    const query = {
       chat: chatId,
       isDeleted: false,
     }
 
-    // Use cursor-based pagination for better performance
-    if (cursor) {
-      if (direction === "before") {
-        query.createdAt = { $lt: new Date(cursor) }
-      } else {
-        query.createdAt = { $gt: new Date(cursor) }
-      }
-    } else if (before) {
-      // Fallback to old pagination method
-      query.createdAt = { $lt: new Date(before) }
-    }
-
-    // Get messages with pagination (newest first)
+    // Get total count for pagination
+    const totalMessages = await Message.countDocuments(query)
+    
+    // Get messages with simple offset pagination (newest first, then reverse for display)
     const messages = await Message.find(query)
       .populate({
         path: "sender",
@@ -75,7 +64,10 @@ export async function GET(request, { params }) {
         },
       })
       .sort({ createdAt: -1 })
+      .skip(skip)
       .limit(limit)
+
+    const hasMore = skip + messages.length < totalMessages
 
     // Reverse to show oldest first in the frontend
     const formattedMessages = messages.reverse().map((message) => ({
@@ -105,27 +97,21 @@ export async function GET(request, { params }) {
       updatedAt: message.updatedAt,
     }))
 
-    // Update user's last read timestamp
+    // Update user's last read timestamp (using reversed messages array)
     await ChatParticipant.findByIdAndUpdate(participation._id, {
       lastRead: new Date(),
-      ...(messages.length > 0 && { lastSeenMessage: messages[messages.length - 1]._id }),
+      ...(formattedMessages.length > 0 && { lastSeenMessage: formattedMessages[formattedMessages.length - 1].id }),
     })
-
-    const hasMore = messages.length === limit
-
-    // Calculate cursors for better pagination
-    const oldestCursor = messages.length > 0 ? messages[messages.length - 1].createdAt : null
-    const newestCursor = messages.length > 0 ? messages[0].createdAt : null
 
     return NextResponse.json({
       success: true,
       messages: formattedMessages,
       pagination: {
         hasMore,
-        nextBefore: newestCursor, // For backward compatibility
-        oldestCursor,
-        newestCursor,
-        direction,
+        currentPage: page,
+        totalMessages,
+        totalPages: Math.ceil(totalMessages / limit),
+        messagesPerPage: limit,
       },
     })
   } catch (error) {

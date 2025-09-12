@@ -177,13 +177,14 @@ export function useChatMessages(chatId, onNewMessage = null) {
   const [hasMore, setHasMore] = useState(true)
   const [eventSource, setEventSource] = useState(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [oldestCursor, setOldestCursor] = useState(null)
-  const [newestCursor, setNewestCursor] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
   const messagesEndRef = useRef(null)
   const scrollPositionRef = useRef(null)
+  const isInitialLoad = useRef(true)
+  const shouldScrollToBottom = useRef(false)
 
-  // Fetch messages for a chat with cursor-based pagination
-  const fetchMessages = useCallback(async (cursor = null, append = false) => {
+  // Fetch messages for a chat with simple page-based pagination
+  const fetchMessages = useCallback(async (page = 1, append = false) => {
     if (!session?.user?.email || !chatId) return
 
     if (append) {
@@ -195,27 +196,30 @@ export function useChatMessages(chatId, onNewMessage = null) {
 
     try {
       const url = new URL(`/api/chats/${chatId}/messages`, window.location.origin)
-      
-      // Use cursor-based pagination for better performance
-      if (cursor) {
-        url.searchParams.set("cursor", cursor)
-        url.searchParams.set("direction", "before")
-      }
+      url.searchParams.set("page", page.toString())
+      url.searchParams.set("limit", "20")
 
       const response = await fetch(url)
       const data = await response.json()
 
       if (data.success) {
         if (append) {
-          // For infinite scroll - prepend older messages
-          setMessages(prev => [...data.messages, ...prev])
+          // For infinite scroll - prepend older messages with deduplication
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(msg => msg.id))
+            const newMessages = data.messages.filter(msg => !existingIds.has(msg.id))
+            return [...newMessages, ...prev]
+          })
+          setCurrentPage(page)
+          // Don't scroll to bottom when loading more messages
         } else {
           // Initial load or refresh
           setMessages(data.messages)
+          setCurrentPage(1)
+          // Mark that we should scroll to bottom after initial load
+          shouldScrollToBottom.current = true
         }
         setHasMore(data.pagination.hasMore)
-        setOldestCursor(data.pagination.oldestCursor)
-        setNewestCursor(data.pagination.newestCursor)
       } else {
         throw new Error(data.error || "Failed to fetch messages")
       }
@@ -252,8 +256,14 @@ export function useChatMessages(chatId, onNewMessage = null) {
       const data = await response.json()
 
       if (data.success) {
-        // Add message to local state (optimistic update)
-        setMessages(prev => [...prev, data.message])
+        // Add message to local state (optimistic update) with deduplication
+        setMessages(prev => {
+          const messageExists = prev.some(msg => msg.id === data.message.id)
+          if (messageExists) {
+            return prev
+          }
+          return [...prev, data.message]
+        })
         
         // Update chat list with new message
         if (onNewMessage) {
@@ -287,16 +297,23 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [session, chatId])
 
-  // Load more messages (infinite scroll) with cursor-based pagination
+  // Load more messages (infinite scroll) with page-based pagination
   const loadMoreMessages = useCallback(() => {
-    if (hasMore && !loading && !isLoadingMore && oldestCursor) {
-      fetchMessages(oldestCursor, true)
+    if (hasMore && !loading && !isLoadingMore) {
+      fetchMessages(currentPage + 1, true)
     }
-  }, [hasMore, loading, isLoadingMore, oldestCursor, fetchMessages])
+  }, [hasMore, loading, isLoadingMore, currentPage, fetchMessages])
 
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    if (messagesEndRef.current) {
+      try {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" })
+      } catch (error) {
+        // Fallback for older browsers
+        messagesEndRef.current.scrollIntoView(false)
+      }
+    }
   }, [])
 
   // Set up real-time connection
@@ -314,7 +331,14 @@ export function useChatMessages(chatId, onNewMessage = null) {
             console.log("Connected to chat stream")
             break
           case "new_message":
-            setMessages(prev => [...prev, data.message])
+            setMessages(prev => {
+              // Check if message already exists to prevent duplicates
+              const messageExists = prev.some(msg => msg.id === data.message.id)
+              if (messageExists) {
+                return prev
+              }
+              return [...prev, data.message]
+            })
             
             // Update chat list with new message
             if (onNewMessage) {
@@ -362,11 +386,50 @@ export function useChatMessages(chatId, onNewMessage = null) {
     if (chatId) {
       setMessages([])
       setHasMore(true)
-      setOldestCursor(null)
-      setNewestCursor(null)
-      fetchMessages()
+      setCurrentPage(1)
+      isInitialLoad.current = true
+      shouldScrollToBottom.current = false
+      previousMessageCount.current = 0 // Reset message count for new chat
+      fetchMessages(1)
     }
   }, [chatId, fetchMessages])
+
+  // Auto-scroll to bottom when switching chats (initial load)
+  useEffect(() => {
+    if (shouldScrollToBottom.current && messages.length > 0 && !loading && !isLoadingMore) {
+      setTimeout(() => {
+        scrollToBottom()
+        shouldScrollToBottom.current = false
+        isInitialLoad.current = false
+      }, 200)
+    }
+  }, [messages.length, loading, isLoadingMore, scrollToBottom])
+
+  // No need for separate reset effect since it's handled in the auto-scroll effect above
+
+  // Auto-scroll to bottom when NEW messages arrive (not when loading more old messages)
+  const previousMessageCount = useRef(0)
+  
+  useEffect(() => {
+    // Only check for new messages if we're not currently loading more old messages
+    if (messages.length > 0 && !isLoadingMore && !loading && !isInitialLoad.current) {
+      const container = messagesEndRef.current?.parentElement
+      if (container && messages.length > previousMessageCount.current) {
+        const { scrollTop, scrollHeight, clientHeight } = container
+        const isNearBottom = scrollTop + clientHeight > scrollHeight - 100
+        
+        // Auto-scroll only if user was near bottom (indicating they want to see new messages)
+        if (isNearBottom) {
+          setTimeout(() => {
+            scrollToBottom()
+          }, 50)
+        }
+      }
+    }
+    
+    // Update the previous message count
+    previousMessageCount.current = messages.length
+  }, [messages.length, scrollToBottom, isLoadingMore, loading])
 
 
 
@@ -382,7 +445,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
     sendTypingIndicator,
     loadMoreMessages,
     scrollToBottom,
-    refetch: () => fetchMessages(),
+    refetch: () => fetchMessages(1),
   }
 }
 

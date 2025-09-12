@@ -85,7 +85,8 @@ export default function ChatInterface() {
       const heightDifference = newScrollHeight - oldScrollHeight
       
       // Restore scroll position by adjusting for the new content height
-      container.scrollTop = heightDifference
+      // Add a small offset to account for multiple messages being loaded
+      container.scrollTop = heightDifference + 50
       scrollPositionRef.current = null
     }
   }, [isLoadingMore, messages])
@@ -514,7 +515,7 @@ export default function ChatInterface() {
                             />
                           )
                         })}
-                        <div ref={messagesEndRef} />
+                        <div ref={messagesEndRef} className="h-1" />
                         
                         {/* Loading indicator for new messages */}
                         {messagesLoading && messages.length > 0 && (
