@@ -177,10 +177,13 @@ export function useChatMessages(chatId, onNewMessage = null) {
   const [hasMore, setHasMore] = useState(true)
   const [eventSource, setEventSource] = useState(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [oldestCursor, setOldestCursor] = useState(null)
+  const [newestCursor, setNewestCursor] = useState(null)
   const messagesEndRef = useRef(null)
+  const scrollPositionRef = useRef(null)
 
-  // Fetch messages for a chat
-  const fetchMessages = useCallback(async (before = null, append = false) => {
+  // Fetch messages for a chat with cursor-based pagination
+  const fetchMessages = useCallback(async (cursor = null, append = false) => {
     if (!session?.user?.email || !chatId) return
 
     if (append) {
@@ -192,7 +195,12 @@ export function useChatMessages(chatId, onNewMessage = null) {
 
     try {
       const url = new URL(`/api/chats/${chatId}/messages`, window.location.origin)
-      if (before) url.searchParams.set("before", before)
+      
+      // Use cursor-based pagination for better performance
+      if (cursor) {
+        url.searchParams.set("cursor", cursor)
+        url.searchParams.set("direction", "before")
+      }
 
       const response = await fetch(url)
       const data = await response.json()
@@ -206,6 +214,8 @@ export function useChatMessages(chatId, onNewMessage = null) {
           setMessages(data.messages)
         }
         setHasMore(data.pagination.hasMore)
+        setOldestCursor(data.pagination.oldestCursor)
+        setNewestCursor(data.pagination.newestCursor)
       } else {
         throw new Error(data.error || "Failed to fetch messages")
       }
@@ -277,13 +287,12 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [session, chatId])
 
-  // Load more messages (infinite scroll)
+  // Load more messages (infinite scroll) with cursor-based pagination
   const loadMoreMessages = useCallback(() => {
-    if (hasMore && !loading && !isLoadingMore && messages.length > 0) {
-      const oldestMessage = messages[0]
-      fetchMessages(oldestMessage.createdAt, true)
+    if (hasMore && !loading && !isLoadingMore && oldestCursor) {
+      fetchMessages(oldestCursor, true)
     }
-  }, [hasMore, loading, isLoadingMore, messages, fetchMessages])
+  }, [hasMore, loading, isLoadingMore, oldestCursor, fetchMessages])
 
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -353,17 +362,13 @@ export function useChatMessages(chatId, onNewMessage = null) {
     if (chatId) {
       setMessages([])
       setHasMore(true)
+      setOldestCursor(null)
+      setNewestCursor(null)
       fetchMessages()
     }
   }, [chatId, fetchMessages])
 
-  // Auto-scroll to bottom when new messages arrive
-  // Only scroll to bottom for new messages, not when loading more
-  useEffect(() => {
-    if (!isLoadingMore) {
-      scrollToBottom()
-    }
-  }, [messages, scrollToBottom, isLoadingMore])
+
 
   return {
     messages,

@@ -11,6 +11,8 @@ import { useChat, useChatMessages } from "@/hooks/useChat"
 import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
 import CreateGroupChatModal from "./CreateGroupChatModal"
 import GroupInviteModal from "./GroupInviteModal"
+import MessageItem from "./MessageItem"
+import LazyAvatar from "./LazyAvatar"
 
 export default function ChatInterface() {
   const { data: session } = useSession()
@@ -345,9 +347,14 @@ export default function ChatInterface() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <div className="w-10 h-10">
-                            {renderAvatar({ icon: chat.avatar, bonsai: chat.bonsai, name: chat.name })}
-                          </div>
+                          <LazyAvatar 
+                            user={{ 
+                              id: chat.participants?.[0]?.id, 
+                              icon: chat.avatar, 
+                              name: chat.name 
+                            }} 
+                            size="w-10 h-10" 
+                          />
                           {chat.isOnline && (
                             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                           )}
@@ -446,7 +453,8 @@ export default function ChatInterface() {
                   {/* Messages */}
                   <div 
                     ref={messagesContainerRef}
-                    className="flex-1 overflow-y-scroll overflow-x-hidden p-4 space-y-4 bg-gray-50"
+                    className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-gray-50 scroll-smooth"
+                    style={{ scrollBehavior: 'smooth' }}
                   >
                     {messagesLoading && messages.length === 0 ? (
                       <div className="flex justify-center items-center h-full">
@@ -478,11 +486,12 @@ export default function ChatInterface() {
                               size="sm" 
                               onClick={loadMoreMessages}
                               disabled={isLoadingMore}
+                              className="transition-all duration-200 hover:bg-gray-100"
                             >
                               {isLoadingMore ? (
                                 <>
                                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  Loading...
+                                  Loading older messages...
                                 </>
                               ) : (
                                 "Load more messages"
@@ -492,107 +501,30 @@ export default function ChatInterface() {
                         )}
                         {messages.map((msg, index) => {
                           const previousMessage = index > 0 ? messages[index - 1] : null
-                          const showTimestamp = shouldShowTimestamp(msg, previousMessage)
                           
                           return (
-                            <div key={msg.id}>
-                              {/* Show timestamp if there's a significant time gap */}
-                              {showTimestamp && (
-                                <div className="flex justify-center my-4">
-                                  <div className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full">
-                                    {formatTimestamp(msg.createdAt)}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              <div className={`flex gap-3 ${msg.sender.email === session?.user?.email ? "flex-row-reverse" : ""}`}>
-                                <div className="w-8 h-8">
-                                  {renderAvatar(msg.sender)}
-                                </div>
-                                <div className={`max-w-[70%] min-w-0 ${msg.sender.email === session?.user?.email ? "text-right" : ""}`}>
-                                  {msg.sender.email !== session?.user?.email && (
-                                    <p className="text-sm font-medium text-[#2c3e2d] mb-1">{msg.sender.name}</p>
-                                  )}
-                                  <div
-                                    className={`rounded-lg px-4 py-2 group relative ${
-                                      msg.sender.email === session?.user?.email 
-                                        ? "bg-[#4a7c59] text-white" 
-                                        : "bg-white text-gray-900 border"
-                                    }`}
-                                    title={formatFullTimestamp(msg.createdAt)}
-                                  >
-                                    {msg.type === "image" && msg.attachments?.length > 0 && (
-                                      <div className="mb-2">
-                                        <img
-                                          src={msg.attachments[0].url}
-                                          alt="Shared image"
-                                          className="rounded max-w-full h-auto cursor-pointer"
-                                          onClick={() => window.open(msg.attachments[0].url, '_blank')}
-                                        />
-                                      </div>
-                                    )}
-                                    
-                                    {msg.type === "attachment" && msg.attachments?.length > 0 && (
-                                      <div className="mb-2">
-                                        {msg.attachments.map((attachment, index) => (
-                                          <div
-                                            key={index}
-                                            className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-100 transition-colors"
-                                            onClick={() => window.open(attachment.url, '_blank')}
-                                          >
-                                            <div className="flex-shrink-0">
-                                              {attachment.type === "image" ? (
-                                                <img
-                                                  src={attachment.url}
-                                                  alt={attachment.filename}
-                                                  className="w-10 h-10 object-cover rounded border border-gray-200"
-                                                />
-                                              ) : attachment.type === "document" ? (
-                                                <div className="w-10 h-10 bg-orange-50 border border-orange-200 rounded flex items-center justify-center">
-                                                  <svg className="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd"/>
-                                                  </svg>
-                                                </div>
-                                              ) : (
-                                                <div className="w-10 h-10 bg-gray-50 border border-gray-200 rounded flex items-center justify-center">
-                                                  <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/>
-                                                  </svg>
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <p className="text-sm font-medium text-gray-900 truncate">
-                                                {attachment.filename}
-                                              </p>
-                                              <p className="text-xs text-gray-500">
-                                                {attachment.size ? `${(attachment.size / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'} • {attachment.type}
-                                              </p>
-                                            </div>
-                                            <div className="flex-shrink-0">
-                                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                              </svg>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                    
-                                    {msg.content && <p className="text-sm">{msg.content}</p>}
-                                    
-                                    {/* Hover timestamp tooltip */}
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                                      {formatFullTimestamp(msg.createdAt)}
-                                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                            <MessageItem
+                              key={msg.id}
+                              message={msg}
+                              previousMessage={previousMessage}
+                              session={session}
+                              formatTimestamp={formatTimestamp}
+                              formatFullTimestamp={formatFullTimestamp}
+                              shouldShowTimestamp={shouldShowTimestamp}
+                            />
                           )
                         })}
                         <div ref={messagesEndRef} />
+                        
+                        {/* Loading indicator for new messages */}
+                        {messagesLoading && messages.length > 0 && (
+                          <div className="flex justify-center py-2">
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Loading new messages...
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

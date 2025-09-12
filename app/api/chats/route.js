@@ -39,20 +39,12 @@ export async function GET(request) {
             path: "lastMessage",
             populate: {
               path: "sender",
-              select: "name email icon bonsai",
-              populate: {
-                path: "bonsai",
-                select: "level customization",
-              },
+              select: "name email icon", // Removed bonsai populate
             },
           },
           {
             path: "participants",
-            select: "name email icon bonsai lastSeen",
-            populate: {
-              path: "bonsai",
-              select: "level customization",
-            },
+            select: "name email icon lastSeen", // Removed bonsai populate
           },
         ],
       })
@@ -97,7 +89,6 @@ export async function GET(request) {
         name: chatName,
         type: chat.type,
         avatar: chatAvatar,
-        bonsai: otherParticipant?.bonsai || null,
         lastMessage: chat.lastMessage ? {
           content: chat.lastMessage.content,
           sender: chat.lastMessage.sender?.name || "Unknown",
@@ -106,7 +97,12 @@ export async function GET(request) {
         } : null,
         lastActivity: chat.lastActivity,
         unreadCount,
-        participants: chat.participants,
+        participants: chat.participants.map(p => ({
+          id: p._id,
+          name: p.name,
+          email: p.email,
+          icon: p.icon,
+        })),
         participantCount: chat.participants.length,
         isOnline: chat.type === "direct" ? 
           (otherParticipant?.lastSeen && 

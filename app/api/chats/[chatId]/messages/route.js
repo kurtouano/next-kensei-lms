@@ -22,6 +22,8 @@ export async function GET(request, { params }) {
     const page = parseInt(searchParams.get("page")) || 1
     const limit = parseInt(searchParams.get("limit")) || 20
     const before = searchParams.get("before") // For infinite scroll
+    const cursor = searchParams.get("cursor") // Cursor-based pagination
+    const direction = searchParams.get("direction") || "before" // before or after
 
     // Find user
     const user = await User.findOne({ email: session.user.email })
@@ -46,8 +48,15 @@ export async function GET(request, { params }) {
       isDeleted: false,
     }
 
-    // For infinite scroll, get messages before a specific timestamp
-    if (before) {
+    // Use cursor-based pagination for better performance
+    if (cursor) {
+      if (direction === "before") {
+        query.createdAt = { $lt: new Date(cursor) }
+      } else {
+        query.createdAt = { $gt: new Date(cursor) }
+      }
+    } else if (before) {
+      // Fallback to old pagination method
       query.createdAt = { $lt: new Date(before) }
     }
 
@@ -55,11 +64,7 @@ export async function GET(request, { params }) {
     const messages = await Message.find(query)
       .populate({
         path: "sender",
-        select: "name email icon bonsai",
-        populate: {
-          path: "bonsai",
-          select: "level customization",
-        },
+        select: "name email icon", // Removed bonsai populate for performance
       })
       .populate({
         path: "replyTo",
@@ -82,7 +87,7 @@ export async function GET(request, { params }) {
         name: message.sender.name,
         email: message.sender.email,
         icon: message.sender.icon,
-        bonsai: message.sender.bonsai,
+        // bonsai data will be loaded lazily when needed
       },
       attachments: message.attachments || [],
       reactions: message.reactions || [],
@@ -108,12 +113,19 @@ export async function GET(request, { params }) {
 
     const hasMore = messages.length === limit
 
+    // Calculate cursors for better pagination
+    const oldestCursor = messages.length > 0 ? messages[messages.length - 1].createdAt : null
+    const newestCursor = messages.length > 0 ? messages[0].createdAt : null
+
     return NextResponse.json({
       success: true,
       messages: formattedMessages,
       pagination: {
         hasMore,
-        nextBefore: messages.length > 0 ? messages[0].createdAt : null,
+        nextBefore: newestCursor, // For backward compatibility
+        oldestCursor,
+        newestCursor,
+        direction,
       },
     })
   } catch (error) {
