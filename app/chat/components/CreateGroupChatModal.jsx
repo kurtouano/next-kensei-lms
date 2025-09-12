@@ -60,6 +60,8 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
   }
 
   const handleFriendRemove = (friendId) => {
+    if (!friendId) return // Guard against undefined friendId
+    
     setSelectedFriends(prev => prev.filter(friend => {
       const friendIdValue = friend._id || friend.id
       return friendIdValue && friendIdValue.toString() !== friendId.toString()
@@ -337,7 +339,7 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
                     </div>
                     <span className="text-sm text-[#2c3e2d]">{friend.name}</span>
                     <button
-                      onClick={() => handleFriendRemove(friend._id)}
+                      onClick={() => handleFriendRemove(friend._id || friend.id)}
                       className="text-gray-500 hover:text-red-500"
                     >
                       <X className="h-3 w-3" />

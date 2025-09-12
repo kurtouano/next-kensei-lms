@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react"
 import { useSession } from "next-auth/react"
 import { Send, ImageIcon, Paperclip, MoreVertical, Smile, Loader2, User, Users, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,10 +9,12 @@ import { Card } from "@/components/ui/card"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useChat, useChatMessages } from "@/hooks/useChat"
 import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
-import CreateGroupChatModal from "./CreateGroupChatModal"
 import GroupInviteModal from "./GroupInviteModal"
 import MessageItem from "./MessageItem"
 import LazyAvatar from "./LazyAvatar"
+
+// Lazy load the CreateGroupChatModal
+const CreateGroupChatModal = lazy(() => import("./CreateGroupChatModal"))
 
 export default function ChatInterface() {
   const { data: session } = useSession()
@@ -666,16 +668,27 @@ export default function ChatInterface() {
       </div>
 
       {/* Modals */}
-      <CreateGroupChatModal
-        isOpen={showCreateGroupModal}
-        onClose={() => setShowCreateGroupModal(false)}
-        onGroupCreated={(group) => {
-          console.log('Group created:', group)
-          refetchChats() // Refresh the chat list
-          setSelectedChatId(group.id)
-          setShowCreateGroupModal(false)
-        }}
-      />
+      {showCreateGroupModal && (
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-[#4a7c59]" />
+              <span className="text-[#2c3e2d]">Loading...</span>
+            </div>
+          </div>
+        }>
+          <CreateGroupChatModal
+            isOpen={showCreateGroupModal}
+            onClose={() => setShowCreateGroupModal(false)}
+            onGroupCreated={(group) => {
+              console.log('Group created:', group)
+              refetchChats() // Refresh the chat list
+              setSelectedChatId(group.id)
+              setShowCreateGroupModal(false)
+            }}
+          />
+        </Suspense>
+      )}
       
       <GroupInviteModal
         isOpen={showInviteModal}
