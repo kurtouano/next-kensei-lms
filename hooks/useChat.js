@@ -30,6 +30,7 @@ export function useChat() {
         // Sort chats by lastActivity (newest first)
         const sortedChats = data.chats.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
         console.log('Chat timestamps:', sortedChats.map(chat => ({ name: chat.name, lastActivity: chat.lastActivity })))
+        console.log('Chat avatars:', sortedChats.map(chat => ({ name: chat.name, type: chat.type, avatar: chat.avatar })))
         
         if (page === 1) {
           setChats(sortedChats)
@@ -182,6 +183,8 @@ export function useChatMessages(chatId, onNewMessage = null) {
   const scrollPositionRef = useRef(null)
   const isInitialLoad = useRef(true)
   const shouldScrollToBottom = useRef(false)
+  const isUserAtBottom = useRef(true)
+  const isLoadingMoreMessages = useRef(false)
 
   // Fetch messages for a chat with simple page-based pagination
   const fetchMessages = useCallback(async (page = 1, append = false) => {
@@ -189,6 +192,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
 
     if (append) {
       setIsLoadingMore(true)
+      isLoadingMoreMessages.current = true
     } else {
       setLoading(true)
     }
@@ -229,6 +233,10 @@ export function useChatMessages(chatId, onNewMessage = null) {
     } finally {
       if (append) {
         setIsLoadingMore(false)
+        // Reset the loading more flag after a short delay to allow scroll position to stabilize
+        setTimeout(() => {
+          isLoadingMoreMessages.current = false
+        }, 500)
       } else {
         setLoading(false)
       }
@@ -270,6 +278,11 @@ export function useChatMessages(chatId, onNewMessage = null) {
           onNewMessage(chatId, data.message)
         }
         
+        // Always scroll to bottom after sending a message (user initiated action)
+        setTimeout(() => {
+          scrollToBottom()
+        }, 100)
+        
         return data.message
       } else {
         throw new Error(data.error || "Failed to send message")
@@ -304,14 +317,28 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [hasMore, loading, isLoadingMore, currentPage, fetchMessages])
 
+  // Check if user is at the bottom of the chat
+  const checkIfAtBottom = useCallback(() => {
+    const container = messagesEndRef.current?.parentElement
+    if (container) {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const isNearBottom = scrollTop + clientHeight > scrollHeight - 100
+      isUserAtBottom.current = isNearBottom
+      return isNearBottom
+    }
+    return true
+  }, [])
+
   // Scroll to bottom
   const scrollToBottom = useCallback(() => {
     if (messagesEndRef.current) {
       try {
         messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" })
+        isUserAtBottom.current = true
       } catch (error) {
         // Fallback for older browsers
         messagesEndRef.current.scrollIntoView(false)
+        isUserAtBottom.current = true
       }
     }
   }, [])
@@ -343,6 +370,14 @@ export function useChatMessages(chatId, onNewMessage = null) {
             // Update chat list with new message
             if (onNewMessage) {
               onNewMessage(chatId, data.message)
+            }
+            
+            // Only scroll to bottom for received messages if user is at the bottom
+            const wasAtBottom = checkIfAtBottom()
+            if (wasAtBottom && !isLoadingMoreMessages.current) {
+              setTimeout(() => {
+                scrollToBottom()
+              }, 100)
             }
             break
           case "message_edited":
@@ -389,6 +424,8 @@ export function useChatMessages(chatId, onNewMessage = null) {
       setCurrentPage(1)
       isInitialLoad.current = true
       shouldScrollToBottom.current = false
+      isUserAtBottom.current = true // Reset to bottom when switching chats
+      isLoadingMoreMessages.current = false
       previousMessageCount.current = 0 // Reset message count for new chat
       fetchMessages(1)
     }
@@ -415,11 +452,13 @@ export function useChatMessages(chatId, onNewMessage = null) {
     if (messages.length > 0 && !isLoadingMore && !loading && !isInitialLoad.current) {
       const container = messagesEndRef.current?.parentElement
       if (container && messages.length > previousMessageCount.current) {
-        const { scrollTop, scrollHeight, clientHeight } = container
-        const isNearBottom = scrollTop + clientHeight > scrollHeight - 100
+        // Check if user is at the bottom before deciding to scroll
+        const wasAtBottom = checkIfAtBottom()
         
-        // Auto-scroll only if user was near bottom (indicating they want to see new messages)
-        if (isNearBottom) {
+        // Only auto-scroll if:
+        // 1. User was at the bottom (wants to see new messages), OR
+        // 2. We're not in the middle of loading more messages (to avoid interrupting scroll-up behavior)
+        if (wasAtBottom && !isLoadingMoreMessages.current) {
           setTimeout(() => {
             scrollToBottom()
           }, 50)
@@ -429,9 +468,25 @@ export function useChatMessages(chatId, onNewMessage = null) {
     
     // Update the previous message count
     previousMessageCount.current = messages.length
-  }, [messages.length, scrollToBottom, isLoadingMore, loading])
+  }, [messages.length, scrollToBottom, isLoadingMore, loading, checkIfAtBottom])
 
 
+
+  // Add scroll listener to track user position
+  useEffect(() => {
+    const container = messagesEndRef.current?.parentElement
+    if (container) {
+      const handleScroll = () => {
+        // Don't update position tracking while loading more messages
+        if (!isLoadingMoreMessages.current) {
+          checkIfAtBottom()
+        }
+      }
+      
+      container.addEventListener('scroll', handleScroll, { passive: true })
+      return () => container.removeEventListener('scroll', handleScroll)
+    }
+  }, [checkIfAtBottom])
 
   return {
     messages,

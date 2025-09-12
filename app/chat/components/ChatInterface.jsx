@@ -298,7 +298,7 @@ export default function ChatInterface() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-12rem)]">
           <div className="lg:col-span-1">
           {/* Chat List Sidebar */}
-          <Card className="h-full flex flex-col">
+          <Card className="h-[calc(100vh-11rem)] flex flex-col">
               <div className="p-4 border-b">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-lg font-semibold text-[#2c3e2d]">Messages</h2>
@@ -322,7 +322,7 @@ export default function ChatInterface() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto h-[calc(100vh-12rem)]">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden">
                 {chatsLoading ? (
                   <div className="p-4">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto" />
@@ -348,26 +348,50 @@ export default function ChatInterface() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <LazyAvatar 
-                            user={{ 
-                              id: chat.participants?.[0]?.id, 
-                              icon: chat.avatar, 
-                              name: chat.name 
-                            }} 
-                            size="w-10 h-10" 
-                          />
+                          {chat.type === "group" ? (
+                            <div className="w-10 h-10">
+                              {(chat.avatar && chat.avatar !== null) ? (
+                                <img 
+                                  src={chat.avatar} 
+                                  alt={chat.name} 
+                                  className="h-full w-full object-cover rounded-full"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextElementSibling.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <div 
+                                className="h-full w-full rounded-full bg-[#4a7c59] text-white flex items-center justify-center text-sm font-medium"
+                                style={{ display: (chat.avatar && chat.avatar !== null) ? 'none' : 'flex' }}
+                              >
+                                {chat.name?.charAt(0)?.toUpperCase() || "G"}
+                              </div>
+                            </div>
+                          ) : (
+                            <LazyAvatar 
+                              user={{ 
+                                id: chat.participants?.[0]?.id, 
+                                icon: chat.avatar, 
+                                name: chat.name 
+                              }} 
+                              size="w-10 h-10" 
+                            />
+                          )}
                           {chat.isOnline && (
                             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-medium text-sm text-[#2c3e2d] truncate">
-                              {chat.name}
+                            <div className="flex items-center gap-1">
+                              <h3 className="font-medium text-sm text-[#2c3e2d] truncate">
+                                {chat.name}
+                              </h3>
                               {chat.type === "group" && (
-                                <span className="text-xs text-gray-500 ml-1">({chat.participants?.length || 0})</span>
+                                <Users className="h-3 w-3 text-[#4a7c59] flex-shrink-0 ml-1" />
                               )}
-                            </h3>
+                            </div>
                             <span className="text-xs text-gray-500">
                               {chat.lastMessage?.createdAt && new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </span>
@@ -399,7 +423,29 @@ export default function ChatInterface() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10">
-                          {renderAvatar({ icon: selectedChat.avatar, bonsai: selectedChat.bonsai, name: selectedChat.name })}
+                          {selectedChat.type === "group" ? (
+                            <div className="h-full w-full relative">
+                              {(selectedChat.avatar && selectedChat.avatar !== null) ? (
+                                <img 
+                                  src={selectedChat.avatar} 
+                                  alt={selectedChat.name} 
+                                  className="h-full w-full object-cover rounded-full"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextElementSibling.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <div 
+                                className="h-full w-full rounded-full bg-[#4a7c59] text-white flex items-center justify-center text-sm font-medium"
+                                style={{ display: (selectedChat.avatar && selectedChat.avatar !== null) ? 'none' : 'flex' }}
+                              >
+                                {selectedChat.name?.charAt(0)?.toUpperCase() || "G"}
+                              </div>
+                            </div>
+                          ) : (
+                            renderAvatar({ icon: selectedChat.avatar, bonsai: selectedChat.bonsai, name: selectedChat.name })
+                          )}
                         </div>
                         <div>
                           <h3 className="font-semibold text-[#2c3e2d]">{selectedChat.name}</h3>
@@ -424,26 +470,28 @@ export default function ChatInterface() {
                             <Users className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => {
-                            // Get the other participant's user ID for direct chats
-                            if (selectedChat.type === "direct" && Array.isArray(selectedChat.participants)) {
-                              const otherParticipant = selectedChat.participants.find(
-                                (p) => p._id?.toString() !== session?.user?.id?.toString()
-                              )
-                              
-                              if (otherParticipant?._id) {
-                                const profileUrl = `/users/${otherParticipant._id}`
-                                window.open(profileUrl, '_blank')
+                        {selectedChat.type === "direct" && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              // Get the other participant's user ID for direct chats
+                              if (Array.isArray(selectedChat.participants)) {
+                                const otherParticipant = selectedChat.participants.find(
+                                  (p) => p._id?.toString() !== session?.user?.id?.toString()
+                                )
+                                
+                                if (otherParticipant?._id) {
+                                  const profileUrl = `/users/${otherParticipant._id}`
+                                  window.open(profileUrl, '_blank')
+                                }
                               }
-                            }
-                          }}
-                          title={selectedChat.type === "group" ? "Group Info" : "View Profile"}
-                        >
-                          <User className="h-4 w-4" />
-                        </Button>
+                            }}
+                            title="View Profile"
+                          >
+                            <User className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
@@ -465,7 +513,29 @@ export default function ChatInterface() {
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="mb-4">
                           <div className="w-16 h-16 rounded-full bg-[#eef2eb] flex items-center justify-center mb-4">
-                            {renderAvatar({ icon: selectedChat.avatar, bonsai: selectedChat.bonsai, name: selectedChat.name })}
+                            {selectedChat.type === "group" ? (
+                              <div className="h-full w-full relative">
+                                {(selectedChat.avatar && selectedChat.avatar !== null) ? (
+                                  <img 
+                                    src={selectedChat.avatar} 
+                                    alt={selectedChat.name} 
+                                    className="h-full w-full object-cover rounded-full"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextElementSibling.style.display = 'flex';
+                                    }}
+                                  />
+                                ) : null}
+                                <div 
+                                  className="h-full w-full rounded-full bg-[#4a7c59] text-white flex items-center justify-center text-lg font-medium"
+                                  style={{ display: (selectedChat.avatar && selectedChat.avatar !== null) ? 'none' : 'flex' }}
+                                >
+                                  {selectedChat.name?.charAt(0)?.toUpperCase() || "G"}
+                                </div>
+                              </div>
+                            ) : (
+                              renderAvatar({ icon: selectedChat.avatar, bonsai: selectedChat.bonsai, name: selectedChat.name })
+                            )}
                           </div>
                         </div>
                         <h3 className="text-lg font-semibold text-[#2c3e2d] mb-2">

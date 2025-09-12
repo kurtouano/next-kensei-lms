@@ -34,6 +34,7 @@ export async function GET(request) {
       .populate({
         path: "chat",
         match: { isActive: true }, // Only populate active chats
+        select: "name type avatar description createdBy lastMessage lastActivity participants participantCount isActive createdAt updatedAt", // Explicitly include avatar field
         populate: [
           {
             path: "lastMessage",
@@ -56,6 +57,7 @@ export async function GET(request) {
     console.log("Participations:", participations.map(p => ({ 
       chatId: p.chat?._id, 
       chatType: p.chat?.type, 
+      chatAvatar: p.chat?.avatar,
       hasChat: !!p.chat 
     })))
 
@@ -69,6 +71,11 @@ export async function GET(request) {
         let chatName = chat.name || "Chat"
         let chatAvatar = chat.avatar
         let otherParticipant = null
+
+        // Debug: Log avatar info for group chats
+        if (chat.type === "group") {
+          console.log(`Group chat ${chat.name} avatar:`, chat.avatar)
+        }
 
       // For direct chats, set name to the other participant's name
       if (chat.type === "direct") {
@@ -145,7 +152,7 @@ export async function POST(request) {
 
     await connectDb()
 
-    const { type, participantIds, name, description } = await request.json()
+    const { type, participantIds, name, description, avatar } = await request.json()
 
     // Find current user
     const user = await User.findOne({ email: session.user.email })
@@ -197,7 +204,8 @@ export async function POST(request) {
     const chat = new Chat({
       name: type === "group" ? name : null,
       type,
-      description: type === "group" ? description : null,
+      avatar: type === "group" ? avatar : null, // Include avatar for group chats
+      description: type === "group" && description ? description : null,
       createdBy: user._id,
       participants: allParticipantIds,
       participantCount: allParticipantIds.length,

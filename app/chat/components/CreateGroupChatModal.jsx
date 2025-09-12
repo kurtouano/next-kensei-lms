@@ -1,22 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
-import { X, Users, Plus, Search, UserPlus } from "lucide-react"
+import { X, Users, Plus, Search, UserPlus, Camera, Upload, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
+import { compressImage, validateImageFile } from "@/lib/imageCompression"
 
 export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }) {
   const { data: session } = useSession()
   const [groupName, setGroupName] = useState("")
-  const [groupDescription, setGroupDescription] = useState("")
   const [selectedFriends, setSelectedFriends] = useState([])
   const [friends, setFriends] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [groupAvatar, setGroupAvatar] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = useRef(null)
 
   // Fetch user's friends
   useEffect(() => {
@@ -78,7 +82,7 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
         body: JSON.stringify({
           type: 'group',
           name: groupName.trim(),
-          description: groupDescription.trim(),
+          avatar: groupAvatar, // Include the uploaded avatar URL
           participantIds: selectedFriends.map(friend => (friend._id || friend.id).toString())
         })
       })
@@ -99,11 +103,87 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
     }
   }
 
+  // Handle avatar file selection
+  const handleAvatarSelect = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    try {
+      setUploadingAvatar(true)
+
+      // Validate image file
+      const validation = validateImageFile(file, {
+        maxSizeMB: 10,
+        allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      })
+
+      if (!validation.isValid) {
+        alert(validation.errors.join(', '))
+        return
+      }
+
+      // Compress image to 100KB as requested
+      const compressionOptions = {
+        maxSizeKB: 100, // 100KB target as requested
+        maxWidthOrHeight: 512, // Good size for group avatars
+        quality: 0.8,
+        aggressiveQuality: 0.6,
+        extremeQuality: 0.4,
+        fileType: 'image/jpeg'
+      }
+
+      console.log('Compressing group avatar...')
+      const compressedFile = await compressImage(file, compressionOptions)
+      
+      console.log(`Avatar compressed: ${(file.size / 1024).toFixed(2)}KB → ${(compressedFile.size / 1024).toFixed(2)}KB`)
+
+      // Upload to S3
+      const formData = new FormData()
+      formData.append('file', compressedFile)
+      formData.append('type', 'group-avatar')
+
+      const response = await fetch('/api/chats/group-avatar-upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setGroupAvatar(data.url)
+        setAvatarPreview(URL.createObjectURL(compressedFile))
+        console.log('✅ Group avatar uploaded successfully')
+      } else {
+        throw new Error(data.error || 'Failed to upload avatar')
+      }
+
+    } catch (error) {
+      console.error('Avatar upload failed:', error)
+      alert(`Failed to upload avatar: ${error.message}`)
+    } finally {
+      setUploadingAvatar(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleRemoveAvatar = () => {
+    setGroupAvatar(null)
+    setAvatarPreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   const handleClose = () => {
     setGroupName("")
-    setGroupDescription("")
     setSelectedFriends([])
     setSearchQuery("")
+    setGroupAvatar(null)
+    setAvatarPreview(null)
+    setUploadingAvatar(false)
     onClose()
   }
 
@@ -163,6 +243,68 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
             </Button>
           </div>
 
+          {/* Group Avatar */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-[#2c3e2d] mb-3">
+              Group Avatar (Optional)
+            </label>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                  {avatarPreview ? (
+                    <img 
+                      src={avatarPreview} 
+                      alt="Group avatar preview" 
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <Camera className="h-8 w-8 text-gray-400" />
+                  )}
+                </div>
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  {avatarPreview ? 'Change Avatar' : 'Upload Avatar'}
+                </Button>
+                
+                {avatarPreview && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveAvatar}
+                    className="text-red-500 hover:text-red-700 text-xs"
+                  >
+                    Remove Avatar
+                  </Button>
+                )}
+                
+              </div>
+            </div>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              onChange={handleAvatarSelect}
+              className="hidden"
+            />
+          </div>
+
           {/* Group Details */}
           <div className="space-y-4 mb-6">
             <div>
@@ -174,17 +316,6 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
                 maxLength={50}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#2c3e2d] mb-2">
-                Description (Optional)
-              </label>
-              <Input
-                placeholder="What's this group about?"
-                value={groupDescription}
-                onChange={(e) => setGroupDescription(e.target.value)}
-                maxLength={200}
               />
             </div>
           </div>

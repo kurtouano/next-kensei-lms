@@ -49,6 +49,7 @@ export async function GET(request, { params }) {
         name: chat.name,
         description: chat.description,
         type: chat.type,
+        avatar: chat.avatar, // Include avatar field
         participants: chat.participants,
         createdBy: chat.createdBy,
         createdAt: chat.createdAt,
