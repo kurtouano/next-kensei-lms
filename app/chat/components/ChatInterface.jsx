@@ -39,7 +39,6 @@ export default function ChatInterface() {
     hasMore 
   } = useChatMessages(selectedChatId, updateChatWithNewMessage)
   const [uploading, setUploading] = useState(false)
-  const [sending, setSending] = useState(false)
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
 
@@ -91,23 +90,23 @@ export default function ChatInterface() {
     }
   }, [isLoadingMore, messages])
 
-  // Handle sending messages
+  // Handle sending messages with optimistic updates
   const handleSendMessage = async () => {
     const messageText = messageInputRef.current?.value?.trim()
-    if (!messageText || !selectedChatId || sending) return
+    if (!messageText || !selectedChatId) return
+
+    // Clear input immediately for fast UX
+    if (messageInputRef.current) {
+      messageInputRef.current.value = ""
+    }
+    setMessage("")
 
     try {
-      setSending(true)
+      // Send message optimistically (shows instantly, loads in background)
       await sendMessage(messageText)
-      if (messageInputRef.current) {
-        messageInputRef.current.value = ""
-      }
-      setMessage("")
     } catch (error) {
       console.error("Failed to send message:", error)
-      alert("Failed to send message")
-    } finally {
-      setSending(false)
+      // Don't show alert for better UX - the message will show as failed
     }
   }
 
@@ -628,20 +627,16 @@ export default function ChatInterface() {
                         onKeyDown={handleKeyPress}
                         placeholder="Type a message..."
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        disabled={uploading || sending}
+                        disabled={uploading}
                         autoComplete="off"
                         autoFocus={false}
                       />
                       <Button 
                         onClick={handleSendMessage} 
                         className="bg-[#4a7c59] hover:bg-[#3a6147]"
-                        disabled={uploading || sending}
+                        disabled={uploading}
                       >
-                        {sending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Send className="h-4 w-4" />
-                        )}
+                        <Send className="h-4 w-4" />
                       </Button>
                     </div>
                     <input

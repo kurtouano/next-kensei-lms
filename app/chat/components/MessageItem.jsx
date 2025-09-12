@@ -1,6 +1,7 @@
 "use client"
 
 import { memo } from "react"
+import { Loader2, AlertCircle } from "lucide-react"
 import LazyAvatar from "./LazyAvatar"
 
 // Memoized message component for better performance
@@ -26,7 +27,9 @@ const MessageItem = memo(({
       )}
       
       <div className={`flex gap-3 ${message.sender.email === session?.user?.email ? "flex-row-reverse" : ""}`}>
-        <LazyAvatar user={message.sender} size="w-8 h-8" />
+        {message.sender.email !== session?.user?.email && (
+          <LazyAvatar user={message.sender} size="w-8 h-8" />
+        )}
         <div className={`max-w-[70%] min-w-0 ${message.sender.email === session?.user?.email ? "text-right" : ""}`}>
           {message.sender.email !== session?.user?.email && (
             <p className="text-sm font-medium text-[#2c3e2d] mb-1">{message.sender.name}</p>
@@ -34,7 +37,7 @@ const MessageItem = memo(({
           <div
             className={`rounded-lg px-4 py-2 group relative ${
               message.sender.email === session?.user?.email 
-                ? "bg-[#4a7c59] text-white" 
+                ? `bg-[#4a7c59] text-white ${message.isOptimistic ? 'opacity-70' : ''} ${message.isFailed ? 'bg-red-500' : ''}` 
                 : "bg-white text-gray-900 border"
             }`}
             title={formatFullTimestamp(message.createdAt)}
@@ -100,6 +103,18 @@ const MessageItem = memo(({
             )}
             
             {message.content && <p className="text-sm">{message.content}</p>}
+            
+            {/* Loading/Error indicators for optimistic messages */}
+            {message.sender.email === session?.user?.email && (
+              <div className="flex items-center justify-end mt-1 gap-1">
+                {message.isOptimistic && (
+                  <Loader2 className="h-3 w-3 animate-spin opacity-60" />
+                )}
+                {message.isFailed && (
+                  <AlertCircle className="h-3 w-3 text-red-200" title="Failed to send" />
+                )}
+              </div>
+            )}
             
             {/* Hover timestamp tooltip */}
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">

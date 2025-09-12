@@ -243,80 +243,6 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [session, chatId])
 
-  // Send a message
-  const sendMessage = useCallback(async (content, type = "text", attachments = [], replyTo = null) => {
-    if (!session?.user?.email || !chatId) throw new Error("Not authenticated or no chat selected")
-
-    try {
-      const response = await fetch(`/api/chats/${chatId}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content,
-          type,
-          attachments,
-          replyTo,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Add message to local state (optimistic update) with deduplication
-        setMessages(prev => {
-          const messageExists = prev.some(msg => msg.id === data.message.id)
-          if (messageExists) {
-            return prev
-          }
-          return [...prev, data.message]
-        })
-        
-        // Update chat list with new message
-        if (onNewMessage) {
-          onNewMessage(chatId, data.message)
-        }
-        
-        // Always scroll to bottom after sending a message (user initiated action)
-        setTimeout(() => {
-          scrollToBottom()
-        }, 100)
-        
-        return data.message
-      } else {
-        throw new Error(data.error || "Failed to send message")
-      }
-    } catch (error) {
-      console.error("Error sending message:", error)
-      throw error
-    }
-  }, [session, chatId, onNewMessage])
-
-  // Send typing indicator
-  const sendTypingIndicator = useCallback(async (isTyping) => {
-    if (!session?.user?.email || !chatId) return
-
-    try {
-      await fetch(`/api/chats/${chatId}/typing`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ isTyping }),
-      })
-    } catch (error) {
-      console.error("Error sending typing indicator:", error)
-    }
-  }, [session, chatId])
-
-  // Load more messages (infinite scroll) with page-based pagination
-  const loadMoreMessages = useCallback(() => {
-    if (hasMore && !loading && !isLoadingMore) {
-      fetchMessages(currentPage + 1, true)
-    }
-  }, [hasMore, loading, isLoadingMore, currentPage, fetchMessages])
-
   // Check if user is at the bottom of the chat
   const checkIfAtBottom = useCallback(() => {
     const container = messagesEndRef.current?.parentElement
@@ -342,6 +268,112 @@ export function useChatMessages(chatId, onNewMessage = null) {
       }
     }
   }, [])
+
+  // Send a message with optimistic updates
+  const sendMessage = useCallback(async (content, type = "text", attachments = [], replyTo = null) => {
+    if (!session?.user?.email || !chatId) throw new Error("Not authenticated or no chat selected")
+
+    // Create optimistic message with temporary ID
+    const tempId = `temp_${Date.now()}_${Math.random()}`
+    const optimisticMessage = {
+      id: tempId,
+      content,
+      type,
+      attachments,
+      replyTo,
+      sender: {
+        email: session.user.email,
+        name: session.user.name || session.user.email,
+        icon: session.user.icon || null,
+        bonsai: session.user.bonsai || null
+      },
+      createdAt: new Date().toISOString(),
+      isOptimistic: true, // Flag to show loading state
+      isFailed: false
+    }
+
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage])
+    
+    // Scroll to bottom immediately for optimistic message
+    setTimeout(() => {
+      scrollToBottom()
+    }, 50)
+
+    try {
+      const response = await fetch(`/api/chats/${chatId}/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content,
+          type,
+          attachments,
+          replyTo,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Replace optimistic message with real message
+        setMessages(prev => prev.map(msg => 
+          msg.id === tempId 
+            ? { ...data.message, isOptimistic: false }
+            : msg
+        ))
+        
+        // Update chat list with new message
+        if (onNewMessage) {
+          onNewMessage(chatId, data.message)
+        }
+        
+        return data.message
+      } else {
+        // Mark message as failed
+        setMessages(prev => prev.map(msg => 
+          msg.id === tempId 
+            ? { ...msg, isOptimistic: false, isFailed: true }
+            : msg
+        ))
+        throw new Error(data.error || "Failed to send message")
+      }
+    } catch (error) {
+      // Mark message as failed
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempId 
+          ? { ...msg, isOptimistic: false, isFailed: true }
+          : msg
+      ))
+      console.error("Error sending message:", error)
+      throw error
+    }
+  }, [session, chatId, onNewMessage, scrollToBottom])
+
+  // Send typing indicator
+  const sendTypingIndicator = useCallback(async (isTyping) => {
+    if (!session?.user?.email || !chatId) return
+
+    try {
+      await fetch(`/api/chats/${chatId}/typing`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isTyping }),
+      })
+    } catch (error) {
+      console.error("Error sending typing indicator:", error)
+    }
+  }, [session, chatId])
+
+  // Load more messages (infinite scroll) with page-based pagination
+  const loadMoreMessages = useCallback(() => {
+    if (hasMore && !loading && !isLoadingMore) {
+      fetchMessages(currentPage + 1, true)
+    }
+  }, [hasMore, loading, isLoadingMore, currentPage, fetchMessages])
 
   // Set up real-time connection
   useEffect(() => {
