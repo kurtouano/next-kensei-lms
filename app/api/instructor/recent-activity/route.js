@@ -30,6 +30,10 @@ export async function GET(req) {
       select: 'name email image icon profilePicture avatar' // Get all possible avatar fields
     })
     .populate({
+      path: 'user.bonsai',
+      select: 'level customization'
+    })
+    .populate({
       path: 'course',
       select: 'title slug thumbnail'
     })
@@ -42,6 +46,10 @@ export async function GET(req) {
     const formattedActivities = activities.map(activity => {
       // Better avatar handling - check multiple possible fields
       const getUserAvatar = (user) => {
+        // Don't return 'bonsai' as an avatar URL - let frontend handle bonsai rendering
+        if (user?.icon === 'bonsai') {
+          return null;
+        }
         return user?.image || user?.avatar || user?.profilePicture || user?.icon || null;
       };
 
@@ -52,7 +60,9 @@ export async function GET(req) {
         user: {
           name: activity.user?.name || 'Unknown User',
           email: activity.user?.email || '',
-          avatar: getUserAvatar(activity.user)
+          avatar: getUserAvatar(activity.user),
+          icon: activity.user?.icon || null,
+          bonsai: activity.user?.bonsai || null
         },
         course: {
           title: activity.course?.title || 'Unknown Course',

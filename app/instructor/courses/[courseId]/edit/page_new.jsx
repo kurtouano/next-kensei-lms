@@ -3,19 +3,19 @@
 import dynamic from 'next/dynamic'
 import { Loader2 } from 'lucide-react'
 
-// Lazy load the heavy Bonsai components
-const BonsaiInterface = dynamic(() => import('./components/BonsaiInterface'), {
+// Lazy load the heavy Course Edit interface
+const CourseEditInterface = dynamic(() => import('./CourseEditInterface'), {
   loading: () => (
     <div className="flex justify-center items-center min-h-[70vh]">
       <div className="text-center">
         <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-[#4a7c59]" />
-        <p className="text-[#2c3e2d] text-sm">Loading your bonsai garden...</p>
+        <p className="text-[#2c3e2d] text-sm">Loading course editor...</p>
       </div>
     </div>
   ),
-  ssr: false // Bonsai interface is interactive, doesn't need SSR
+  ssr: false // Course editing is interactive, doesn't need SSR
 })
 
-export default function BonsaiPage() {
-  return <BonsaiInterface />
+export default function EditCourse() {
+  return <CourseEditInterface />
 }

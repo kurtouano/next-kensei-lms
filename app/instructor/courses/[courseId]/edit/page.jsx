@@ -1,18 +1,24 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
-import { useParams, useRouter } from "next/navigation"
+import dynamic from 'next/dynamic'
+import { Loader2 } from 'lucide-react'
 
-// Import components from the create-course page directly
-// We'll need to move the components to a shared location or import from the page
-// For now, let's create simplified components here
+// Lazy load the heavy Course Edit interface
+const CourseEditInterface = dynamic(() => import('./CourseEditInterface'), {
+  loading: () => (
+    <div className="flex justify-center items-center min-h-[70vh]">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-[#4a7c59]" />
+        <p className="text-[#2c3e2d] text-sm">Loading course editor...</p>
+      </div>
+    </div>
+  ),
+  ssr: false // Course editing is interactive, doesn't need SSR
+})
 
 export default function EditCourse() {
-  const params = useParams()
-  const router = useRouter()
-  const courseId = params.courseId
+  return <CourseEditInterface />
+}
   
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
