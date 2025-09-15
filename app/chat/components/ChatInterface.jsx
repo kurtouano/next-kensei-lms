@@ -12,6 +12,7 @@ import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
 import GroupInviteModal from "./GroupInviteModal"
 import MessageItem from "./MessageItem"
 import LazyAvatar from "./LazyAvatar"
+import EmojiPicker from "./EmojiPicker"
 
 // Lazy load the CreateGroupChatModal
 const CreateGroupChatModal = lazy(() => import("./CreateGroupChatModal"))
@@ -43,6 +44,8 @@ export default function ChatInterface() {
   const [uploading, setUploading] = useState(false)
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const emojiButtonRef = useRef(null)
   const sidebarRef = useRef(null)
   const isLoadingMoreChats = useRef(false)
   const [messageHeight, setMessageHeight] = useState(40) // Initial height for textarea
@@ -168,6 +171,29 @@ export default function ChatInterface() {
     }
     // Allow Shift+Enter for new lines (default textarea behavior)
   }, [handleSendMessage])
+
+  // Handle emoji selection
+  const handleEmojiSelect = useCallback((emoji) => {
+    if (messageInputRef.current) {
+      const textarea = messageInputRef.current
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const currentMessage = message
+      const newMessage = currentMessage.slice(0, start) + emoji + currentMessage.slice(end)
+      
+      setMessage(newMessage)
+      
+      // Update the textarea value and cursor position
+      textarea.value = newMessage
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length)
+      
+      // Trigger auto-resize
+      textarea.style.height = 'auto'
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 40), 120)
+      textarea.style.height = `${newHeight}px`
+      setMessageHeight(newHeight)
+    }
+  }, [message])
 
   // Typing indicator disabled to prevent UI delays
   // useEffect(() => {
@@ -733,7 +759,7 @@ export default function ChatInterface() {
                   </div>
 
                   {/* Message Input */}
-                  <div className="p-4 border-t bg-white">
+                  <div className="p-4 border-t bg-white relative">
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
@@ -753,6 +779,16 @@ export default function ChatInterface() {
                         title="Attach image"
                       >
                         {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        ref={emojiButtonRef}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className={`text-gray-500 hover:text-[#4a7c59] ${showEmojiPicker ? 'bg-[#eef2eb] text-[#4a7c59]' : ''}`}
+                        title="Add emoji"
+                      >
+                        <Smile className="h-4 w-4" />
                       </Button>
                       <textarea
                         ref={messageInputRef}
@@ -787,6 +823,14 @@ export default function ChatInterface() {
                       onChange={handleGeneralFileChange}
                       className="hidden"
                       accept="*/*"
+                    />
+                    
+                    {/* Emoji Picker */}
+                    <EmojiPicker
+                      isOpen={showEmojiPicker}
+                      onClose={() => setShowEmojiPicker(false)}
+                      onEmojiSelect={handleEmojiSelect}
+                      emojiButtonRef={emojiButtonRef}
                     />
                   </div>
                   
