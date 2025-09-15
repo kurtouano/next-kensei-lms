@@ -80,8 +80,8 @@ export async function POST(request) {
       allowedTypes = ALLOWED_SPREADSHEET_TYPES
       folder = 'chat-spreadsheets'
     } else {
-      // General attachment - allow all file types
-      allowedTypes = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES, ...ALLOWED_AUDIO_TYPES, ...ALLOWED_SPREADSHEET_TYPES]
+      // General attachment - allow all file types except images (images have dedicated button)
+      allowedTypes = [...ALLOWED_DOCUMENT_TYPES, ...ALLOWED_AUDIO_TYPES, ...ALLOWED_SPREADSHEET_TYPES]
       folder = 'chat-attachments'
     }
 

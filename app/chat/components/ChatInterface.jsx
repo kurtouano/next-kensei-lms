@@ -246,17 +246,16 @@ export default function ChatInterface() {
     const file = e.target.files[0]
     if (!file || !selectedChatId || uploading) return
 
-    // Client-side validation
-    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
+    // Client-side validation (exclude images since there's a dedicated image button)
     const allowedDocumentTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/rtf']
     const allowedAudioTypes = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/ogg']
     const allowedSpreadsheetTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv']
-    const allowedTypes = [...allowedImageTypes, ...allowedDocumentTypes, ...allowedAudioTypes, ...allowedSpreadsheetTypes]
+    const allowedTypes = [...allowedDocumentTypes, ...allowedAudioTypes, ...allowedSpreadsheetTypes]
     
     if (!allowedTypes.includes(file.type)) {
       setFileErrorPopup({
         title: "File type not supported",
-        description: "Please select: Images (JPG, PNG, GIF, WebP), Documents (PDF, DOC, DOCX, TXT), Audio (MP3, WAV, M4A, OGG), or Spreadsheets (XLS, XLSX, CSV)"
+        description: "Please select: Documents (PDF, DOC, DOCX, TXT), Audio (MP3, WAV, M4A, OGG), or Spreadsheets (XLS, XLSX, CSV). Use the image button for photos."
       })
       e.target.value = ""
       return
@@ -281,10 +280,7 @@ export default function ChatInterface() {
       let detectedFileType = 'general' // default
       let messageAttachmentType = 'general' // for the message attachment
       
-      if (allowedImageTypes.includes(file.type)) {
-        detectedFileType = 'image'
-        messageAttachmentType = 'image'
-      } else if (allowedDocumentTypes.includes(file.type)) {
+      if (allowedDocumentTypes.includes(file.type)) {
         detectedFileType = 'document'
         messageAttachmentType = 'document'
       } else if (allowedAudioTypes.includes(file.type)) {
