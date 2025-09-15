@@ -760,7 +760,7 @@ export default function ChatInterface() {
 
                   {/* Message Input */}
                   <div className="p-4 border-t bg-white relative">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -795,8 +795,8 @@ export default function ChatInterface() {
                         onKeyDown={handleKeyPress}
                         onChange={handleMessageChange}
                         placeholder="Type a message..."
-                        className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-[#2646248a] disabled:bg-gray-100 disabled:cursor-not-allowed resize-none overflow-hidden"
-                        style={{ height: `${messageHeight}px` }}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-[#2646248a] disabled:bg-gray-100 disabled:cursor-not-allowed resize-none overflow-hidden break-words overflow-wrap-anywhere whitespace-pre-wrap"
+                        style={{ height: `${messageHeight}px`, wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                         disabled={uploading}
                         autoComplete="off"
                         autoFocus={false}

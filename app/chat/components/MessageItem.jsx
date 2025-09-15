@@ -30,7 +30,7 @@ const MessageItem = memo(({
         {message.sender.email !== session?.user?.email && (
           <LazyAvatar user={message.sender} size="w-8 h-8" />
         )}
-        <div className={`max-w-[70%] min-w-0 ${message.sender.email === session?.user?.email ? "text-right" : ""}`}>
+        <div className={`max-w-[55%] min-w-0 ${message.sender.email === session?.user?.email ? "flex flex-col items-end" : ""}`}>
           {message.sender.email !== session?.user?.email && (
             <p className="text-sm font-medium text-[#2c3e2d] mb-1">{message.sender.name}</p>
           )}
@@ -151,7 +151,7 @@ const MessageItem = memo(({
               }`}
               title={formatFullTimestamp(message.createdAt)}
             >
-              <p className="text-sm">{message.content}</p>
+              <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere text-left" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{message.content}</p>
               
               {/* Loading/Error indicators for optimistic messages */}
               {message.sender.email === session?.user?.email && (
