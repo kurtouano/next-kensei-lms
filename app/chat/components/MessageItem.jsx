@@ -172,6 +172,17 @@ const MessageItem = memo(({
               </div>
             </div>
           )}
+          
+          {/* Seen indicator - positioned outside message bubble like Messenger */}
+          {message.sender.email === session?.user?.email && 
+           !message.isOptimistic && 
+           !message.isFailed && 
+           message.seenBy && 
+           message.seenBy.length > 0 && (
+            <div className="flex justify-end mt-1">
+              <span className="text-xs text-gray-400">Seen</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

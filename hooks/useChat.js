@@ -342,6 +342,58 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [session, chatId, onNewMessage, scrollToBottom])
 
+  // Mark message as seen
+  const markMessageAsSeen = useCallback(async (messageId) => {
+    if (!session?.user?.email || !chatId || !messageId) return
+
+    try {
+      const response = await fetch(`/api/chats/${chatId}/messages/${messageId}/seen`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // Update the message in local state to reflect seen status
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { 
+                ...msg, 
+                seenBy: [...(msg.seenBy || []), { 
+                  user: session.user.id, 
+                  readAt: new Date().toISOString() 
+                }] 
+              }
+            : msg
+        ))
+      }
+    } catch (error) {
+      console.error("Error marking message as seen:", error)
+    }
+  }, [session, chatId])
+
+  // Mark latest message as seen when chat is opened
+  useEffect(() => {
+    if (messages.length > 0 && session?.user?.email) {
+      const latestMessage = messages[messages.length - 1]
+      
+      // Only mark as seen if it's not from the current user
+      if (latestMessage.sender.email !== session.user.email) {
+        // Check if already seen by current user
+        const alreadySeen = latestMessage.seenBy?.some(
+          seen => seen.user === session.user.id
+        )
+        
+        if (!alreadySeen) {
+          markMessageAsSeen(latestMessage.id)
+        }
+      }
+    }
+  }, [messages, session, markMessageAsSeen])
+
   // Send typing indicator
   const sendTypingIndicator = useCallback(async (isTyping) => {
     if (!session?.user?.email || !chatId) return
@@ -523,6 +575,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
     sendTypingIndicator,
     loadMoreMessages,
     scrollToBottom,
+    markMessageAsSeen,
     refetch: () => fetchMessages(1),
   }
 }
