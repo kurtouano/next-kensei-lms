@@ -552,18 +552,29 @@ export default function ChatInterface() {
                     </div>
                     ))}
                     
-                    {/* Load More Button */}
+                    {/* Skeleton Loading for More Chats */}
                     {chats.length > 0 && pagination?.hasMore && (
-                      <div className="p-4 text-center border-t">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={loadMoreChats}
-                          className="w-full text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
-                        >
-                          Load more chats
-                        </Button>
-                      </div>
+                      <>
+                        {[...Array(3)].map((_, index) => (
+                          <div key={`skeleton-${index}`} className="p-4 border-b">
+                            <div className="flex items-center gap-3 animate-pulse">
+                              {/* Avatar skeleton */}
+                              <div className="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0"></div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-2">
+                                  {/* Name skeleton */}
+                                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                  {/* Time skeleton */}
+                                  <div className="h-3 bg-gray-200 rounded w-12"></div>
+                                </div>
+                                {/* Message skeleton */}
+                                <div className="h-3 bg-gray-200 rounded w-32"></div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </>
                     )}
                   </>
                 )}
