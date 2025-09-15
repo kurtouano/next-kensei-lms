@@ -41,7 +41,7 @@ const MessageItem = memo(({
               <img
                 src={message.attachments[0].url}
                 alt="Shared image"
-                className="rounded max-w-full h-auto cursor-pointer"
+                className="rounded max-w-full max-h-[270px] h-auto cursor-pointer object-cover"
                 onClick={() => window.open(message.attachments[0].url, '_blank')}
                 loading="lazy"
               />
@@ -62,7 +62,7 @@ const MessageItem = memo(({
                       <img
                         src={attachment.url}
                         alt={attachment.filename}
-                        className="w-10 h-10 object-cover rounded border border-gray-200"
+                        className="w-10 h-10 object-cover rounded border border-gray-200 max-h-10"
                         loading="lazy"
                       />
                     ) : attachment.type === "document" ? (

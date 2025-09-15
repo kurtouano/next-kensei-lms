@@ -813,7 +813,7 @@ export default function ChatInterface() {
                         <div className="flex justify-center">
                           <button
                             onClick={() => setFileErrorPopup(null)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors"
+                            className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-6 py-2 rounded-md transition-colors"
                           >
                             Close
                           </button>
