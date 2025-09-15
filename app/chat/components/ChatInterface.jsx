@@ -29,7 +29,7 @@ export default function ChatInterface() {
   const scrollPositionRef = useRef(null)
 
   // Chat hooks
-  const { chats, loading: chatsLoading, error: chatsError, loadMoreChats, updateChatWithNewMessage, refetch: refetchChats } = useChat()
+  const { chats, loading: chatsLoading, error: chatsError, pagination, loadMoreChats, updateChatWithNewMessage, refetch: refetchChats } = useChat()
   const { 
     messages, 
     loading: messagesLoading, 
@@ -43,6 +43,8 @@ export default function ChatInterface() {
   const [uploading, setUploading] = useState(false)
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const sidebarRef = useRef(null)
+  const isLoadingMoreChats = useRef(false)
 
   // Auto-select first chat
   useEffect(() => {
@@ -68,6 +70,19 @@ export default function ChatInterface() {
     }
   }, [hasMore, messagesLoading, isLoadingMore, loadMoreMessages])
 
+  // Handle sidebar scroll for infinite loading
+  const handleSidebarScroll = useCallback(() => {
+    if (sidebarRef.current && pagination?.hasMore && !chatsLoading && !isLoadingMoreChats.current) {
+      const { scrollTop, scrollHeight, clientHeight } = sidebarRef.current
+      
+      // If user scrolled to bottom and there are more chats
+      if (scrollTop + clientHeight >= scrollHeight - 10) {
+        isLoadingMoreChats.current = true
+        loadMoreChats()
+      }
+    }
+  }, [pagination?.hasMore, chatsLoading, loadMoreChats])
+
   // Attach scroll listener
   useEffect(() => {
     const container = messagesContainerRef.current
@@ -76,6 +91,22 @@ export default function ChatInterface() {
       return () => container.removeEventListener("scroll", handleScroll)
     }
   }, [handleScroll])
+
+  // Attach sidebar scroll listener
+  useEffect(() => {
+    const sidebar = sidebarRef.current
+    if (sidebar) {
+      sidebar.addEventListener("scroll", handleSidebarScroll)
+      return () => sidebar.removeEventListener("scroll", handleSidebarScroll)
+    }
+  }, [handleSidebarScroll])
+
+  // Reset loading flag when chats loading is complete
+  useEffect(() => {
+    if (!chatsLoading) {
+      isLoadingMoreChats.current = false
+    }
+  }, [chatsLoading])
 
   // Restore scroll position after loading more messages
   useEffect(() => {
@@ -323,12 +354,8 @@ export default function ChatInterface() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                {chatsLoading ? (
-                  <div className="p-4">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                  </div>
-                ) : chatsError ? (
+              <div ref={sidebarRef} className="flex-1 overflow-y-auto overflow-x-hidden">
+                {chatsError ? (
                   <div className="p-4 text-center">
                     <p className="text-red-500 text-sm">Error loading chats</p>
                     <p className="text-gray-500 text-xs mt-1">{chatsError}</p>
@@ -339,7 +366,8 @@ export default function ChatInterface() {
                     <p className="text-gray-400 text-xs mt-1">Start a conversation with a friend!</p>
                   </div>
                 ) : (
-                  filteredChats.map((chat) => (
+                  <>
+                    {filteredChats.map((chat) => (
                     <div
                       key={chat.id}
                       onClick={() => setSelectedChatId(chat.id)}
@@ -408,7 +436,22 @@ export default function ChatInterface() {
                         )}
                       </div>
                     </div>
-                  ))
+                    ))}
+                    
+                    {/* Load More Button */}
+                    {chats.length > 0 && pagination?.hasMore && (
+                      <div className="p-4 text-center border-t">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={loadMoreChats}
+                          className="w-full text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
+                        >
+                          Load more chats
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
           </Card>

@@ -18,7 +18,7 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get("page")) || 1
-    const limit = parseInt(searchParams.get("limit")) || 20
+    const limit = parseInt(searchParams.get("limit")) || 15
 
     // Find user
     const user = await User.findOne({ email: session.user.email })
@@ -26,8 +26,8 @@ export async function GET(request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Get user's chat participations
-    const participations = await ChatParticipant.find({
+    // First, get all active chat participations for the user
+    const allParticipations = await ChatParticipant.find({
       user: user._id,
       isActive: true,
     })
@@ -49,22 +49,20 @@ export async function GET(request) {
           },
         ],
       })
-      .sort({ "chat.lastActivity": -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
 
-    console.log(`Found ${participations.length} chat participations for user ${user._id}`)
-    console.log("Participations:", participations.map(p => ({ 
-      chatId: p.chat?._id, 
-      chatType: p.chat?.type, 
-      chatAvatar: p.chat?.avatar,
-      hasChat: !!p.chat 
-    })))
+    // Filter out null chats and sort by lastActivity
+    const validParticipations = allParticipations
+      .filter((participation) => participation.chat) // Filter out null chats
+      .sort((a, b) => new Date(b.chat.lastActivity) - new Date(a.chat.lastActivity))
+
+    // Apply pagination to the filtered and sorted results
+    const startIndex = (page - 1) * limit
+    const endIndex = startIndex + limit
+    const participations = validParticipations.slice(startIndex, endIndex)
+
 
     // Format chats for frontend
-    const chats = participations
-      .filter((participation) => participation.chat) // Filter out null chats
-      .map((participation) => {
+    const chats = participations.map((participation) => {
         const chat = participation.chat
         
         // Initialize defaults
@@ -119,10 +117,7 @@ export async function GET(request) {
       }
     })
 
-    const totalChats = await ChatParticipant.countDocuments({
-      user: user._id,
-      isActive: true,
-    })
+    const totalChats = validParticipations.length
 
     return NextResponse.json({
       success: true,

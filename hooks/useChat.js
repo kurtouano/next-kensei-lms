@@ -15,30 +15,24 @@ export function useChat() {
       return;
     }
 
-    console.log('Fetching chats for user:', session.user.email);
     setLoading(true)
     setError(null)
 
     try {
-      const response = await fetch(`/api/chats?page=${page}&limit=20`)
-      console.log('Chats API response status:', response.status);
+      const response = await fetch(`/api/chats?page=${page}&limit=15`)
       
       const data = await response.json()
-      console.log('Chats API response data:', data);
 
       if (data.success) {
         // Sort chats by lastActivity (newest first)
         const sortedChats = data.chats.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
-        console.log('Chat timestamps:', sortedChats.map(chat => ({ name: chat.name, lastActivity: chat.lastActivity })))
-        console.log('Chat avatars:', sortedChats.map(chat => ({ name: chat.name, type: chat.type, avatar: chat.avatar })))
         
         if (page === 1) {
           setChats(sortedChats)
         } else {
-          setChats(prev => [...prev, ...sortedChats].sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)))
+          setChats(prev => [...prev, ...sortedChats])
         }
         setPagination(data.pagination)
-        console.log('Successfully loaded chats:', sortedChats.length);
       } else {
         throw new Error(data.error || "Failed to fetch chats")
       }
@@ -163,10 +157,7 @@ export function useChat() {
     startChatWithFriend,
     loadMoreChats,
     updateChatWithNewMessage,
-    refetch: () => {
-      console.log('Refetching chats...')
-      return fetchChats(1)
-    },
+    refetch: () => fetchChats(1),
   }
 }
 
