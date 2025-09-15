@@ -33,7 +33,18 @@ const ALLOWED_DOCUMENT_TYPES = [
   "application/rtf"
 ]
 
-// Video and audio types removed - not allowed
+const ALLOWED_AUDIO_TYPES = [
+  "audio/mpeg",
+  "audio/wav", 
+  "audio/mp4",
+  "audio/ogg"
+]
+
+const ALLOWED_SPREADSHEET_TYPES = [
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/csv"
+]
 
 export async function POST(request) {
   try {
@@ -62,9 +73,15 @@ export async function POST(request) {
     } else if (fileType === 'document') {
       allowedTypes = ALLOWED_DOCUMENT_TYPES
       folder = 'chat-documents'
+    } else if (fileType === 'audio') {
+      allowedTypes = ALLOWED_AUDIO_TYPES
+      folder = 'chat-audio'
+    } else if (fileType === 'spreadsheet') {
+      allowedTypes = ALLOWED_SPREADSHEET_TYPES
+      folder = 'chat-spreadsheets'
     } else {
-      // General attachment - allow only images and documents
-      allowedTypes = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES]
+      // General attachment - allow all file types
+      allowedTypes = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES, ...ALLOWED_AUDIO_TYPES, ...ALLOWED_SPREADSHEET_TYPES]
       folder = 'chat-attachments'
     }
 

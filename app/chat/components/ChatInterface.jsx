@@ -45,6 +45,9 @@ export default function ChatInterface() {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const sidebarRef = useRef(null)
   const isLoadingMoreChats = useRef(false)
+  const [messageHeight, setMessageHeight] = useState(40) // Initial height for textarea
+  const [fileErrorPopup, setFileErrorPopup] = useState(null) // For file upload error popup
+
 
   // Auto-select first chat
   useEffect(() => {
@@ -131,8 +134,10 @@ export default function ChatInterface() {
     // Clear input immediately for fast UX
     if (messageInputRef.current) {
       messageInputRef.current.value = ""
+      messageInputRef.current.style.height = '40px' // Reset height
     }
     setMessage("")
+    setMessageHeight(40) // Reset height state
 
     try {
       // Send message optimistically (shows instantly, loads in background)
@@ -146,6 +151,13 @@ export default function ChatInterface() {
   // Optimized message change handler - direct state update
   const handleMessageChange = useCallback((e) => {
     setMessage(e.target.value)
+    
+    // Auto-resize textarea
+    const textarea = e.target
+    textarea.style.height = 'auto'
+    const newHeight = Math.min(Math.max(textarea.scrollHeight, 40), 120) // Min 40px, max 120px
+    textarea.style.height = `${newHeight}px`
+    setMessageHeight(newHeight)
   }, [])
 
   // Handle key press with useCallback to prevent re-renders
@@ -154,6 +166,7 @@ export default function ChatInterface() {
       e.preventDefault()
       handleSendMessage()
     }
+    // Allow Shift+Enter for new lines (default textarea behavior)
   }, [handleSendMessage])
 
   // Typing indicator disabled to prevent UI delays
@@ -164,7 +177,7 @@ export default function ChatInterface() {
 
   // Handle image upload
   const handleImageUpload = async (file) => {
-    if (!selectedChatId || uploading || sending) return
+    if (!selectedChatId || uploading) return
 
     try {
       setUploading(true)
@@ -189,7 +202,10 @@ export default function ChatInterface() {
       console.log("✅ Image uploaded and message sent successfully")
     } catch (error) {
       console.error("Failed to upload image:", error)
-      alert(`Failed to upload image: ${error.message}`)
+      setFileErrorPopup({
+        title: "Upload failed",
+        description: `Failed to upload image: ${error.message}`
+      })
     } finally {
       setUploading(false)
     }
@@ -200,10 +216,25 @@ export default function ChatInterface() {
     const file = e.target.files[0]
     if (file) {
       // Validate that it's actually an image file
-      if (file.type.startsWith("image/")) {
+      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
+      
+      if (allowedImageTypes.includes(file.type)) {
+        // Check file size (10MB limit)
+        const maxSize = 10 * 1024 * 1024 // 10MB
+        if (file.size > maxSize) {
+          setFileErrorPopup({
+            title: "Image too large",
+            description: `Maximum size is 10MB. Your image is ${(file.size / 1024 / 1024).toFixed(1)}MB`
+          })
+          e.target.value = ""
+          return
+        }
         handleImageUpload(file)
       } else {
-        alert("Please select an image file (PNG, JPG, GIF, WebP, or SVG)")
+        setFileErrorPopup({
+          title: "Invalid file type",
+          description: "Please select an image file (JPG, PNG, WebP, GIF, or SVG)"
+        })
         // Reset the input
         e.target.value = ""
       }
@@ -213,29 +244,90 @@ export default function ChatInterface() {
   // Handle general file selection
   const handleGeneralFileChange = async (e) => {
     const file = e.target.files[0]
-    if (!file || !selectedChatId || uploading || sending) return
+    if (!file || !selectedChatId || uploading) return
+
+    // Client-side validation
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']
+    const allowedDocumentTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'application/rtf']
+    const allowedAudioTypes = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/ogg']
+    const allowedSpreadsheetTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv']
+    const allowedTypes = [...allowedImageTypes, ...allowedDocumentTypes, ...allowedAudioTypes, ...allowedSpreadsheetTypes]
+    
+    if (!allowedTypes.includes(file.type)) {
+      setFileErrorPopup({
+        title: "File type not supported",
+        description: "Please select: Images (JPG, PNG, GIF, WebP), Documents (PDF, DOC, DOCX, TXT), Audio (MP3, WAV, M4A, OGG), or Spreadsheets (XLS, XLSX, CSV)"
+      })
+      e.target.value = ""
+      return
+    }
+
+    // Check file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      setFileErrorPopup({
+        title: "File too large",
+        description: `Maximum size is 10MB. Your file is ${(file.size / 1024 / 1024).toFixed(1)}MB`
+      })
+      e.target.value = ""
+      return
+    }
 
     try {
       setUploading(true)
       console.log("Uploading general file...")
       
-      const result = await uploadChatAttachment(file)
+      // Determine file type for proper categorization
+      let detectedFileType = 'general' // default
+      let messageAttachmentType = 'general' // for the message attachment
+      
+      if (allowedImageTypes.includes(file.type)) {
+        detectedFileType = 'image'
+        messageAttachmentType = 'image'
+      } else if (allowedDocumentTypes.includes(file.type)) {
+        detectedFileType = 'document'
+        messageAttachmentType = 'document'
+      } else if (allowedAudioTypes.includes(file.type)) {
+        detectedFileType = 'audio'
+        messageAttachmentType = 'file' // Map audio to 'file' for message schema
+      } else if (allowedSpreadsheetTypes.includes(file.type)) {
+        detectedFileType = 'spreadsheet'
+        messageAttachmentType = 'file' // Map spreadsheet to 'file' for message schema
+      }
+      
+      const result = await uploadChatAttachment(file, detectedFileType)
       
       // Send message with file attachment
-      await sendMessage("", "attachment", [{
+      const attachmentData = {
         url: result.url,
         filename: result.metadata.originalFilename,
         size: result.metadata.originalSize,
-        type: result.metadata.fileType,
+        type: messageAttachmentType, // Use the message-compatible type
         mimeType: result.metadata.contentType
-      }])
+      }
+      
+      console.log("Sending message with attachment:", attachmentData)
+      await sendMessage("", "attachment", [attachmentData])
       
       console.log("✅ File uploaded and message sent successfully")
     } catch (error) {
       console.error("Failed to upload file:", error)
-      alert(`Failed to upload file: ${error.message}`)
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        file: file.name,
+        fileType: file.type,
+        detectedFileType: detectedFileType || 'unknown',
+        messageAttachmentType: messageAttachmentType || 'unknown'
+      })
+      setFileErrorPopup({
+        title: "Upload failed",
+        description: `Failed to upload file: ${error.message}`
+      })
     } finally {
       setUploading(false)
+      // Reset the input
+      e.target.value = ""
     }
   }
 
@@ -666,15 +758,17 @@ export default function ChatInterface() {
                       >
                         {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
                       </Button>
-                      <input
+                      <textarea
                         ref={messageInputRef}
-                        type="text"
                         onKeyDown={handleKeyPress}
+                        onChange={handleMessageChange}
                         placeholder="Type a message..."
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-[#2646248a] disabled:bg-gray-100 disabled:cursor-not-allowed resize-none overflow-hidden"
+                        style={{ height: `${messageHeight}px` }}
                         disabled={uploading}
                         autoComplete="off"
                         autoFocus={false}
+                        rows={1}
                       />
                       <Button 
                         onClick={handleSendMessage} 
@@ -699,6 +793,38 @@ export default function ChatInterface() {
                       accept="*/*"
                     />
                   </div>
+                  
+                  {/* File Error Modal */}
+                  {fileErrorPopup && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4">
+                        <div className="flex items-start justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {fileErrorPopup.title}
+                          </h3>
+                          <button
+                            onClick={() => setFileErrorPopup(null)}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                          {fileErrorPopup.description}
+                        </p>
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() => setFileErrorPopup(null)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors"
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">

@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "./providers"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "@vercel/analytics/next"
 
 import OnlineStatusTracker from "@/components/OnlineStatusTracker"
@@ -139,6 +140,7 @@ export default async function RootLayout({ children }) {
               <Footer />
             </div>
             <OnlineStatusTracker /> {/* Online Status Tracker for User Activity */}
+            <Toaster /> {/* Toast notifications */}
           </ThemeProvider>
         </AuthProvider>
         <Analytics/> {/* Vercel Analytics */}
