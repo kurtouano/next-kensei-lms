@@ -126,8 +126,11 @@ export function useChat() {
             lastMessage: {
               content: newMessage.content,
               sender: newMessage.sender?.name || "Unknown",
+              senderEmail: newMessage.sender?.email || "",
               createdAt: newMessage.createdAt,
               type: newMessage.type,
+              attachments: newMessage.attachments || [],
+              isCurrentUser: newMessage.sender?.email === session?.user?.email,
             },
             lastActivity: newMessage.createdAt,
           }
@@ -138,7 +141,7 @@ export function useChat() {
       // Sort by lastActivity to maintain proper order
       return updatedChats.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
     })
-  }, [])
+  }, [session?.user?.email])
 
   // Initial load
   useEffect(() => {

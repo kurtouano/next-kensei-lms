@@ -540,7 +540,37 @@ export default function ChatInterface() {
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 truncate">
-                            {chat.lastMessage?.content || "No messages yet"}
+                            {chat.lastMessage ? (
+                              <>
+                                {chat.lastMessage.isCurrentUser && "You: "}
+                                {(() => {
+                                  if (chat.lastMessage.type === "image") {
+                                    return "sent an image"
+                                  } else if (chat.lastMessage.type === "attachment" || chat.lastMessage.type === "file") {
+                                    // Check attachment type for more specific message
+                                    const attachment = chat.lastMessage.attachments?.[0]
+                                    if (attachment?.mimeType) {
+                                      if (attachment.mimeType.startsWith('audio/')) {
+                                        return "sent an audio file"
+                                      } else if (attachment.mimeType === 'application/pdf') {
+                                        return "sent a PDF"
+                                      } else if (attachment.mimeType.includes('document') || attachment.mimeType.includes('word')) {
+                                        return "sent a document"
+                                      } else if (attachment.mimeType.includes('excel') || attachment.mimeType.includes('spreadsheet') || attachment.mimeType.includes('csv')) {
+                                        return "sent a spreadsheet"
+                                      } else if (attachment.mimeType.startsWith('image/')) {
+                                        return "sent an image"
+                                      } else {
+                                        return "sent a file"
+                                      }
+                                    }
+                                    return "sent an attachment"
+                                  } else {
+                                    return chat.lastMessage.content || "sent a message"
+                                  }
+                                })()}
+                              </>
+                            ) : "No messages yet"}
                           </p>
                         </div>
                         {chat.unreadCount > 0 && (

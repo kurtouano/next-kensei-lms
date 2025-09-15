@@ -97,8 +97,11 @@ export async function GET(request) {
         lastMessage: chat.lastMessage ? {
           content: chat.lastMessage.content,
           sender: chat.lastMessage.sender?.name || "Unknown",
+          senderEmail: chat.lastMessage.sender?.email || "",
           createdAt: chat.lastMessage.createdAt,
           type: chat.lastMessage.type,
+          attachments: chat.lastMessage.attachments || [],
+          isCurrentUser: chat.lastMessage.sender?.email === session.user.email,
         } : null,
         lastActivity: chat.lastActivity,
         unreadCount,
