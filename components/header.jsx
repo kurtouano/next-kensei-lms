@@ -183,7 +183,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/90 backdrop-blur-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <JotatsuLogoFull className="h-8 w-28 text-[#4a7c59]" alt="Jotatsu Icon"/>
+          <JotatsuLogoFull className="h-8 w-28 text-[#4a7c59]" alt="Jotatsu Logo"/>
         </Link>
  
         {/* Desktop Navigation */}
