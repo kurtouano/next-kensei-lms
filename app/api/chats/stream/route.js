@@ -92,19 +92,46 @@ export async function GET(request) {
 
 // Function to broadcast message to chat participants
 export function broadcastToChat(chatId, message, excludeUserId = null) {
+  console.log(`Broadcasting to chat ${chatId}, excluding user ${excludeUserId}`)
   const chatConnections = Array.from(connections.entries()).filter(
     ([_, connection]) => 
       connection.chatId === chatId && 
       connection.userId !== excludeUserId?.toString()
   )
 
+  console.log(`Found ${chatConnections.length} connections for chat ${chatId}`)
+
   chatConnections.forEach(([connectionId, connection]) => {
     try {
       connection.controller.enqueue(`data: ${JSON.stringify(message)}\n\n`)
+      console.log(`Message broadcasted to connection ${connectionId}`)
     } catch (error) {
+      console.error(`Failed to broadcast to connection ${connectionId}:`, error)
       // Remove broken connection
       connections.delete(connectionId)
     }
+  })
+  
+  // Clean up dead connections periodically
+  cleanupDeadConnections()
+}
+
+// Function to clean up dead connections
+function cleanupDeadConnections() {
+  const deadConnections = []
+  
+  connections.forEach((connection, connectionId) => {
+    try {
+      // Test if connection is still alive
+      connection.controller.enqueue(`data: ${JSON.stringify({ type: "ping" })}\n\n`)
+    } catch (error) {
+      deadConnections.push(connectionId)
+    }
+  })
+  
+  deadConnections.forEach(connectionId => {
+    console.log(`Cleaning up dead connection: ${connectionId}`)
+    connections.delete(connectionId)
   })
 }
 

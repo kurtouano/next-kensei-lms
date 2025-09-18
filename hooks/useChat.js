@@ -397,6 +397,34 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [messages, session, markMessageAsSeen])
 
+  // Handle message reactions
+  const handleReaction = useCallback(async (messageId, emoji) => {
+    if (!session?.user?.email || !chatId || !messageId || !emoji) return
+
+    try {
+      const response = await fetch(`/api/chats/${chatId}/messages/${messageId}/react`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ emoji }),
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // Update the message reactions in local state
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, reactions: data.reactions }
+            : msg
+        ))
+      }
+    } catch (error) {
+      console.error("Error updating reaction:", error)
+    }
+  }, [session, chatId])
+
   // Send typing indicator
   const sendTypingIndicator = useCallback(async (isTyping) => {
     if (!session?.user?.email || !chatId) return
@@ -421,78 +449,121 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [hasMore, loading, isLoadingMore, currentPage, fetchMessages])
 
-  // Set up real-time connection
+  // Set up real-time connection with reconnection logic
   useEffect(() => {
     if (!session?.user?.email || !chatId) return
 
-    const source = new EventSource(`/api/chats/stream?chatId=${chatId}`)
+    let reconnectAttempts = 0
+    const maxReconnectAttempts = 5
+    let reconnectTimer = null
 
-    source.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        
-        switch (data.type) {
-          case "connected":
-            console.log("Connected to chat stream")
-            break
-          case "new_message":
-            setMessages(prev => {
-              // Check if message already exists to prevent duplicates
-              const messageExists = prev.some(msg => msg.id === data.message.id)
-              if (messageExists) {
-                return prev
-              }
-              return [...prev, data.message]
-            })
-            
-            // Update chat list with new message
-            if (onNewMessage) {
-              onNewMessage(chatId, data.message)
-            }
-            
-            // Only scroll to bottom for received messages if user is at the bottom
-            const wasAtBottom = checkIfAtBottom()
-            if (wasAtBottom && !isLoadingMoreMessages.current) {
-              setTimeout(() => {
-                scrollToBottom()
-              }, 100)
-            }
-            break
-          case "message_edited":
-            setMessages(prev => 
-              prev.map(msg => 
-                msg.id === data.messageId 
-                  ? { ...msg, content: data.updatedContent, isEdited: true }
-                  : msg
-              )
-            )
-            break
-          case "message_deleted":
-            setMessages(prev => prev.filter(msg => msg.id !== data.messageId))
-            break
-          case "typing":
-            // Handle typing indicators (you can implement UI for this)
-            console.log("User typing:", data)
-            break
-          default:
-            console.log("Unknown event type:", data.type)
-        }
-      } catch (error) {
-        console.error("Error parsing SSE data:", error)
+    const connectSSE = () => {
+      console.log(`Connecting to SSE for chat ${chatId}...`)
+      const source = new EventSource(`/api/chats/stream?chatId=${chatId}`)
+
+      source.onopen = () => {
+        console.log("SSE connection opened")
+        reconnectAttempts = 0 // Reset on successful connection
       }
+
+      source.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          
+          switch (data.type) {
+            case "connected":
+              console.log("Connected to chat stream")
+              break
+            case "ping":
+              // Handle ping messages to keep connection alive
+              break
+            case "new_message":
+              setMessages(prev => {
+                // Check if message already exists to prevent duplicates
+                const messageExists = prev.some(msg => msg.id === data.message.id)
+                if (messageExists) {
+                  return prev
+                }
+                console.log("Received new message via SSE:", data.message.id)
+                return [...prev, data.message]
+              })
+              
+              // Update chat list with new message
+              if (onNewMessage) {
+                onNewMessage(chatId, data.message)
+              }
+              
+              // Only scroll to bottom for received messages if user is at the bottom
+              const wasAtBottom = checkIfAtBottom()
+              if (wasAtBottom && !isLoadingMoreMessages.current) {
+                setTimeout(() => {
+                  scrollToBottom()
+                }, 100)
+              }
+              break
+            case "message_edited":
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === data.messageId 
+                    ? { ...msg, content: data.updatedContent, isEdited: true }
+                    : msg
+                )
+              )
+              break
+            case "message_deleted":
+              setMessages(prev => prev.filter(msg => msg.id !== data.messageId))
+              break
+            case "typing":
+              // Handle typing indicators (you can implement UI for this)
+              console.log("User typing:", data)
+              break
+            default:
+              console.log("Unknown event type:", data.type)
+          }
+        } catch (error) {
+          console.error("Error parsing SSE data:", error)
+        }
+      }
+
+      source.onerror = (error) => {
+        console.error("SSE error:", error)
+        source.close()
+        
+        // Attempt reconnection with exponential backoff
+        if (reconnectAttempts < maxReconnectAttempts) {
+          const delay = Math.pow(2, reconnectAttempts) * 1000 // 1s, 2s, 4s, 8s, 16s
+          console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`)
+          
+          reconnectTimer = setTimeout(() => {
+            reconnectAttempts++
+            connectSSE()
+          }, delay)
+        } else {
+          console.error("Max reconnection attempts reached. SSE connection failed.")
+          // Fallback: refresh messages periodically
+          setInterval(() => {
+            console.log("Fallback: Refreshing messages due to SSE failure")
+            fetchMessages(1)
+          }, 10000) // Refresh every 10 seconds as fallback
+        }
+      }
+
+      setEventSource(source)
+      return source
     }
 
-    source.onerror = (error) => {
-      console.error("SSE error:", error)
-    }
-
-    setEventSource(source)
+    const source = connectSSE()
 
     return () => {
-      source.close()
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer)
+      }
+      if (source) {
+        source.close()
+      }
       setEventSource(null)
     }
-  }, [session, chatId])
+  }, [session, chatId, onNewMessage, scrollToBottom, checkIfAtBottom, fetchMessages])
 
   // Initial load
   useEffect(() => {
@@ -579,6 +650,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
     loadMoreMessages,
     scrollToBottom,
     markMessageAsSeen,
+    handleReaction,
     refetch: () => fetchMessages(1),
   }
 }

@@ -1,8 +1,9 @@
 "use client"
 
-import { memo } from "react"
-import { Loader2, AlertCircle } from "lucide-react"
+import { memo, useState, useRef, useEffect } from "react"
+import { Loader2, AlertCircle, Plus } from "lucide-react"
 import LazyAvatar from "./LazyAvatar"
+import EmojiPicker from "./EmojiPicker"
 
 // Memoized message component for better performance
 const MessageItem = memo(({ 
@@ -11,9 +12,37 @@ const MessageItem = memo(({
   session, 
   formatTimestamp, 
   formatFullTimestamp, 
-  shouldShowTimestamp 
+  shouldShowTimestamp,
+  handleReaction
 }) => {
   const showTimestamp = shouldShowTimestamp(message, previousMessage)
+  const [showReactionPicker, setShowReactionPicker] = useState(false)
+  const reactionPickerRef = useRef(null)
+
+  const handleEmojiSelect = (emoji) => {
+    handleReaction(message.id, emoji)
+    setShowReactionPicker(false)
+  }
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showReactionPicker && 
+          reactionPickerRef.current && 
+          !reactionPickerRef.current.contains(event.target) &&
+          !event.target.closest('.emoji-picker-container')) {
+        setShowReactionPicker(false)
+      }
+    }
+
+    if (showReactionPicker) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showReactionPicker])
   
   return (
     <div>
@@ -37,7 +66,38 @@ const MessageItem = memo(({
           
           {/* Images - No background */}
           {message.type === "image" && message.attachments?.length > 0 && (
-            <div className="mb-2">
+            <div className="mb-2 group relative">
+              {/* Reaction buttons for images */}
+              <div className={`absolute ${message.sender.email === session?.user?.email ? '-left-12' : '-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
+                <button
+                  onClick={() => handleReaction(message.id, '❤️')}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                  title="React with heart"
+                >
+                  ❤️
+                </button>
+                <button
+                  onClick={() => handleReaction(message.id, '😂')}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                  title="React with laugh"
+                >
+                  😂
+                </button>
+                <button
+                  onClick={() => handleReaction(message.id, '✅')}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                  title="React with check"
+                >
+                  ✅
+                </button>
+                <button
+                  onClick={() => setShowReactionPicker(!showReactionPicker)}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors border-t border-gray-200"
+                  title="More reactions"
+                >
+                  <Plus className="w-3 h-3 text-gray-600" />
+                </button>
+              </div>
               <img
                 src={message.attachments[0].url}
                 alt="Shared image"
@@ -45,12 +105,95 @@ const MessageItem = memo(({
                 onClick={() => window.open(message.attachments[0].url, '_blank')}
                 loading="lazy"
               />
+              
+              {/* Emoji Picker for Image Reactions */}
+              {showReactionPicker && (
+                <div 
+                  className={`emoji-picker-container absolute ${message.sender.email === session?.user?.email ? '-left-80' : '-right-80'} -top-4 z-50`}
+                  style={{ position: 'absolute' }}
+                >
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg w-80 max-h-80 overflow-hidden">
+                    {/* Header with close button */}
+                    <div className="flex items-center justify-between p-3 border-b border-gray-100">
+                      <h3 className="text-sm font-medium text-gray-700">Choose a reaction</h3>
+                      <button
+                        onClick={() => setShowReactionPicker(false)}
+                        className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+                        title="Close"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    {/* Simple emoji grid for reactions */}
+                    <div className="p-3">
+                      <div className="grid grid-cols-8 gap-2 max-h-60 overflow-y-auto">
+                        {[
+                          "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇",
+                          "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚",
+                          "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩",
+                          "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣",
+                          "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
+                          "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "♥️",
+                          "👍", "👎", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙",
+                          "👈", "👉", "👆", "🖕", "👇", "☝️", "👋", "🤚", "🖐️", "✋",
+                          "🔥", "💯", "💥", "💫", "💦", "💨", "🕳️", "💣", "💤", "💢",
+                          "💨", "💫", "💥", "💦", "💤", "🕳️", "💣", "💢", "❗", "❓",
+                          "✅", "❌", "🆘", "⭐", "🌟", "✨", "💎", "🔱", "⚡", "💡",
+                          "💰", "💵", "💴", "💶", "💷", "🪙", "💸", "💳", "🧾", "💹"
+                        ].map((emoji, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleEmojiSelect(emoji)}
+                            className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded transition-colors"
+                            title={emoji}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
           {/* Attachments - No background */}
           {message.type === "attachment" && message.attachments?.length > 0 && (
-            <div className="mb-2">
+            <div className="mb-2 group relative">
+              {/* Reaction buttons for attachments */}
+              <div className={`absolute ${message.sender.email === session?.user?.email ? '-left-12' : '-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
+                <button
+                  onClick={() => handleReaction(message.id, '❤️')}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                  title="React with heart"
+                >
+                  ❤️
+                </button>
+                <button
+                  onClick={() => handleReaction(message.id, '😂')}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                  title="React with laugh"
+                >
+                  😂
+                </button>
+                <button
+                  onClick={() => handleReaction(message.id, '✅')}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                  title="React with check"
+                >
+                  ✅
+                </button>
+                <button
+                  onClick={() => setShowReactionPicker(!showReactionPicker)}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors border-t border-gray-200"
+                  title="More reactions"
+                >
+                  <Plus className="w-3 h-3 text-gray-600" />
+                </button>
+              </div>
               {message.attachments.map((attachment, index) => (
                 attachment.mimeType?.startsWith('audio/') ? (
                   // Audio player for audio files
@@ -138,6 +281,58 @@ const MessageItem = memo(({
                 </div>
                 )
               ))}
+              
+              {/* Emoji Picker for Attachment Reactions */}
+              {showReactionPicker && (
+                <div 
+                  className={`emoji-picker-container absolute ${message.sender.email === session?.user?.email ? '-left-80' : '-right-80'} -top-4 z-50`}
+                  style={{ position: 'absolute' }}
+                >
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg w-80 max-h-80 overflow-hidden">
+                    {/* Header with close button */}
+                    <div className="flex items-center justify-between p-3 border-b border-gray-100">
+                      <h3 className="text-sm font-medium text-gray-700">Choose a reaction</h3>
+                      <button
+                        onClick={() => setShowReactionPicker(false)}
+                        className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+                        title="Close"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    {/* Simple emoji grid for reactions */}
+                    <div className="p-3">
+                      <div className="grid grid-cols-8 gap-2 max-h-60 overflow-y-auto">
+                        {[
+                          "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇",
+                          "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚",
+                          "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩",
+                          "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣",
+                          "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
+                          "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "♥️",
+                          "👍", "👎", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙",
+                          "👈", "👉", "👆", "🖕", "👇", "☝️", "👋", "🤚", "🖐️", "✋",
+                          "🔥", "💯", "💥", "💫", "💦", "💨", "🕳️", "💣", "💤", "💢",
+                          "💨", "💫", "💥", "💦", "💤", "🕳️", "💣", "💢", "❗", "❓",
+                          "✅", "❌", "🆘", "⭐", "🌟", "✨", "💎", "🔱", "⚡", "💡",
+                          "💰", "💵", "💴", "💶", "💷", "🪙", "💸", "💳", "🧾", "💹"
+                        ].map((emoji, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleEmojiSelect(emoji)}
+                            className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded transition-colors"
+                            title={emoji}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
@@ -151,6 +346,90 @@ const MessageItem = memo(({
               }`}
               title={formatFullTimestamp(message.createdAt)}
             >
+              {/* Reaction buttons - show on hover */}
+              <div className={`absolute ${message.sender.email === session?.user?.email ? '-left-12' : '-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1`}>
+                <button
+                  onClick={() => handleReaction(message.id, '❤️')}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                  title="React with heart"
+                >
+                  ❤️
+                </button>
+                <button
+                  onClick={() => handleReaction(message.id, '😂')}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                  title="React with laugh"
+                >
+                  😂
+                </button>
+                <button
+                  onClick={() => handleReaction(message.id, '✅')}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                  title="React with check"
+                >
+                  ✅
+                </button>
+                <button
+                  ref={reactionPickerRef}
+                  onClick={() => setShowReactionPicker(!showReactionPicker)}
+                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors border-t border-gray-200"
+                  title="More reactions"
+                >
+                  <Plus className="w-3 h-3 text-gray-600" />
+                </button>
+              </div>
+              
+              {/* Emoji Picker for Reactions */}
+              {showReactionPicker && (
+                <div 
+                  className={`emoji-picker-container absolute ${message.sender.email === session?.user?.email ? '-left-80' : '-right-80'} -top-4 z-50`}
+                  style={{ position: 'absolute' }}
+                >
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg w-80 max-h-80 overflow-hidden">
+                    {/* Header with close button */}
+                    <div className="flex items-center justify-between p-3 border-b border-gray-100">
+                      <h3 className="text-sm font-medium text-gray-700">Choose a reaction</h3>
+                      <button
+                        onClick={() => setShowReactionPicker(false)}
+                        className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+                        title="Close"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    {/* Simple emoji grid for reactions */}
+                    <div className="p-3">
+                      <div className="grid grid-cols-8 gap-2 max-h-60 overflow-y-auto">
+                        {[
+                          "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇",
+                          "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚",
+                          "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩",
+                          "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣",
+                          "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
+                          "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "♥️",
+                          "👍", "👎", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙",
+                          "👈", "👉", "👆", "🖕", "👇", "☝️", "👋", "🤚", "🖐️", "✋",
+                          "🔥", "💯", "💥", "💫", "💦", "💨", "🕳️", "💣", "💤", "💢",
+                          "💨", "💫", "💥", "💦", "💤", "🕳️", "💣", "💢", "❗", "❓",
+                          "✅", "❌", "🆘", "⭐", "🌟", "✨", "💎", "🔱", "⚡", "💡",
+                          "💰", "💵", "💴", "💶", "💷", "🪙", "💸", "💳", "🧾", "💹"
+                        ].map((emoji, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleEmojiSelect(emoji)}
+                            className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded transition-colors"
+                            title={emoji}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere text-left" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{message.content}</p>
               
               {/* Loading/Error indicators for optimistic messages */}
@@ -165,10 +444,34 @@ const MessageItem = memo(({
                 </div>
               )}
               
-              {/* Hover timestamp tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                {formatFullTimestamp(message.createdAt)}
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+              
+            </div>
+          )}
+          
+          {/* Reactions display - positioned below message bubble */}
+          {message.reactions && message.reactions.length > 0 && (
+            <div className={`mt-1 ${message.sender.email === session?.user?.email ? 'flex justify-end' : 'flex justify-start'}`}>
+              <div className={`flex gap-1 max-w-full ${message.sender.email === session?.user?.email ? 'justify-end' : 'justify-start'}`}>
+                {Object.entries(
+                  message.reactions.reduce((acc, reaction) => {
+                    if (!acc[reaction.emoji]) {
+                      acc[reaction.emoji] = { count: 0, users: [] }
+                    }
+                    acc[reaction.emoji].count++
+                    acc[reaction.emoji].users.push(reaction.user)
+                    return acc
+                  }, {})
+                ).map(([emoji, data]) => (
+                  <div
+                    key={emoji}
+                    className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-1 text-xs cursor-pointer transition-colors shadow-sm"
+                    onClick={() => handleReaction(message.id, emoji)}
+                    title={`${data.users.length} user${data.users.length > 1 ? 's' : ''} reacted`}
+                  >
+                    <span>{emoji}</span>
+                    {data.count > 1 && <span className="text-gray-600 font-medium">{data.count}</span>}
+                  </div>
+                ))}
               </div>
             </div>
           )}

@@ -39,7 +39,8 @@ export default function ChatInterface() {
     sendMessage, 
     sendTypingIndicator,
     loadMoreMessages,
-    hasMore 
+    hasMore,
+    handleReaction
   } = useChatMessages(selectedChatId, updateChatWithNewMessage)
   const [uploading, setUploading] = useState(false)
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
@@ -781,6 +782,7 @@ export default function ChatInterface() {
                               formatTimestamp={formatTimestamp}
                               formatFullTimestamp={formatFullTimestamp}
                               shouldShowTimestamp={shouldShowTimestamp}
+                              handleReaction={handleReaction}
                             />
                           )
                         })}
