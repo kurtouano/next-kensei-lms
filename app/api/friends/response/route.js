@@ -172,6 +172,17 @@ export async function POST(req) {
     // Send real-time notification via SSE
     sseManager.sendFriendAcceptedNotification(friendRequest.requester._id, session.user.name || 'Someone');
 
+    // Update notification count for requester
+    try {
+      const notificationCount = await Notification.countDocuments({
+        recipient: friendRequest.requester._id,
+        read: false
+      });
+      sseManager.sendNotificationCountUpdate(friendRequest.requester._id, notificationCount);
+    } catch (error) {
+      console.error('Error updating notification count:', error);
+    }
+
     // If friend request was accepted, create a direct chat between the users
     let chatResult = null;
     if (action === 'accept') {

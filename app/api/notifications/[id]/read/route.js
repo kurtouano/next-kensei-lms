@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import { connectDb } from "@/lib/mongodb";
 import Notification from "@/models/Notification";
+import sseManager from "@/lib/sseManager";
 
 export async function POST(req, { params }) {
   try {
@@ -44,6 +45,17 @@ export async function POST(req, { params }) {
         { success: false, message: "Notification not found" },
         { status: 404 }
       );
+    }
+
+    // Update notification count for user
+    try {
+      const notificationCount = await Notification.countDocuments({
+        recipient: session.user.id,
+        read: false
+      });
+      sseManager.sendNotificationCountUpdate(session.user.id, notificationCount);
+    } catch (error) {
+      console.error('Error updating notification count:', error);
     }
 
     return NextResponse.json({

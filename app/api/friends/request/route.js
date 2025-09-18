@@ -94,6 +94,17 @@ export async function POST(req) {
     // Send real-time notification via SSE
     sseManager.sendFriendRequestNotification(recipientId, session.user.name || 'Someone');
 
+    // Update notification count for recipient
+    try {
+      const notificationCount = await Notification.countDocuments({
+        recipient: recipientId,
+        read: false
+      });
+      sseManager.sendNotificationCountUpdate(recipientId, notificationCount);
+    } catch (error) {
+      console.error('Error updating notification count:', error);
+    }
+
     return NextResponse.json({
       success: true,
       message: "Friend request sent successfully",

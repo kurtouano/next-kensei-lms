@@ -9,6 +9,7 @@ import { JotatsuLogoFull } from "@/components/jotatsu-logo-full"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useSession } from "next-auth/react"
 import { useRoleAccess, RoleGuard } from "@/hooks/useRoleAccess"
+import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications"
 
 // Cache for user icon and bonsai data to persist across navigation
 let cachedUserIcon = null;
@@ -19,7 +20,6 @@ export function Header() {
   const [userIcon, setUserIcon] = useState(cachedUserIcon);
   const [userData, setUserData] = useState(cachedUserData);
   const [iconLoading, setIconLoading] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(0);
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const {
@@ -28,6 +28,9 @@ export function Header() {
     canAccessAdmin,
     getDashboardRoute
   } = useRoleAccess();
+  
+  // Use real-time notifications hook
+  const { notificationCount, loading: notificationLoading } = useRealTimeNotifications();
 
   // Close mobile menu when pathname changes
   useEffect(() => {
@@ -70,22 +73,7 @@ export function Header() {
       }
     };
 
-    const fetchNotificationCount = async () => {
-      if (status === "authenticated") {
-        try {
-          const response = await fetch("/api/notifications/count");
-          const data = await response.json();
-          if (data.success) {
-            setNotificationCount(data.count);
-          }
-        } catch (error) {
-          console.error("Failed to fetch notification count:", error);
-        }
-      }
-    };
-
     fetchUserData();
-    fetchNotificationCount();
 
     const handleProfileUpdate = () => {
       cachedUserIcon = null;
@@ -99,18 +87,12 @@ export function Header() {
       fetchUserData();
     };
 
-    const handleNotificationUpdate = () => {
-      fetchNotificationCount();
-    };
-
     window.addEventListener('profile-updated', handleProfileUpdate);
     window.addEventListener('bonsai-updated', handleBonsaiUpdate);
-    window.addEventListener('notification-updated', handleNotificationUpdate);
 
     return () => {
       window.removeEventListener('profile-updated', handleProfileUpdate);
       window.removeEventListener('bonsai-updated', handleBonsaiUpdate);
-      window.removeEventListener('notification-updated', handleNotificationUpdate);
     };
   }, [status]);
 

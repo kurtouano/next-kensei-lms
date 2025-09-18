@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Bell, UserPlus, Check, X, Clock, Users } from "lucide-react";
+import { Bell, UserPlus, Check, X, Clock, Users, MoreVertical, Trash2, Trash } from "lucide-react";
+import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
+
+// Lazy load the confirmation modal
+const ConfirmationModal = lazy(() => import('./components/ConfirmationModal'));
 
 function NotificationsPage() {
   const { data: session, status } = useSession();
@@ -13,7 +17,15 @@ function NotificationsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [cleanupMessage, setCleanupMessage] = useState('');
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
   const limit = 5;
+
+  // Real-time notifications hook
+  const { notificationCount } = useRealTimeNotifications();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -27,6 +39,28 @@ function NotificationsPage() {
       fetchNotifications();
     }
   }, [status, router]);
+
+  // Close actions menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showActionsMenu && !event.target.closest('.actions-menu-container')) {
+        setShowActionsMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showActionsMenu]);
+
+  // Refresh notifications when notification count changes (real-time updates)
+  useEffect(() => {
+    if (status === "authenticated" && notificationCount !== undefined) {
+      // Refresh notifications when count changes (new notification received)
+      fetchNotifications(1, false);
+    }
+  }, [notificationCount, status]);
 
   const fetchNotifications = async (pageNum = 1, append = false) => {
     try {
@@ -127,8 +161,11 @@ function NotificationsPage() {
     await fetchNotifications(page + 1, true);
   };
 
-  const cleanupNotifications = async () => {
+  const cleanupOldNotifications = async () => {
     try {
+      setCleanupLoading(true);
+      setCleanupMessage('');
+      
       const response = await fetch('/api/notifications/cleanup', {
         method: 'POST',
       });
@@ -136,16 +173,83 @@ function NotificationsPage() {
       const data = await response.json();
       
       if (data.success) {
-        console.log('Cleanup successful:', data.message);
+        if (data.cleanedCount > 0) {
+          setCleanupMessage(`Cleaned up ${data.cleanedCount} old notifications`);
+        } else {
+          setCleanupMessage('No old notifications to clean up');
+        }
         // Refresh notifications to get updated list
         fetchNotifications(1, false);
         // Update notification count in header
         window.dispatchEvent(new Event('notification-updated'));
+        
+        // Clear message after 4 seconds
+        setTimeout(() => setCleanupMessage(''), 4000);
       } else {
-        console.error('Failed to cleanup notifications:', data.message);
+        setCleanupMessage('Failed to cleanup notifications');
+        setTimeout(() => setCleanupMessage(''), 3000);
       }
     } catch (error) {
       console.error('Error cleaning up notifications:', error);
+      setCleanupMessage('Error cleaning up notifications');
+      setTimeout(() => setCleanupMessage(''), 3000);
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
+  const handleCleanupOld = () => {
+    setConfirmAction('cleanupOld');
+    setShowConfirmModal(true);
+    setShowActionsMenu(false);
+  };
+
+  const handleDeleteAll = () => {
+    setConfirmAction('deleteAll');
+    setShowConfirmModal(true);
+    setShowActionsMenu(false);
+  };
+
+  const confirmActionHandler = async () => {
+    if (confirmAction === 'cleanupOld') {
+      await cleanupOldNotifications();
+    } else if (confirmAction === 'deleteAll') {
+      await clearAllNotifications();
+    }
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      setCleanupLoading(true);
+      setCleanupMessage('');
+      
+      const response = await fetch('/api/notifications/clear-all', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setCleanupMessage(`Cleared all notifications`);
+        // Refresh notifications to get updated list
+        fetchNotifications(1, false);
+        // Update notification count in header
+        window.dispatchEvent(new Event('notification-updated'));
+        
+        // Clear message after 4 seconds
+        setTimeout(() => setCleanupMessage(''), 4000);
+      } else {
+        setCleanupMessage('Failed to clear notifications');
+        setTimeout(() => setCleanupMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      setCleanupMessage('Error clearing notifications');
+      setTimeout(() => setCleanupMessage(''), 3000);
+    } finally {
+      setCleanupLoading(false);
     }
   };
 
@@ -160,6 +264,34 @@ function NotificationsPage() {
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
     return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
+
+  const getNotificationAge = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays < 1) {
+      return { age: 'Today', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' };
+    } else if (diffInDays < 7) {
+      return { age: `${diffInDays} day${diffInDays > 1 ? 's' : ''} old`, color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' };
+    } else if (diffInDays < 30) {
+      const weeks = Math.floor(diffInDays / 7);
+      return { age: `${weeks} week${weeks > 1 ? 's' : ''} old`, color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' };
+    } else if (diffInDays < 365) {
+      const months = Math.floor(diffInDays / 30);
+      return { age: `${months} month${months > 1 ? 's' : ''} old`, color: 'text-orange-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' };
+    } else {
+      const years = Math.floor(diffInDays / 365);
+      return { age: `${years} year${years > 1 ? 's' : ''} old`, color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' };
+    }
+  };
+
+  const isOldNotification = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    return diffInDays >= 7; // 7+ days is considered "old"
   };
 
   if (loading) {
@@ -196,12 +328,58 @@ function NotificationsPage() {
                    </p>
                  )}
                </div>
-               <button
-                 onClick={cleanupNotifications}
-                 className="px-3 py-1 bg-[#4a7c59] text-white text-xs rounded-lg hover:bg-[#3a6147] transition-colors"
-               >
-                 Cleanup Old Notifications
-               </button>
+               <div className="flex flex-col items-end gap-2">
+                 <div className="relative actions-menu-container">
+                   <button
+                     onClick={() => setShowActionsMenu(!showActionsMenu)}
+                     disabled={cleanupLoading}
+                     className="px-3 py-1 bg-[#4a7c59] text-white text-xs rounded-lg hover:bg-[#3a6147] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                   >
+                     {cleanupLoading ? (
+                       <>
+                         <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                         Processing...
+                       </>
+                     ) : (
+                       <>
+                         <MoreVertical className="w-3 h-3" />
+                         Actions
+                       </>
+                     )}
+                   </button>
+                   
+                   {showActionsMenu && !cleanupLoading && (
+                     <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                       <div className="py-1">
+                         <button
+                           onClick={handleCleanupOld}
+                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                         >
+                           <Trash className="w-4 h-4" />
+                           Clean old notifications
+                         </button>
+                         <button
+                           onClick={handleDeleteAll}
+                           className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                         >
+                           <Trash2 className="w-4 h-4" />
+                           Delete all notifications
+                         </button>
+                       </div>
+                     </div>
+                   )}
+                 </div>
+                 
+                 {cleanupMessage && (
+                   <p className={`text-xs ${
+                     cleanupMessage.includes('Cleaned up') || cleanupMessage.includes('Cleared') ? 'text-green-600' : 
+                     cleanupMessage.includes('No old') ? 'text-blue-600' : 
+                     'text-red-600'
+                   }`}>
+                     {cleanupMessage}
+                   </p>
+                 )}
+               </div>
              </div>
           </div>
 
@@ -240,10 +418,28 @@ function NotificationsPage() {
                          <p className="text-[#5c6d5e] text-sm mb-2">
                            {notification.message}
                          </p>
-                                                                          <div className="flex items-center gap-4 text-xs text-[#5c6d5e]">
-                           <span>{formatTimeAgo(notification.createdAt)}</span>
+                                                                          <div className="flex items-center gap-3 text-xs">
+                           <span className="text-[#5c6d5e]">{formatTimeAgo(notification.createdAt)}</span>
+                           
+                           {/* Age Badge */}
+                           {(() => {
+                             const ageInfo = getNotificationAge(notification.createdAt);
+                             const isOld = isOldNotification(notification.createdAt);
+                             return (
+                               <span className={`px-2 py-1 rounded-full text-xs font-medium border ${ageInfo.color} ${ageInfo.bgColor} ${ageInfo.borderColor} ${isOld ? 'ring-2 ring-red-200' : ''}`}>
+                                 {ageInfo.age}
+                               </span>
+                             );
+                           })()}
+                           
                            {!notification.read && (
-                             <span className="text-[#4a7c59] font-medium">New</span>
+                             <span className="text-[#4a7c59] font-medium bg-[#eef2eb] px-2 py-1 rounded-full">New</span>
+                           )}
+                           
+                           {isOldNotification(notification.createdAt) && (
+                             <span className="text-red-600 font-medium bg-red-50 px-2 py-1 rounded-full border border-red-200">
+                               Old
+                             </span>
                            )}
                          </div>
                        </div>
@@ -293,15 +489,15 @@ function NotificationsPage() {
                    <button
                      onClick={loadMoreNotifications}
                      disabled={loadingMore}
-                     className="px-6 py-2 bg-[#4a7c59] text-white rounded-lg hover:bg-[#3a6147] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                     className="px-4 py-1.5 bg-[#4a7c59] text-white text-sm rounded-md hover:bg-[#3a6147] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
                    >
                      {loadingMore ? (
                        <>
-                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                         <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                          Loading...
                        </>
                      ) : (
-                       'Load More Notifications'
+                       'Load More'
                      )}
                    </button>
                  </div>
@@ -318,6 +514,25 @@ function NotificationsPage() {
           )}
         </div>
       </main>
+
+      {/* Lazy-loaded Confirmation Modal */}
+      <Suspense fallback={
+        <div className="fixed inset-0 bg-[#2c3e2d] bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#f8f7f4] rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-[#4a7c59] border-opacity-20 p-8">
+            <div className="flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-[#4a7c59] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+      }>
+        <ConfirmationModal
+          showModal={showConfirmModal}
+          confirmAction={confirmAction}
+          cleanupLoading={cleanupLoading}
+          onConfirm={confirmActionHandler}
+          onCancel={() => setShowConfirmModal(false)}
+        />
+      </Suspense>
     </div>
   );
 }
