@@ -318,7 +318,7 @@ function NotificationsPage() {
                <h1 className="text-2xl font-bold text-[#2c3e2d]">Notifications</h1>
              </div>
                          <div className="flex items-center justify-between">
-               <div>
+               <div className="flex-1">
                  <p className="text-[#5c6d5e] text-base">
                    Stay updated with friend requests and activities
                  </p>
@@ -328,23 +328,18 @@ function NotificationsPage() {
                    </p>
                  )}
                </div>
-               <div className="flex flex-col items-end gap-2">
+               <div className="flex items-center gap-3">
+                 <span className="text-sm text-gray-500 hidden sm:block">Manage</span>
                  <div className="relative actions-menu-container">
                    <button
                      onClick={() => setShowActionsMenu(!showActionsMenu)}
                      disabled={cleanupLoading}
-                     className="px-3 py-1 bg-[#4a7c59] text-white text-xs rounded-lg hover:bg-[#3a6147] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                     className="p-2.5 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 hover:text-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-gray-200 hover:border-gray-300"
                    >
                      {cleanupLoading ? (
-                       <>
-                         <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                         Processing...
-                       </>
+                       <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                      ) : (
-                       <>
-                         <MoreVertical className="w-3 h-3" />
-                         Actions
-                       </>
+                       <Trash className="w-4 h-4" />
                      )}
                    </button>
                    
