@@ -2,6 +2,7 @@ import "@/app/globals.css"
 import { Noto_Sans_JP, Poppins } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "./providers"
+import { ToastProvider } from "@/contexts/ToastContext"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Toaster } from "@/components/ui/toaster"
@@ -131,17 +132,19 @@ export default async function RootLayout({ children }) {
       </head>
       <body className={`${notoSansJP.variable} ${poppins.variable} font-sans`}>
         <AuthProvider>
-          <ThemeProvider attribute="class" defaultTheme="light">
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1">
-                {children}
-              </main>
-              <Footer />
-            </div>
-            <OnlineStatusTracker /> {/* Online Status Tracker for User Activity */}
-            <Toaster /> {/* Toast notifications */}
-          </ThemeProvider>
+          <ToastProvider>
+            <ThemeProvider attribute="class" defaultTheme="light">
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-1">
+                  {children}
+                </main>
+                <Footer />
+              </div>
+              <OnlineStatusTracker /> {/* Online Status Tracker for User Activity */}
+              <Toaster /> {/* Toast notifications */}
+            </ThemeProvider>
+          </ToastProvider>
         </AuthProvider>
         <Analytics/> {/* Vercel Analytics */}
         <SpeedInsights/> {/* Vercel Speed Insights */}

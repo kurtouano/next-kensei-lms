@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectDb } from '@/lib/mongodb';
 import Friend from '@/models/Friend';
 import User from '@/models/User';
+import sseManager from '@/lib/sseManager';
 
 export async function GET(req) {
   try {
@@ -62,13 +63,18 @@ export async function GET(req) {
               const isOnline = lastSeen && (now - lastSeen) < 1 * 60 * 1000; // 1 minute
 
               return {
-                _id: friendUser._id,
+                id: friendUser._id,
                 name: friendUser.name,
                 icon: friendUser.icon,
-                bonsai: friendUser.bonsai,
+                isOnline,
                 lastSeen: friendUser.lastSeen,
-                lastLogin: friendUser.lastLogin,
-                isOnline
+                bonsai: friendUser.bonsai ? {
+                  level: friendUser.bonsai.level || 1,
+                  customization: friendUser.bonsai.customization || {}
+                } : {
+                  level: 1,
+                  customization: {}
+                }
               };
             });
 
@@ -95,6 +101,9 @@ export async function GET(req) {
           }
         };
 
+        // Register this connection with the SSE manager
+        sseManager.addConnection(session.user.id, controller);
+
         // Send initial data
         fetchAndSendFriends();
 
@@ -108,6 +117,7 @@ export async function GET(req) {
 
         // Cleanup on close
         req.signal.addEventListener('abort', () => {
+          sseManager.removeConnection(session.user.id, controller);
           clearInterval(intervalId);
           clearInterval(heartbeatId);
           controller.close();

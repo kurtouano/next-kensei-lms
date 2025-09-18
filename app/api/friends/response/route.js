@@ -5,6 +5,69 @@ import { connectDb } from "@/lib/mongodb";
 import Friend from "@/models/Friend";
 import Notification from "@/models/Notification";
 import { handleFriendAcceptance } from "@/lib/friendChatIntegration";
+import sseManager from "@/lib/sseManager";
+import User from "@/models/User";
+
+// Helper function to get friends list
+async function getFriendsList(userId) {
+  const friendRelationships = await Friend.find({
+    $or: [
+      { requester: userId, status: 'accepted' },
+      { recipient: userId, status: 'accepted' }
+    ]
+  }).populate([
+    {
+      path: 'requester',
+      select: 'name icon bonsai lastSeen lastLogin',
+      populate: {
+        path: 'bonsai',
+        select: 'level customization'
+      }
+    },
+    {
+      path: 'recipient',
+      select: 'name icon bonsai lastSeen lastLogin',
+      populate: {
+        path: 'bonsai',
+        select: 'level customization'
+      }
+    }
+  ]);
+
+  const friends = friendRelationships.map(relationship => {
+    const friend = relationship.requester._id.toString() === userId 
+      ? relationship.recipient 
+      : relationship.requester;
+
+    // Determine online status (online if last seen within 1 minute)
+    const lastSeen = friend.lastSeen ? new Date(friend.lastSeen) : 
+                    friend.lastLogin ? new Date(friend.lastLogin) : null;
+    const now = new Date();
+    const isOnline = lastSeen && (now - lastSeen) < 1 * 60 * 1000; // 1 minute
+
+    return {
+      id: friend._id,
+      name: friend.name,
+      icon: friend.icon,
+      isOnline,
+      lastSeen: friend.lastSeen,
+      bonsai: friend.bonsai ? {
+        level: friend.bonsai.level || 1,
+        customization: friend.bonsai.customization || {}
+      } : {
+        level: 1,
+        customization: {}
+      }
+    };
+  });
+
+  // Sort friends: online first, then by name
+  return friends.sort((a, b) => {
+    if (a.isOnline && !b.isOnline) return -1;
+    if (!a.isOnline && b.isOnline) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
 
 export async function POST(req) {
   try {
@@ -106,6 +169,9 @@ export async function POST(req) {
 
     await notification.save();
 
+    // Send real-time notification via SSE
+    sseManager.sendFriendAcceptedNotification(friendRequest.requester._id, session.user.name || 'Someone');
+
     // If friend request was accepted, create a direct chat between the users
     let chatResult = null;
     if (action === 'accept') {
@@ -114,6 +180,16 @@ export async function POST(req) {
           friendRequest.requester._id, 
           session.user.id
         );
+
+        // Send updated friends list to both users
+        const [requesterFriends, responderFriends] = await Promise.all([
+          getFriendsList(friendRequest.requester._id),
+          getFriendsList(session.user.id)
+        ]);
+
+        sseManager.sendFriendsUpdate(friendRequest.requester._id, requesterFriends);
+        sseManager.sendFriendsUpdate(session.user.id, responderFriends);
+
       } catch (error) {
         console.error("Failed to create friend chat:", error);
         // Don't fail the entire request if chat creation fails

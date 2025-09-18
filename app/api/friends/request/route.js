@@ -5,6 +5,7 @@ import { connectDb } from "@/lib/mongodb";
 import Friend from "@/models/Friend";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
+import sseManager from "@/lib/sseManager";
 
 export async function POST(req) {
   try {
@@ -89,6 +90,9 @@ export async function POST(req) {
     });
 
     await notification.save();
+
+    // Send real-time notification via SSE
+    sseManager.sendFriendRequestNotification(recipientId, session.user.name || 'Someone');
 
     return NextResponse.json({
       success: true,

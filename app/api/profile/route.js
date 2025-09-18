@@ -10,6 +10,8 @@ import Module from "@/models/Module.js";
 import Lesson from "@/models/Lesson.js";
 import Course from "@/models/Course.js";
 import Rating from "@/models/Rating.js";
+import sseManager from "@/lib/sseManager";
+import Friend from "@/models/Friend.js";
 
 export async function GET() {
     try {
@@ -225,6 +227,39 @@ export async function PATCH(req) {
 
         if (!user) {
             return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
+        }
+
+        // If lastSeen was updated, notify friends about online status
+        if (updateData.lastSeen) {
+            try {
+                // Get user's friends
+                const friendRelationships = await Friend.find({
+                    $or: [
+                        { requester: user._id, status: 'accepted' },
+                        { recipient: user._id, status: 'accepted' }
+                    ]
+                });
+
+                // Extract friend IDs
+                const friendIds = friendRelationships.map(relationship => 
+                    relationship.requester.toString() === user._id.toString() 
+                        ? relationship.recipient.toString()
+                        : relationship.requester.toString()
+                );
+
+                // Send online status update to all friends
+                if (friendIds.length > 0) {
+                    sseManager.sendToUsers(friendIds, {
+                        type: 'online_status_update',
+                        userId: user._id.toString(),
+                        isOnline: true,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            } catch (error) {
+                console.error('Error notifying friends of online status:', error);
+                // Don't fail the request if notification fails
+            }
         }
 
         return NextResponse.json({

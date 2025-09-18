@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { useToast } from '@/contexts/ToastContext';
 
 export const useRealTimeFriends = () => {
   const { data: session } = useSession();
+  const { showSuccess, showInfo } = useToast();
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
@@ -42,6 +44,21 @@ export const useRealTimeFriends = () => {
             if (data.type === 'friends_update') {
               setFriends(data.friends);
               setLastUpdate(new Date(data.timestamp));
+            } else if (data.type === 'friend_request_received') {
+              // Show notification for new friend request
+              showInfo(data.message, 7000);
+            } else if (data.type === 'friend_request_accepted') {
+              // Show notification for accepted friend request
+              showSuccess(data.message, 5000);
+            } else if (data.type === 'online_status_update') {
+              // Update online status for a specific friend
+              setFriends(prevFriends => 
+                prevFriends.map(friend => 
+                  friend.id === data.userId 
+                    ? { ...friend, isOnline: data.isOnline }
+                    : friend
+                )
+              );
             } else if (data.type === 'heartbeat') {
               // Keep connection alive
               console.log('SSE heartbeat received');

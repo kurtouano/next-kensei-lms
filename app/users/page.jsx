@@ -399,6 +399,11 @@ function UsersPage() {
                         {/* Friend Icon - Clickable to view profile */}
                         <Link href={`/users/${friend.id}`} className="relative cursor-pointer hover:opacity-80 transition-opacity">
                           <div className="h-16 w-16 rounded-full border-2 border-[#4a7c59] bg-[#eef2eb] flex items-center justify-center overflow-hidden">
+                            {/* Online indicator */}
+                            {friend.isOnline && (
+                              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse" 
+                                   title="Online" />
+                            )}
                             {friend.icon && friend.icon.startsWith('http') ? (
                               <img 
                                 src={friend.icon} 
