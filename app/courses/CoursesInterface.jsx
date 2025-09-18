@@ -525,7 +525,7 @@ const ModernPagination = memo(function ModernPagination({ pagination, onPageChan
           Previous
         </Button>
 
-        <div className="hidden sm:flex items-center gap-1 mx-4">
+        <div className="hidden sm:flex items-center gap-3 mx-4">
           {getPageNumbers().map((page, index) => (
             page === '...' ? (
               <span key={index} className="px-2 py-1 text-gray-500">...</span>
