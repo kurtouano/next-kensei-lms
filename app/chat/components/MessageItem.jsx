@@ -5,6 +5,39 @@ import { Loader2, AlertCircle, Plus } from "lucide-react"
 import LazyAvatar from "./LazyAvatar"
 import EmojiPicker from "./EmojiPicker"
 
+// Function to render text with clickable links
+const renderTextWithLinks = (text) => {
+  if (!text) return text
+
+  // URL regex pattern to match various URL formats
+  // Matches http://, https://, and www. URLs
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g
+  
+  return text.split(urlRegex).map((part, index) => {
+    if (urlRegex.test(part)) {
+      // Ensure URL has protocol
+      const url = part.startsWith('http') ? part : `https://${part}`
+      
+      // Check if it's a YouTube URL for special handling
+      const isYouTube = url.includes('youtube.com') || url.includes('youtu.be')
+      
+      return (
+        <a
+          key={index}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:no-underline transition-all duration-200 text-white hover:text-gray-200"
+          title="Open link"
+        >
+          {part}
+        </a>
+      )
+    }
+    return part
+  })
+}
+
 // Memoized message component for better performance
 const MessageItem = memo(({ 
   message, 
@@ -465,7 +498,9 @@ const MessageItem = memo(({
                   </div>
                 </div>
               )}
-              <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere text-left" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{message.content}</p>
+              <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere text-left" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                {renderTextWithLinks(message.content)}
+              </p>
               
               {/* Loading/Error indicators for optimistic messages */}
               {message.sender.email === session?.user?.email && (
