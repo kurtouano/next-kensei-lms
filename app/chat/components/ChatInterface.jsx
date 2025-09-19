@@ -37,6 +37,7 @@ export default function ChatInterface() {
     isLoadingMore,
     messagesEndRef, 
     sendMessage, 
+    sendAttachmentOptimistic,
     sendTypingIndicator,
     loadMoreMessages,
     hasMore,
@@ -202,29 +203,16 @@ export default function ChatInterface() {
   //   // Typing indicator temporarily disabled to fix typing delays
   // }, [message, selectedChatId, sendTypingIndicator])
 
-  // Handle image upload
+  // Handle image upload with optimistic updates
   const handleImageUpload = async (file) => {
     if (!selectedChatId || uploading) return
 
     try {
       setUploading(true)
-      console.log("Uploading image with compression...")
+      console.log("Uploading image with optimistic updates...")
       
-      const result = await uploadChatImage(file)
-      
-      // Send message with image attachment
-      await sendMessage("", "image", [{
-        url: result.url,
-        filename: result.metadata.originalFilename,
-        size: result.metadata.compressedSize || result.metadata.originalSize,
-        type: "image",
-        mimeType: result.metadata.contentType,
-        compressionStats: result.metadata.compressionRatio ? {
-          originalSize: result.metadata.originalSize,
-          compressedSize: result.metadata.compressedSize,
-          compressionRatio: result.metadata.compressionRatio
-        } : null
-      }])
+      // Use optimistic upload - shows immediately, uploads in background
+      await sendAttachmentOptimistic(file, "image", "image")
       
       console.log("✅ Image uploaded and message sent successfully")
     } catch (error) {
@@ -268,7 +256,7 @@ export default function ChatInterface() {
     }
   }
 
-  // Handle general file selection
+  // Handle general file selection with optimistic updates
   const handleGeneralFileChange = async (e) => {
     const file = e.target.files[0]
     if (!file || !selectedChatId || uploading) return
@@ -278,6 +266,16 @@ export default function ChatInterface() {
     const allowedAudioTypes = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/ogg']
     const allowedSpreadsheetTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv']
     const allowedTypes = [...allowedDocumentTypes, ...allowedAudioTypes, ...allowedSpreadsheetTypes]
+    
+    // Explicitly reject image files
+    if (file.type.startsWith('image/')) {
+      setFileErrorPopup({
+        title: "Use the image button",
+        description: "Please use the image button (📷) for photos and images. This button is for documents, audio, and spreadsheets."
+      })
+      e.target.value = ""
+      return
+    }
     
     if (!allowedTypes.includes(file.type)) {
       setFileErrorPopup({
@@ -301,36 +299,24 @@ export default function ChatInterface() {
 
     try {
       setUploading(true)
-      console.log("Uploading general file...")
+      console.log("Uploading general file with optimistic updates...")
+      console.log("File details:", { name: file.name, type: file.type, size: file.size })
       
       // Determine file type for proper categorization
       let detectedFileType = 'general' // default
-      let messageAttachmentType = 'general' // for the message attachment
       
       if (allowedDocumentTypes.includes(file.type)) {
         detectedFileType = 'document'
-        messageAttachmentType = 'document'
       } else if (allowedAudioTypes.includes(file.type)) {
         detectedFileType = 'audio'
-        messageAttachmentType = 'file' // Map audio to 'file' for message schema
       } else if (allowedSpreadsheetTypes.includes(file.type)) {
         detectedFileType = 'spreadsheet'
-        messageAttachmentType = 'file' // Map spreadsheet to 'file' for message schema
       }
       
-      const result = await uploadChatAttachment(file, detectedFileType)
+      console.log("Detected file type:", detectedFileType)
       
-      // Send message with file attachment
-      const attachmentData = {
-        url: result.url,
-        filename: result.metadata.originalFilename,
-        size: result.metadata.originalSize,
-        type: messageAttachmentType, // Use the message-compatible type
-        mimeType: result.metadata.contentType
-      }
-      
-      console.log("Sending message with attachment:", attachmentData)
-      await sendMessage("", "attachment", [attachmentData])
+      // Use optimistic upload - shows immediately, uploads in background
+      await sendAttachmentOptimistic(file, "attachment", detectedFileType)
       
       console.log("✅ File uploaded and message sent successfully")
     } catch (error) {
@@ -340,8 +326,7 @@ export default function ChatInterface() {
         stack: error.stack,
         file: file.name,
         fileType: file.type,
-        detectedFileType: detectedFileType || 'unknown',
-        messageAttachmentType: messageAttachmentType || 'unknown'
+        detectedFileType: detectedFileType || 'unknown'
       })
       setFileErrorPopup({
         title: "Upload failed",
@@ -865,7 +850,7 @@ export default function ChatInterface() {
                       type="file"
                       onChange={handleGeneralFileChange}
                       className="hidden"
-                      accept="*/*"
+                      accept=".pdf,.doc,.docx,.txt,.rtf,.mp3,.wav,.mp4,.ogg,.m4a,.xls,.xlsx,.csv,.zip,.rar,.7z"
                     />
                     
                     {/* Emoji Picker */}

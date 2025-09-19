@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
+import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
 
 export function useChat() {
   const { data: session } = useSession()
@@ -345,6 +346,169 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [session, chatId, onNewMessage, scrollToBottom])
 
+  // Send attachment with optimistic updates
+  const sendAttachmentOptimistic = useCallback(async (file, type = "attachment", detectedFileType = "general") => {
+    if (!session?.user?.email || !chatId) throw new Error("Not authenticated or no chat selected")
+
+    // Create optimistic message with temporary ID and placeholder attachment
+    const tempId = `temp_${Date.now()}_${Math.random()}`
+    const optimisticMessage = {
+      id: tempId,
+      content: "",
+      type: type,
+      attachments: [{
+        url: "", // Empty URL initially
+        filename: file.name,
+        size: file.size,
+        type: detectedFileType,
+        mimeType: file.type,
+        isUploading: true, // Flag to show upload progress
+        tempFile: file // Store file for upload
+      }],
+      replyTo: null,
+      sender: {
+        email: session.user.email,
+        name: session.user.name || session.user.email,
+        icon: session.user.icon || null,
+        bonsai: session.user.bonsai || null
+      },
+      createdAt: new Date().toISOString(),
+      isOptimistic: true,
+      isFailed: false
+    }
+
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage])
+    
+    // Scroll to bottom immediately for optimistic message
+    setTimeout(() => {
+      scrollToBottom()
+    }, 50)
+
+    try {
+      // Upload the file first
+      let uploadResult
+      console.log("Starting file upload...", { type, detectedFileType, fileName: file.name, fileSize: file.size, fileType: file.type })
+      
+      if (type === "image") {
+        console.log("Calling uploadChatImage...")
+        try {
+          uploadResult = await uploadChatImage(file)
+          console.log("uploadChatImage completed:", uploadResult)
+        } catch (uploadError) {
+          console.error("uploadChatImage failed:", uploadError)
+          throw new Error(`Image upload failed: ${uploadError.message}`)
+        }
+      } else {
+        console.log("Calling uploadChatAttachment...")
+        try {
+          uploadResult = await uploadChatAttachment(file, detectedFileType)
+          console.log("uploadChatAttachment completed:", uploadResult)
+        } catch (uploadError) {
+          console.error("uploadChatAttachment failed:", uploadError)
+          throw new Error(`File upload failed: ${uploadError.message}`)
+        }
+      }
+      
+      console.log("Upload completed successfully:", uploadResult)
+
+      // Update the optimistic message with real attachment data
+      // Map detected file types to valid database enum values
+      let mappedType
+      if (type === "image") {
+        mappedType = "image"
+      } else if (detectedFileType === "audio") {
+        mappedType = "file"
+      } else if (detectedFileType === "spreadsheet") {
+        mappedType = "file" // Map spreadsheet to file for database compatibility
+      } else if (detectedFileType === "document") {
+        mappedType = "document"
+      } else {
+        mappedType = "general"
+      }
+
+      const attachmentData = {
+        url: uploadResult.url,
+        filename: uploadResult.metadata.originalFilename,
+        size: uploadResult.metadata.compressedSize || uploadResult.metadata.originalSize,
+        type: mappedType,
+        mimeType: uploadResult.metadata.contentType,
+        isUploading: false
+      }
+      
+      console.log("Attachment data for API:", attachmentData)
+
+      // Update the message with real attachment data
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempId 
+          ? { ...msg, attachments: [attachmentData] }
+          : msg
+      ))
+
+      // Now send the message to the server
+      console.log("Sending message to API...", { content: "", type, attachments: [attachmentData] })
+      
+      const response = await fetch(`/api/chats/${chatId}/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: "", // Empty string for attachment-only messages
+          type: type,
+          attachments: [attachmentData],
+          replyTo: null,
+        }),
+      })
+
+      console.log("API Response status:", response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("API Error Response:", errorText)
+        throw new Error(`API Error (${response.status}): ${errorText}`)
+      }
+
+      const data = await response.json()
+      
+      // Debug logging
+      console.log("API Response data:", data)
+
+      if (data.success) {
+        // Replace optimistic message with real message
+        setMessages(prev => prev.map(msg => 
+          msg.id === tempId 
+            ? { ...data.message, isOptimistic: false, isFailed: false }
+            : msg
+        ))
+        
+        // Notify parent component of new message
+        if (onNewMessage) {
+          onNewMessage(data.message)
+        }
+      } else {
+        throw new Error(data.error || "Failed to send message")
+      }
+    } catch (error) {
+      // Mark message as failed
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempId 
+          ? { ...msg, isOptimistic: false, isFailed: true }
+          : msg
+      ))
+      console.error("Error uploading attachment:", error)
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        fileName: file?.name,
+        fileType: file?.type,
+        type,
+        detectedFileType
+      })
+      throw error
+    }
+  }, [session, chatId, onNewMessage, scrollToBottom])
+
   // Mark message as seen
   const markMessageAsSeen = useCallback(async (messageId) => {
     if (!session?.user?.email || !chatId || !messageId) return
@@ -401,6 +565,42 @@ export function useChatMessages(chatId, onNewMessage = null) {
   const handleReaction = useCallback(async (messageId, emoji) => {
     if (!session?.user?.email || !chatId || !messageId || !emoji) return
 
+    // Find the message to get current reactions
+    const currentMessage = messages.find(msg => msg.id === messageId)
+    if (!currentMessage) return
+
+    // Create optimistic reaction update
+    const currentReactions = currentMessage.reactions || []
+    const userEmail = session.user.email
+    
+    // Check if user already reacted with this emoji
+    const existingReaction = currentReactions.find(r => r.emoji === emoji && r.user === userEmail)
+    
+    let optimisticReactions
+    if (existingReaction) {
+      // Remove the reaction (toggle off)
+      optimisticReactions = currentReactions.filter(r => !(r.emoji === emoji && r.user === userEmail))
+    } else {
+      // Add the reaction
+      optimisticReactions = [
+        ...currentReactions,
+        {
+          emoji,
+          user: userEmail,
+          userName: session.user.name || session.user.email,
+          createdAt: new Date().toISOString(),
+          isOptimistic: true // Flag for optimistic update
+        }
+      ]
+    }
+
+    // Update UI immediately (optimistic update)
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId 
+        ? { ...msg, reactions: optimisticReactions }
+        : msg
+    ))
+
     try {
       const response = await fetch(`/api/chats/${chatId}/messages/${messageId}/react`, {
         method: "POST",
@@ -413,17 +613,31 @@ export function useChatMessages(chatId, onNewMessage = null) {
       const data = await response.json()
       
       if (data.success) {
-        // Update the message reactions in local state
+        // Replace optimistic reactions with real server data
         setMessages(prev => prev.map(msg => 
           msg.id === messageId 
             ? { ...msg, reactions: data.reactions }
             : msg
         ))
+      } else {
+        // Rollback on failure
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, reactions: currentReactions }
+            : msg
+        ))
+        console.error("Failed to update reaction:", data.error)
       }
     } catch (error) {
+      // Rollback on error
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, reactions: currentReactions }
+          : msg
+      ))
       console.error("Error updating reaction:", error)
     }
-  }, [session, chatId])
+  }, [session, chatId, messages])
 
   // Send typing indicator
   const sendTypingIndicator = useCallback(async (isTyping) => {
@@ -646,6 +860,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
     messagesEndRef,
     fetchMessages,
     sendMessage,
+    sendAttachmentOptimistic,
     sendTypingIndicator,
     loadMoreMessages,
     scrollToBottom,

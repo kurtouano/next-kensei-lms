@@ -98,13 +98,26 @@ const MessageItem = memo(({
                   <Plus className="w-3 h-3 text-gray-600" />
                 </button>
               </div>
-              <img
-                src={message.attachments[0].url}
-                alt="Shared image"
-                className="rounded max-w-full max-h-[270px] h-auto cursor-pointer object-cover"
-                onClick={() => window.open(message.attachments[0].url, '_blank')}
-                loading="lazy"
-              />
+              {message.attachments[0].isUploading ? (
+                // Loading state for uploading image
+                <div className="bg-gray-100 border border-gray-200 rounded-lg p-8 flex flex-col items-center justify-center min-h-[200px]">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                    <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">Uploading image...</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={message.attachments[0].url}
+                  alt="Shared image"
+                  className="rounded max-w-full max-h-[270px] h-auto cursor-pointer object-cover"
+                  onClick={() => window.open(message.attachments[0].url, '_blank')}
+                  loading="lazy"
+                />
+              )}
               
               {/* Emoji Picker for Image Reactions */}
               {showReactionPicker && (
@@ -195,7 +208,29 @@ const MessageItem = memo(({
                 </button>
               </div>
               {message.attachments.map((attachment, index) => (
-                attachment.mimeType?.startsWith('audio/') ? (
+                attachment.isUploading ? (
+                  // Loading state for uploading attachments
+                  <div key={index} className="mb-2">
+                    <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 bg-gray-100 border border-gray-200 rounded flex items-center justify-center">
+                          <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {attachment.filename}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Uploading... • {attachment.type}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                ) : attachment.mimeType?.startsWith('audio/') ? (
                   // Audio player for audio files
                   <div key={index} className="mb-2">
                     <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
@@ -455,21 +490,29 @@ const MessageItem = memo(({
                 {Object.entries(
                   message.reactions.reduce((acc, reaction) => {
                     if (!acc[reaction.emoji]) {
-                      acc[reaction.emoji] = { count: 0, users: [] }
+                      acc[reaction.emoji] = { count: 0, users: [], hasOptimistic: false }
                     }
                     acc[reaction.emoji].count++
                     acc[reaction.emoji].users.push(reaction.user)
+                    if (reaction.isOptimistic) {
+                      acc[reaction.emoji].hasOptimistic = true
+                    }
                     return acc
                   }, {})
                 ).map(([emoji, data]) => (
                   <div
                     key={emoji}
-                    className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-1 text-xs cursor-pointer transition-colors shadow-sm"
+                    className={`flex items-center gap-1 bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-1 text-xs cursor-pointer transition-colors shadow-sm ${
+                      data.hasOptimistic ? 'opacity-70 animate-pulse' : ''
+                    }`}
                     onClick={() => handleReaction(message.id, emoji)}
-                    title={`${data.users.length} user${data.users.length > 1 ? 's' : ''} reacted`}
+                    title={`${data.users.length} user${data.users.length > 1 ? 's' : ''} reacted${data.hasOptimistic ? ' (sending...)' : ''}`}
                   >
                     <span>{emoji}</span>
                     {data.count > 1 && <span className="text-gray-600 font-medium">{data.count}</span>}
+                    {data.hasOptimistic && (
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
+                    )}
                   </div>
                 ))}
               </div>
