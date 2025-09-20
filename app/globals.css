@@ -2,6 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  .break-urls {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+  
+  .message-content {
+    max-width: 100%;
+    overflow: hidden;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    table-layout: fixed;
+    width: 100%;
+  }
+  
+  .message-content a {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+    display: inline-block;
+    width: 100%;
+  }
+  
+  .link-preview {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .link-preview * {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

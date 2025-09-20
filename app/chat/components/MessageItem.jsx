@@ -4,6 +4,23 @@ import { memo, useState, useRef, useEffect } from "react"
 import { Loader2, AlertCircle, Plus } from "lucide-react"
 import LazyAvatar from "./LazyAvatar"
 import EmojiPicker from "./EmojiPicker"
+import LinkPreview from "./LinkPreview"
+
+// Function to extract URLs from text
+const extractUrls = (text) => {
+  if (!text) return []
+  
+  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g
+  const urls = []
+  let match
+  
+  while ((match = urlRegex.exec(text)) !== null) {
+    const url = match[0].startsWith('http') ? match[0] : `https://${match[0]}`
+    urls.push(url)
+  }
+  
+  return urls
+}
 
 // Function to render text with clickable links
 const renderTextWithLinks = (text) => {
@@ -18,16 +35,14 @@ const renderTextWithLinks = (text) => {
       // Ensure URL has protocol
       const url = part.startsWith('http') ? part : `https://${part}`
       
-      // Check if it's a YouTube URL for special handling
-      const isYouTube = url.includes('youtube.com') || url.includes('youtu.be')
-      
       return (
         <a
           key={index}
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="underline hover:no-underline transition-all duration-200 text-white hover:text-gray-200"
+          className="underline hover:no-underline transition-all duration-200 text-white hover:text-gray-200 break-all message-content"
+          style={{ wordBreak: 'break-all', overflowWrap: 'anywhere', maxWidth: '100%' }}
           title="Open link"
         >
           {part}
@@ -406,8 +421,9 @@ const MessageItem = memo(({
           
           {/* Text content - With background */}
           {message.content && (
+            <div className="space-y-2">
             <div
-              className={`rounded-lg px-4 py-2 group relative ${
+              className={`rounded-lg px-4 py-2 group relative max-w-full ${
                 message.sender.email === session?.user?.email 
                   ? `bg-[#4a7c59] text-white ${message.isOptimistic ? 'opacity-70' : ''} ${message.isFailed ? 'bg-red-500' : ''}` 
                   : "bg-white text-gray-900 border"
@@ -498,7 +514,7 @@ const MessageItem = memo(({
                   </div>
                 </div>
               )}
-              <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere text-left" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+              <p className="text-sm whitespace-pre-wrap break-all text-left max-w-full overflow-hidden message-content" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
                 {renderTextWithLinks(message.content)}
               </p>
               
@@ -515,6 +531,20 @@ const MessageItem = memo(({
               )}
               
               
+              </div>
+              
+              {/* Link Previews */}
+              {message.content && extractUrls(message.content).length > 0 && (
+                <div className="space-y-2 w-full">
+                  {extractUrls(message.content).map((url, index) => (
+                    <LinkPreview 
+                      key={`${message.id}-${index}`} 
+                      url={url}
+                      className="w-full"
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
           
