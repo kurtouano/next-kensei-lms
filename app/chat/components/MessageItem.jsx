@@ -23,7 +23,7 @@ const extractUrls = (text) => {
 }
 
 // Function to render text with clickable links
-const renderTextWithLinks = (text) => {
+const renderTextWithLinks = (text, isUserMessage = false) => {
   if (!text) return text
 
   // URL regex pattern to match various URL formats
@@ -41,7 +41,11 @@ const renderTextWithLinks = (text) => {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="underline hover:no-underline transition-all duration-200 text-white hover:text-gray-200 break-all message-content"
+          className={`underline hover:no-underline transition-all duration-200 break-all message-content ${
+            isUserMessage 
+              ? 'text-white hover:text-gray-200' 
+              : 'text-blue-600 hover:text-blue-800'
+          }`}
           style={{ wordBreak: 'break-all', overflowWrap: 'anywhere', maxWidth: '100%' }}
           title="Open link"
         >
@@ -421,121 +425,119 @@ const MessageItem = memo(({
           
           {/* Text content - With background */}
           {message.content && (
-            <div className="space-y-2">
-            <div
-              className={`rounded-lg px-4 py-2 group relative max-w-full ${
-                message.sender.email === session?.user?.email 
-                  ? `bg-[#4a7c59] text-white ${message.isOptimistic ? 'opacity-70' : ''} ${message.isFailed ? 'bg-red-500' : ''}` 
-                  : "bg-white text-gray-900 border"
-              }`}
-              title={formatFullTimestamp(message.createdAt)}
-            >
-              {/* Reaction buttons - show on hover */}
-              <div className={`absolute ${message.sender.email === session?.user?.email ? '-left-12' : '-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1`}>
-                <button
-                  onClick={() => handleReaction(message.id, '❤️')}
-                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
-                  title="React with heart"
-                >
-                  ❤️
-                </button>
-                <button
-                  onClick={() => handleReaction(message.id, '😂')}
-                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
-                  title="React with laugh"
-                >
-                  😂
-                </button>
-                <button
-                  onClick={() => handleReaction(message.id, '✅')}
-                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
-                  title="React with check"
-                >
-                  ✅
-                </button>
-                <button
-                  ref={reactionPickerRef}
-                  onClick={() => setShowReactionPicker(!showReactionPicker)}
-                  className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors border-t border-gray-200"
-                  title="More reactions"
-                >
-                  <Plus className="w-3 h-3 text-gray-600" />
-                </button>
-              </div>
-              
-              {/* Emoji Picker for Reactions */}
-              {showReactionPicker && (
-                <div 
-                  className={`emoji-picker-container absolute ${message.sender.email === session?.user?.email ? '-left-80' : '-right-80'} -top-4 z-50`}
-                  style={{ position: 'absolute' }}
-                >
-                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg w-80 max-h-80 overflow-hidden">
-                    {/* Header with close button */}
-                    <div className="flex items-center justify-between p-3 border-b border-gray-100">
-                      <h3 className="text-sm font-medium text-gray-700">Choose a reaction</h3>
-                      <button
-                        onClick={() => setShowReactionPicker(false)}
-                        className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Close"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    {/* Simple emoji grid for reactions */}
-                    <div className="p-3">
-                      <div className="grid grid-cols-8 gap-2 max-h-60 overflow-y-auto">
-                        {[
-                          "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇",
-                          "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚",
-                          "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩",
-                          "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣",
-                          "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
-                          "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "♥️",
-                          "👍", "👎", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙",
-                          "👈", "👉", "👆", "🖕", "👇", "☝️", "👋", "🤚", "🖐️", "✋",
-                          "🔥", "💯", "💥", "💫", "💦", "💨", "🕳️", "💣", "💤", "💢",
-                          "💨", "💫", "💥", "💦", "💤", "🕳️", "💣", "💢", "❗", "❓",
-                          "✅", "❌", "🆘", "⭐", "🌟", "✨", "💎", "🔱", "⚡", "💡",
-                          "💰", "💵", "💴", "💶", "💷", "🪙", "💸", "💳", "🧾", "💹"
-                        ].map((emoji, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleEmojiSelect(emoji)}
-                            className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded transition-colors"
-                            title={emoji}
-                          >
-                            {emoji}
-                          </button>
-                        ))}
+            <div>
+              <div
+                className={`rounded-lg px-4 py-2 group relative max-w-full ${
+                  message.sender.email === session?.user?.email 
+                    ? `bg-[#4a7c59] text-white ${message.isOptimistic ? 'opacity-70' : ''} ${message.isFailed ? 'bg-red-500' : ''}` 
+                    : "bg-white text-gray-900 border"
+                }`}
+                title={formatFullTimestamp(message.createdAt)}
+              >
+                {/* Reaction buttons - show on hover */}
+                <div className={`absolute ${message.sender.email === session?.user?.email ? '-left-12' : '-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1`}>
+                  <button
+                    onClick={() => handleReaction(message.id, '❤️')}
+                    className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                    title="React with heart"
+                  >
+                    ❤️
+                  </button>
+                  <button
+                    onClick={() => handleReaction(message.id, '😂')}
+                    className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                    title="React with laugh"
+                  >
+                    😂
+                  </button>
+                  <button
+                    onClick={() => handleReaction(message.id, '✅')}
+                    className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                    title="React with check"
+                  >
+                    ✅
+                  </button>
+                  <button
+                    ref={reactionPickerRef}
+                    onClick={() => setShowReactionPicker(!showReactionPicker)}
+                    className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors border-t border-gray-200"
+                    title="More reactions"
+                  >
+                    <Plus className="w-3 h-3 text-gray-600" />
+                  </button>
+                </div>
+                
+                {/* Emoji Picker for Reactions */}
+                {showReactionPicker && (
+                  <div 
+                    className={`emoji-picker-container absolute ${message.sender.email === session?.user?.email ? '-left-80' : '-right-80'} -top-4 z-50`}
+                    style={{ position: 'absolute' }}
+                  >
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg w-80 max-h-80 overflow-hidden">
+                      {/* Header with close button */}
+                      <div className="flex items-center justify-between p-3 border-b border-gray-100">
+                        <h3 className="text-sm font-medium text-gray-700">Choose a reaction</h3>
+                        <button
+                          onClick={() => setShowReactionPicker(false)}
+                          className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+                          title="Close"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      {/* Simple emoji grid for reactions */}
+                      <div className="p-3">
+                        <div className="grid grid-cols-8 gap-2 max-h-60 overflow-y-auto">
+                          {[
+                            "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇",
+                            "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚",
+                            "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩",
+                            "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣",
+                            "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
+                            "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "♥️",
+                            "👍", "👎", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙",
+                            "👈", "👉", "👆", "🖕", "👇", "☝️", "👋", "🤚", "🖐️", "✋",
+                            "🔥", "💯", "💥", "💫", "💦", "💨", "🕳️", "💣", "💤", "💢",
+                            "💨", "💫", "💥", "💦", "💤", "🕳️", "💣", "💢", "❗", "❓",
+                            "✅", "❌", "🆘", "⭐", "🌟", "✨", "💎", "🔱", "⚡", "💡",
+                            "💰", "💵", "💴", "💶", "💷", "🪙", "💸", "💳", "🧾", "💹"
+                          ].map((emoji, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleEmojiSelect(emoji)}
+                              className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded transition-colors"
+                              title={emoji}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-              <p className="text-sm whitespace-pre-wrap break-all text-left max-w-full overflow-hidden message-content" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
-                {renderTextWithLinks(message.content)}
-              </p>
-              
-              {/* Loading/Error indicators for optimistic messages */}
-              {message.sender.email === session?.user?.email && (
-                <div className="flex items-center justify-end mt-1 gap-1">
-                  {message.isOptimistic && (
-                    <Loader2 className="h-3 w-3 animate-spin opacity-60" />
-                  )}
-                  {message.isFailed && (
-                    <AlertCircle className="h-3 w-3 text-red-200" title="Failed to send" />
-                  )}
-                </div>
-              )}
-              
-              
+                )}
+                <p className="text-sm whitespace-pre-wrap break-all text-left max-w-full overflow-hidden message-content" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                  {renderTextWithLinks(message.content, message.sender.email === session?.user?.email)}
+                </p>
+                
+                {/* Loading/Error indicators for optimistic messages */}
+                {message.sender.email === session?.user?.email && (
+                  <div className="flex items-center justify-end mt-1 gap-1">
+                    {message.isOptimistic && (
+                      <Loader2 className="h-3 w-3 animate-spin opacity-60" />
+                    )}
+                    {message.isFailed && (
+                      <AlertCircle className="h-3 w-3 text-red-200" title="Failed to send" />
+                    )}
+                  </div>
+                )}
               </div>
               
-              {/* Link Previews */}
+              {/* Link Previews - positioned right after message bubble with no gap */}
               {message.content && extractUrls(message.content).length > 0 && (
-                <div className="space-y-2 w-full">
+                <div className="w-full">
                   {extractUrls(message.content).map((url, index) => (
                     <LinkPreview 
                       key={`${message.id}-${index}`} 
