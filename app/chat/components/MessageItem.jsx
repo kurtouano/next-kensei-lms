@@ -425,9 +425,9 @@ const MessageItem = memo(({
           
           {/* Text content - With background */}
           {message.content && (
-            <div>
+            <div className="group relative">
               <div
-                className={`rounded-lg px-4 py-2 group relative max-w-full ${
+                className={`rounded-lg px-4 py-2 max-w-full ${
                   message.sender.email === session?.user?.email 
                     ? `bg-[#4a7c59] text-white ${message.isOptimistic ? 'opacity-70' : ''} ${message.isFailed ? 'bg-red-500' : ''}` 
                     : "bg-white text-gray-900 border"
@@ -518,13 +518,13 @@ const MessageItem = memo(({
                     </div>
                   </div>
                 )}
-                <p className="text-sm whitespace-pre-wrap break-all text-left max-w-full overflow-hidden message-content" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
+                <p className="text-sm whitespace-pre-wrap break-all text-left max-w-full overflow-hidden message-content m-0" style={{ wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
                   {renderTextWithLinks(message.content, message.sender.email === session?.user?.email)}
                 </p>
                 
                 {/* Loading/Error indicators for optimistic messages */}
                 {message.sender.email === session?.user?.email && (
-                  <div className="flex items-center justify-end mt-1 gap-1">
+                  <div className="flex items-center justify-end">
                     {message.isOptimistic && (
                       <Loader2 className="h-3 w-3 animate-spin opacity-60" />
                     )}
@@ -557,29 +557,21 @@ const MessageItem = memo(({
                 {Object.entries(
                   message.reactions.reduce((acc, reaction) => {
                     if (!acc[reaction.emoji]) {
-                      acc[reaction.emoji] = { count: 0, users: [], hasOptimistic: false }
+                      acc[reaction.emoji] = { count: 0, users: [] }
                     }
                     acc[reaction.emoji].count++
                     acc[reaction.emoji].users.push(reaction.user)
-                    if (reaction.isOptimistic) {
-                      acc[reaction.emoji].hasOptimistic = true
-                    }
                     return acc
                   }, {})
                 ).map(([emoji, data]) => (
                   <div
                     key={emoji}
-                    className={`flex items-center gap-1 bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-1 text-xs cursor-pointer transition-colors shadow-sm ${
-                      data.hasOptimistic ? 'opacity-70 animate-pulse' : ''
-                    }`}
+                    className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-1 text-xs cursor-pointer transition-colors shadow-sm"
                     onClick={() => handleReaction(message.id, emoji)}
-                    title={`${data.users.length} user${data.users.length > 1 ? 's' : ''} reacted${data.hasOptimistic ? ' (sending...)' : ''}`}
+                    title={`${data.users.length} user${data.users.length > 1 ? 's' : ''} reacted`}
                   >
                     <span>{emoji}</span>
                     {data.count > 1 && <span className="text-gray-600 font-medium">{data.count}</span>}
-                    {data.hasOptimistic && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
-                    )}
                   </div>
                 ))}
               </div>

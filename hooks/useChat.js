@@ -561,7 +561,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [messages, session, markMessageAsSeen])
 
-  // Handle message reactions
+  // Handle message reactions with debouncing to prevent double-clicks
   const handleReaction = useCallback(async (messageId, emoji) => {
     if (!session?.user?.email || !chatId || !messageId || !emoji) return
 
@@ -569,37 +569,25 @@ export function useChatMessages(chatId, onNewMessage = null) {
     const currentMessage = messages.find(msg => msg.id === messageId)
     if (!currentMessage) return
 
-    // Create optimistic reaction update
     const currentReactions = currentMessage.reactions || []
     const userEmail = session.user.email
     
     // Check if user already reacted with this emoji
     const existingReaction = currentReactions.find(r => r.emoji === emoji && r.user === userEmail)
     
-    let optimisticReactions
-    if (existingReaction) {
-      // Remove the reaction (toggle off)
-      optimisticReactions = currentReactions.filter(r => !(r.emoji === emoji && r.user === userEmail))
-    } else {
-      // Add the reaction
-      optimisticReactions = [
-        ...currentReactions,
-        {
-          emoji,
-          user: userEmail,
-          userName: session.user.name || session.user.email,
-          createdAt: new Date().toISOString(),
-          isOptimistic: true // Flag for optimistic update
-        }
-      ]
+    // Create a unique key for this reaction action to prevent double-processing
+    const reactionKey = `${messageId}-${emoji}-${userEmail}`
+    
+    // Check if this exact reaction is already being processed
+    if (window.reactionProcessing && window.reactionProcessing.has(reactionKey)) {
+      return // Skip if already processing this exact reaction
     }
-
-    // Update UI immediately (optimistic update)
-    setMessages(prev => prev.map(msg => 
-      msg.id === messageId 
-        ? { ...msg, reactions: optimisticReactions }
-        : msg
-    ))
+    
+    // Mark this reaction as being processed
+    if (!window.reactionProcessing) {
+      window.reactionProcessing = new Set()
+    }
+    window.reactionProcessing.add(reactionKey)
 
     try {
       const response = await fetch(`/api/chats/${chatId}/messages/${messageId}/react`, {
@@ -613,29 +601,24 @@ export function useChatMessages(chatId, onNewMessage = null) {
       const data = await response.json()
       
       if (data.success) {
-        // Replace optimistic reactions with real server data
+        // Update with real server data
         setMessages(prev => prev.map(msg => 
           msg.id === messageId 
             ? { ...msg, reactions: data.reactions }
             : msg
         ))
       } else {
-        // Rollback on failure
-        setMessages(prev => prev.map(msg => 
-          msg.id === messageId 
-            ? { ...msg, reactions: currentReactions }
-            : msg
-        ))
         console.error("Failed to update reaction:", data.error)
       }
     } catch (error) {
-      // Rollback on error
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId 
-          ? { ...msg, reactions: currentReactions }
-          : msg
-      ))
       console.error("Error updating reaction:", error)
+    } finally {
+      // Remove from processing set after a short delay to prevent rapid double-clicks
+      setTimeout(() => {
+        if (window.reactionProcessing) {
+          window.reactionProcessing.delete(reactionKey)
+        }
+      }, 500) // 500ms debounce
     }
   }, [session, chatId, messages])
 
