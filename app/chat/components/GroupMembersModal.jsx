@@ -20,6 +20,22 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
   const [errorMessage, setErrorMessage] = useState('')
   const [showAdminTransfer, setShowAdminTransfer] = useState(false)
   const [selectedNewAdmin, setSelectedNewAdmin] = useState(null)
+  const [showAdminManagement, setShowAdminManagement] = useState(false)
+  const [memberToManage, setMemberToManage] = useState(null)
+  const [adminRoles, setAdminRoles] = useState({}) // Store admin roles for each member
+
+  // Fetch admin roles for all members
+  const fetchAdminRoles = async (chatId) => {
+    try {
+      const response = await fetch(`/api/chats/${chatId}/admin-roles`)
+      const data = await response.json()
+      if (data.success) {
+        setAdminRoles(data.roles)
+      }
+    } catch (error) {
+      console.error('Error fetching admin roles:', error)
+    }
+  }
 
   // Fetch full user data with bonsai when modal opens
   useEffect(() => {
@@ -60,6 +76,9 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
           const members = await Promise.all(memberPromises)
           console.log('Fetched members with bonsai data:', members)
           setMembersWithBonsai(members)
+          
+          // Fetch admin roles after getting members
+          await fetchAdminRoles(chat.id)
         } catch (error) {
           console.error('Error fetching members data:', error)
           setMembersWithBonsai(chat.participants)
@@ -152,8 +171,8 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
   }
 
   const openLeaveConfirm = () => {
-    // If user is admin and there are other members, show admin transfer modal
-    if (isCreator && membersWithBonsai.length > 1) {
+    // If user is the only admin and there are other members, show admin transfer modal
+    if (isOnlyAdmin && membersWithBonsai.length > 1) {
       setShowAdminTransfer(true)
     } else {
       setShowLeaveConfirm(true)
@@ -198,6 +217,59 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRoleChange = (memberId, newRole) => {
+    // Only update local state, don't make API call yet
+    setAdminRoles(prev => ({
+      ...prev,
+      [memberId]: newRole
+    }))
+  }
+
+  const handleSaveRoleChange = async () => {
+    if (!chat || !memberToManage) return
+
+    const memberId = (memberToManage._id || memberToManage.id)?.toString()
+    const newRole = adminRoles[memberId]
+
+    if (!memberId || !newRole) return
+
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/chats/${chat.id}/change-role`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          memberId: memberId,
+          newRole: newRole
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Close modal on success
+        setShowAdminManagement(false)
+        setMemberToManage(null)
+      } else {
+        setErrorMessage(data.error || 'Failed to change role')
+        setShowErrorModal(true)
+      }
+    } catch (error) {
+      console.error('Error changing role:', error)
+      setErrorMessage('Failed to change role')
+      setShowErrorModal(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const openAdminManagement = (member) => {
+    setMemberToManage(member)
+    setShowAdminManagement(true)
   }
 
   const renderAvatar = (user) => {
@@ -250,13 +322,18 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
   console.log('Chat createdBy type:', typeof chat?.createdBy)
   console.log('Session user ID type:', typeof session?.user?.id)
   
-  // Check if user is creator - try multiple ways
-  const isCreatorByCreatedBy = chat?.createdBy?.toString() === session?.user?.id?.toString()
-  const isCreatorByFirstParticipant = chat?.participants?.[0]?.id?.toString() === session?.user?.id?.toString() || 
-                                     chat?.participants?.[0]?._id?.toString() === session?.user?.id?.toString()
+  // Check if user is admin using ChatParticipant roles
+  const currentUserId = session?.user?.id?.toString()
+  const isAdmin = adminRoles[currentUserId] === 'admin'
+  const isCreator = chat?.createdBy?.toString() === currentUserId
   
-  const isCreator = isCreatorByCreatedBy || isCreatorByFirstParticipant
-  const canRemoveMembers = isCreator
+  // Count total admins
+  const totalAdmins = Object.values(adminRoles).filter(role => role === 'admin').length
+  const isOnlyAdmin = isAdmin && totalAdmins === 1
+  
+  // Can remove members if admin, can manage admins if admin
+  const canRemoveMembers = isAdmin
+  const canManageAdmins = isAdmin
 
   if (!isOpen || !chat) return null
 
@@ -289,61 +366,58 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
               </div>
             ) : membersWithBonsai && membersWithBonsai.length > 0 ? (
               <div className="max-h-64 overflow-y-auto space-y-1 pr-2">
-                {membersWithBonsai.map((member) => (
-                  <div
-                    key={member._id || member.id || Math.random()}
-                    className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="w-8 h-8">
-                      {renderAvatar(member)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-[#2c3e2d]">
-                        {member.name}
-                        {isCurrentUser(member) && (
-                          <span className="text-sm text-gray-500 ml-2">(You)</span>
+                {membersWithBonsai.map((member) => {
+                  const memberId = (member._id || member.id)?.toString()
+                  const isCurrentUserMember = isCurrentUser(member)
+                  const memberRole = adminRoles[memberId] || 'member'
+                  const isMemberAdmin = memberRole === 'admin'
+                  
+                  return (
+                    <div
+                      key={member._id || member.id || Math.random()}
+                      className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="w-8 h-8">
+                        {renderAvatar(member)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-[#2c3e2d]">
+                          {member.name}
+                          {isCurrentUserMember && (
+                            <span className="text-sm text-gray-500 ml-2">(You)</span>
+                          )}
+                          {isMemberAdmin && (
+                            <span className="text-sm text-[#4a7c59] font-semibold ml-2">• Admin</span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {canManageAdmins && !isCurrentUserMember && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openAdminManagement(member)}
+                            disabled={loading}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            {isMemberAdmin ? 'Manage' : 'Make Admin'}
+                          </Button>
                         )}
-                      {(() => {
-                        const memberId = (member._id || member.id)?.toString()
-                        const createdById = chat?.createdBy?.toString()
-                        const firstParticipantId = (chat?.participants?.[0]?.id || chat?.participants?.[0]?._id)?.toString()
-                        
-                        // Use same logic as isCreator - check both createdBy and first participant
-                        const isMemberCreator = memberId === createdById || memberId === firstParticipantId
-                        
-                        console.log(`Member ${member.name}:`, {
-                          memberId,
-                          createdById,
-                          firstParticipantId,
-                          isMemberCreator,
-                          isCreatorByCreatedBy: memberId === createdById,
-                          isCreatorByFirstParticipant: memberId === firstParticipantId
-                        })
-                        return isMemberCreator && (
-                          <span className="text-sm text-[#4a7c59] font-semibold ml-2">• Admin</span>
-                        )
-                      })()}
-                      </p>
+                        {canRemoveMembers && !isCurrentUserMember && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openRemoveConfirm(member)}
+                            disabled={loading}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <UserMinus className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    {canRemoveMembers && !isCurrentUser(member) && (() => {
-                      const memberId = (member._id || member.id)?.toString()
-                      const createdById = chat?.createdBy?.toString()
-                      const firstParticipantId = (chat?.participants?.[0]?.id || chat?.participants?.[0]?._id)?.toString()
-                      const isMemberCreator = memberId === createdById || memberId === firstParticipantId
-                      return !isMemberCreator
-                    })() && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openRemoveConfirm(member)}
-                        disabled={loading}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <UserMinus className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="text-center py-8">
@@ -593,6 +667,81 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
                     <Users className="h-4 w-4" />
                     Transfer & Leave
                   </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Management Modal */}
+      {showAdminManagement && memberToManage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Users className="h-5 w-5 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Manage Admin Role</h3>
+            </div>
+            <p className="text-gray-700 mb-4">
+              Change the role for <strong>{memberToManage.name}</strong>:
+            </p>
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-3 p-3 border rounded-lg">
+                <input
+                  type="radio"
+                  id="member"
+                  name="role"
+                  value="member"
+                  checked={adminRoles[(memberToManage._id || memberToManage.id)?.toString()] === 'member'}
+                  onChange={() => handleRoleChange((memberToManage._id || memberToManage.id)?.toString(), 'member')}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="member" className="flex-1">
+                  <div className="font-medium">Member</div>
+                  <div className="text-sm text-gray-500">Can send messages and participate in chat</div>
+                </label>
+              </div>
+              <div className="flex items-center gap-3 p-3 border rounded-lg">
+                <input
+                  type="radio"
+                  id="admin"
+                  name="role"
+                  value="admin"
+                  checked={adminRoles[(memberToManage._id || memberToManage.id)?.toString()] === 'admin'}
+                  onChange={() => handleRoleChange((memberToManage._id || memberToManage.id)?.toString(), 'admin')}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="admin" className="flex-1">
+                  <div className="font-medium">Admin</div>
+                  <div className="text-sm text-gray-500">Can remove members and manage admin roles</div>
+                </label>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowAdminManagement(false)
+                  setMemberToManage(null)
+                }}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSaveRoleChange}
+                disabled={loading}
+                className="bg-[#4a7c59] hover:bg-[#3a6147] flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
                 )}
               </Button>
             </div>

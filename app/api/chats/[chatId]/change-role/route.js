@@ -5,7 +5,7 @@ import { connectDb } from '@/lib/mongodb'
 import Chat from '@/models/Chat'
 import ChatParticipant from '@/models/ChatParticipant'
 import User from '@/models/User'
-import { createRemoveMessage } from '@/lib/systemMessageHelper'
+import { createRoleChangeMessage } from '@/lib/systemMessageHelper'
 
 export async function POST(request, { params }) {
   try {
@@ -15,15 +15,18 @@ export async function POST(request, { params }) {
     }
 
     const { chatId } = params
-    const { memberId } = await request.json()
+    const { memberId, newRole } = await request.json()
 
-    if (!memberId) {
-      return NextResponse.json({ success: false, error: 'Member ID required' }, { status: 400 })
+    if (!memberId || !newRole) {
+      return NextResponse.json({ success: false, error: 'Member ID and new role required' }, { status: 400 })
+    }
+
+    if (!['admin', 'member'].includes(newRole)) {
+      return NextResponse.json({ success: false, error: 'Invalid role' }, { status: 400 })
     }
 
     await connectDb()
 
-    // Find the chat
     const chat = await Chat.findById(chatId)
     if (!chat) {
       return NextResponse.json({ success: false, error: 'Chat not found' }, { status: 404 })
@@ -37,71 +40,66 @@ export async function POST(request, { params }) {
     })
 
     if (!currentUserParticipant || currentUserParticipant.role !== 'admin') {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Only admins can remove members' 
-      }, { status: 403 })
+      return NextResponse.json({ success: false, error: 'Only admins can change roles' }, { status: 403 })
     }
 
-    // Check if trying to remove another admin
+    // Check if target member is a participant
     const targetParticipant = await ChatParticipant.findOne({
       chat: chatId,
       user: memberId,
       isActive: true
     })
 
-    if (targetParticipant?.role === 'admin') {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Cannot remove another admin. Demote them to member first.' 
-      }, { status: 400 })
-    }
-
-    // Find and remove the member
-    const participantIndex = chat.participants.findIndex(p => 
-      (p._id || p.id)?.toString() === memberId
-    )
-
-    if (participantIndex === -1) {
+    if (!targetParticipant) {
       return NextResponse.json({ success: false, error: 'Member not found in chat' }, { status: 404 })
     }
 
+    // Prevent admin from demoting themselves if they're the only admin
+    if (memberId === session.user.id && newRole === 'member') {
+      const adminCount = await ChatParticipant.countDocuments({
+        chat: chatId,
+        role: 'admin',
+        isActive: true
+      })
+
+      if (adminCount <= 1) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Cannot demote yourself - you are the only admin. Transfer admin role to another member first.' 
+        }, { status: 400 })
+      }
+    }
+
     // Get user names for system message
-    const removedUser = await User.findById(memberId)
-    const removedUserName = removedUser?.name || 'Unknown User'
+    const targetUser = await User.findById(memberId)
+    const targetUserName = targetUser?.name || 'Unknown User'
     const currentUser = await User.findById(session.user.id)
     const currentUserName = currentUser?.name || 'Unknown User'
 
-    // Create system message for member removal
-    await createRemoveMessage(chatId, removedUserName, currentUserName)
-
-    // Remove member from participants
-    chat.participants.splice(participantIndex, 1)
-
-    // Update ChatParticipant record to mark user as inactive
+    // Update the role
     await ChatParticipant.findOneAndUpdate(
       { chat: chatId, user: memberId },
-      { 
-        isActive: false, 
-        leftAt: new Date() 
-      }
+      { role: newRole }
     )
 
-    // Update last activity
+    // Create system message for role change
+    await createRoleChangeMessage(chatId, targetUserName, newRole, currentUserName)
+
+    // Update chat last activity
     chat.lastActivity = new Date()
     await chat.save()
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Member removed successfully',
-      chat: chat
+      message: `Role changed to ${newRole}` 
     })
 
   } catch (error) {
-    console.error('Error removing member:', error)
+    console.error('Error changing role:', error)
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to remove member' 
+      error: 'Failed to change role', 
+      details: error.message 
     }, { status: 500 })
   }
 }

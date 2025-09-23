@@ -96,6 +96,29 @@ const MessageItem = memo(({
     }
   }, [showReactionPicker])
   
+  // Handle system messages
+  if (message.type === 'system') {
+    return (
+      <div>
+        {/* Show timestamp if there's a significant time gap */}
+        {showTimestamp && (
+          <div className="flex justify-center my-4">
+            <div className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full">
+              {formatTimestamp(message.createdAt)}
+            </div>
+          </div>
+        )}
+        
+        {/* System message */}
+        <div className="flex justify-center my-2">
+          <div className="text-gray-600 text-xs px-4 py-2 rounded-full max-w-[90%] text-center">
+            {message.content}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Show timestamp if there's a significant time gap */}
@@ -107,12 +130,12 @@ const MessageItem = memo(({
         </div>
       )}
       
-      <div className={`flex gap-3 ${message.sender.email === session?.user?.email ? "flex-row-reverse" : ""}`}>
-        {message.sender.email !== session?.user?.email && (
+      <div className={`flex gap-3 ${message.sender?.email === session?.user?.email ? "flex-row-reverse" : ""}`}>
+        {message.sender?.email && message.sender?.email !== session?.user?.email && (
           <LazyAvatar user={message.sender} size="w-8 h-8" />
         )}
-        <div className={`max-w-[55%] sm:max-w-[60%] md:max-w-[55%] lg:max-w-[55%] min-w-0 ${message.sender.email === session?.user?.email ? "flex flex-col items-end" : ""}`}>
-          {message.sender.email !== session?.user?.email && (
+        <div className={`max-w-[55%] sm:max-w-[60%] md:max-w-[55%] lg:max-w-[55%] min-w-0 ${message.sender?.email === session?.user?.email ? "flex flex-col items-end" : ""}`}>
+          {message.sender?.email && message.sender?.email !== session?.user?.email && (
             <p className="text-sm font-medium text-[#2c3e2d] mb-1">{message.sender.name}</p>
           )}
           
@@ -120,7 +143,7 @@ const MessageItem = memo(({
           {message.type === "image" && message.attachments?.length > 0 && (
             <div className="mb-2 group relative">
               {/* Reaction buttons for images */}
-              <div className={`absolute ${message.sender.email === session?.user?.email ? '-left-8 sm:-left-12' : '-right-8 sm:-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
+              <div className={`absolute ${message.sender?.email === session?.user?.email ? '-left-8 sm:-left-12' : '-right-8 sm:-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
                 <button
                   onClick={() => handleReaction(message.id, '❤️')}
                   className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
@@ -174,7 +197,7 @@ const MessageItem = memo(({
               {/* Emoji Picker for Image Reactions */}
               {showReactionPicker && (
                 <div 
-                  className={`emoji-picker-container absolute ${message.sender.email === session?.user?.email ? '-left-60 sm:-left-80' : '-right-60 sm:-right-80'} -top-4 z-50`}
+                  className={`emoji-picker-container absolute ${message.sender?.email === session?.user?.email ? '-left-60 sm:-left-80' : '-right-60 sm:-right-80'} -top-4 z-50`}
                   style={{ position: 'absolute' }}
                 >
                   <div className="bg-white border border-gray-200 rounded-lg shadow-lg w-60 sm:w-80 max-h-80 overflow-hidden">
@@ -229,7 +252,7 @@ const MessageItem = memo(({
           {message.type === "attachment" && message.attachments?.length > 0 && (
             <div className="mb-2 group relative">
               {/* Reaction buttons for attachments */}
-              <div className={`absolute ${message.sender.email === session?.user?.email ? '-left-8 sm:-left-12' : '-right-8 sm:-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
+              <div className={`absolute ${message.sender?.email === session?.user?.email ? '-left-8 sm:-left-12' : '-right-8 sm:-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
                 <button
                   onClick={() => handleReaction(message.id, '❤️')}
                   className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
@@ -372,7 +395,7 @@ const MessageItem = memo(({
               {/* Emoji Picker for Attachment Reactions */}
               {showReactionPicker && (
                 <div 
-                  className={`emoji-picker-container absolute ${message.sender.email === session?.user?.email ? '-left-60 sm:-left-80' : '-right-60 sm:-right-80'} -top-4 z-50`}
+                  className={`emoji-picker-container absolute ${message.sender?.email === session?.user?.email ? '-left-60 sm:-left-80' : '-right-60 sm:-right-80'} -top-4 z-50`}
                   style={{ position: 'absolute' }}
                 >
                   <div className="bg-white border border-gray-200 rounded-lg shadow-lg w-60 sm:w-80 max-h-80 overflow-hidden">
@@ -428,14 +451,14 @@ const MessageItem = memo(({
             <div className="group relative">
               <div
                 className={`rounded-lg px-3 py-2 sm:px-4 max-w-full ${
-                  message.sender.email === session?.user?.email 
+                  message.sender?.email === session?.user?.email 
                     ? `bg-[#4a7c59] text-white ${message.isOptimistic ? 'opacity-70' : ''} ${message.isFailed ? 'bg-red-500' : ''}` 
                     : "bg-white text-gray-900 border"
                 }`}
                 title={formatFullTimestamp(message.createdAt)}
               >
                 {/* Reaction buttons - show on hover */}
-                <div className={`absolute ${message.sender.email === session?.user?.email ? '-left-8 sm:-left-12' : '-right-8 sm:-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1`}>
+                <div className={`absolute ${message.sender?.email === session?.user?.email ? '-left-8 sm:-left-12' : '-right-8 sm:-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1`}>
                   <button
                     onClick={() => handleReaction(message.id, '❤️')}
                     className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
@@ -470,7 +493,7 @@ const MessageItem = memo(({
                 {/* Emoji Picker for Reactions */}
                 {showReactionPicker && (
                   <div 
-                    className={`emoji-picker-container absolute ${message.sender.email === session?.user?.email ? '-left-60 sm:-left-80' : '-right-60 sm:-right-80'} -top-4 z-50`}
+                    className={`emoji-picker-container absolute ${message.sender?.email === session?.user?.email ? '-left-60 sm:-left-80' : '-right-60 sm:-right-80'} -top-4 z-50`}
                     style={{ position: 'absolute' }}
                   >
                     <div className="bg-white border border-gray-200 rounded-lg shadow-lg w-60 sm:w-80 max-h-80 overflow-hidden">
@@ -519,11 +542,11 @@ const MessageItem = memo(({
                   </div>
                 )}
                 <p className="text-xs sm:text-sm whitespace-pre-wrap break-words text-left max-w-full overflow-hidden message-content m-0" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                  {renderTextWithLinks(message.content, message.sender.email === session?.user?.email)}
+                  {renderTextWithLinks(message.content, message.sender?.email === session?.user?.email)}
                 </p>
                 
                 {/* Loading/Error indicators for optimistic messages */}
-                {message.sender.email === session?.user?.email && (
+                {message.sender?.email === session?.user?.email && (
                   <div className="flex items-center justify-end">
                     {message.isOptimistic && (
                       <Loader2 className="h-3 w-3 animate-spin opacity-60" />
@@ -552,8 +575,8 @@ const MessageItem = memo(({
           
           {/* Reactions display - positioned below message bubble */}
           {message.reactions && message.reactions.length > 0 && (
-            <div className={`mt-1 ${message.sender.email === session?.user?.email ? 'flex justify-end' : 'flex justify-start'}`}>
-              <div className={`flex gap-1 max-w-full ${message.sender.email === session?.user?.email ? 'justify-end' : 'justify-start'}`}>
+            <div className={`mt-1 ${message.sender?.email === session?.user?.email ? 'flex justify-end' : 'flex justify-start'}`}>
+              <div className={`flex gap-1 max-w-full ${message.sender?.email === session?.user?.email ? 'justify-end' : 'justify-start'}`}>
                 {Object.entries(
                   message.reactions.reduce((acc, reaction) => {
                     if (!acc[reaction.emoji]) {
@@ -579,7 +602,7 @@ const MessageItem = memo(({
           )}
           
           {/* Seen indicator - positioned outside message bubble like Messenger */}
-          {message.sender.email === session?.user?.email && 
+          {message.sender?.email === session?.user?.email && 
            !message.isOptimistic && 
            !message.isFailed && 
            message.seenBy && 

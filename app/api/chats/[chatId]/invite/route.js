@@ -5,6 +5,7 @@ import { connectDb } from "@/lib/mongodb"
 import Chat from "@/models/Chat"
 import ChatParticipant from "@/models/ChatParticipant"
 import User from "@/models/User"
+import { createJoinMessage } from "@/lib/systemMessageHelper"
 
 export async function POST(request, { params }) {
   try {
@@ -97,6 +98,21 @@ export async function POST(request, { params }) {
     })
 
     await Promise.all(participantPromises)
+
+    // Create system messages for each new participant
+    const systemMessagePromises = newParticipantIds.map(async (participantId) => {
+      const friend = friends.find(f => f._id.toString() === participantId.toString())
+      if (friend) {
+        return await createJoinMessage(chatId, friend.name)
+      }
+    })
+
+    await Promise.all(systemMessagePromises)
+
+    // Update chat's last activity
+    await Chat.findByIdAndUpdate(chatId, {
+      lastActivity: new Date()
+    })
 
     // Get updated chat with populated participants
     const updatedChat = await Chat.findById(chatId)

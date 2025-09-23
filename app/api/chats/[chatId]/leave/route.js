@@ -4,6 +4,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { connectDb } from '@/lib/mongodb'
 import Chat from '@/models/Chat'
 import ChatParticipant from '@/models/ChatParticipant'
+import User from '@/models/User'
+import { createLeaveMessage } from '@/lib/systemMessageHelper'
 
 export async function POST(request, { params }) {
   try {
@@ -36,17 +38,34 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: false, error: 'User not in chat' }, { status: 400 })
     }
 
-    // Check if the leaving user is the creator/admin
-    const isCreator = chat.createdBy?.toString() === userId
-    const wasCreator = isCreator
+    // Check if user is an admin and if they're the only admin
+    const userParticipant = await ChatParticipant.findOne({
+      chat: chatId,
+      user: userId,
+      isActive: true
+    })
 
-    // Prevent admin from leaving without transferring admin rights
-    if (wasCreator && chat.participants.length > 1) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Admin must transfer admin rights before leaving the group' 
-      }, { status: 400 })
+    if (userParticipant?.role === 'admin') {
+      const adminCount = await ChatParticipant.countDocuments({
+        chat: chatId,
+        role: 'admin',
+        isActive: true
+      })
+
+      if (adminCount <= 1) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'You are the only admin. Transfer admin rights to another member before leaving the group.' 
+        }, { status: 400 })
+      }
     }
+
+    // Get user name for system message
+    const user = await User.findById(userId)
+    const userName = user?.name || 'Unknown User'
+
+    // Create system message for user leaving
+    await createLeaveMessage(chatId, userName)
 
     // Remove user from participants
     chat.participants.splice(participantIndex, 1)

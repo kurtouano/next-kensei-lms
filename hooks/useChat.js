@@ -675,13 +675,15 @@ export function useChatMessages(chatId, onNewMessage = null) {
               // Handle ping messages to keep connection alive
               break
             case "new_message":
+              console.log("Received new message via SSE:", data.message.id, "Type:", data.message.type)
               setMessages(prev => {
                 // Check if message already exists to prevent duplicates
                 const messageExists = prev.some(msg => msg.id === data.message.id)
                 if (messageExists) {
+                  console.log("Message already exists, skipping:", data.message.id)
                   return prev
                 }
-                console.log("Received new message via SSE:", data.message.id)
+                console.log("Adding new message to state:", data.message.id)
                 return [...prev, data.message]
               })
               

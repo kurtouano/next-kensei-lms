@@ -4,6 +4,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { connectDb } from '@/lib/mongodb'
 import Chat from '@/models/Chat'
 import ChatParticipant from '@/models/ChatParticipant'
+import User from '@/models/User'
+import { createAdminTransferMessage } from '@/lib/systemMessageHelper'
 
 export async function POST(request, { params }) {
   try {
@@ -27,11 +29,17 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: false, error: 'Chat not found' }, { status: 404 })
     }
 
-    // Check if user is the current admin
-    if (chat.createdBy?.toString() !== session.user.id) {
+    // Check if current user is an admin
+    const currentUserParticipant = await ChatParticipant.findOne({
+      chat: chatId,
+      user: session.user.id,
+      isActive: true
+    })
+
+    if (!currentUserParticipant || currentUserParticipant.role !== 'admin') {
       return NextResponse.json({ 
         success: false, 
-        error: 'Only the current admin can transfer admin rights' 
+        error: 'Only admins can transfer admin rights' 
       }, { status: 403 })
     }
 
@@ -55,9 +63,11 @@ export async function POST(request, { params }) {
       }, { status: 400 })
     }
 
-    // Transfer admin rights
-    chat.createdBy = newAdminId
-    await chat.save()
+    // Get user names for system message
+    const newAdminUser = await User.findById(newAdminId)
+    const newAdminName = newAdminUser?.name || 'Unknown User'
+    const currentUser = await User.findById(session.user.id)
+    const currentUserName = currentUser?.name || 'Unknown User'
 
     // Update ChatParticipant roles
     await ChatParticipant.findOneAndUpdate(
@@ -69,6 +79,14 @@ export async function POST(request, { params }) {
       { chat: chatId, user: newAdminId },
       { role: 'admin' }
     )
+
+    // Create system message for admin transfer
+    await createAdminTransferMessage(chatId, newAdminName, currentUserName)
+
+    // Update chat's createdBy field (for backward compatibility)
+    chat.createdBy = newAdminId
+    chat.lastActivity = new Date()
+    await chat.save()
 
     return NextResponse.json({ 
       success: true, 

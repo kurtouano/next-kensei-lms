@@ -54,6 +54,7 @@ export async function GET(request, { params }) {
       .populate({
         path: "sender",
         select: "name email icon", // Removed bonsai populate for performance
+        match: { _id: { $ne: '000000000000000000000000' } }, // Exclude system sender from populate
       })
       .populate({
         path: "replyTo",
@@ -74,12 +75,18 @@ export async function GET(request, { params }) {
       id: message._id,
       content: message.content,
       type: message.type,
-      sender: {
+      sender: message.sender ? {
         id: message.sender._id,
         name: message.sender.name,
         email: message.sender.email,
         icon: message.sender.icon,
         // bonsai data will be loaded lazily when needed
+      } : {
+        // System message sender
+        id: '000000000000000000000000',
+        name: 'System',
+        email: 'system@kensei-lms.com',
+        icon: null,
       },
       attachments: message.attachments || [],
       reactions: message.reactions || [],
