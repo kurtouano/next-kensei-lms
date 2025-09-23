@@ -50,8 +50,29 @@ export async function GET(request) {
         ],
       })
 
+    // Clean up any inconsistent data - if user is not in chat.participants but has active ChatParticipant
+    const cleanupPromises = allParticipations.map(async (participation) => {
+      if (participation.chat) {
+        const isInParticipants = participation.chat.participants.some(p => 
+          (p._id || p.id)?.toString() === user._id.toString()
+        )
+        
+        if (!isInParticipants) {
+          // User is not in chat.participants but has active ChatParticipant - fix it
+          await ChatParticipant.findByIdAndUpdate(participation._id, {
+            isActive: false,
+            leftAt: new Date()
+          })
+          return null // Remove from results
+        }
+      }
+      return participation
+    })
+    
+    const cleanedParticipations = (await Promise.all(cleanupPromises)).filter(Boolean)
+
     // Filter out null chats and sort by lastActivity
-    const validParticipations = allParticipations
+    const validParticipations = cleanedParticipations
       .filter((participation) => participation.chat) // Filter out null chats
       .sort((a, b) => new Date(b.chat.lastActivity) - new Date(a.chat.lastActivity))
 

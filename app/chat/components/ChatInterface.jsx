@@ -10,6 +10,7 @@ import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useChat, useChatMessages } from "@/hooks/useChat"
 import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
 import GroupInviteModal from "./GroupInviteModal"
+import GroupMembersModal from "./GroupMembersModal"
 import MessageItem from "./MessageItem"
 import LazyAvatar from "./LazyAvatar"
 import EmojiPicker from "./EmojiPicker"
@@ -46,6 +47,7 @@ export default function ChatInterface() {
   const [uploading, setUploading] = useState(false)
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showMembersModal, setShowMembersModal] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiButtonRef = useRef(null)
   const sidebarRef = useRef(null)
@@ -136,6 +138,12 @@ export default function ChatInterface() {
   const handleSendMessage = async () => {
     const messageText = messageInputRef.current?.value?.trim()
     if (!messageText || !selectedChatId) return
+
+    // Check if user is still a participant in the chat
+    if (!isUserParticipant) {
+      console.log("User is no longer a participant in this chat")
+      return
+    }
 
     // Clear input immediately for fast UX
     if (messageInputRef.current) {
@@ -421,14 +429,28 @@ export default function ChatInterface() {
   }
 
   const selectedChat = chats.find(chat => chat.id === selectedChatId)
-  const filteredChats = chats.filter(chat => 
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredChats = chats.filter(chat => {
+    // First filter by search query
+    const matchesSearch = chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    // Then check if user is actually a participant in the chat
+    const isUserParticipant = chat.participants?.some(participant => 
+      (participant._id || participant.id)?.toString() === session?.user?.id?.toString()
+    )
+    
+    return matchesSearch && isUserParticipant
+  })
+
+  // Check if current user is still a participant in the selected chat
+  const isUserParticipant = selectedChat ? 
+    selectedChat.participants?.some(participant => 
+      (participant._id || participant.id)?.toString() === session?.user?.id?.toString()
+    ) : false
 
   return (
     <div className="bg-gray-50 overflow-x-hidden flex flex-col">
       <div className="flex-1 flex items-center justify-center md:px-6 lg:px-8 xl:px-12 2xl:px-16 lg:py-4">
-        <div className="w-full max-w-7xl mx-auto">
+        <div className="w-full max-w-6xl mx-auto">
           <div className="flex h-[calc(100vh-8.4rem)] lg:h-[calc(100vh-11rem)]">
           {/* Mobile Sidebar Overlay */}
           {isSidebarOpen && (
@@ -689,8 +711,8 @@ export default function ChatInterface() {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => setShowInviteModal(true)}
-                            title="Invite to Group"
+                            onClick={() => setShowMembersModal(true)}
+                            title="View Group Members"
                             className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
                           >
                             <Users className="h-4 w-4" />
@@ -829,6 +851,12 @@ export default function ChatInterface() {
 
                   {/* Message Input */}
                   <div className="p-2 sm:p-4 border-t bg-white relative">
+                    {!isUserParticipant && (
+                      <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-red-600 text-sm font-medium">You are no longer a member of this chat</p>
+                        <p className="text-red-500 text-xs mt-1">You cannot send messages or see new messages in this group.</p>
+                      </div>
+                    )}
                     <div className="flex items-center min-w-0">
                       <div className="flex items-center gap-2 sm:gap-6">
                         <Button
@@ -836,6 +864,7 @@ export default function ChatInterface() {
                           size="sm"
                           onClick={() => generalFileInputRef.current?.click()}
                           className="text-gray-500 hover:text-[#4a7c59] min-h-[32px] min-w-[32px] sm:min-h-[36px] sm:min-w-[32px] flex-shrink-0 p-0"
+                          disabled={uploading || !isUserParticipant}
                           title="Attach file"
                         >
                           <Paperclip className="h-4 w-4" />
@@ -845,7 +874,7 @@ export default function ChatInterface() {
                           size="sm"
                           onClick={() => fileInputRef.current?.click()}
                           className="text-gray-500 hover:text-[#4a7c59] min-h-[32px] min-w-[32px] sm:min-h-[36px] sm:min-w-[32px] flex-shrink-0 p-0"
-                          disabled={uploading}
+                          disabled={uploading || !isUserParticipant}
                           title="Attach image"
                         >
                           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
@@ -856,6 +885,7 @@ export default function ChatInterface() {
                           size="sm"
                           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                           className={`text-gray-500 hover:text-[#4a7c59] min-h-[32px] min-w-[32px] sm:min-h-[36px] sm:min-w-[32px] flex-shrink-0 p-0 ${showEmojiPicker ? 'bg-[#eef2eb] text-[#4a7c59]' : ''}`}
+                          disabled={!isUserParticipant}
                           title="Add emoji"
                         >
                           <Smile className="h-4 w-4" />
@@ -866,10 +896,10 @@ export default function ChatInterface() {
                           ref={messageInputRef}
                           onKeyDown={handleKeyPress}
                           onChange={handleMessageChange}
-                          placeholder="Type a message..."
+                          placeholder={isUserParticipant ? "Type a message..." : "You are no longer a member of this chat"}
                           className="flex-1 px-3 py-1.5 sm:py-2 border border-gray-200 rounded-md focus:outline-none focus:border-[#2646248a] disabled:bg-gray-100 disabled:cursor-not-allowed resize-none overflow-hidden break-words overflow-wrap-anywhere whitespace-pre-wrap text-sm"
                           style={{ height: `${messageHeight}px`, wordBreak: 'break-word', overflowWrap: 'anywhere' }}
-                          disabled={uploading}
+                          disabled={uploading || !isUserParticipant}
                           autoComplete="off"
                           autoFocus={false}
                           rows={1}
@@ -877,7 +907,7 @@ export default function ChatInterface() {
                         <Button 
                           onClick={handleSendMessage} 
                           className="bg-[#4a7c59] hover:bg-[#3a6147] h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 p-0"
-                          disabled={uploading}
+                          disabled={uploading || !isUserParticipant}
                         >
                           <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
@@ -971,6 +1001,23 @@ export default function ChatInterface() {
           />
         </Suspense>
       )}
+      
+      <GroupMembersModal
+        isOpen={showMembersModal}
+        onClose={() => setShowMembersModal(false)}
+        chat={selectedChat}
+        onMemberLeft={() => {
+          refetchChats() // Refresh chat list when someone leaves
+          // If current user left, clear selected chat
+          if (selectedChat && !isUserParticipant) {
+            setSelectedChatId(null)
+          }
+        }}
+        onInviteFriends={() => {
+          setShowMembersModal(false)
+          setShowInviteModal(true)
+        }}
+      />
       
       <GroupInviteModal
         isOpen={showInviteModal}

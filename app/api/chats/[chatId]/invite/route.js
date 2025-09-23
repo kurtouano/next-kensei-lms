@@ -70,15 +70,31 @@ export async function POST(request, { params }) {
       $addToSet: { participants: { $each: newParticipantIds } }
     })
 
-    // Create chat participants for new members
-    const participantPromises = newParticipantIds.map(participantId =>
-      ChatParticipant.create({
+    // Create or reactivate chat participants for new members
+    const participantPromises = newParticipantIds.map(async (participantId) => {
+      // Check if user was previously in this chat
+      const existingParticipant = await ChatParticipant.findOne({
         chat: chatId,
-        user: participantId,
-        joinedAt: new Date(),
-        isActive: true,
+        user: participantId
       })
-    )
+
+      if (existingParticipant) {
+        // Reactivate existing participant
+        return ChatParticipant.findByIdAndUpdate(existingParticipant._id, {
+          isActive: true,
+          joinedAt: new Date(),
+          leftAt: null
+        })
+      } else {
+        // Create new participant
+        return ChatParticipant.create({
+          chat: chatId,
+          user: participantId,
+          joinedAt: new Date(),
+          isActive: true,
+        })
+      }
+    })
 
     await Promise.all(participantPromises)
 
