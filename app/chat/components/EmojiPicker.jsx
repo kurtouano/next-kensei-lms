@@ -234,7 +234,7 @@ export default function EmojiPicker({ onEmojiSelect, isOpen, onClose, emojiButto
   return (
     <div 
       ref={pickerRef}
-      className="absolute bottom-14 left-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-80 max-h-80 overflow-hidden"
+      className="absolute bottom-14 left-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-72 sm:w-80 max-h-80 overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-200">
@@ -250,18 +250,18 @@ export default function EmojiPicker({ onEmojiSelect, isOpen, onClose, emojiButto
       </div>
 
       {/* Category tabs */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 overflow-x-auto">
         {Object.entries(EMOJI_CATEGORIES).map(([category, icon]) => (
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`flex-1 px-2 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex-1 px-1 sm:px-2 py-2 text-sm font-medium border-b-2 transition-colors min-w-[40px] ${
               selectedCategory === category
                 ? 'border-[#4a7c59] text-[#4a7c59]'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <span className="text-lg">{icon}</span>
+            <span className="text-base sm:text-lg">{icon}</span>
           </button>
         ))}
       </div>
@@ -269,12 +269,12 @@ export default function EmojiPicker({ onEmojiSelect, isOpen, onClose, emojiButto
       {/* Emoji grid */}
       <div className="p-3 max-h-48 overflow-y-auto">
         {currentEmojis.length > 0 ? (
-          <div className="grid grid-cols-8 gap-1">
+          <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
             {currentEmojis.map((emoji, index) => (
               <button
                 key={`${selectedCategory}-${index}`}
                 onClick={() => handleEmojiClick(emoji)}
-                className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded transition-colors"
+                className="w-8 h-8 sm:w-8 sm:h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded transition-colors min-h-[32px] min-w-[32px]"
                 title={emoji}
               >
                 {emoji}
