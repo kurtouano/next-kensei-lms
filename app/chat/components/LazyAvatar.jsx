@@ -22,6 +22,27 @@ export default function LazyAvatar({ user, size = "w-8 h-8" }) {
   }, [user.icon])
 
   if (user.icon === "bonsai") {
+    // If bonsai data is provided directly, use it
+    if (user.bonsai) {
+      return (
+        <div className={`${size} flex items-center justify-center overflow-hidden rounded-full border border-[#4a7c59]`}>
+          <BonsaiSVG 
+            level={user.bonsai.level || 1}
+            treeColor={user.bonsai.customization?.foliageColor || '#77DD82'} 
+            potColor={user.bonsai.customization?.potColor || '#FD9475'} 
+            selectedEyes={user.bonsai.customization?.eyes || 'default_eyes'}
+            selectedMouth={user.bonsai.customization?.mouth || 'default_mouth'}
+            selectedPotStyle={user.bonsai.customization?.potStyle || 'default_pot'}
+            selectedGroundStyle={user.bonsai.customization?.groundStyle || 'default_ground'}
+            decorations={user.bonsai.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
+            zoomed={true}
+            profileIcon={true}
+          />
+        </div>
+      )
+    }
+
+    // Otherwise, fetch the bonsai data
     if (bonsaiLoading) {
       // Show loading state
       return (
@@ -44,6 +65,7 @@ export default function LazyAvatar({ user, size = "w-8 h-8" }) {
             selectedGroundStyle={bonsaiData.customization?.groundStyle || 'default_ground'}
             decorations={bonsaiData.customization?.decorations ? Object.values(bonsaiData.customization.decorations).filter(Boolean) : []}
             zoomed={true}
+            profileIcon={true}
           />
         </div>
       )

@@ -108,6 +108,9 @@ export function Header() {
       return <User size={18} className="text-[#4a7c59]" />;
     }
     
+    // Debug logging
+    console.log('Header renderUserIcon:', { userIcon, userData: userData?.bonsai });
+    
     if (userIcon) {
       if (userIcon === 'bonsai') {
         return (
@@ -122,6 +125,7 @@ export function Header() {
               selectedGroundStyle={userData?.bonsai?.customization?.groundStyle || 'default_ground'}
               decorations={userData?.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
               zoomed={true}
+              profileIcon={true}
             />
           </div>
         );
@@ -160,6 +164,7 @@ export function Header() {
               selectedGroundStyle={userData?.bonsai?.customization?.groundStyle || 'default_ground'}
               decorations={userData?.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
               zoomed={true}
+              profileIcon={true}
             />
           </div>
         );

@@ -175,6 +175,7 @@ export default function GroupInviteModal({ isOpen, onClose, chat }) {
             selectedGroundStyle={user.bonsai.customization?.groundStyle || 'default_ground'}
             decorations={user.bonsai.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
             zoomed={true}
+            profileIcon={true}
           />
         </div>
       )

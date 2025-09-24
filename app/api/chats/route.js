@@ -45,7 +45,11 @@ export async function GET(request) {
           },
           {
             path: "participants",
-            select: "name email icon lastSeen", // Removed bonsai populate
+            select: "name email icon bonsai lastSeen",
+            populate: {
+              path: "bonsai",
+              select: "level customization"
+            }
           },
         ],
       })
@@ -91,10 +95,6 @@ export async function GET(request) {
         let chatAvatar = chat.avatar
         let otherParticipant = null
 
-        // Debug: Log avatar info for group chats
-        if (chat.type === "group") {
-          console.log(`Group chat ${chat.name} avatar:`, chat.avatar)
-        }
 
       // For direct chats, set name to the other participant's name
       if (chat.type === "direct") {
@@ -131,6 +131,7 @@ export async function GET(request) {
           name: p.name,
           email: p.email,
           icon: p.icon,
+          bonsai: p.bonsai,
         })),
         participantCount: chat.participants.length,
         isOnline: chat.type === "direct" ? 
@@ -138,6 +139,15 @@ export async function GET(request) {
            new Date() - new Date(otherParticipant.lastSeen) < 5 * 60 * 1000) : 
           false,
         participantData: participation,
+        // Include otherParticipant data for direct chats
+        otherParticipant: chat.type === "direct" ? {
+          id: otherParticipant?._id,
+          name: otherParticipant?.name,
+          email: otherParticipant?.email,
+          icon: otherParticipant?.icon,
+          bonsai: otherParticipant?.bonsai,
+          lastSeen: otherParticipant?.lastSeen,
+        } : null,
       }
     })
 

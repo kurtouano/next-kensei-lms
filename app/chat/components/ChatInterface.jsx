@@ -418,6 +418,7 @@ export default function ChatInterface() {
             selectedGroundStyle={user.bonsai.customization?.groundStyle || 'default_ground'}
             decorations={user.bonsai.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
             zoomed={true}
+            profileIcon={true}
           />
         </div>
       )
@@ -606,9 +607,10 @@ export default function ChatInterface() {
                           ) : (
                             <LazyAvatar 
                               user={{ 
-                                id: chat.participants?.[0]?.id, 
-                                icon: chat.avatar, 
-                                name: chat.name 
+                                id: chat.otherParticipant?.id || chat.participants?.[0]?.id, 
+                                icon: chat.otherParticipant?.icon || chat.participants?.[0]?.icon || chat.avatar, 
+                                name: chat.name,
+                                bonsai: chat.otherParticipant?.bonsai || chat.participants?.[0]?.bonsai
                               }} 
                               size="w-8 h-8 sm:w-10 sm:h-10" 
                             />
@@ -747,7 +749,11 @@ export default function ChatInterface() {
                               </div>
                             </div>
                           ) : (
-                            renderAvatar({ icon: selectedChat.avatar, bonsai: selectedChat.bonsai, name: selectedChat.name })
+                            renderAvatar({ 
+                              icon: selectedChat.otherParticipant?.icon || selectedChat.avatar, 
+                              bonsai: selectedChat.otherParticipant?.bonsai || selectedChat.bonsai, 
+                              name: selectedChat.name 
+                            })
                           )}
                         </div>
                         <div>
@@ -837,7 +843,11 @@ export default function ChatInterface() {
                                 </div>
                               </div>
                             ) : (
-                              renderAvatar({ icon: selectedChat.avatar, bonsai: selectedChat.bonsai, name: selectedChat.name })
+                              renderAvatar({ 
+                                icon: selectedChat.otherParticipant?.icon || selectedChat.avatar, 
+                                bonsai: selectedChat.otherParticipant?.bonsai || selectedChat.bonsai, 
+                                name: selectedChat.name 
+                              })
                             )}
                           </div>
                         </div>

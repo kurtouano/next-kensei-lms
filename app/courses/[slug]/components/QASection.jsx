@@ -562,6 +562,7 @@ const QuestionItem = memo(function QuestionItem({
               selectedGroundStyle={user.bonsai?.customization?.groundStyle || 'default_ground'}
               decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
               zoomed={true}
+              profileIcon={true}
             />
           </div>
         )
@@ -773,6 +774,7 @@ const CommentItem = memo(function CommentItem({
               selectedGroundStyle={user.bonsai?.customization?.groundStyle || 'default_ground'}
               decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
               zoomed={true}
+              profileIcon={true}
             />
           </div>
         )

@@ -302,6 +302,7 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
             selectedGroundStyle={user.bonsai?.customization?.groundStyle || 'default_ground'}
             decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
             zoomed={true}
+            profileIcon={true}
           />
         </div>
       )
