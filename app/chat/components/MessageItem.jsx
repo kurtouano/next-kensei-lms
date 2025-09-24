@@ -71,6 +71,34 @@ const MessageItem = memo(({
   const [showReactionPicker, setShowReactionPicker] = useState(false)
   const reactionPickerRef = useRef(null)
 
+  // Determine if we should show sender info (name and avatar)
+  const shouldShowSenderInfo = () => {
+    // Always show for system messages
+    if (message.type === 'system') return false
+    
+    // Always show for current user's messages
+    if (message.sender?.email === session?.user?.email) return false
+    
+    // Show if no previous message
+    if (!previousMessage) return true
+    
+    // Show if previous message is from different sender
+    if (previousMessage.sender?.email !== message.sender?.email) return true
+    
+    // Show if previous message is a system message
+    if (previousMessage.type === 'system') return true
+    
+    // Show if there's a significant time gap (more than 5 minutes)
+    const timeDiff = new Date(message.createdAt) - new Date(previousMessage.createdAt)
+    const fiveMinutes = 5 * 60 * 1000 // 5 minutes in milliseconds
+    if (timeDiff > fiveMinutes) return true
+    
+    // Don't show if it's a consecutive message from the same sender within 5 minutes
+    return false
+  }
+
+  const showSenderInfo = shouldShowSenderInfo()
+
   const handleEmojiSelect = (emoji) => {
     handleReaction(message.id, emoji)
     setShowReactionPicker(false)
@@ -120,7 +148,7 @@ const MessageItem = memo(({
   }
 
   return (
-    <div>
+    <div className={!showSenderInfo && message.sender?.email !== session?.user?.email ? "mt-1" : ""}>
       {/* Show timestamp if there's a significant time gap */}
       {showTimestamp && (
         <div className="flex justify-center my-4">
@@ -132,10 +160,12 @@ const MessageItem = memo(({
       
       <div className={`flex gap-3 ${message.sender?.email === session?.user?.email ? "flex-row-reverse" : ""}`}>
         {message.sender?.email && message.sender?.email !== session?.user?.email && (
-          <LazyAvatar user={message.sender} size="w-8 h-8" />
+          <div className="w-8 h-8 flex-shrink-0">
+            {showSenderInfo && <LazyAvatar user={message.sender} size="w-8 h-8" />}
+          </div>
         )}
         <div className={`max-w-[55%] sm:max-w-[60%] md:max-w-[55%] lg:max-w-[55%] min-w-0 ${message.sender?.email === session?.user?.email ? "flex flex-col items-end" : ""}`}>
-          {message.sender?.email && message.sender?.email !== session?.user?.email && (
+          {showSenderInfo && message.sender?.email && message.sender?.email !== session?.user?.email && (
             <p className="text-sm font-medium text-[#2c3e2d] mb-1">{message.sender.name}</p>
           )}
           
