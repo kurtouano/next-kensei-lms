@@ -97,8 +97,6 @@ export async function GET(request, { params }) {
         type: message.replyTo.type,
         createdAt: message.replyTo.createdAt,
       } : null,
-      readBy: message.readBy || [],
-      seenBy: message.readBy || [], // Alias for frontend convenience
       isEdited: message.isEdited,
       editedAt: message.editedAt,
       createdAt: message.createdAt,
@@ -222,8 +220,6 @@ export async function POST(request, { params }) {
         type: populatedMessage.replyTo.type,
         createdAt: populatedMessage.replyTo.createdAt,
       } : null,
-      readBy: populatedMessage.readBy || [],
-      seenBy: populatedMessage.readBy || [], // Alias for frontend convenience
       isEdited: populatedMessage.isEdited,
       editedAt: populatedMessage.editedAt,
       createdAt: populatedMessage.createdAt,

@@ -33,17 +33,6 @@ const MessageSchema = new mongoose.Schema(
       size: Number, // in bytes
       mimeType: String,
     }],
-    // Read receipts - array of user IDs who have read this message
-    readBy: [{
-      user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      readAt: {
-        type: Date,
-        default: Date.now,
-      },
-    }],
     // For message reactions (future feature)
     reactions: [{
       user: {
@@ -87,6 +76,5 @@ const MessageSchema = new mongoose.Schema(
 MessageSchema.index({ chat: 1, createdAt: -1 })
 MessageSchema.index({ sender: 1 })
 MessageSchema.index({ chat: 1, isDeleted: 1, createdAt: -1 })
-MessageSchema.index({ "readBy.user": 1 })
 
 export default mongoose.models.Message || mongoose.model("Message", MessageSchema)
