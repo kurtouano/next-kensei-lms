@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { BannerCropper } from "./BannerCropper"
+import { ProfileIconModal } from "./ProfileIconModal"
 import { User, Award, BookOpen, Flag, Check, Loader2, Upload, Camera, Image, Plus, Trash2 } from "lucide-react"
 
 export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
@@ -14,6 +15,7 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
   const [tempBannerImage, setTempBannerImage] = useState(null)
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const [showBannerDropdown, setShowBannerDropdown] = useState(false)
+  const [showIconModal, setShowIconModal] = useState(false)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -271,7 +273,11 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
           {/* Profile Info - Mobile Optimized Layout */}
           <div className="relative z-10 w-full flex flex-col items-center justify-center gap-3 sm:gap-4 sm:flex-row sm:justify-between sm:items-center">
             <div className="flex flex-col sm:flex-row items-center sm:items-center">
-              <div className="mb-2 sm:mb-0 sm:mr-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-2 sm:border-4 border-white shadow-lg">
+              <div 
+                className="mb-2 sm:mb-0 sm:mr-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-[#eef2eb] overflow-hidden border-2 sm:border-4 border-white shadow-lg cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setShowIconModal(true)}
+                title="Click to change profile icon"
+              >
                 {userData.icon ? (
                                      userData.icon === 'bonsai' ? (
                      <div className="h-full w-full flex items-center justify-center">
@@ -344,6 +350,15 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
         imageSrc={tempBannerImage}
         onCropComplete={handleBannerCropComplete}
         uploading={uploadingBanner}
+      />
+
+      {/* Profile Icon Modal */}
+      <ProfileIconModal
+        isOpen={showIconModal}
+        onClose={() => setShowIconModal(false)}
+        userData={userData}
+        onUserDataUpdate={onUserDataUpdate}
+        onError={onError}
       />
     </>
   )
