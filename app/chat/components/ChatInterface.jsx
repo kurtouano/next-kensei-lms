@@ -173,6 +173,22 @@ export default function ChatInterface() {
     setMessage("")
     setMessageHeight(32) // Reset height state
 
+    // Prevent mobile zoom and reset viewport after sending
+    if (window.innerWidth <= 768) {
+      // Blur the input to prevent zoom
+      if (messageInputRef.current) {
+        messageInputRef.current.blur()
+      }
+      
+      // Reset viewport after a short delay
+      setTimeout(() => {
+        const viewport = document.querySelector('meta[name="viewport"]')
+        if (viewport) {
+          viewport.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
+        }
+      }, 100)
+    }
+
     try {
       // Send message optimistically (shows instantly, loads in background)
       await sendMessage(messageText)
@@ -469,7 +485,7 @@ export default function ChatInterface() {
 
   return (
     <div className="bg-gray-50 overflow-x-hidden flex flex-col">
-      <div className="flex-1 flex items-center justify-center md:px-6 lg:px-8 xl:px-12 2xl:px-16 lg:py-4">
+      <div className="flex-1 flex items-center justify-center lg:py-4">
         <div className="w-full max-w-6xl mx-auto">
           <div className="flex h-[calc(100vh-8.4rem)] lg:h-[calc(100vh-11rem)]">
           {/* Mobile Sidebar Overlay */}
@@ -870,7 +886,7 @@ export default function ChatInterface() {
                   </div>
 
                   {/* Message Input */}
-                  <div className="p-2 sm:p-4 border-t bg-white relative">
+                  <div className="p-2 sm:p-4 border-t bg-white relative overflow-hidden">
                     {!isUserParticipant && (
                       <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-md">
                         <p className="text-red-600 text-sm font-medium">You are no longer a member of this chat</p>
@@ -878,7 +894,7 @@ export default function ChatInterface() {
                       </div>
                     )}
                     <div className="flex items-center min-w-0">
-                      <div className="flex items-center gap-2 sm:gap-6">
+                      <div className="flex items-center gap-1 sm:gap-6 flex-shrink-0">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -911,13 +927,13 @@ export default function ChatInterface() {
                           <Smile className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="ml-2 sm:ml-3 flex-1 flex items-center gap-1 sm:gap-2">
+                      <div className="ml-1 sm:ml-3 flex-1 flex items-center gap-1 sm:gap-2 min-w-0">
                         <textarea
                           ref={messageInputRef}
                           onKeyDown={handleKeyPress}
                           onChange={handleMessageChange}
                           placeholder={isUserParticipant ? "Type a message..." : "You are no longer a member of this chat"}
-                          className="flex-1 px-3 py-1.5 sm:py-2 border border-gray-200 rounded-md focus:outline-none focus:border-[#2646248a] disabled:bg-gray-100 disabled:cursor-not-allowed resize-none overflow-hidden break-words overflow-wrap-anywhere whitespace-pre-wrap text-sm"
+                          className="flex-1 px-3 py-1.5 sm:py-2 border border-gray-200 rounded-md focus:outline-none focus:border-[#2646248a] disabled:bg-gray-100 disabled:cursor-not-allowed resize-none overflow-hidden break-words overflow-wrap-anywhere whitespace-pre-wrap text-base sm:text-sm min-w-0"
                           style={{ height: `${messageHeight}px`, wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                           disabled={uploading || !isUserParticipant}
                           autoComplete="off"
@@ -926,7 +942,7 @@ export default function ChatInterface() {
                         />
                         <Button 
                           onClick={handleSendMessage} 
-                          className="bg-[#4a7c59] hover:bg-[#3a6147] h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 p-0"
+                          className="bg-[#4a7c59] hover:bg-[#3a6147] h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 p-0 ml-1"
                           disabled={uploading || !isUserParticipant}
                         >
                           <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
