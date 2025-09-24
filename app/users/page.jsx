@@ -457,13 +457,13 @@ function UsersPage() {
                 {paginatedFriends.length > 0 ? (
                   <div 
                     ref={friendsScrollRef}
-                    className="flex gap-6 sm:gap-8 overflow-x-auto scrollbar-hide pb-2 px-11 sm:px-16"
+                    className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-2 px-11 sm:px-16"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
                     {paginatedFriends.map((friend, index) => (
                       <div
                         key={friend.id || `friend-${index}`}
-                        className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[90px] sm:min-w-[130px]"
+                        className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[120px] sm:min-w-[155px]"
                       >
                         {/* Friend Icon - Clickable to view profile */}
                         <Link href={`/users/${friend.id}`} className="relative cursor-pointer hover:opacity-80 transition-opacity">
@@ -505,7 +505,7 @@ function UsersPage() {
                         {/* Friend Name - Clickable to view profile */}
                         <div className="text-center">
                           <Link href={`/users/${friend.id}`} className="hover:opacity-80 transition-opacity">
-                            <h3 className="font-medium text-[#2c3e2d] text-sm sm:text-base truncate max-w-[70px] sm:max-w-[110px]">{friend.name}</h3>
+                            <h3 className="font-medium text-[#2c3e2d] text-sm sm:text-base truncate max-w-[100px] sm:max-w-[180px]">{friend.name}</h3>
                           </Link>
                           {/* Last seen timestamp */}
                           <p className="text-xs text-[#5c6d5e] mt-1">
@@ -531,7 +531,7 @@ function UsersPage() {
                         {[...Array(3)].map((_, skeletonIndex) => (
                           <div
                             key={`skeleton-${skeletonIndex}`}
-                            className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[120px] animate-pulse"
+                            className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[120px] sm:min-w-[160px] animate-pulse"
                           >
                             {/* Skeleton Avatar */}
                             <div className="h-16 w-16 rounded-full bg-gray-200" />
