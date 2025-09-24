@@ -6,7 +6,7 @@ import Chat from "@/models/Chat"
 import ChatParticipant from "@/models/ChatParticipant"
 import Message from "@/models/Message"
 import User from "@/models/User"
-import { notifyNewMessage, formatMessageForBroadcast } from "@/lib/chatUtils"
+import { notifyNewMessage } from "@/lib/chatUtils"
 
 export async function GET(request, { params }) {
   try {

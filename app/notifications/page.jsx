@@ -3,7 +3,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Bell, UserPlus, Check, X, Clock, Users, MoreVertical, Trash2, Trash } from "lucide-react";
+import { Bell, UserPlus, Check, X, Users, MoreVertical, Trash2, Trash } from "lucide-react";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 
 // Lazy load the confirmation modal

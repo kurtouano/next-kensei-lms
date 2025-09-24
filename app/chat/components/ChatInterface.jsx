@@ -22,7 +22,6 @@ export default function ChatInterface() {
   const { data: session } = useSession()
   const [selectedChatId, setSelectedChatId] = useState(null)
   const [message, setMessage] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const fileInputRef = useRef(null)
   const generalFileInputRef = useRef(null)
@@ -39,11 +38,9 @@ export default function ChatInterface() {
     messagesEndRef, 
     sendMessage, 
     sendAttachmentOptimistic,
-    sendTypingIndicator,
     loadMoreMessages,
     hasMore,
     handleReaction,
-    fetchMessages,
     refetch: refetchMessages
   } = useChatMessages(selectedChatId, updateChatWithNewMessage)
   const [uploading, setUploading] = useState(false)
