@@ -281,17 +281,18 @@ export function ProfileHeader({ userData, onUserDataUpdate, onError }) {
                 {userData.icon ? (
                                      userData.icon === 'bonsai' ? (
                      <div className="h-full w-full flex items-center justify-center">
-                       <BonsaiSVG 
-                         level={userData.bonsai?.level || 1}
-                         treeColor={userData.bonsai?.customization?.foliageColor || '#77DD82'} 
-                         potColor={userData.bonsai?.customization?.potColor || '#FD9475'} 
-                         selectedEyes={userData.bonsai?.customization?.eyes || 'default_eyes'}
-                         selectedMouth={userData.bonsai?.customization?.mouth || 'default_mouth'}
-                         selectedPotStyle={userData.bonsai?.customization?.potStyle || 'default_pot'}
-                         selectedGroundStyle={userData.bonsai?.customization?.groundStyle || 'default_ground'}
-                         decorations={userData.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
-                         zoomed={true}
-                       />
+                      <BonsaiSVG 
+                        level={userData.bonsai?.level || 1}
+                        treeColor={userData.bonsai?.customization?.foliageColor || '#77DD82'} 
+                        potColor={userData.bonsai?.customization?.potColor || '#FD9475'} 
+                        selectedEyes={userData.bonsai?.customization?.eyes || 'default_eyes'}
+                        selectedMouth={userData.bonsai?.customization?.mouth || 'default_mouth'}
+                        selectedPotStyle={userData.bonsai?.customization?.potStyle || 'default_pot'}
+                        selectedGroundStyle={userData.bonsai?.customization?.groundStyle || 'default_ground'}
+                        decorations={userData.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
+                        zoomed={true}
+                        profileIcon={true}
+                      />
                      </div>
                   ) : userData.icon.startsWith('http') ? (
                     <img 

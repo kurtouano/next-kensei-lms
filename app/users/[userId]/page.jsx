@@ -330,6 +330,7 @@ function PublicProfilePage() {
                           selectedGroundStyle={userData.bonsai?.customization?.groundStyle}
                           decorations={userData.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
                           zoomed={true}
+                          profileIcon={true}
                         />
                       </div>
                     )}

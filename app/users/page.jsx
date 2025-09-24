@@ -491,6 +491,7 @@ function UsersPage() {
                                   selectedGroundStyle={friend.bonsai?.customization?.groundStyle}
                                   decorations={friend.bonsai?.customization?.decorations ? Object.values(friend.bonsai.customization.decorations).filter(Boolean) : []}
                                   zoomed={true}
+                                  profileIcon={true}
                                 />
                               </div>
                             )}
@@ -609,6 +610,7 @@ function UsersPage() {
                               selectedGroundStyle={user.bonsai?.customization?.groundStyle}
                               decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
                               zoomed={true}
+                              profileIcon={true}
                             />
                           </div>
                        )}

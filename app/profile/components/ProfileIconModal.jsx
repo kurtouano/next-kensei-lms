@@ -201,6 +201,7 @@ export function ProfileIconModal({ isOpen, onClose, userData, onUserDataUpdate, 
                       selectedGroundStyle={userData.bonsai?.customization?.groundStyle || 'default_ground'}
                       decorations={userData.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
                       zoomed={true}
+                      profileIcon={true}
                     />
                   </div>
                 ) : tempIcon.startsWith('http') ? (
