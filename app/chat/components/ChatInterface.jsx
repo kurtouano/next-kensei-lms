@@ -505,7 +505,7 @@ export default function ChatInterface() {
   return (
     <div className="bg-gray-50 overflow-x-hidden flex flex-col">
       <div className="flex-1 flex items-center justify-center lg:py-4">
-        <div className="w-full max-w-6xl mx-auto">
+        <div className="w-full max-w-[86rem] mx-auto">
           <div className="flex h-[calc(100vh-8.4rem)] lg:h-[calc(100vh-11rem)]">
           {/* Mobile Sidebar Overlay */}
           {isSidebarOpen && (
@@ -805,7 +805,7 @@ export default function ChatInterface() {
                   {/* Messages */}
                   <div 
                     ref={messagesContainerRef}
-                    className="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50 scroll-smooth"
+                    className="flex-1 overflow-y-auto overflow-x-hidden p-1 sm:p-2 space-y-3 sm:space-y-4 bg-gray-50 scroll-smooth"
                     style={{ scrollBehavior: 'smooth' }}
                   >
                     {messagesLoading && messages.length === 0 ? (
