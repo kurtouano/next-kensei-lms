@@ -310,55 +310,55 @@ function NotificationsPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
       <main className="flex-1 py-4 sm:py-8">
-        <div className="container mx-auto px-3 sm:px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
-                         <div className="flex items-center gap-3 mb-4">
-               <Bell className="h-8 w-8 text-[#4a7c59]" />
-               <h1 className="text-2xl font-bold text-[#2c3e2d]">Notifications</h1>
-             </div>
-                         <div className="flex items-center justify-between">
-               <div className="flex-1">
-                 <p className="text-[#5c6d5e] text-base">
-                   Stay updated with friend requests and activities
-                 </p>
-                 {notifications.length > 0 && (
-                   <p className="text-[#5c6d5e] text-sm mt-1">
-                     Showing {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
-                   </p>
-                 )}
-               </div>
-               <div className="flex items-center gap-3">
-                 <span className="text-sm text-gray-500 hidden sm:block">Manage</span>
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
+              <Bell className="h-6 w-6 sm:h-8 sm:w-8 text-[#4a7c59]" />
+              <h1 className="text-xl sm:text-2xl font-bold text-[#2c3e2d]">Notifications</h1>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-[#5c6d5e] text-sm sm:text-base">
+                  Stay updated with friend requests and activities
+                </p>
+                {notifications.length > 0 && (
+                  <p className="text-[#5c6d5e] text-xs sm:text-sm mt-1">
+                    Showing {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <span className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage</span>
                  <div className="relative actions-menu-container">
                    <button
                      onClick={() => setShowActionsMenu(!showActionsMenu)}
                      disabled={cleanupLoading}
-                     className="p-2.5 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 hover:text-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-gray-200 hover:border-gray-300"
+                     className="p-2 sm:p-2.5 bg-gray-50 text-gray-500 rounded-xl hover:bg-gray-100 hover:text-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-gray-200 hover:border-gray-300"
                    >
                      {cleanupLoading ? (
-                       <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                       <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                      ) : (
-                       <Trash className="w-4 h-4" />
+                       <Trash className="w-3 h-3 sm:w-4 sm:h-4" />
                      )}
                    </button>
                    
                    {showActionsMenu && !cleanupLoading && (
-                     <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                     <div className="absolute right-0 top-full mt-1 w-52 sm:w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                        <div className="py-1">
                          <button
                            onClick={handleCleanupOld}
-                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                           className="w-full px-3 sm:px-4 py-2 text-left text-xs sm:text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                          >
-                           <Trash className="w-4 h-4" />
-                           Clean old notifications
+                           <Trash className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                           <span className="whitespace-nowrap">Clean old notifications</span>
                          </button>
                          <button
                            onClick={handleDeleteAll}
-                           className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                           className="w-full px-3 sm:px-4 py-2 text-left text-xs sm:text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                          >
-                           <Trash2 className="w-4 h-4" />
-                           Delete all notifications
+                           <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                           <span className="whitespace-nowrap">Delete all notifications</span>
                          </button>
                        </div>
                      </div>
@@ -384,24 +384,24 @@ function NotificationsPage() {
                {notifications.map((notification) => (
                                   <div 
                     key={notification._id} 
-                    className={`bg-white rounded-lg border p-4 sm:p-6 hover:shadow-md transition-shadow border-l-4 ${
+                    className={`bg-white rounded-lg border p-3 sm:p-4 lg:p-6 hover:shadow-md transition-shadow border-l-4 ${
                       notification.read 
                         ? 'border-[#dce4d7] border-l-[#9ca3af] opacity-75' 
                         : 'border-[#dce4d7] border-l-[#4a7c59]'
                     }`}
                   >
                    <div className="flex items-start justify-between">
-                     <div className="flex items-start gap-3 flex-1">
+                     <div className="flex items-start gap-2 sm:gap-3 flex-1">
                        {/* Notification Icon */}
-                       <div className="h-10 w-10 rounded-full bg-[#eef2eb] flex items-center justify-center flex-shrink-0">
+                       <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-[#eef2eb] flex items-center justify-center flex-shrink-0">
                          {notification.type === 'friend_request' && (
-                           <UserPlus className="h-5 w-5 text-[#4a7c59]" />
+                           <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 text-[#4a7c59]" />
                          )}
                          {notification.type === 'friend_accepted' && (
-                           <Check className="h-5 w-5 text-[#4a7c59]" />
+                           <Check className="h-4 w-4 sm:h-5 sm:w-5 text-[#4a7c59]" />
                          )}
                          {notification.type === 'friend_rejected' && (
-                           <X className="h-5 w-5 text-[#4a7c59]" />
+                           <X className="h-4 w-4 sm:h-5 sm:w-5 text-[#4a7c59]" />
                          )}
                        </div>
 
@@ -410,10 +410,10 @@ function NotificationsPage() {
                          <h3 className="font-semibold text-[#2c3e2d] text-sm sm:text-base mb-1">
                            {notification.title}
                          </h3>
-                         <p className="text-[#5c6d5e] text-sm mb-2">
+                         <p className="text-[#5c6d5e] text-xs sm:text-sm mb-2">
                            {notification.message}
                          </p>
-                                                                          <div className="flex items-center gap-3 text-xs">
+                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
                            <span className="text-[#5c6d5e]">{formatTimeAgo(notification.createdAt)}</span>
                            
                            {/* Age Badge */}
@@ -421,18 +421,18 @@ function NotificationsPage() {
                              const ageInfo = getNotificationAge(notification.createdAt);
                              const isOld = isOldNotification(notification.createdAt);
                              return (
-                               <span className={`px-2 py-1 rounded-full text-xs font-medium border ${ageInfo.color} ${ageInfo.bgColor} ${ageInfo.borderColor} ${isOld ? 'ring-2 ring-red-200' : ''}`}>
+                               <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium border ${ageInfo.color} ${ageInfo.bgColor} ${ageInfo.borderColor} ${isOld ? 'ring-2 ring-red-200' : ''}`}>
                                  {ageInfo.age}
                                </span>
                              );
                            })()}
                            
                            {!notification.read && (
-                             <span className="text-[#4a7c59] font-medium bg-[#eef2eb] px-2 py-1 rounded-full">New</span>
+                             <span className="text-[#4a7c59] font-medium bg-[#eef2eb] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs">New</span>
                            )}
                            
                            {isOldNotification(notification.createdAt) && (
-                             <span className="text-red-600 font-medium bg-red-50 px-2 py-1 rounded-full border border-red-200">
+                             <span className="text-red-600 font-medium bg-red-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-red-200 text-xs">
                                Old
                              </span>
                            )}
@@ -442,16 +442,16 @@ function NotificationsPage() {
 
                      {/* Action Buttons */}
                      {notification.type === 'friend_request' && (
-                       <div className="flex gap-2 ml-4">
+                       <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 ml-2 sm:ml-4">
                          <button
                            onClick={() => handleFriendResponse(notification.relatedData.friendRequestId, 'accept', notification._id)}
-                           className="px-3 py-1 bg-[#4a7c59] text-white text-xs rounded-lg hover:bg-[#3a6147] transition-colors"
+                           className="px-2 sm:px-3 py-1 bg-[#4a7c59] text-white text-xs rounded-lg hover:bg-[#3a6147] transition-colors"
                          >
                            Accept
                          </button>
                          <button
                            onClick={() => handleFriendResponse(notification.relatedData.friendRequestId, 'reject', notification._id)}
-                           className="px-3 py-1 border border-[#dc2626] text-[#dc2626] text-xs rounded-lg hover:bg-[#fef2f2] transition-colors"
+                           className="px-2 sm:px-3 py-1 border border-[#dc2626] text-[#dc2626] text-xs rounded-lg hover:bg-[#fef2f2] transition-colors"
                          >
                            Decline
                          </button>
@@ -460,16 +460,16 @@ function NotificationsPage() {
                      
                      {/* Status for already processed requests */}
                      {notification.type === 'friend_accepted' && (
-                       <div className="ml-4">
-                         <span className="px-3 py-1 bg-[#eef2eb] text-[#4a7c59] text-xs rounded-lg border border-[#4a7c59]">
+                       <div className="ml-2 sm:ml-4">
+                         <span className="px-2 sm:px-3 py-1 bg-[#eef2eb] text-[#4a7c59] text-xs rounded-lg border border-[#4a7c59]">
                            Accepted
                          </span>
                        </div>
                      )}
                      
                      {notification.type === 'friend_rejected' && (
-                       <div className="ml-4">
-                         <span className="px-3 py-1 bg-[#fef2f2] text-[#dc2626] text-xs rounded-lg border border-[#dc2626]">
+                       <div className="ml-2 sm:ml-4">
+                         <span className="px-2 sm:px-3 py-1 bg-[#fef2f2] text-[#dc2626] text-xs rounded-lg border border-[#dc2626]">
                            Declined
                          </span>
                        </div>
@@ -484,12 +484,13 @@ function NotificationsPage() {
                    <button
                      onClick={loadMoreNotifications}
                      disabled={loadingMore}
-                     className="px-4 py-1.5 bg-[#4a7c59] text-white text-sm rounded-md hover:bg-[#3a6147] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                     className="px-3 sm:px-4 py-1.5 bg-[#4a7c59] text-white text-xs sm:text-sm rounded-md hover:bg-[#3a6147] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
                    >
                      {loadingMore ? (
                        <>
                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                         Loading...
+                         <span className="hidden sm:inline">Loading...</span>
+                         <span className="sm:hidden">Loading</span>
                        </>
                      ) : (
                        'Load More'
@@ -499,10 +500,10 @@ function NotificationsPage() {
                )}
              </div>
            ) : (
-            <div className="text-center py-12">
-              <Bell className="h-16 w-16 text-[#5c6d5e] opacity-50 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-[#2c3e2d] mb-2">No notifications</h3>
-              <p className="text-[#5c6d5e]">
+            <div className="text-center py-8 sm:py-12">
+              <Bell className="h-12 w-12 sm:h-16 sm:w-16 text-[#5c6d5e] opacity-50 mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-medium text-[#2c3e2d] mb-2">No notifications</h3>
+              <p className="text-sm sm:text-base text-[#5c6d5e]">
                 You're all caught up! Check back later for new updates.
               </p>
             </div>
