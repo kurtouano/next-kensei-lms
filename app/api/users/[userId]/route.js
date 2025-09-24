@@ -32,7 +32,8 @@ export async function GET(req, { params }) {
             banner: 1,
             createdAt: 1,
             role: 1,
-            enrolledCourses: 1
+            enrolledCourses: 1,
+            socialLinks: 1
         }).populate('bonsai');
 
         if (!user) {
@@ -118,6 +119,7 @@ export async function GET(req, { params }) {
                     decorations: []
                 }
             },
+            socialLinks: user.socialLinks || [],
             friendStatus: friendStatus ? friendStatus.status : null
         };
 

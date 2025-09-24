@@ -126,6 +126,7 @@ export async function GET() {
                     },
                     ownedItems: []
                 },
+                socialLinks: user.socialLinks || [],
                 enrolledCourses: user.enrolledCourses,
                 progressRecords: progressRecords
             }

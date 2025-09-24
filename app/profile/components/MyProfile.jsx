@@ -5,9 +5,35 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
-import { Award, BookOpen, User, Target, TreePine, ChevronRight } from "lucide-react"
+import { Award, BookOpen, User, Target, TreePine, ChevronRight, Plus, X, ExternalLink } from "lucide-react"
+import { useState, useEffect } from "react"
+import { 
+  FacebookIcon, 
+  TwitterIcon, 
+  InstagramIcon, 
+  LinkedInIcon, 
+  YouTubeIcon, 
+  TikTokIcon, 
+  GitHubIcon, 
+  DiscordIcon, 
+  TwitchIcon, 
+  WebsiteIcon 
+} from "./SocialMediaIcons"
 
 export function MyProfile({ userData, certificates }) {
+  const [socialLinks, setSocialLinks] = useState(userData?.socialLinks || [])
+  const [showAddSocial, setShowAddSocial] = useState(false)
+  const [newSocialPlatform, setNewSocialPlatform] = useState('')
+  const [newSocialUrl, setNewSocialUrl] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Initialize social links when userData changes
+  useEffect(() => {
+    if (userData?.socialLinks) {
+      setSocialLinks(userData.socialLinks)
+    }
+  }, [userData])
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -17,6 +43,122 @@ export function MyProfile({ userData, certificates }) {
 
   const capitalizeFirst = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1)
+  }
+
+  const socialPlatforms = [
+    { value: 'facebook', label: 'Facebook', icon: 'FacebookIcon' },
+    { value: 'twitter', label: 'Twitter', icon: 'TwitterIcon' },
+    { value: 'instagram', label: 'Instagram', icon: 'InstagramIcon' },
+    { value: 'linkedin', label: 'LinkedIn', icon: 'LinkedInIcon' },
+    { value: 'youtube', label: 'YouTube', icon: 'YouTubeIcon' },
+    { value: 'tiktok', label: 'TikTok', icon: 'TikTokIcon' },
+    { value: 'github', label: 'GitHub', icon: 'GitHubIcon' },
+    { value: 'discord', label: 'Discord', icon: 'DiscordIcon' },
+    { value: 'twitch', label: 'Twitch', icon: 'TwitchIcon' },
+    { value: 'website', label: 'Website', icon: 'WebsiteIcon' }
+  ]
+
+  const handleAddSocial = async () => {
+    if (!newSocialPlatform || !newSocialUrl) return
+
+    // Ensure URL has protocol
+    let formattedUrl = newSocialUrl.trim()
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = 'https://' + formattedUrl
+    }
+
+    const newLink = {
+      platform: newSocialPlatform,
+      url: formattedUrl,
+      id: Date.now().toString()
+    }
+
+    const updatedLinks = [...socialLinks, newLink]
+    setSocialLinks(updatedLinks)
+    setNewSocialPlatform('')
+    setNewSocialUrl('')
+    setShowAddSocial(false)
+
+    // Save to backend
+    try {
+      setIsSaving(true)
+      console.log('Saving social links:', updatedLinks)
+      const response = await fetch('/api/profile/social-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ socialLinks: updatedLinks })
+      })
+      
+      console.log('Response status:', response.status)
+      const result = await response.json()
+      console.log('Response result:', result)
+      
+      if (!result.success) {
+        console.error('Error saving social links:', result.message, result.error)
+        // Revert the change if save failed
+        setSocialLinks(socialLinks)
+      }
+    } catch (error) {
+      console.error('Error saving social links:', error)
+      // Revert the change if save failed
+      setSocialLinks(socialLinks)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleRemoveSocial = async (id) => {
+    const originalLinks = [...socialLinks]
+    const updatedLinks = socialLinks.filter(link => link.id !== id)
+    setSocialLinks(updatedLinks)
+
+    // Save to backend
+    try {
+      setIsSaving(true)
+      console.log('Removing social link, updated links:', updatedLinks)
+      const response = await fetch('/api/profile/social-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ socialLinks: updatedLinks })
+      })
+      
+      console.log('Remove response status:', response.status)
+      const result = await response.json()
+      console.log('Remove response result:', result)
+      
+      if (!result.success) {
+        console.error('Error saving social links:', result.message, result.error)
+        // Revert the change if save failed
+        setSocialLinks(originalLinks)
+      }
+    } catch (error) {
+      console.error('Error saving social links:', error)
+      // Revert the change if save failed
+      setSocialLinks(originalLinks)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const getSocialIcon = (platform) => {
+    const iconMap = {
+      facebook: FacebookIcon,
+      twitter: TwitterIcon,
+      instagram: InstagramIcon,
+      linkedin: LinkedInIcon,
+      youtube: YouTubeIcon,
+      tiktok: TikTokIcon,
+      github: GitHubIcon,
+      discord: DiscordIcon,
+      twitch: TwitchIcon,
+      website: WebsiteIcon
+    }
+    return iconMap[platform] || WebsiteIcon
+  }
+
+  const getSocialLabel = (platform) => {
+    const platformData = socialPlatforms.find(p => p.value === platform)
+    return platformData ? platformData.label : platform
   }
 
   return (
@@ -117,6 +259,169 @@ export function MyProfile({ userData, certificates }) {
       {/* Right Sidebar - Takes 1/3 width on desktop */}
       <div className="lg:col-span-1 flex flex-col h-full">
         <div className="space-y-4 sm:space-y-6 flex-1">
+          {/* Social Media Links */}
+          <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Social Links</h2>
+              {socialLinks.length < 5 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddSocial(!showAddSocial)}
+                  className="text-xs sm:text-sm border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white"
+                >
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                  Add
+                </Button>
+              )}
+            </div>
+
+            {/* Add Social Link Form */}
+            {showAddSocial && (
+              <div className="mb-4 p-3 rounded-lg bg-[#f8f7f4] border border-[#dce4d7]">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs sm:text-sm font-medium text-[#2c3e2d] mb-1 block">Platform</label>
+                    <select
+                      value={newSocialPlatform}
+                      onChange={(e) => setNewSocialPlatform(e.target.value)}
+                      className="w-full p-2 text-xs sm:text-sm border border-[#dce4d7] rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
+                    >
+                      <option value="">Select platform</option>
+                      {socialPlatforms.map((platform) => {
+                        const IconComponent = getSocialIcon(platform.value)
+                        return (
+                          <option key={platform.value} value={platform.value}>
+                            {platform.label}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs sm:text-sm font-medium text-[#2c3e2d] mb-1 block">URL</label>
+                    <input
+                      type="url"
+                      value={newSocialUrl}
+                      onChange={(e) => setNewSocialUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full p-2 text-xs sm:text-sm border border-[#dce4d7] rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleAddSocial}
+                      disabled={!newSocialPlatform || !newSocialUrl || isSaving}
+                      className="bg-[#4a7c59] text-white hover:bg-[#3a6147] text-xs sm:text-sm"
+                    >
+                      {isSaving ? 'Saving...' : 'Add Link'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setShowAddSocial(false)
+                        setNewSocialPlatform('')
+                        setNewSocialUrl('')
+                      }}
+                      className="text-xs sm:text-sm"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Social Links List */}
+            <div className="space-y-2">
+              {socialLinks.length === 0 ? (
+                <div className="text-center py-4">
+                  <div className="text-2xl mb-2">🔗</div>
+                  <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2">No social links added yet</p>
+                  <p className="text-xs text-[#5c6d5e]">Add your social media profiles to connect with others</p>
+                </div>
+              ) : (
+                socialLinks.map((link) => {
+                  const IconComponent = getSocialIcon(link.platform)
+                  return (
+                    <div key={link.id} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-[#eef2eb]">
+                      <div className="flex items-center flex-1 min-w-0">
+                        <div className="mr-2 sm:mr-3 flex-shrink-0">
+                          <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-[#4a7c59]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-medium text-[#2c3e2d] truncate">
+                            {getSocialLabel(link.platform)}
+                          </p>
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[#4a7c59] hover:text-[#3a6147] truncate block"
+                          >
+                            {link.url}
+                          </a>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 ml-2">
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 hover:bg-[#dce4d7] rounded"
+                        >
+                          <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
+                        </a>
+                        <button
+                          onClick={() => handleRemoveSocial(link.id)}
+                          className="p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            {socialLinks.length >= 5 && (
+              <p className="text-xs text-[#5c6d5e] mt-2 text-center">
+                Maximum of 5 social links allowed
+              </p>
+            )}
+          </div>
+
+          {/* Recent Achievement */}
+          <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+            <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Recent Achievement</h2>
+            {certificates.length > 0 ? (
+              <div className="text-center p-3 sm:p-4 rounded-lg bg-gradient-to-br from-[#eef2eb] to-[#dce4d7]">
+                <Award className="mx-auto mb-2 sm:mb-3 h-6 w-6 sm:h-8 sm:w-8 text-[#4a7c59]" />
+                <h3 className="font-medium text-[#2c3e2d] mb-1 text-sm sm:text-base">Latest Certificate</h3>
+                <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2 leading-tight">
+                  {certificates[certificates.length - 1]?.courseTitle}
+                </p>
+                <p className="text-xs text-[#5c6d5e]">
+                  {certificates[certificates.length - 1]?.completionDate ? 
+                    new Date(certificates[certificates.length - 1].completionDate).toLocaleDateString() : 
+                    'Recently earned'
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="text-center p-3 sm:p-4 rounded-lg bg-[#f8f7f4]">
+                <Award className="mx-auto mb-2 sm:mb-3 h-6 w-6 sm:h-8 sm:w-8 text-[#5c6d5e] opacity-50" />
+                <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2">No certificates yet</p>
+                <Button size="sm" className="bg-[#4a7c59] text-white hover:bg-[#3a6147] text-xs sm:text-sm" asChild>
+                  <Link href="/courses">Start Learning</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+
           {/* Quick Stats */}
           <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
             <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Quick Stats</h2>
@@ -151,82 +456,6 @@ export function MyProfile({ userData, certificates }) {
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Recent Achievement */}
-          <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
-            <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Recent Achievement</h2>
-            {certificates.length > 0 ? (
-              <div className="text-center p-3 sm:p-4 rounded-lg bg-gradient-to-br from-[#eef2eb] to-[#dce4d7]">
-                <Award className="mx-auto mb-2 sm:mb-3 h-6 w-6 sm:h-8 sm:w-8 text-[#4a7c59]" />
-                <h3 className="font-medium text-[#2c3e2d] mb-1 text-sm sm:text-base">Latest Certificate</h3>
-                <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2 leading-tight">
-                  {certificates[certificates.length - 1]?.courseTitle}
-                </p>
-                <p className="text-xs text-[#5c6d5e]">
-                  {certificates[certificates.length - 1]?.completionDate ? 
-                    new Date(certificates[certificates.length - 1].completionDate).toLocaleDateString() : 
-                    'Recently earned'
-                  }
-                </p>
-              </div>
-            ) : (
-              <div className="text-center p-3 sm:p-4 rounded-lg bg-[#f8f7f4]">
-                <Award className="mx-auto mb-2 sm:mb-3 h-6 w-6 sm:h-8 sm:w-8 text-[#5c6d5e] opacity-50" />
-                <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2">No certificates yet</p>
-                <Button size="sm" className="bg-[#4a7c59] text-white hover:bg-[#3a6147] text-xs sm:text-sm" asChild>
-                  <Link href="/courses">Start Learning</Link>
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Account Overview - General Info */}
-          <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
-            <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Account Overview</h2>
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex items-center">
-                <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-[#eef2eb] mr-2 sm:mr-3">
-                  <User className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-[#2c3e2d]">Member Since</p>
-                  <p className="text-xs text-[#5c6d5e]">{formatDate(userData.joinDate)}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center">
-                <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-[#eef2eb] mr-2 sm:mr-3">
-                  <Target className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-[#2c3e2d]">Account Type</p>
-                  <p className="text-xs text-[#5c6d5e]">{capitalizeFirst(userData.role)}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center">
-                <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-[#eef2eb] mr-2 sm:mr-3">
-                  <TreePine className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-[#2c3e2d]">Bonsai Tree</p>
-                  <p className="text-xs text-[#5c6d5e]">Level {userData.bonsai ? userData.bonsai.level : 1} Growth</p>
-                </div>
-              </div>
-
-              {userData.subscription && (
-                <div className="flex items-center">
-                  <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-[#eef2eb] mr-2 sm:mr-3">
-                    <Award className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm font-medium text-[#2c3e2d]">Plan Status</p>
-                    <p className="text-xs text-[#5c6d5e]">{capitalizeFirst(userData.subscription.plan)} - {capitalizeFirst(userData.subscription.status)}</p>
-                  </div>
-                </div>
-              )}
-            </div>  
           </div>
         </div>
       </div>

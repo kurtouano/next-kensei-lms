@@ -5,8 +5,20 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BonsaiIcon } from "@/components/bonsai-icon";
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
-import { Award, BookOpen, User, TreePine, Flag, UserCheck, Loader2, UserPlus, ArrowLeft, Clock, Check, UserMinus, MessageCircle, X } from "lucide-react";
+import { Award, BookOpen, User, TreePine, Flag, UserCheck, Loader2, UserPlus, ArrowLeft, Clock, Check, UserMinus, MessageCircle, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { 
+  FacebookIcon, 
+  TwitterIcon, 
+  InstagramIcon, 
+  LinkedInIcon, 
+  YouTubeIcon, 
+  TikTokIcon, 
+  GitHubIcon, 
+  DiscordIcon, 
+  TwitchIcon, 
+  WebsiteIcon 
+} from "@/app/profile/components/SocialMediaIcons";
 
 function PublicProfilePage() {
   const params = useParams();
@@ -78,6 +90,39 @@ function PublicProfilePage() {
   const capitalizeFirst = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
+
+  const getSocialIcon = (platform) => {
+    const iconMap = {
+      facebook: FacebookIcon,
+      twitter: TwitterIcon,
+      instagram: InstagramIcon,
+      linkedin: LinkedInIcon,
+      youtube: YouTubeIcon,
+      tiktok: TikTokIcon,
+      github: GitHubIcon,
+      discord: DiscordIcon,
+      twitch: TwitchIcon,
+      website: WebsiteIcon
+    }
+    return iconMap[platform] || WebsiteIcon
+  }
+
+  const getSocialLabel = (platform) => {
+    const platformData = [
+      { value: 'facebook', label: 'Facebook' },
+      { value: 'twitter', label: 'Twitter' },
+      { value: 'instagram', label: 'Instagram' },
+      { value: 'linkedin', label: 'LinkedIn' },
+      { value: 'youtube', label: 'YouTube' },
+      { value: 'tiktok', label: 'TikTok' },
+      { value: 'github', label: 'GitHub' },
+      { value: 'discord', label: 'Discord' },
+      { value: 'twitch', label: 'Twitch' },
+      { value: 'website', label: 'Website' }
+    ]
+    const found = platformData.find(p => p.value === platform)
+    return found ? found.label : platform
+  }
 
   const handleFriendRequest = async () => {
     // Prevent double-clicking
@@ -436,6 +481,82 @@ function PublicProfilePage() {
             {/* Sidebar */}
             <div className="flex flex-col h-full">
               <div className="space-y-4 sm:space-y-6 flex-1">
+                {/* Social Links */}
+                <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+                  <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Social Links</h2>
+                  {userData.socialLinks && userData.socialLinks.length > 0 ? (
+                    <div className="space-y-2">
+                      {userData.socialLinks.map((link) => {
+                        const IconComponent = getSocialIcon(link.platform)
+                        return (
+                          <div key={link.id} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-[#eef2eb]">
+                            <div className="flex items-center flex-1 min-w-0">
+                              <div className="mr-2 sm:mr-3 flex-shrink-0">
+                                <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-[#4a7c59]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm font-medium text-[#2c3e2d] truncate">
+                                  {getSocialLabel(link.platform)}
+                                </p>
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-[#4a7c59] hover:text-[#3a6147] truncate block"
+                                >
+                                  {link.url}
+                                </a>
+                              </div>
+                            </div>
+                            <div className="flex items-center ml-2">
+                              <a
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 hover:bg-[#dce4d7] rounded"
+                                title={`Visit ${getSocialLabel(link.platform)}`}
+                              >
+                                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
+                              </a>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <div className="text-2xl mb-2">🔗</div>
+                      <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2">No social links added yet</p>
+                      <p className="text-xs text-[#5c6d5e]">This user hasn't added any social media profiles</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent Achievement */}
+                <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+                  <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Recent Achievement</h2>
+                  {certificates.length > 0 ? (
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-gradient-to-br from-[#eef2eb] to-[#dce4d7]">
+                      <Award className="mx-auto mb-2 sm:mb-3 h-6 w-6 sm:h-8 sm:w-8 text-[#4a7c59]" />
+                      <h3 className="font-medium text-[#2c3e2d] mb-1 text-sm sm:text-base">Latest Certificate</h3>
+                      <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2 leading-tight">
+                        {certificates[certificates.length - 1]?.courseTitle}
+                      </p>
+                      <p className="text-xs text-[#5c6d5e]">
+                        {certificates[certificates.length - 1]?.completionDate ? 
+                          new Date(certificates[certificates.length - 1].completionDate).toLocaleDateString() : 
+                          'Recently earned'
+                        }
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-center p-3 sm:p-4 rounded-lg bg-[#f8f7f4]">
+                      <Award className="mx-auto mb-2 sm:mb-3 h-6 w-6 sm:h-8 sm:w-8 text-[#5c6d5e] opacity-50" />
+                      <p className="text-xs sm:text-sm text-[#5c6d5e]">No certificates yet</p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Quick Stats */}
                 <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
                   <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Quick Stats</h2>
@@ -470,57 +591,6 @@ function PublicProfilePage() {
                       </span>
                     </div>
                   </div>
-                </div>
-
-                {/* Recent Achievement */}
-                <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
-                  <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Recent Achievement</h2>
-                  {certificates.length > 0 ? (
-                    <div className="text-center p-3 sm:p-4 rounded-lg bg-gradient-to-br from-[#eef2eb] to-[#dce4d7]">
-                      <Award className="mx-auto mb-2 sm:mb-3 h-6 w-6 sm:h-8 sm:w-8 text-[#4a7c59]" />
-                      <h3 className="font-medium text-[#2c3e2d] mb-1 text-sm sm:text-base">Latest Certificate</h3>
-                      <p className="text-xs sm:text-sm text-[#5c6d5e] mb-2 leading-tight">
-                        {certificates[certificates.length - 1]?.courseTitle}
-                      </p>
-                      <p className="text-xs text-[#5c6d5e]">
-                        {certificates[certificates.length - 1]?.completionDate ? 
-                          new Date(certificates[certificates.length - 1].completionDate).toLocaleDateString() : 
-                          'Recently earned'
-                        }
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-center p-3 sm:p-4 rounded-lg bg-[#f8f7f4]">
-                      <Award className="mx-auto mb-2 sm:mb-3 h-6 w-6 sm:h-8 sm:w-8 text-[#5c6d5e] opacity-50" />
-                      <p className="text-xs sm:text-sm text-[#5c6d5e]">No certificates yet</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Account Overview */}
-                <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
-                  <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Account Overview</h2>
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="flex items-center">
-                      <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-[#eef2eb] mr-2 sm:mr-3">
-                        <User className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                      </div>
-                      <div>
-                        <p className="text-xs sm:text-sm font-medium text-[#2c3e2d]">Member Since</p>
-                        <p className="text-xs text-[#5c6d5e]">{formatDate(userData.joinDate)}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-[#eef2eb] mr-2 sm:mr-3">
-                        <TreePine className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                      </div>
-                      <div>
-                        <p className="text-xs sm:text-sm font-medium text-[#2c3e2d]">Account Type</p>
-                        <p className="text-xs text-[#5c6d5e]">{capitalizeFirst(userData.role)} Account</p>
-                      </div>
-                    </div>
-                  </div>  
                 </div>
               </div>
             </div>

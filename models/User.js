@@ -113,6 +113,22 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    socialLinks: [
+      {
+        platform: {
+          type: String,
+          required: true,
+        },
+        url: {
+          type: String,
+          required: true,
+        },
+        id: {
+          type: String,
+          required: true,
+        },
+      }
+    ],
   },
   { timestamps: true },
 )
