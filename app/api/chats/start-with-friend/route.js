@@ -39,6 +39,7 @@ export async function POST(request) {
     if (chatResult.success) {
       return NextResponse.json({
         success: true,
+        chatId: chatResult.chat._id,
         chat: chatResult.chat,
         isNewChat: chatResult.isNew,
         message: chatResult.message,

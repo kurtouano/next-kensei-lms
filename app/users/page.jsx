@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { useRealTimeFriends } from "@/hooks/useRealTimeFriends";
 import { formatLastSeen } from "@/lib/utils";
 import { useApiWithRetry } from "@/hooks/useApiWithRetry";
-import { useChat } from "@/hooks/useChat";
 
 function UsersPage() {
   const { data: session, status } = useSession();
@@ -44,8 +43,7 @@ function UsersPage() {
   // Use real-time friends hook
   const { friends, loading: friendsLoading, lastUpdate } = useRealTimeFriends();
   
-  // Use chat hook for starting conversations
-  const { startChatWithFriend } = useChat();
+  // Note: Chat functionality now uses direct API calls instead of chat hook
 
   // Filter friends based on search term
   const filteredFriends = friends.filter(friend =>
@@ -78,24 +76,29 @@ function UsersPage() {
   const handleStartChat = async (friendId, friendName) => {
     try {
       console.log(`Attempting to start chat with ${friendName} (ID: ${friendId})`);
-      console.log('Friend ID type:', typeof friendId);
-      console.log('Friend ID value:', friendId);
       
-      const result = await startChatWithFriend(friendId);
-      console.log('Chat creation result:', result);
+      const response = await fetch('/api/chats/start-with-friend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ friendId: friendId }),
+      });
+
+      const data = await response.json();
       
-      // Navigate to chat page
-      router.push('/chat');
-      
-      // Show success message
-      if (result.isNewChat) {
-        console.log(`Started new chat with ${friendName}`);
+      if (data.success) {
+        // Redirect to the chat with the specific chat ID
+        // This will automatically open the chat with this friend
+        router.push(`/chat?chatId=${data.chatId}&autoOpen=true`);
+        console.log(`Started chat with ${friendName}`);
       } else {
-        console.log(`Opened existing chat with ${friendName}`);
+        console.error('Failed to start chat:', data.message);
+        alert(`Failed to start chat with ${friendName}. Please try again.`);
       }
     } catch (error) {
       console.error("Failed to start chat:", error);
-      alert(`Failed to start chat with ${friendName}. ${error.message}`);
+      alert(`Failed to start chat with ${friendName}. Please try again.`);
     }
   };
 
@@ -205,14 +208,16 @@ function UsersPage() {
     
     setFilteredUsers(filtered);
     
-    // Reset visible count when search changes
-    setVisibleUsersCount(8);
-    
     // Mark data as ready after filtering is complete
     setTimeout(() => {
       setDataReady(true);
     }, 50); // Small delay to ensure smooth transition
   }, [searchTerm, users]);
+
+  // Reset visible count only when search term changes (not when friend status changes)
+  useEffect(() => {
+    setVisibleUsersCount(8);
+  }, [searchTerm]);
 
   // Get paginated users
   const paginatedUsers = filteredUsers.slice(0, visibleUsersCount);
@@ -510,7 +515,7 @@ function UsersPage() {
                         {/* Message Button */}
                         <button
                           onClick={() => handleStartChat(friend.id, friend.name)}
-                          className="mt-1 px-3 py-1.5 bg-[#4a7c59] text-white text-xs rounded-lg hover:bg-[#3a6147] transition-colors flex items-center gap-1.5"
+                          className="mt-1 px-3 py-1.5 bg-white text-[#4a7c59] border border-[#4a7c59] text-xs rounded-lg hover:bg-[#f8f7f4] hover:border-[#3a6147] transition-colors flex items-center gap-1.5"
                           title={`Message ${friend.name}`}
                         >
                           <MessageCircle className="h-3 w-3" />

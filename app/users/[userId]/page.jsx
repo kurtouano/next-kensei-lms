@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BonsaiIcon } from "@/components/bonsai-icon";
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
-import { Award, BookOpen, User, TreePine, Flag, UserCheck, Loader2, UserPlus, ArrowLeft, Clock, Check } from "lucide-react";
+import { Award, BookOpen, User, TreePine, Flag, UserCheck, Loader2, UserPlus, ArrowLeft, Clock, Check, UserMinus, MessageCircle, X } from "lucide-react";
 import Link from "next/link";
 
 function PublicProfilePage() {
@@ -17,6 +17,8 @@ function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [showFriendDropdown, setShowFriendDropdown] = useState(false);
+  const [showUnfriendModal, setShowUnfriendModal] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -28,6 +30,23 @@ function PublicProfilePage() {
       fetchUserProfile(params.userId);
     }
   }, [status, params.userId, router]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showFriendDropdown && !event.target.closest('.friend-dropdown-container')) {
+        setShowFriendDropdown(false);
+      }
+    };
+
+    if (showFriendDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFriendDropdown]);
 
   const fetchUserProfile = async (userId) => {
     try {
@@ -100,6 +119,81 @@ function PublicProfilePage() {
       alert('Network error. Please check your connection and try again.');
     } finally {
       setSendingRequest(false);
+    }
+  };
+
+  const handleUnfriend = () => {
+    setShowUnfriendModal(true);
+    setShowFriendDropdown(false); // Close dropdown
+  };
+
+  const confirmUnfriend = async () => {
+    // Prevent double-clicking
+    if (sendingRequest) return;
+
+    // 🚀 OPTIMISTIC UPDATE: Immediately show "Not Friends" state
+    setSendingRequest(true);
+    setUserData(prev => ({ ...prev, friendStatus: null }));
+    setShowUnfriendModal(false); // Close modal
+
+    try {
+      const response = await fetch('/api/friends/unfriend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ friendId: params.userId }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Keep the unfriended state (already set optimistically)
+        // Refresh the page to update the UI
+        window.location.reload();
+      } else {
+        // ❌ Request failed - revert to original state
+        console.error('Failed to unfriend:', data.message);
+        setUserData(prev => ({ ...prev, friendStatus: 'accepted' }));
+        
+        // Show error feedback to user
+        alert('Failed to unfriend. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error unfriending:', error);
+      // ❌ Network error - revert to original state
+      setUserData(prev => ({ ...prev, friendStatus: 'accepted' }));
+      
+      // Show error feedback to user  
+      alert('Network error. Please check your connection and try again.');
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
+  const handleStartChat = async () => {
+    try {
+      const response = await fetch('/api/chats/start-with-friend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ friendId: params.userId }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Redirect to the chat with the specific chat ID
+        // This will automatically open the chat with this friend
+        router.push(`/chat?chatId=${data.chatId}&autoOpen=true`);
+      } else {
+        console.error('Failed to start chat:', data.message);
+        alert('Failed to start chat. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      alert('Network error. Please check your connection and try again.');
     }
   };
 
@@ -247,16 +341,47 @@ function PublicProfilePage() {
                        <span className="whitespace-nowrap">Request Sent</span>
                      </button>
                    ) : userData.friendStatus === 'accepted' ? (
-                     <button 
-                       className="flex items-center justify-center bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] w-10 h-10 rounded-full cursor-default"
-                       title="Already friends"
-                     >
-                       <UserCheck className="h-5 w-5" />
-                     </button>
+                     <div className="flex items-center gap-2">
+                       {/* Chat Button - Direct access */}
+                       <button
+                         onClick={handleStartChat}
+                         className="flex items-center justify-center gap-2 bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] px-4 py-2 rounded-full hover:bg-[#dce4d7] transition-colors text-sm font-medium shadow-sm"
+                         title={`Chat with ${userData.name}`}
+                       >
+                         <MessageCircle className="h-4 w-4" />
+                         <span>Message</span>
+                       </button>
+                       
+                       {/* Friends Icon with Dropdown */}
+                       <div className="relative friend-dropdown-container">
+                         <button 
+                           onClick={() => setShowFriendDropdown(!showFriendDropdown)}
+                           className="flex items-center justify-center bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] w-10 h-10 rounded-full hover:bg-[#dce4d7] transition-colors cursor-pointer"
+                           title="Friends - Click for options"
+                         >
+                           <UserCheck className="h-5 w-5" />
+                         </button>
+                         
+                         {/* Dropdown Menu */}
+                         {showFriendDropdown && (
+                           <div className="absolute right-0 top-12 z-50 bg-white border border-[#dce4d7] rounded-lg shadow-lg py-2 min-w-[160px]">
+                             <button
+                               onClick={handleUnfriend}
+                               disabled={sendingRequest}
+                               className="w-full flex items-center gap-3 px-4 py-2 text-sm text-[#5c6d5e] hover:bg-[#f8f7f4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                             >
+                               <UserMinus className="h-4 w-4" />
+                               <span>Unfriend</span>
+                             </button>
+                           </div>
+                         )}
+                       </div>
+                     </div>
                    ) : (
                      <button 
                        onClick={handleFriendRequest}
-                       className="flex items-center justify-center gap-2 bg-[#4a7c59] text-white px-4 py-2 rounded-full hover:bg-[#3a6147] transition-colors text-sm font-medium shadow-sm"
+                       disabled={sendingRequest}
+                       className="flex items-center justify-center gap-2 bg-[#4a7c59] text-white px-4 py-2 rounded-full hover:bg-[#3a6147] transition-colors text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                        title="Send friend request"
                      >
                        <UserPlus className="h-4 w-4" />
@@ -402,6 +527,53 @@ function PublicProfilePage() {
           </div>
         </div>
       </main>
+
+      {/* Unfriend Confirmation Modal */}
+      {showUnfriendModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <UserMinus className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-[#2c3e2d]">Unfriend User</h3>
+                  <p className="text-sm text-[#5c6d5e]">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <p className="text-[#2c3e2d] mb-6">
+                Are you sure you want to unfriend <span className="font-medium">{userData?.name}</span>? 
+                You'll need to send a new friend request to connect again.
+              </p>
+              
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowUnfriendModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-[#5c6d5e] bg-white border border-[#dce4d7] rounded-lg hover:bg-[#f8f7f4] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmUnfriend}
+                  disabled={sendingRequest}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {sendingRequest ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Unfriending...
+                    </>
+                  ) : (
+                    'Unfriend'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

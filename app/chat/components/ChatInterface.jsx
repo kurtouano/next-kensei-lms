@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react"
 import { useSession } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 import { Send, ImageIcon, Paperclip, MoreVertical, Smile, Loader2, User, Users, Plus, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,6 +21,7 @@ const GroupMembersModal = lazy(() => import("./GroupMembersModal"))
 
 export default function ChatInterface() {
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
   const [selectedChatId, setSelectedChatId] = useState(null)
   const [message, setMessage] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -56,12 +58,32 @@ export default function ChatInterface() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // Mobile sidebar state
 
 
-  // Auto-select first chat
+  // Handle URL parameters for auto-opening specific chat
   useEffect(() => {
-    if (chats.length > 0 && !selectedChatId) {
+    const chatIdFromUrl = searchParams.get('chatId')
+    const autoOpen = searchParams.get('autoOpen')
+    
+    if (chatIdFromUrl && chats.length > 0) {
+      // Find the chat with the specified ID
+      const targetChat = chats.find(chat => chat.id === chatIdFromUrl)
+      if (targetChat) {
+        setSelectedChatId(chatIdFromUrl)
+        // If autoOpen is true, focus the message input
+        if (autoOpen === 'true' && messageInputRef.current) {
+          setTimeout(() => {
+            messageInputRef.current?.focus()
+          }, 500) // Small delay to ensure the chat is loaded
+        }
+      }
+    }
+  }, [chats, searchParams])
+
+  // Auto-select first chat if no specific chat is selected
+  useEffect(() => {
+    if (chats.length > 0 && !selectedChatId && !searchParams.get('chatId')) {
       setSelectedChatId(chats[0].id)
     }
-  }, [chats, selectedChatId])
+  }, [chats, selectedChatId, searchParams])
 
   // Listen for chat refresh events (e.g., after role changes)
   useEffect(() => {
