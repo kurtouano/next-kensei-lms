@@ -564,7 +564,7 @@ function UsersPage() {
                 <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 text-[#4a7c59]" />
                 <h2 className="text-lg font-semibold text-[#2c3e2d]">Find Friends</h2>
               </div>
-              <div className="relative w-full sm:max-w-md">
+              <div className="relative w-full sm:max-w-xs">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
                 <input
                   type="text"
