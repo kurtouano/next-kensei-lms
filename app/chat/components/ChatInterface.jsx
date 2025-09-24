@@ -1046,14 +1046,7 @@ export default function ChatInterface() {
 
       {/* Modals */}
       {showCreateGroupModal && (
-        <Suspense fallback={
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 flex items-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-[#4a7c59]" />
-              <span className="text-[#2c3e2d]">Loading...</span>
-            </div>
-          </div>
-        }>
+        <Suspense fallback={null}>
           <CreateGroupChatModal
             isOpen={showCreateGroupModal}
             onClose={() => setShowCreateGroupModal(false)}
@@ -1067,14 +1060,7 @@ export default function ChatInterface() {
         </Suspense>
       )}
       
-      <Suspense fallback={
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex items-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-[#4a7c59]" />
-            <span className="text-[#2c3e2d]">Loading...</span>
-          </div>
-        </div>
-      }>
+      <Suspense fallback={null}>
         <GroupMembersModal
           isOpen={showMembersModal}
           onClose={() => setShowMembersModal(false)}
@@ -1093,14 +1079,7 @@ export default function ChatInterface() {
         />
       </Suspense>
       
-      <Suspense fallback={
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex items-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-[#4a7c59]" />
-            <span className="text-[#2c3e2d]">Loading...</span>
-          </div>
-        </div>
-      }>
+      <Suspense fallback={null}>
         <GroupInviteModal
           isOpen={showInviteModal}
           onClose={() => {
