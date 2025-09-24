@@ -153,6 +153,12 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
         onMemberLeft?.() // Refresh the chat data
         setShowRemoveConfirm(false)
         setMemberToRemove(null)
+        
+        // Force a small delay to ensure system message is processed
+        setTimeout(() => {
+          // This will trigger a refresh of the chat interface
+          window.dispatchEvent(new CustomEvent('chatRefresh'))
+        }, 200)
       } else {
         setShowRemoveConfirm(false)
         setMemberToRemove(null)
@@ -251,9 +257,17 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
       const data = await response.json()
 
       if (data.success) {
-        // Close modal on success
+        // Close modal on success and refresh chat data
         setShowAdminManagement(false)
         setMemberToManage(null)
+        // Trigger chat refresh to show updated member list and system message
+        onMemberLeft?.()
+        
+        // Force a small delay to ensure system message is processed
+        setTimeout(() => {
+          // This will trigger a refresh of the chat interface
+          window.dispatchEvent(new CustomEvent('chatRefresh'))
+        }, 200)
       } else {
         setErrorMessage(data.error || 'Failed to change role')
         setShowErrorModal(true)
@@ -273,9 +287,6 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
   }
 
   const renderAvatar = (user) => {
-    console.log('Rendering avatar for user:', user)
-    console.log('User icon:', user.icon)
-    console.log('User bonsai:', user.bonsai)
     
     // If user has icon: 'bonsai', show a default bonsai
     if (user.icon === "bonsai") {
@@ -315,12 +326,6 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
     return (member._id || member.id)?.toString() === session?.user?.id?.toString()
   }
 
-  // Debug logging
-  console.log('Chat data:', chat)
-  console.log('Session user ID:', session?.user?.id)
-  console.log('Chat createdBy:', chat?.createdBy)
-  console.log('Chat createdBy type:', typeof chat?.createdBy)
-  console.log('Session user ID type:', typeof session?.user?.id)
   
   // Check if user is admin using ChatParticipant roles
   const currentUserId = session?.user?.id?.toString()
@@ -338,18 +343,18 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
   if (!isOpen || !chat) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md max-h-[80vh] overflow-hidden">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <Card className="w-full max-w-md max-h-[85vh] sm:max-h-[80vh] overflow-hidden">
+        <div className="p-4 sm:p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#4a7c59] flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#4a7c59] flex items-center justify-center">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-[#2c3e2d]">Group Members</h2>
-                <p className="text-sm text-gray-600">{chat.name}</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Group Members</h2>
+                <p className="text-xs sm:text-sm text-gray-600">{chat.name}</p>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
@@ -358,14 +363,14 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
           </div>
 
           {/* Members List */}
-          <div className="max-h-96 overflow-y-auto mb-6">
+          <div className="max-h-80 sm:max-h-96 overflow-y-auto mb-4 sm:mb-6">
             {membersLoading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4a7c59] mx-auto mb-3"></div>
-                <p className="text-gray-500">Loading members...</p>
+                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-[#4a7c59] mx-auto mb-3"></div>
+                <p className="text-gray-500 text-xs sm:text-sm">Loading members...</p>
               </div>
             ) : membersWithBonsai && membersWithBonsai.length > 0 ? (
-              <div className="max-h-64 overflow-y-auto space-y-1 pr-2">
+              <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-1 pr-2">
                 {membersWithBonsai.map((member) => {
                   const memberId = (member._id || member.id)?.toString()
                   const isCurrentUserMember = isCurrentUser(member)
@@ -375,30 +380,30 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
                   return (
                     <div
                       key={member._id || member.id || Math.random()}
-                      className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-2 sm:gap-3 py-2 px-2 sm:px-3 rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                      <div className="w-8 h-8">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8">
                         {renderAvatar(member)}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-[#2c3e2d]">
+                        <p className="font-medium text-[#2c3e2d] text-sm sm:text-base">
                           {member.name}
                           {isCurrentUserMember && (
-                            <span className="text-sm text-gray-500 ml-2">(You)</span>
+                            <span className="text-xs sm:text-sm text-gray-500 ml-1 sm:ml-2">(You)</span>
                           )}
                           {isMemberAdmin && (
-                            <span className="text-sm text-[#4a7c59] font-semibold ml-2">• Admin</span>
+                            <span className="text-xs sm:text-sm text-[#4a7c59] font-semibold ml-1 sm:ml-2">• Admin</span>
                           )}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2">
                         {canManageAdmins && !isCurrentUserMember && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => openAdminManagement(member)}
                             disabled={loading}
-                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 text-xs sm:text-sm px-2 py-1"
                           >
                             {isMemberAdmin ? 'Manage' : 'Make Admin'}
                           </Button>
@@ -409,9 +414,9 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
                             size="sm"
                             onClick={() => openRemoveConfirm(member)}
                             disabled={loading}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 sm:p-2"
                           >
-                            <UserMinus className="h-4 w-4" />
+                            <UserMinus className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         )}
                       </div>
@@ -421,8 +426,8 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
               </div>
             ) : (
               <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500">No members found</p>
+                <Users className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500 text-xs sm:text-sm">No members found</p>
               </div>
             )}
           </div>
@@ -431,9 +436,9 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
           <div className="flex gap-2 justify-between">
             <Button 
               onClick={onInviteFriends}
-              className="bg-[#4a7c59] hover:bg-[#3a6147] flex items-center gap-2"
+              className="bg-[#4a7c59] hover:bg-[#3a6147] flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2"
             >
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
               Invite Friends
             </Button>
             <div className="flex gap-2">
@@ -441,9 +446,9 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
                 onClick={openLeaveConfirm}
                 disabled={leaving}
                 variant="destructive"
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
                 {leaving ? "Leaving..." : "Leave Group"}
               </Button>
             </div>
@@ -578,70 +583,67 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
 
       {/* Admin Transfer Modal */}
       {showAdminTransfer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                <Users className="h-5 w-5 text-yellow-600" />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-2 sm:p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Transfer Admin Role</h3>
-                <p className="text-sm text-gray-500">You must transfer admin rights before leaving</p>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Transfer Admin Role</h3>
+                <p className="text-xs sm:text-sm text-gray-500">You must transfer admin rights before leaving</p>
               </div>
             </div>
-            <p className="text-gray-700 mb-4">
+            <p className="text-gray-700 mb-3 sm:mb-4 text-xs sm:text-sm">
               As the group admin, you need to transfer your admin rights to another member before leaving the group.
             </p>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mb-3 sm:mb-4">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Select new admin:
               </label>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
+              <div className="space-y-1 sm:space-y-2 max-h-32 sm:max-h-40 overflow-y-auto">
                 {membersWithBonsai
                   .filter(member => (member._id || member.id)?.toString() !== session?.user?.id?.toString())
                   .map((member) => (
                     <div
                       key={member._id || member.id}
                       onClick={() => {
-                        console.log('Selecting member:', member)
-                        console.log('Current selected:', selectedNewAdmin)
                         setSelectedNewAdmin(member)
                       }}
-                      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
+                      className={`flex items-center gap-2 sm:gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                         (() => {
                           const selectedId = selectedNewAdmin?._id || selectedNewAdmin?.id
                           const memberId = member._id || member.id
                           const isSelected = selectedId === memberId
-                          console.log(`Member ${member.name}: selectedId=${selectedId}, memberId=${memberId}, isSelected=${isSelected}`)
                           return isSelected
                         })()
                           ? 'bg-[#4a7c59] text-white'
                           : 'hover:bg-gray-50'
                       }`}
                     >
-                      <div className="w-8 h-8">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8">
                         {renderAvatar(member)}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{member.name}</p>
+                        <p className="font-medium text-sm sm:text-base">{member.name}</p>
                       </div>
                       {(() => {
                         const selectedId = selectedNewAdmin?._id || selectedNewAdmin?.id
                         const memberId = member._id || member.id
                         const isSelected = selectedId === memberId
                         return isSelected ? (
-                          <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-[#4a7c59] rounded-full"></div>
+                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-[#4a7c59] rounded-full"></div>
                           </div>
                         ) : (
-                          <div className="w-4 h-4 border-2 border-gray-300 rounded-full"></div>
+                          <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-300 rounded-full"></div>
                         )
                       })()}
                     </div>
                   ))}
               </div>
             </div>
-            <div className="flex gap-3 justify-end">
+            <div className="flex gap-2 sm:gap-3 justify-end">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -649,22 +651,23 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
                   setSelectedNewAdmin(null)
                 }}
                 disabled={loading}
+                className="text-xs sm:text-sm px-3 py-2"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleAdminTransfer}
                 disabled={!selectedNewAdmin || loading}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white"></div>
                     Transferring...
                   </>
                 ) : (
                   <>
-                    <Users className="h-4 w-4" />
+                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                     Transfer & Leave
                   </>
                 )}

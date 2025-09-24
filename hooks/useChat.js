@@ -12,7 +12,6 @@ export function useChat() {
   // Fetch user's chats
   const fetchChats = useCallback(async (page = 1) => {
     if (!session?.user?.email) {
-      console.log('No session email, skipping fetch chats');
       return;
     }
 
@@ -126,8 +125,8 @@ export function useChat() {
             ...chat,
             lastMessage: {
               content: newMessage.content,
-              sender: newMessage.sender?.name || "Unknown",
-              senderEmail: newMessage.sender?.email || "",
+              sender: newMessage.sender?.name || "System",
+              senderEmail: newMessage.sender?.email || "system@kensei-lms.com",
               createdAt: newMessage.createdAt,
               type: newMessage.type,
               attachments: newMessage.attachments || [],
@@ -648,18 +647,17 @@ export function useChatMessages(chatId, onNewMessage = null) {
 
   // Set up real-time connection with reconnection logic
   useEffect(() => {
-    if (!session?.user?.email || !chatId) return
-
+    if (!session?.user?.email || !chatId) {
+      return
+    }
     let reconnectAttempts = 0
     const maxReconnectAttempts = 5
     let reconnectTimer = null
 
     const connectSSE = () => {
-      console.log(`Connecting to SSE for chat ${chatId}...`)
       const source = new EventSource(`/api/chats/stream?chatId=${chatId}`)
 
       source.onopen = () => {
-        console.log("SSE connection opened")
         reconnectAttempts = 0 // Reset on successful connection
       }
 
@@ -669,21 +667,25 @@ export function useChatMessages(chatId, onNewMessage = null) {
           
           switch (data.type) {
             case "connected":
-              console.log("Connected to chat stream")
               break
             case "ping":
               // Handle ping messages to keep connection alive
               break
             case "new_message":
-              console.log("Received new message via SSE:", data.message.id, "Type:", data.message.type)
               setMessages(prev => {
                 // Check if message already exists to prevent duplicates
                 const messageExists = prev.some(msg => msg.id === data.message.id)
                 if (messageExists) {
-                  console.log("Message already exists, skipping:", data.message.id)
                   return prev
                 }
-                console.log("Adding new message to state:", data.message.id)
+                
+                // For system messages, ensure they appear immediately
+                if (data.message.type === 'system') {
+                  // Force a re-render by creating a new array reference
+                  const newMessages = [...prev, data.message]
+                  return newMessages
+                }
+                
                 return [...prev, data.message]
               })
               
@@ -714,10 +716,9 @@ export function useChatMessages(chatId, onNewMessage = null) {
               break
             case "typing":
               // Handle typing indicators (you can implement UI for this)
-              console.log("User typing:", data)
               break
             default:
-              console.log("Unknown event type:", data.type)
+              break
           }
         } catch (error) {
           console.error("Error parsing SSE data:", error)
@@ -725,23 +726,21 @@ export function useChatMessages(chatId, onNewMessage = null) {
       }
 
       source.onerror = (error) => {
-        console.error("SSE error:", error)
+        console.error("SSE error for chat", chatId, ":", error)
         source.close()
         
         // Attempt reconnection with exponential backoff
         if (reconnectAttempts < maxReconnectAttempts) {
           const delay = Math.pow(2, reconnectAttempts) * 1000 // 1s, 2s, 4s, 8s, 16s
-          console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`)
           
           reconnectTimer = setTimeout(() => {
             reconnectAttempts++
             connectSSE()
           }, delay)
         } else {
-          console.error("Max reconnection attempts reached. SSE connection failed.")
+          console.error("Max reconnection attempts reached. SSE connection failed for chat", chatId)
           // Fallback: refresh messages periodically
           setInterval(() => {
-            console.log("Fallback: Refreshing messages due to SSE failure")
             fetchMessages(1)
           }, 10000) // Refresh every 10 seconds as fallback
         }

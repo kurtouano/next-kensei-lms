@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
+import AlertModal from "./AlertModal"
 
 export default function GroupInviteModal({ isOpen, onClose, chat }) {
   const { data: session } = useSession()
@@ -17,6 +18,7 @@ export default function GroupInviteModal({ isOpen, onClose, chat }) {
   const [loading, setLoading] = useState(false)
   const [inviting, setInviting] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: "", message: "", type: "info" })
 
   // Generate invite link when modal opens
   useEffect(() => {
@@ -70,6 +72,8 @@ export default function GroupInviteModal({ isOpen, onClose, chat }) {
   }
 
   const handleFriendRemove = (friendId) => {
+    if (!friendId) return
+    
     setSelectedFriends(prev => prev.filter(friend => {
       const friendIdValue = friend._id || friend.id
       return friendIdValue && friendIdValue.toString() !== friendId.toString()
@@ -120,15 +124,31 @@ export default function GroupInviteModal({ isOpen, onClose, chat }) {
       const data = await response.json()
 
       if (data.success) {
-        alert(`Successfully invited ${selectedFriends.length} friends!`)
         setSelectedFriends([])
+        // Don't show success modal, just close and let real-time updates handle the UI
         onClose()
+        
+        // Force a small delay to ensure system messages are processed
+        setTimeout(() => {
+          // This will trigger a refresh of the chat interface
+          window.dispatchEvent(new CustomEvent('chatRefresh'))
+        }, 300)
       } else {
-        alert(data.error || 'Failed to invite friends')
+        setAlertModal({
+          isOpen: true,
+          title: "Error",
+          message: data.error || 'Failed to invite friends',
+          type: "error"
+        })
       }
     } catch (error) {
       console.error('Error inviting friends:', error)
-      alert('Failed to invite friends')
+      setAlertModal({
+        isOpen: true,
+        title: "Error",
+        message: 'Failed to invite friends',
+        type: "error"
+      })
     } finally {
       setInviting(false)
     }
@@ -178,18 +198,18 @@ export default function GroupInviteModal({ isOpen, onClose, chat }) {
   if (!isOpen || !chat) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <Card className="w-full max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden">
+        <div className="p-4 sm:p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#4a7c59] flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#4a7c59] flex items-center justify-center">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-[#2c3e2d]">Invite to {chat.name}</h2>
-                <p className="text-sm text-gray-600">Share the group with friends</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Invite to {chat.name}</h2>
+                <p className="text-xs sm:text-sm text-gray-600">Share the group with friends</p>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={handleClose}>
@@ -198,64 +218,99 @@ export default function GroupInviteModal({ isOpen, onClose, chat }) {
           </div>
 
           {/* Invite Link Section */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-[#2c3e2d] mb-2">
+          <div className="mb-4 sm:mb-6">
+            <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
               Invite Link
             </label>
-            <div className="flex gap-2">
-              <Input
-                value={inviteLink}
-                readOnly
-                className="flex-1"
-              />
-              <Button
-                variant="outline"
-                onClick={handleCopyLink}
-                className="flex items-center gap-2"
-              >
-                {copied ? (
-                  <>
-                    <X className="h-4 w-4" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    Copy
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={handleShareLink}
-                className="bg-[#4a7c59] hover:bg-[#3a6147] flex items-center gap-2"
-              >
-                <Share2 className="h-4 w-4" />
-                Share
-              </Button>
+            
+            {/* Desktop: Show full input with buttons */}
+            <div className="hidden sm:block">
+              <div className="flex gap-2">
+                <Input
+                  value={inviteLink}
+                  readOnly
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-2"
+                >
+                  {copied ? (
+                    <>
+                      <X className="h-4 w-4" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleShareLink}
+                  className="bg-[#4a7c59] hover:bg-[#3a6147] flex items-center gap-2"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </Button>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            
+            {/* Mobile: Show only buttons */}
+            <div className="block sm:hidden">
+              <div className="flex gap-2 justify-center">
+                <Button
+                  variant="outline"
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-2 flex-1"
+                >
+                  {copied ? (
+                    <>
+                      <X className="h-4 w-4" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy Link
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleShareLink}
+                  className="bg-[#4a7c59] hover:bg-[#3a6147] flex items-center gap-2 flex-1"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </Button>
+              </div>
+            </div>
+            
+            <p className="text-xs text-gray-500 mt-2 text-center sm:text-left">
               Anyone with this link can join the group
             </p>
           </div>
 
           {/* Selected Friends */}
           {selectedFriends.length > 0 && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-[#2c3e2d] mb-2">
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
                 Selected Friends ({selectedFriends.length})
               </label>
               <div className="flex flex-wrap gap-2">
                 {selectedFriends.map((friend) => (
                   <div
                     key={friend._id || friend.id || Math.random()}
-                    className="flex items-center gap-2 bg-[#eef2eb] rounded-full px-3 py-2"
+                    className="flex items-center gap-1 sm:gap-2 bg-[#eef2eb] rounded-full px-2 sm:px-3 py-1 sm:py-2"
                   >
-                    <div className="w-6 h-6">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6">
                       {renderAvatar(friend)}
                     </div>
-                    <span className="text-sm text-[#2c3e2d]">{friend.name}</span>
+                    <span className="text-xs text-[#2c3e2d]">{friend.name}</span>
                     <button
-                      onClick={() => handleFriendRemove(friend._id)}
+                      onClick={() => handleFriendRemove(friend._id || friend.id)}
                       className="text-gray-500 hover:text-red-500"
                     >
                       <X className="h-3 w-3" />
@@ -267,8 +322,8 @@ export default function GroupInviteModal({ isOpen, onClose, chat }) {
           )}
 
           {/* Friend Search */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-[#2c3e2d] mb-2">
+          <div className="mb-4 sm:mb-6">
+            <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
               Invite Friends Directly
             </label>
             <div className="relative">
@@ -283,33 +338,33 @@ export default function GroupInviteModal({ isOpen, onClose, chat }) {
           </div>
 
           {/* Friends List */}
-          <div className="max-h-60 overflow-y-auto mb-6">
+          <div className="max-h-48 sm:max-h-60 overflow-y-auto mb-4 sm:mb-6">
             {loading ? (
               <div className="text-center py-4">
-                <p className="text-gray-500">Loading friends...</p>
+                <p className="text-gray-500 text-xs sm:text-sm">Loading friends...</p>
               </div>
             ) : filteredFriends.length === 0 ? (
               <div className="text-center py-4">
-                <p className="text-gray-500">
+                <p className="text-gray-500 text-xs sm:text-sm">
                   {searchQuery ? "No friends found matching your search" : "No friends available to invite"}
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {filteredFriends.map((friend) => (
                   <div
                     key={friend._id || friend.id || Math.random()}
                     onClick={() => handleFriendSelect(friend)}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                   >
-                    <div className="w-10 h-10">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10">
                       {renderAvatar(friend)}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-[#2c3e2d]">{friend.name}</p>
-                      <p className="text-sm text-gray-500">{friend.email}</p>
+                      <p className="font-medium text-[#2c3e2d] text-xs sm:text-sm">{friend.name}</p>
+                      <p className="text-xs text-gray-500">{friend.email}</p>
                     </div>
-                    <UserPlus className="h-4 w-4 text-gray-400" />
+                    <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                   </div>
                 ))}
               </div>
@@ -333,6 +388,15 @@ export default function GroupInviteModal({ isOpen, onClose, chat }) {
           </div>
         </div>
       </Card>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ isOpen: false, title: "", message: "", type: "info" })}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+      />
     </div>
   )
 }

@@ -53,6 +53,8 @@ export async function GET(request) {
           email: session.user.email,
         })
 
+        // SSE connection established
+
         // Send initial connection message
         controller.enqueue(`data: ${JSON.stringify({
           type: "connected",
@@ -60,8 +62,21 @@ export async function GET(request) {
           timestamp: new Date().toISOString(),
         })}\n\n`)
 
+        // Send a ping every 30 seconds to keep connection alive
+        const pingInterval = setInterval(() => {
+          try {
+            controller.enqueue(`data: ${JSON.stringify({
+              type: "ping",
+              timestamp: new Date().toISOString(),
+            })}\n\n`)
+          } catch (error) {
+            clearInterval(pingInterval)
+          }
+        }, 30000)
+
         // Handle connection cleanup
         request.signal.addEventListener("abort", () => {
+          clearInterval(pingInterval)
           connections.delete(connectionId)
           try {
             controller.close()
@@ -92,19 +107,16 @@ export async function GET(request) {
 
 // Function to broadcast message to chat participants
 export function broadcastToChat(chatId, message, excludeUserId = null) {
-  console.log(`Broadcasting to chat ${chatId}, excluding user ${excludeUserId}`)
   const chatConnections = Array.from(connections.entries()).filter(
     ([_, connection]) => 
       connection.chatId === chatId && 
       connection.userId !== excludeUserId?.toString()
   )
 
-  console.log(`Found ${chatConnections.length} connections for chat ${chatId}`)
-
   chatConnections.forEach(([connectionId, connection]) => {
     try {
-      connection.controller.enqueue(`data: ${JSON.stringify(message)}\n\n`)
-      console.log(`Message broadcasted to connection ${connectionId}`)
+      const messageData = `data: ${JSON.stringify(message)}\n\n`
+      connection.controller.enqueue(messageData)
     } catch (error) {
       console.error(`Failed to broadcast to connection ${connectionId}:`, error)
       // Remove broken connection
@@ -130,7 +142,6 @@ function cleanupDeadConnections() {
   })
   
   deadConnections.forEach(connectionId => {
-    console.log(`Cleaning up dead connection: ${connectionId}`)
     connections.delete(connectionId)
   })
 }

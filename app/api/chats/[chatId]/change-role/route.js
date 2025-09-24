@@ -83,7 +83,15 @@ export async function POST(request, { params }) {
     )
 
     // Create system message for role change
-    await createRoleChangeMessage(chatId, targetUserName, newRole, currentUserName)
+    try {
+      await createRoleChangeMessage(chatId, targetUserName, newRole, currentUserName)
+      
+      // Force a small delay to ensure the message is properly saved and broadcasted
+      await new Promise(resolve => setTimeout(resolve, 100))
+    } catch (systemMessageError) {
+      console.error('Error creating role change system message:', systemMessageError)
+      // Don't fail the entire request if system message creation fails
+    }
 
     // Update chat last activity
     chat.lastActivity = new Date()

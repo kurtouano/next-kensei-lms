@@ -5,6 +5,7 @@ import { connectDb } from "@/lib/mongodb"
 import Chat from "@/models/Chat"
 import ChatParticipant from "@/models/ChatParticipant"
 import User from "@/models/User"
+import { createJoinMessage } from "@/lib/systemMessageHelper"
 
 export async function POST(request, { params }) {
   try {
@@ -41,6 +42,8 @@ export async function POST(request, { params }) {
       user: user._id,
     })
 
+    let isNewMember = false
+    
     if (existingParticipation) {
       if (existingParticipation.isActive) {
         return NextResponse.json({ 
@@ -54,6 +57,7 @@ export async function POST(request, { params }) {
           isActive: true,
           joinedAt: new Date(),
         })
+        isNewMember = true
       }
     } else {
       // Add user to participants
@@ -68,6 +72,20 @@ export async function POST(request, { params }) {
         joinedAt: new Date(),
         isActive: true,
       })
+      isNewMember = true
+    }
+
+    // Create system message for joining (only for new members or reactivated members)
+    if (isNewMember) {
+      try {
+        await createJoinMessage(chatId, user.name)
+        
+        // Add a small delay to ensure the message is properly saved and broadcasted
+        await new Promise(resolve => setTimeout(resolve, 100))
+      } catch (systemMessageError) {
+        console.error('Error creating join system message:', systemMessageError)
+        // Don't fail the entire request if system message creation fails
+      }
     }
 
     // Get updated chat with populated participants

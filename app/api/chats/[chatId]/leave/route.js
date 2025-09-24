@@ -65,7 +65,9 @@ export async function POST(request, { params }) {
     const userName = user?.name || 'Unknown User'
 
     // Create system message for user leaving
+    console.log(`Creating leave message for chat ${chatId}: ${userName} left`)
     await createLeaveMessage(chatId, userName)
+    console.log(`Leave message created successfully`)
 
     // Remove user from participants
     chat.participants.splice(participantIndex, 1)

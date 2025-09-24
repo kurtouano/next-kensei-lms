@@ -73,7 +73,15 @@ export async function POST(request, { params }) {
     const currentUserName = currentUser?.name || 'Unknown User'
 
     // Create system message for member removal
-    await createRemoveMessage(chatId, removedUserName, currentUserName)
+    try {
+      await createRemoveMessage(chatId, removedUserName, currentUserName)
+      
+      // Force a small delay to ensure the message is properly saved and broadcasted
+      await new Promise(resolve => setTimeout(resolve, 100))
+    } catch (systemMessageError) {
+      console.error('Error creating remove system message:', systemMessageError)
+      // Don't fail the entire request if system message creation fails
+    }
 
     // Remove member from participants
     chat.participants.splice(participantIndex, 1)

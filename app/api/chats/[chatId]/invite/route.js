@@ -5,7 +5,7 @@ import { connectDb } from "@/lib/mongodb"
 import Chat from "@/models/Chat"
 import ChatParticipant from "@/models/ChatParticipant"
 import User from "@/models/User"
-import { createJoinMessage } from "@/lib/systemMessageHelper"
+import { createAddedMessage } from "@/lib/systemMessageHelper"
 
 export async function POST(request, { params }) {
   try {
@@ -100,14 +100,32 @@ export async function POST(request, { params }) {
     await Promise.all(participantPromises)
 
     // Create system messages for each new participant
+    // Get the current user's name for the "added by" message
+    const currentUserName = user.name || 'Unknown User'
+    
     const systemMessagePromises = newParticipantIds.map(async (participantId) => {
       const friend = friends.find(f => f._id.toString() === participantId.toString())
       if (friend) {
-        return await createJoinMessage(chatId, friend.name)
+        try {
+          const result = await createAddedMessage(chatId, friend.name, currentUserName)
+          return result
+        } catch (error) {
+          console.error(`Error creating added message for ${friend.name}:`, error)
+          return null
+        }
       }
+      return null
     })
 
-    await Promise.all(systemMessagePromises)
+    try {
+      await Promise.all(systemMessagePromises)
+      
+      // Force a small delay to ensure all messages are properly saved and broadcasted
+      await new Promise(resolve => setTimeout(resolve, 200))
+    } catch (error) {
+      console.error('Error creating some added messages:', error)
+      // Don't fail the entire request if some system messages fail
+    }
 
     // Update chat's last activity
     await Chat.findByIdAndUpdate(chatId, {

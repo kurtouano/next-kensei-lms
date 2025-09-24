@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { compressImage, validateImageFile } from "@/lib/imageCompression"
+import AlertModal from "./AlertModal"
 
 export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }) {
   const { data: session } = useSession()
@@ -20,6 +21,7 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
   const [groupAvatar, setGroupAvatar] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: "", message: "", type: "info" })
   const fileInputRef = useRef(null)
 
   // Fetch user's friends
@@ -70,7 +72,12 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
 
   const handleCreateGroup = async () => {
     if (!groupName.trim() || selectedFriends.length === 0) {
-      alert("Please enter a group name and select at least one friend")
+      setAlertModal({
+        isOpen: true,
+        title: "Missing Information",
+        message: "Please enter a group name and select at least one friend",
+        type: "warning"
+      })
       return
     }
 
@@ -95,11 +102,21 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
         onGroupCreated(data.chat)
         handleClose()
       } else {
-        alert(data.error || 'Failed to create group chat')
+        setAlertModal({
+          isOpen: true,
+          title: "Error",
+          message: data.error || 'Failed to create group chat',
+          type: "error"
+        })
       }
     } catch (error) {
       console.error('Error creating group chat:', error)
-      alert('Failed to create group chat')
+      setAlertModal({
+        isOpen: true,
+        title: "Error",
+        message: 'Failed to create group chat',
+        type: "error"
+      })
     } finally {
       setCreating(false)
     }
@@ -120,7 +137,12 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
       })
 
       if (!validation.isValid) {
-        alert(validation.errors.join(', '))
+        setAlertModal({
+          isOpen: true,
+          title: "Invalid Image",
+          message: validation.errors.join(', '),
+          type: "error"
+        })
         return
       }
 
@@ -161,7 +183,12 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
 
     } catch (error) {
       console.error('Avatar upload failed:', error)
-      alert(`Failed to upload avatar: ${error.message}`)
+      setAlertModal({
+        isOpen: true,
+        title: "Upload Failed",
+        message: `Failed to upload avatar: ${error.message}`,
+        type: "error"
+      })
     } finally {
       setUploadingAvatar(false)
       // Reset file input
@@ -186,6 +213,7 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
     setGroupAvatar(null)
     setAvatarPreview(null)
     setUploadingAvatar(false)
+    setAlertModal({ isOpen: false, title: "", message: "", type: "info" })
     onClose()
   }
 
@@ -226,18 +254,18 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        <div className="p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <Card className="w-full max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden">
+        <div className="p-4 sm:p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#4a7c59] flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#4a7c59] flex items-center justify-center">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-[#2c3e2d]">Create Group Chat</h2>
-                <p className="text-sm text-gray-600">Start a conversation with multiple friends</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Create Group Chat</h2>
+                <p className="text-xs sm:text-sm text-gray-600">Start a conversation with multiple friends</p>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={handleClose}>
@@ -246,13 +274,13 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
           </div>
 
           {/* Group Avatar */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-[#2c3e2d] mb-3">
+          <div className="mb-4 sm:mb-6">
+            <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2 sm:mb-3">
               Group Avatar (Optional)
             </label>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="relative">
-                <div className="w-20 h-20 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
                   {avatarPreview ? (
                     <img 
                       src={avatarPreview} 
@@ -260,26 +288,26 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
                       className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
-                    <Camera className="h-8 w-8 text-gray-400" />
+                    <Camera className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                   )}
                 </div>
                 {uploadingAvatar && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    <Loader2 className="h-4 w-4 sm:h-6 sm:w-6 text-white animate-spin" />
                   </div>
                 )}
               </div>
               
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1 sm:gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingAvatar}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2"
                 >
-                  <Upload className="h-4 w-4" />
+                  <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
                   {avatarPreview ? 'Change Avatar' : 'Upload Avatar'}
                 </Button>
                 
@@ -289,7 +317,7 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
                     variant="ghost"
                     size="sm"
                     onClick={handleRemoveAvatar}
-                    className="text-red-500 hover:text-red-700 text-xs"
+                    className="text-red-500 hover:text-red-700 text-xs px-2 py-1"
                   >
                     Remove Avatar
                   </Button>
@@ -308,9 +336,9 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
           </div>
 
           {/* Group Details */}
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
             <div>
-              <label className="block text-sm font-medium text-[#2c3e2d] mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
                 Group Name *
               </label>
               <Input
@@ -324,20 +352,20 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
 
           {/* Selected Friends */}
           {selectedFriends.length > 0 && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-[#2c3e2d] mb-2">
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
                 Selected Members ({selectedFriends.length})
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 {selectedFriends.map((friend) => (
                   <div
                     key={friend._id || friend.id || Math.random()}
-                    className="flex items-center gap-2 bg-[#eef2eb] rounded-full px-3 py-2"
+                    className="flex items-center gap-1 sm:gap-2 bg-[#eef2eb] rounded-full px-2 sm:px-3 py-1 sm:py-2"
                   >
-                    <div className="w-6 h-6">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6">
                       {renderAvatar(friend)}
                     </div>
-                    <span className="text-sm text-[#2c3e2d]">{friend.name}</span>
+                    <span className="text-xs sm:text-sm text-[#2c3e2d]">{friend.name}</span>
                     <button
                       onClick={() => handleFriendRemove(friend._id || friend.id)}
                       className="text-gray-500 hover:text-red-500"
@@ -351,49 +379,49 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
           )}
 
           {/* Friend Search */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-[#2c3e2d] mb-2">
+          <div className="mb-4 sm:mb-6">
+            <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
               Add Friends
             </label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
               <Input
                 placeholder="Search friends..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-8 sm:pl-10"
               />
             </div>
           </div>
 
           {/* Friends List */}
-          <div className="max-h-60 overflow-y-auto mb-6">
+          <div className="max-h-48 sm:max-h-60 overflow-y-auto mb-4 sm:mb-6">
             {loading ? (
               <div className="text-center py-4">
-                <p className="text-gray-500">Loading friends...</p>
+                <p className="text-gray-500 text-xs sm:text-sm">Loading friends...</p>
               </div>
             ) : filteredFriends.length === 0 ? (
               <div className="text-center py-4">
-                <p className="text-gray-500">
+                <p className="text-gray-500 text-xs sm:text-sm">
                   {searchQuery ? "No friends found matching your search" : "No friends available"}
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {filteredFriends.map((friend) => (
                   <div
                     key={friend._id || friend.id || Math.random()}
                     onClick={() => handleFriendSelect(friend)}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                   >
-                    <div className="w-10 h-10">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10">
                       {renderAvatar(friend)}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-[#2c3e2d]">{friend.name}</p>
-                      <p className="text-sm text-gray-500">{friend.email}</p>
+                      <p className="font-medium text-[#2c3e2d] text-sm sm:text-base">{friend.name}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">{friend.email}</p>
                     </div>
-                    <UserPlus className="h-4 w-4 text-gray-400" />
+                    <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                   </div>
                 ))}
               </div>
@@ -401,20 +429,33 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={handleClose}>
+          <div className="flex gap-2 sm:gap-3 justify-end">
+            <Button 
+              variant="outline" 
+              onClick={handleClose}
+              className="text-xs sm:text-sm px-3 py-2"
+            >
               Cancel
             </Button>
             <Button 
               onClick={handleCreateGroup}
               disabled={creating || !groupName.trim() || selectedFriends.length === 0}
-              className="bg-[#4a7c59] hover:bg-[#3a6147]"
+              className="bg-[#4a7c59] hover:bg-[#3a6147] text-xs sm:text-sm px-3 py-2"
             >
               {creating ? "Creating..." : `Create Group (${selectedFriends.length + 1})`}
             </Button>
           </div>
         </div>
       </Card>
+
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ isOpen: false, title: "", message: "", type: "info" })}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+      />
     </div>
   )
 }

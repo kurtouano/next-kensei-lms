@@ -67,6 +67,12 @@ export default function JoinGroupChatPage({ params }) {
 
       if (data.success) {
         setSuccess(true)
+        
+        // Trigger chat refresh to show the join system message
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('chatRefresh'))
+        }, 100)
+        
         // Redirect to chat after a short delay
         setTimeout(() => {
           router.push('/chat')

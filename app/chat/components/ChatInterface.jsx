@@ -9,14 +9,14 @@ import { Card } from "@/components/ui/card"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useChat, useChatMessages } from "@/hooks/useChat"
 import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
-import GroupInviteModal from "./GroupInviteModal"
-import GroupMembersModal from "./GroupMembersModal"
 import MessageItem from "./MessageItem"
 import LazyAvatar from "./LazyAvatar"
 import EmojiPicker from "./EmojiPicker"
 
-// Lazy load the CreateGroupChatModal
+// Lazy load the modals
 const CreateGroupChatModal = lazy(() => import("./CreateGroupChatModal"))
+const GroupInviteModal = lazy(() => import("./GroupInviteModal"))
+const GroupMembersModal = lazy(() => import("./GroupMembersModal"))
 
 export default function ChatInterface() {
   const { data: session } = useSession()
@@ -42,7 +42,9 @@ export default function ChatInterface() {
     sendTypingIndicator,
     loadMoreMessages,
     hasMore,
-    handleReaction
+    handleReaction,
+    fetchMessages,
+    refetch: refetchMessages
   } = useChatMessages(selectedChatId, updateChatWithNewMessage)
   const [uploading, setUploading] = useState(false)
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
@@ -63,6 +65,24 @@ export default function ChatInterface() {
       setSelectedChatId(chats[0].id)
     }
   }, [chats, selectedChatId])
+
+  // Listen for chat refresh events (e.g., after role changes)
+  useEffect(() => {
+    const handleChatRefresh = () => {
+      if (selectedChatId) {
+        // Trigger a refetch of messages to show system messages
+        setTimeout(() => {
+          // Force refresh messages by calling the refetch function
+          if (typeof refetchMessages === 'function') {
+            refetchMessages()
+          }
+        }, 100)
+      }
+    }
+
+    window.addEventListener('chatRefresh', handleChatRefresh)
+    return () => window.removeEventListener('chatRefresh', handleChatRefresh)
+  }, [selectedChatId, refetchMessages])
 
   // Handle scroll for infinite loading
   const handleScroll = useCallback(() => {
@@ -469,18 +489,24 @@ export default function ChatInterface() {
             <Card className="h-full flex flex-col">
               <div className="p-4 border-b">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold text-[#2c3e2d]">Messages</h2>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsSidebarOpen(false)}
-                      className="lg:hidden text-gray-500 hover:text-gray-700"
-                      title="Close sidebar"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <h2 className="text-lg font-semibold text-[#2c3e2d]">Messages</h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="lg:hidden text-gray-500 hover:text-gray-700"
+                    title="Close sidebar"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="relative flex items-center gap-2">
+                  <Input
+                    placeholder="Search conversations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-3 flex-1"
+                  />
                   <Button
                     variant="ghost"
                     size="sm"
@@ -490,14 +516,6 @@ export default function ChatInterface() {
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
-                </div>
-                <div className="relative">
-                  <Input
-                    placeholder="Search conversations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-3"
-                  />
                 </div>
               </div>
 
@@ -583,7 +601,9 @@ export default function ChatInterface() {
                               <>
                                 {chat.lastMessage.isCurrentUser && "You: "}
                                 {(() => {
-                                  if (chat.lastMessage.type === "image") {
+                                  if (chat.lastMessage.type === "system") {
+                                    return chat.lastMessage.content
+                                  } else if (chat.lastMessage.type === "image") {
                                     return "sent an image"
                                   } else if (chat.lastMessage.type === "attachment" || chat.lastMessage.type === "file") {
                                     // Check attachment type for more specific message
@@ -1002,28 +1022,50 @@ export default function ChatInterface() {
         </Suspense>
       )}
       
-      <GroupMembersModal
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-        chat={selectedChat}
-        onMemberLeft={() => {
-          refetchChats() // Refresh chat list when someone leaves
-          // If current user left, clear selected chat
-          if (selectedChat && !isUserParticipant) {
-            setSelectedChatId(null)
-          }
-        }}
-        onInviteFriends={() => {
-          setShowMembersModal(false)
-          setShowInviteModal(true)
-        }}
-      />
+      <Suspense fallback={
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-[#4a7c59]" />
+            <span className="text-[#2c3e2d]">Loading...</span>
+          </div>
+        </div>
+      }>
+        <GroupMembersModal
+          isOpen={showMembersModal}
+          onClose={() => setShowMembersModal(false)}
+          chat={selectedChat}
+          onMemberLeft={() => {
+            refetchChats() // Refresh chat list when someone leaves or role changes
+            // If current user left, clear selected chat
+            if (selectedChat && !isUserParticipant) {
+              setSelectedChatId(null)
+            }
+          }}
+          onInviteFriends={() => {
+            setShowMembersModal(false)
+            setShowInviteModal(true)
+          }}
+        />
+      </Suspense>
       
-      <GroupInviteModal
-        isOpen={showInviteModal}
-        onClose={() => setShowInviteModal(false)}
-        chat={selectedChat}
-      />
+      <Suspense fallback={
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-[#4a7c59]" />
+            <span className="text-[#2c3e2d]">Loading...</span>
+          </div>
+        </div>
+      }>
+        <GroupInviteModal
+          isOpen={showInviteModal}
+          onClose={() => {
+            setShowInviteModal(false)
+            // Refresh chat data after inviting to show new members
+            refetchChats()
+          }}
+          chat={selectedChat}
+        />
+      </Suspense>
         </div>
     </div>
   )
