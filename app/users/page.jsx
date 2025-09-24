@@ -24,6 +24,16 @@ function UsersPage() {
   const [visibleUsersCount, setVisibleUsersCount] = useState(8); // Number of users to show initially
   const friendsScrollRef = useRef(null);
   
+  // Friends pagination state
+  const [friendsPage, setFriendsPage] = useState(1);
+  const [friendsPerPage] = useState(10); // Show 10 friends per batch
+  const [loadingMoreFriends, setLoadingMoreFriends] = useState(false);
+  const [friendsPagination, setFriendsPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    hasMore: false
+  });
+  
   // Use enhanced API hook with retry logic
   const { loading, error, retryCount, get, clearError, isRetrying } = useApiWithRetry({
     maxRetries: 5,
@@ -41,6 +51,28 @@ function UsersPage() {
   const filteredFriends = friends.filter(friend =>
     friend.name.toLowerCase().includes(friendsSearchTerm.toLowerCase())
   );
+
+  // Reset pagination when search term changes
+  useEffect(() => {
+    setFriendsPage(1);
+  }, [friendsSearchTerm]);
+
+  // Calculate friends pagination with incremental loading
+  const totalFriends = filteredFriends.length;
+  const totalPages = Math.ceil(totalFriends / friendsPerPage);
+  const startIndex = (friendsPage - 1) * friendsPerPage;
+  
+  // Show incremental loading: 1-2 more users immediately, then load full batch
+  const immediateLoadCount = Math.min(2, totalFriends - startIndex); // Show 1-2 users immediately
+  const currentBatchEnd = startIndex + immediateLoadCount;
+  const fullBatchEnd = startIndex + friendsPerPage;
+  
+  // Show immediate users first, then full batch when loaded
+  const paginatedFriends = loadingMoreFriends 
+    ? filteredFriends.slice(0, currentBatchEnd) // Show immediate users while loading
+    : filteredFriends.slice(0, fullBatchEnd); // Show full batch when loaded
+  
+  const hasMoreFriends = fullBatchEnd < totalFriends;
 
   // Handle starting a chat with a friend
   const handleStartChat = async (friendId, friendName) => {
@@ -103,14 +135,37 @@ function UsersPage() {
 
 
   const scrollFriends = (direction) => {
-    if (friendsScrollRef.current) {
-      const scrollAmount = 300; // Scroll by 300px
-      const newScrollLeft = friendsScrollRef.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+    if (direction === 'right' && hasMoreFriends) {
+      // Load more friends when scrolling right
+      loadMoreFriends();
+    } else if (direction === 'left' && friendsScrollRef.current) {
+      // Scroll left normally
+      const scrollAmount = 300;
+      const newScrollLeft = friendsScrollRef.current.scrollLeft - scrollAmount;
       friendsScrollRef.current.scrollTo({
         left: newScrollLeft,
         behavior: 'smooth'
       });
     }
+  };
+
+  const loadMoreFriends = async () => {
+    if (loadingMoreFriends || !hasMoreFriends) return;
+    
+    setLoadingMoreFriends(true);
+    
+    // First, show 1-2 more users immediately for natural feel
+    const immediateUsers = Math.min(2, totalFriends - (friendsPage - 1) * friendsPerPage);
+    if (immediateUsers > 0) {
+      // Show immediate users right away
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    // Then load the full batch with a slight delay
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    setFriendsPage(prev => prev + 1);
+    setLoadingMoreFriends(false);
   };
 
   const updateLastSeen = async () => {
@@ -379,19 +434,28 @@ function UsersPage() {
                 {/* Right Arrow */}
                 <button
                   onClick={() => scrollFriends('right')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 z-30 p-2 rounded-full bg-white border border-[#dce4d7] hover:bg-[#eef2eb] transition-colors shadow-sm"
-                  title="Scroll right"
+                  disabled={!hasMoreFriends || loadingMoreFriends}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 z-30 p-2 rounded-full bg-white border border-[#dce4d7] transition-colors shadow-sm ${
+                    hasMoreFriends && !loadingMoreFriends 
+                      ? 'hover:bg-[#eef2eb] cursor-pointer' 
+                      : 'cursor-not-allowed opacity-50'
+                  }`}
+                  title={loadingMoreFriends ? "Loading more friends..." : hasMoreFriends ? "Load more friends" : "No more friends to load"}
                 >
-                  <ChevronRight className="h-4 w-4 text-[#4a7c59]" />
+                  {loadingMoreFriends ? (
+                    <RefreshCw className="h-4 w-4 text-[#4a7c59] animate-spin" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-[#4a7c59]" />
+                  )}
                 </button>
                 
-                {filteredFriends.length > 0 ? (
+                {paginatedFriends.length > 0 ? (
                   <div 
                     ref={friendsScrollRef}
                     className="flex gap-7 overflow-x-auto scrollbar-hide pb-2 px-16"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
-                    {filteredFriends.map((friend, index) => (
+                    {paginatedFriends.map((friend, index) => (
                       <div
                         key={friend.id || `friend-${index}`}
                         className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[120px]"
@@ -454,6 +518,27 @@ function UsersPage() {
                         </button>
                       </div>
                     ))}
+                    
+                    {/* Skeleton loading for more friends */}
+                    {loadingMoreFriends && (
+                      <>
+                        {[...Array(3)].map((_, skeletonIndex) => (
+                          <div
+                            key={`skeleton-${skeletonIndex}`}
+                            className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[120px] animate-pulse"
+                          >
+                            {/* Skeleton Avatar */}
+                            <div className="h-16 w-16 rounded-full bg-gray-200" />
+                            
+                            {/* Skeleton Name */}
+                            <div className="h-4 w-20 bg-gray-200 rounded" />
+                            
+                            {/* Skeleton Message Button */}
+                            <div className="h-6 w-16 bg-gray-200 rounded-lg mt-1" />
+                          </div>
+                        ))}
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 px-16">
@@ -610,7 +695,7 @@ function UsersPage() {
             <div className="flex justify-center mt-6">
               <button
                 onClick={loadMoreUsers}
-                className="flex items-center gap-2 bg-[#4a7c59] text-white py-3 px-6 rounded-lg hover:bg-[#3a6147] transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-white text-[#4a7c59] border border-[#4a7c59] py-2 px-4 rounded-lg hover:bg-[#f0f8f0] transition-colors shadow-sm text-sm"
               >
                 <Users className="h-4 w-4" />
                 Load More Users
