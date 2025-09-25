@@ -2,7 +2,7 @@
 import { memo } from "react"
 import { AlertCircle } from "lucide-react"
 
-const ProgressSteps = memo(({ steps, currentStep, showValidation, validateStep }) => {
+const ProgressSteps = memo(({ steps, currentStep, showValidation, validateStep, onStepClick }) => {
   return (
     <div className="mb-8">
       {/* Desktop Progress */}
@@ -21,11 +21,18 @@ const ProgressSteps = memo(({ steps, currentStep, showValidation, validateStep }
           {/* Steps */}
           <div className="flex items-center justify-between relative z-10">
             {steps.map((step, index) => (
-              <div key={index} className="flex items-center bg-white px-2">
+              <button
+                key={index}
+                onClick={() => onStepClick && onStepClick(index)}
+                className={`flex items-center bg-white px-2 py-1 rounded-lg transition-all duration-200 ${
+                  onStepClick ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-default'
+                }`}
+                disabled={!onStepClick}
+              >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium relative ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium relative transition-all duration-200 ${
                     index <= currentStep ? "bg-[#4a7c59] text-white" : "bg-gray-200 text-gray-600"
-                  }`}
+                  } ${onStepClick ? 'hover:scale-105' : ''}`}
                 >
                   {index + 1}
                   {/* Show error indicator only when validation is active */}
@@ -33,10 +40,12 @@ const ProgressSteps = memo(({ steps, currentStep, showValidation, validateStep }
                     <AlertCircle className="absolute -top-1 -right-1 h-4 w-4 text-red-500 bg-white rounded-full" />
                   )}
                 </div>
-                <span className={`ml-2 text-sm whitespace-nowrap ${index <= currentStep ? "text-[#4a7c59] font-medium" : "text-gray-500"}`}>
+                <span className={`ml-2 text-sm whitespace-nowrap transition-colors duration-200 ${
+                  index <= currentStep ? "text-[#4a7c59] font-medium" : "text-gray-500"
+                } ${onStepClick ? 'hover:text-[#4a7c59]' : ''}`}>
                   {step}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -70,18 +79,25 @@ const ProgressSteps = memo(({ steps, currentStep, showValidation, validateStep }
           {/* Step Dots */}
           <div className="flex justify-between relative z-10">
             {steps.map((step, index) => (
-              <div key={index} className="flex flex-col items-center">
+              <button
+                key={index}
+                onClick={() => onStepClick && onStepClick(index)}
+                className={`flex flex-col items-center p-2 rounded-lg transition-all duration-200 ${
+                  onStepClick ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-default'
+                }`}
+                disabled={!onStepClick}
+              >
                 <div
-                  className={`w-3 h-3 rounded-full ${
+                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
                     index <= currentStep ? "bg-[#4a7c59]" : "bg-gray-200"
-                  }`}
+                  } ${onStepClick ? 'hover:scale-110' : ''}`}
                 />
-                <span className={`text-xs mt-1 text-center max-w-[60px] leading-tight ${
+                <span className={`text-xs mt-1 text-center max-w-[60px] leading-tight transition-colors duration-200 ${
                   index <= currentStep ? "text-[#4a7c59] font-medium" : "text-gray-500"
-                }`}>
+                } ${onStepClick ? 'hover:text-[#4a7c59]' : ''}`}>
                   {step.split(' ')[0]}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
           

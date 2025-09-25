@@ -78,6 +78,13 @@ export default function CreateCourseInterface() {
     setCurrentStep(prev => Math.min(steps.length - 1, prev + 1))
   }
 
+  const goToStep = (stepIndex) => {
+    // Clear validation when navigating to a different step
+    setValidationErrors({})
+    setShowValidation(false)
+    setCurrentStep(stepIndex)
+  }
+
   // Check if current step can proceed
   const canProceedToNextStep = useMemo(() => true, []) // Always allow proceeding for now
 
@@ -121,6 +128,7 @@ export default function CreateCourseInterface() {
           currentStep={currentStep}
           showValidation={showValidation}
           validateStep={validateStep}
+          onStepClick={goToStep}
         />
 
         {/* Error Summary */}
