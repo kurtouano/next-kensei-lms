@@ -16,7 +16,7 @@ const ReviewStep = memo(({
   const totalVideoDuration = modules.reduce((acc, module) => 
     acc + module.lessons.reduce((lessonAcc, lesson) => lessonAcc + (lesson.videoDuration || 0), 0), 0
   )
-  const hasThumbnail = courseData.thumbnailUrl
+  const hasThumbnail = courseData.thumbnail
   const hasPreviewVideo = courseData.previewVideoUrl
   const hasHighlights = courseData.highlights.filter(h => h.description.trim()).length > 0
   const hasTags = courseData.tags.filter(t => t.trim()).length > 0
