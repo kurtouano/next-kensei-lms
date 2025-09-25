@@ -95,13 +95,10 @@ const QuizzesStep = memo(({
               </div>
               <div>
                 <CardTitle className="text-lg text-[#2c3e2d]">Quiz for Module {moduleIndex + 1}: {module.title}</CardTitle>
-                <p className="text-sm text-[#4a7c59] mt-1">
-                  Quiz Title: <span className="font-medium">{module.title ? `${module.title} Quiz` : "Quiz title will auto-generate"}</span>
-                </p>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             {/* Questions */}
             {module.quiz.questions.map((question, questionIndex) => (
               <QuestionCard
@@ -444,50 +441,89 @@ const MatchingQuestion = memo(function MatchingQuestion({
           Instructions
         </label>
         <p className="text-xs text-gray-600">
-          Create pairs for students to match. Each correct match is worth 1 point. Total points = number of pairs.
+          Create matching pairs for students to connect. Each correct match is worth 1 point. Total points = number of pairs.
         </p>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-4">
         <label className="text-sm font-medium">
           Matching Pairs <span className="text-red-500">*</span>
         </label>
+        
+        {/* Column Headers */}
+        <div className="grid grid-cols-2 gap-4 mb-2">
+          <div className="text-sm font-medium text-gray-700 text-center">Word A</div>
+          <div className="text-sm font-medium text-gray-700 text-center">Word B</div>
+        </div>
+        
+        {/* Matching Pairs */}
         {question.pairs?.map((pair, pairIndex) => (
-          <div key={pairIndex} className="flex gap-2 items-center p-2 border rounded">
-            <div className="flex-1 space-y-2">
-              <input
-                className="w-full rounded-md border border-gray-300 p-2"
-                placeholder="Left side (e.g., Word)"
-                value={pair.left}
-                onChange={(e) => updateMatchingPair(moduleIndex, questionIndex, pairIndex, "left", e.target.value)}
-              />
-              <input
-                className="w-full rounded-md border border-gray-300 p-2"
-                placeholder="Right side (e.g., Definition)"
-                value={pair.right}
-                onChange={(e) => updateMatchingPair(moduleIndex, questionIndex, pairIndex, "right", e.target.value)}
-              />
+          <div key={pairIndex} className="relative bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-4">
+              {/* Column A Input */}
+              <div className="relative flex-1">
+                <label className="block text-xs text-gray-600 mb-1">Word A</label>
+                <input
+                  className="w-full rounded-md border border-gray-300 p-3"
+                  placeholder="e.g., Apple"
+                  value={pair.left}
+                  onChange={(e) => updateMatchingPair(moduleIndex, questionIndex, pairIndex, "left", e.target.value)}
+                />
+              </div>
+              
+              {/* Connection Arrow */}
+              <div className="flex items-center justify-center">
+                <div className="flex items-center text-gray-400">
+                  <div className="w-6 h-0.5 bg-gray-300"></div>
+                  <div className="mx-2 text-lg">↔</div>
+                  <div className="w-6 h-0.5 bg-gray-300"></div>
+                </div>
+              </div>
+              
+              {/* Column B Input */}
+              <div className="relative flex-1">
+                <label className="block text-xs text-gray-600 mb-1">Word B</label>
+                <input
+                  className="w-full rounded-md border border-gray-300 p-3"
+                  placeholder="e.g., Red fruit"
+                  value={pair.right}
+                  onChange={(e) => updateMatchingPair(moduleIndex, questionIndex, pairIndex, "right", e.target.value)}
+                />
+              </div>
+              
+              {/* Delete Button - Now positioned at the end */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => removeMatchingPair(moduleIndex, questionIndex, pairIndex)}
+                disabled={question.pairs?.length === 1}
+                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 bg-white border shadow-sm"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => removeMatchingPair(moduleIndex, questionIndex, pairIndex)}
-              disabled={question.pairs?.length === 1}
-              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
           </div>
         ))}
+        
+        {/* Add Pair Button */}
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => addMatchingPair(moduleIndex, questionIndex)}
+          className="w-full border-dashed border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors"
         >
-          <Plus className="mr-2 h-4 w-4" /> Add Pair
+          <Plus className="mr-2 h-4 w-4" /> Add Matching Pair
         </Button>
+        
+        {/* Example Text */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-xs text-blue-700">
+            <strong>Example:</strong> Students will see Word A and Word B separately, then match them together (Apple ↔ Red fruit, Dog ↔ Domestic animal, etc.)
+          </p>
+        </div>
+        
         {renderValidationError(`quiz_${moduleIndex}_question_${questionIndex}_pairs`)}
       </div>
     </div>

@@ -122,7 +122,7 @@ const ModulesLessonsStep = memo(({
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             {/* Module Settings */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
