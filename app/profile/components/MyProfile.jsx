@@ -346,41 +346,41 @@ export function MyProfile({ userData, certificates }) {
                 socialLinks.map((link) => {
                   const IconComponent = getSocialIcon(link.platform)
                   return (
-                    <div key={link.id} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-[#eef2eb]">
-                      <div className="flex items-center flex-1 min-w-0">
-                        <div className="mr-2 sm:mr-3 flex-shrink-0">
-                          <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-[#4a7c59]" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs sm:text-sm font-medium text-[#2c3e2d] truncate">
+                    <div key={link.id} className="p-3 sm:p-4 rounded-lg bg-[#eef2eb] border border-[#dce4d7]">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-[#4a7c59] flex-shrink-0" />
+                          <span className="text-sm sm:text-base font-medium text-[#2c3e2d]">
                             {getSocialLabel(link.platform)}
-                          </p>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
                           <a
                             href={link.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-[#4a7c59] hover:text-[#3a6147] truncate block"
+                            className="p-1.5 hover:bg-[#dce4d7] rounded-md transition-colors"
+                            title="Open link"
                           >
-                            {link.url}
+                            <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
                           </a>
+                          <button
+                            onClick={() => handleRemoveSocial(link.id)}
+                            className="p-1.5 hover:bg-red-100 rounded-md transition-colors text-red-500 hover:text-red-700"
+                            title="Remove link"
+                          >
+                            <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1 hover:bg-[#dce4d7] rounded"
-                        >
-                          <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                        </a>
-                        <button
-                          onClick={() => handleRemoveSocial(link.id)}
-                          className="p-1 hover:bg-red-100 rounded text-red-500 hover:text-red-700"
-                        >
-                          <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </button>
-                      </div>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-[#4a7c59] hover:text-[#3a6147] break-all block leading-relaxed"
+                      >
+                        {link.url}
+                      </a>
                     </div>
                   )
                 })

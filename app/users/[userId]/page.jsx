@@ -374,16 +374,16 @@ function PublicProfilePage() {
             <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                              {/* Learning Progress */}
                <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
-                 <div className="flex items-center justify-between mb-3 sm:mb-4">
+                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 gap-3 sm:gap-0">
                    <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Learning Progress</h2>
                    
                    {/* Friend Status Button */}
                    {userData.friendStatus === 'pending' ? (
                      <button 
-                       className="flex items-center justify-center gap-2 bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] px-4 py-2 rounded-full cursor-default text-sm font-medium"
+                       className="flex items-center justify-center gap-2 bg-[#eef2eb] text-[#4a7c59] border border-[#4a7c59] px-3 sm:px-4 py-2 rounded-full cursor-default text-xs sm:text-sm font-medium self-start sm:self-auto"
                        title="Friend request has been sent"
                      >
-                       <Clock className="h-4 w-4" />
+                       <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                        <span className="whitespace-nowrap">Request Sent</span>
                      </button>
                    ) : userData.friendStatus === 'accepted' ? (
