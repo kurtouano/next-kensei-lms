@@ -61,26 +61,26 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-full h-full flex flex-col">
       {/* Show message when charts have no real data */}
       {!hasRealData && courses && courses.length > 0 && (
-        <div className="text-center text-sm text-muted-foreground mb-4">
+        <div className="text-center text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-4">
           <p>Charts will populate as students enroll in your courses</p>
         </div>
       )}
 
       {/* Charts */}
-      <div className="h-56 sm:h-72">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-2">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="enrollments" className="text-xs">Enrollments</TabsTrigger>
-            <TabsTrigger value="revenue" className="text-xs">Revenue</TabsTrigger>
+      <div className="flex-1 min-h-0 w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-2 h-8 sm:h-10 flex-shrink-0">
+            <TabsTrigger value="enrollments" className="text-xs sm:text-sm">Enrollments</TabsTrigger>
+            <TabsTrigger value="revenue" className="text-xs sm:text-sm">Revenue</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="enrollments" className="mt-2">
-            <div className="h-48 sm:h-64 mt-6">
+          <TabsContent value="enrollments" className="flex-1 min-h-0 mt-2">
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 15, left: 5, bottom: 25 }}>
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="month" 
@@ -92,8 +92,8 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
                   />
                   <YAxis 
                     stroke="#666"
-                    fontSize={10}
-                    width={30}
+                    fontSize={9}
+                    width={25}
                     domain={[0, 'dataMax + 10']}
                   />
                   <Tooltip 
@@ -120,10 +120,10 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
             </div>
           </TabsContent>
 
-          <TabsContent value="revenue" className="mt-2">
-            <div className="h-48 sm:h-64 mt-6">
+          <TabsContent value="revenue" className="flex-1 min-h-0 mt-2">
+            <div className="h-full w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 15, left: -10, bottom: 25 }}>
+                <BarChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis 
                     dataKey="month" 
@@ -135,8 +135,8 @@ export function CoursePerformanceChart({ courses, stats, monthlyData = [] }) {
                   />
                   <YAxis 
                     stroke="#666"
-                    fontSize={10}
-                    width={50}
+                    fontSize={9}
+                    width={40}
                     tickFormatter={(value) => `$${value}`}
                     domain={[0, 'dataMax + 100']}
                   />

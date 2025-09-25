@@ -247,131 +247,142 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-4 sm:py-8">
-        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#2c3e2d]">
-              Welcome back, {user?.name || 'Instructor'}!
-            </h1>
-            <p className="text-[#4a7c59] text-sm sm:text-base">Manage your courses and view analytics</p>
+      <div className="w-full max-w-full overflow-x-hidden">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          <div className="mb-4 sm:mb-6 lg:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0 w-full">
+              <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-[#2c3e2d] leading-tight break-words">
+                Welcome back, {user?.name || 'Instructor'}!
+              </h1>
+              <p className="text-[#4a7c59] text-xs sm:text-sm lg:text-base mt-1 break-words">Manage your courses and view analytics</p>
+            </div>
+            <Button
+              className="bg-[#4a7c59] hover:bg-[#3a6147] w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0"
+              onClick={() => router.push("/instructor/create-course")}
+            >
+              <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> 
+              Create New Course
+            </Button>
           </div>
-          <Button
-            className="bg-[#4a7c59] hover:bg-[#3a6147] w-full sm:w-auto"
-            onClick={() => router.push("/instructor/create-course")}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Create New Course
-          </Button>
-        </div>
 
-        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-[#eef2eb] h-10 sm:h-auto">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="courses" className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm">
-              <span className="hidden sm:inline">My Courses ({courses?.length || 0})</span>
-              <span className="sm:hidden">Courses ({courses?.length || 0})</span>
-            </TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="overview" className="space-y-3 sm:space-y-4 lg:space-y-6 w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-[#eef2eb] h-9 sm:h-10 lg:h-auto rounded-lg">
+              <TabsTrigger 
+                value="overview" 
+                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all duration-200 truncate"
+              >
+                Overview
+              </TabsTrigger>
+              <TabsTrigger 
+                value="courses" 
+                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2 rounded-md transition-all duration-200 truncate"
+              >
+                <span className="hidden sm:inline">My Courses ({courses?.length || 0})</span>
+                <span className="sm:hidden">Courses ({courses?.length || 0})</span>
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
-            <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Total Students</CardTitle>
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-lg sm:text-2xl font-bold">{stats?.totalStudents?.toLocaleString() || '0'}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Across {stats?.totalCourses || 0} course{(stats?.totalCourses || 0) !== 1 ? 's' : ''}
-                  </p>
-                </CardContent>
-              </Card>
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-3 sm:space-y-4 lg:space-y-6 w-full">
+              <div className="grid gap-2 sm:gap-3 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full">
+                <Card className="hover:shadow-md transition-shadow duration-200 w-full">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 space-y-0 px-3 sm:px-6 pt-3 sm:pt-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-[#2c3e2d] leading-tight truncate">Total Students</CardTitle>
+                    <Users className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59] flex-shrink-0" />
+                  </CardHeader>
+                  <CardContent className="pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
+                    <div className="text-base sm:text-lg lg:text-2xl font-bold text-[#2c3e2d] break-words">{stats?.totalStudents?.toLocaleString() || '0'}</div>
+                    <p className="text-xs text-muted-foreground leading-tight mt-1 break-words">
+                      Across {stats?.totalCourses || 0} course{(stats?.totalCourses || 0) !== 1 ? 's' : ''}
+                    </p>
+                  </CardContent>
+                </Card>
               
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Total Courses</CardTitle>
-                  <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-lg sm:text-2xl font-bold">{stats?.totalCourses || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                     Published courses
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Total Revenue</CardTitle>
-                  <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-lg sm:text-2xl font-bold">{formatCurrency(stats?.totalRevenue || 0)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats?.totalLessons || 0} lessons, {stats?.totalModules || 0} modules
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                  <CardTitle className="text-xs sm:text-sm font-medium">Average Rating</CardTitle>
-                  <Star className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-lg sm:text-2xl font-bold">{stats?.averageRating || '0.0'}</div>
-                  <p className="text-xs text-muted-foreground">
-                    From student reviews
-                  </p>
-                </CardContent>
-              </Card>
+                <Card className="hover:shadow-md transition-shadow duration-200 w-full">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 space-y-0 px-3 sm:px-6 pt-3 sm:pt-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-[#2c3e2d] leading-tight truncate">Total Courses</CardTitle>
+                    <BookOpen className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59] flex-shrink-0" />
+                  </CardHeader>
+                  <CardContent className="pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
+                    <div className="text-base sm:text-lg lg:text-2xl font-bold text-[#2c3e2d] break-words">{stats?.totalCourses || 0}</div>
+                    <p className="text-xs text-muted-foreground leading-tight mt-1 break-words">
+                       Published courses
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="hover:shadow-md transition-shadow duration-200 w-full">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 space-y-0 px-3 sm:px-6 pt-3 sm:pt-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-[#2c3e2d] leading-tight truncate">Total Revenue</CardTitle>
+                    <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59] flex-shrink-0" />
+                  </CardHeader>
+                  <CardContent className="pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
+                    <div className="text-base sm:text-lg lg:text-2xl font-bold text-[#2c3e2d] break-words">{formatCurrency(stats?.totalRevenue || 0)}</div>
+                    <p className="text-xs text-muted-foreground leading-tight mt-1 break-words">
+                      {stats?.totalLessons || 0} lessons, {stats?.totalModules || 0} modules
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="hover:shadow-md transition-shadow duration-200 w-full">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 space-y-0 px-3 sm:px-6 pt-3 sm:pt-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-[#2c3e2d] leading-tight truncate">Average Rating</CardTitle>
+                    <Star className="h-3 w-3 sm:h-4 sm:w-4 text-[#4a7c59] flex-shrink-0" />
+                  </CardHeader>
+                  <CardContent className="pt-0 px-3 sm:px-6 pb-3 sm:pb-6">
+                    <div className="text-base sm:text-lg lg:text-2xl font-bold text-[#2c3e2d] break-words">{stats?.averageRating || '0.0'}</div>
+                    <p className="text-xs text-muted-foreground leading-tight mt-1 break-words">
+                      From student reviews
+                    </p>
+                  </CardContent>
+                </Card>
             </div>
 
-            {/* Charts and Recent Activity */}
-            <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm sm:text-base">Course Performance</CardTitle>
-                </CardHeader>
-                <CardContent className="h-[200px] sm:h-[350px]">
-                  {showCharts ? (
-                    <CoursePerformanceChart 
-                      courses={courses} 
-                      stats={stats}
-                      monthlyData={dashboardData?.monthlyData || []}
-                    />
-                  ) : (
-                    <div className="flex justify-center items-center h-full">
-                      <div className="text-center">
-                        <BarChart className="h-8 w-8 animate-pulse mx-auto mb-2 text-[#4a7c59]" />
-                        <p className="text-sm text-[#5c6d5e]">Preparing chart data...</p>
+              {/* Charts and Recent Activity */}
+              <div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 lg:grid-cols-2 w-full">
+                <Card className="hover:shadow-md transition-shadow duration-200 w-full">
+                  <CardHeader className="px-3 sm:px-6 pt-4 sm:pt-6 pb-2 sm:pb-4">
+                    <CardTitle className="text-sm sm:text-base text-[#2c3e2d] truncate">Course Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[200px] sm:h-[280px] lg:h-[380px] px-3 sm:px-6 pb-4 sm:pb-6 flex flex-col">
+                    {showCharts ? (
+                      <div className="flex-1 min-h-0 w-full">
+                        <CoursePerformanceChart 
+                          courses={courses} 
+                          stats={stats}
+                          monthlyData={dashboardData?.monthlyData || []}
+                        />
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    ) : (
+                      <div className="flex justify-center items-center h-full">
+                        <div className="text-center">
+                          <BarChart className="h-6 w-6 sm:h-8 sm:w-8 animate-pulse mx-auto mb-2 text-[#4a7c59]" />
+                          <p className="text-xs sm:text-sm text-[#5c6d5e]">Preparing chart data...</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               
-              <RecentActivitySection 
-                recentActivity={recentActivity}
-                activityLoading={activityLoading}
-                loadingMoreActivity={loadingMoreActivity}
-                handleLoadMoreActivity={handleLoadMoreActivity}
-              />
-            </div>
-          </TabsContent>
+                <RecentActivitySection 
+                  recentActivity={recentActivity}
+                  activityLoading={activityLoading}
+                  loadingMoreActivity={loadingMoreActivity}
+                  handleLoadMoreActivity={handleLoadMoreActivity}
+                />
+              </div>
+            </TabsContent>
 
-          {/* Courses Tab */}
-          <TabsContent value="courses">
-            <CoursesSection 
-              courses={courses}
-              formatDate={formatDate}
-              formatCurrency={formatCurrency}
-            />
-          </TabsContent>
-        </Tabs>
+            {/* Courses Tab */}
+            <TabsContent value="courses" className="w-full">
+              <CoursesSection 
+                courses={courses}
+                formatDate={formatDate}
+                formatCurrency={formatCurrency}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </>
   )
