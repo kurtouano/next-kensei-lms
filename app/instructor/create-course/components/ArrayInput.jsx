@@ -36,6 +36,7 @@ const ArrayInput = memo(({
               size="sm"
               onClick={() => removeFn(index)}
               disabled={items.length === 1}
+              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -54,6 +55,7 @@ const ArrayInput = memo(({
           variant="outline" 
           onClick={addFn}
           disabled={limit && items.length >= limit}
+          className="border-dashed border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors"
         >
           <Plus className="mr-2 h-4 w-4" /> {btnName}
         </Button>

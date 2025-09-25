@@ -91,23 +91,32 @@ const ModulesLessonsStep = memo(({
   return (
     <div className="space-y-6">
       {modules.map((module, moduleIndex) => (
-        <Card key={moduleIndex}>
-          <CardHeader>
+        <Card key={moduleIndex} className="border-l-4 border-l-[#4a7c59] shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-[#f8faf9] to-[#f0f4f1] border-b border-[#e8f0ea]">
             <div className="flex justify-between items-center">
-              <div>
-                <CardTitle>Module {moduleIndex + 1}</CardTitle>
-                {showValidation && validationErrors[`module_${moduleIndex}_title`] && (
-                  <div className="flex items-center mt-1 text-red-600 text-sm">
-                    <AlertCircle className="h-4 w-4 mr-1" />
-                    Module title is required
-                  </div>
-                )}
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[#4a7c59] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                  {moduleIndex + 1}
+                </div>
+                <div>
+                  <CardTitle className="text-lg text-[#2c3e2d]">Module {moduleIndex + 1}</CardTitle>
+                  {module.title && (
+                    <p className="text-sm text-[#4a7c59] font-medium">{module.title}</p>
+                  )}
+                  {showValidation && validationErrors[`module_${moduleIndex}_title`] && (
+                    <div className="flex items-center mt-1 text-red-600 text-sm">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Module title is required
+                    </div>
+                  )}
+                </div>
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => removeModule(moduleIndex)}
                 disabled={modules.length === 1}
+                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -140,34 +149,48 @@ const ModulesLessonsStep = memo(({
 
             {/* Lessons */}
             <div className="space-y-4">
-              <h4 className="font-medium">Lessons</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium text-[#2c3e2d]">Lessons</h4>
+                <span className="bg-[#4a7c59] text-white text-xs px-2 py-1 rounded-full">
+                  {module.lessons.length} lesson{module.lessons.length !== 1 ? 's' : ''}
+                </span>
+              </div>
               {module.lessons.map((lesson, lessonIndex) => {
                 const videoKey = `${moduleIndex}-${lessonIndex}`
                 
                 return (
-                  <div key={lessonIndex} className="border rounded-lg p-4 space-y-4">
+                  <div key={lessonIndex} className="border border-gray-200 rounded-lg p-4 space-y-4 bg-white">
                     <div className="flex justify-between items-center">
-                      <div>
-                        <h5 className="font-medium">Lesson {lessonIndex + 1}</h5>
-                        {/* Show video duration if available */}
-                        {lesson.videoDuration > 0 && (
-                          <p className="text-sm text-green-600">
-                            Duration: {Math.floor(lesson.videoDuration / 60)}:{(lesson.videoDuration % 60).toString().padStart(2, '0')}
-                          </p>
-                        )}
-                        {(showValidation && (validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_title`] || 
-                          validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_video`])) && (
-                          <div className="flex items-center mt-1 text-red-600 text-sm">
-                            <AlertCircle className="h-4 w-4 mr-1" />
-                            Missing required fields
-                          </div>
-                        )}
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-[#4a7c59] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          {lessonIndex + 1}
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-[#2c3e2d]">Lesson {lessonIndex + 1}</h5>
+                          {lesson.title && (
+                            <p className="text-sm text-[#4a7c59] font-medium">{lesson.title}</p>
+                          )}
+                          {/* Show video duration if available */}
+                          {lesson.videoDuration > 0 && (
+                            <p className="text-xs text-[#4a7c59] font-medium">
+                              ⏱️ Duration: {Math.floor(lesson.videoDuration / 60)}:{(lesson.videoDuration % 60).toString().padStart(2, '0')}
+                            </p>
+                          )}
+                          {(showValidation && (validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_title`] || 
+                            validationErrors[`module_${moduleIndex}_lesson_${lessonIndex}_video`])) && (
+                            <div className="flex items-center mt-1 text-red-600 text-sm">
+                              <AlertCircle className="h-4 w-4 mr-1" />
+                              Missing required fields
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => removeLesson(moduleIndex, lessonIndex)}
                         disabled={module.lessons.length === 1}
+                        className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -327,14 +350,22 @@ const ModulesLessonsStep = memo(({
                   </div>
                 )
               })}
-              <Button type="button" variant="outline" onClick={() => addLesson(moduleIndex)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => addLesson(moduleIndex)}
+                className="w-full border-dashed border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+              >
                 <Plus className="mr-2 h-4 w-4" /> Add Lesson
               </Button>
             </div>
           </CardContent>
         </Card>
       ))}
-      <Button onClick={addModule}>
+      <Button 
+        onClick={addModule}
+        className="w-full bg-[#4a7c59] hover:bg-[#3a6147] text-white border-2 border-dashed border-[#4a7c59] hover:border-[#3a6147] transition-all"
+      >
         <Plus className="mr-2 h-4 w-4" /> Add Module
       </Button>
     </div>

@@ -57,10 +57,17 @@ const CourseDetailsStep = memo(({
   const removeTag = (index) => updateCourseArray('tags', index, null, 'remove')
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Course Details</CardTitle>
-        <CardDescription>Basic information about your course</CardDescription>
+    <Card className="border-l-4 border-l-[#4a7c59] shadow-sm hover:shadow-md transition-shadow">
+      <CardHeader className="bg-gradient-to-r from-[#f8faf9] to-[#f0f4f1] border-b border-[#e8f0ea]">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-[#4a7c59] text-white rounded-full flex items-center justify-center text-sm font-bold">
+            1
+          </div>
+          <div>
+            <CardTitle className="text-lg text-[#2c3e2d]">Course Details</CardTitle>
+            <CardDescription className="text-[#4a7c59]">Basic information about your course</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Course Title */}

@@ -1,5 +1,5 @@
 // components/QuizzesStep.jsx - Enhanced version with automated quiz titles
-import { memo, useEffect } from "react"
+import { memo, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, AlertCircle, Info } from "lucide-react"
@@ -59,16 +59,46 @@ const QuizzesStep = memo(({
     }
   };
 
+  // Auto-generate blanks based on underscores in question text
+  const autoGenerateBlanks = useCallback((moduleIndex, questionIndex, questionText) => {
+    if (questionText) {
+      // Count underscores (___ = 3 underscores = 1 blank)
+      const underscoreMatches = questionText.match(/_{3,}/g);
+      const blankCount = underscoreMatches ? underscoreMatches.length : 0;
+      
+      // Get current blanks
+      const currentBlanks = modules[moduleIndex].quiz.questions[questionIndex].blanks || [];
+      
+      // Only update if the count has changed to avoid infinite loops
+      if (currentBlanks.length !== blankCount && modules[moduleIndex].quiz.questions[questionIndex].type === "fill_in_blanks") {
+        const newBlanks = [];
+        for (let i = 0; i < blankCount; i++) {
+          newBlanks.push({
+            answer: currentBlanks[i]?.answer || "",
+            alternatives: currentBlanks[i]?.alternatives || [""]
+          });
+        }
+        
+        updateQuestion(moduleIndex, questionIndex, "blanks", newBlanks);
+      }
+    }
+  }, [modules, updateQuestion]);
+
   return (
     <div className="space-y-6">
       {modules.map((module, moduleIndex) => (
-        <Card key={moduleIndex}>
-          <CardHeader>
-            <div>
-              <CardTitle>Quiz for Module {moduleIndex + 1}: {module.title}</CardTitle>
-              <p className="text-sm text-gray-600 mt-1">
-                Quiz Title: <span className="font-medium">{module.title ? `${module.title} Quiz` : "Quiz title will auto-generate"}</span>
-              </p>
+        <Card key={moduleIndex} className="border-l-4 border-l-[#4a7c59] shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-[#f8faf9] to-[#f0f4f1] border-b border-[#e8f0ea]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#4a7c59] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                {moduleIndex + 1}
+              </div>
+              <div>
+                <CardTitle className="text-lg text-[#2c3e2d]">Quiz for Module {moduleIndex + 1}: {module.title}</CardTitle>
+                <p className="text-sm text-[#4a7c59] mt-1">
+                  Quiz Title: <span className="font-medium">{module.title ? `${module.title} Quiz` : "Quiz title will auto-generate"}</span>
+                </p>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -91,6 +121,7 @@ const QuizzesStep = memo(({
                 removeFillInBlank={removeFillInBlank}
                 updateFillInBlank={updateFillInBlank}
                 calculateAndUpdatePoints={calculateAndUpdatePoints}
+                autoGenerateBlanks={autoGenerateBlanks}
                 onRemoveQuestion={() => {
                   const newQuestions = module.quiz.questions.filter((_, i) => i !== questionIndex)
                   updateModule(moduleIndex, "quiz", { ...module.quiz, questions: newQuestions })
@@ -98,7 +129,12 @@ const QuizzesStep = memo(({
               />
             ))}
 
-            <Button type="button" variant="outline" onClick={() => addQuestion(moduleIndex)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => addQuestion(moduleIndex)}
+              className="w-full border-dashed border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+            >
               <Plus className="mr-2 h-4 w-4" /> Add Question
             </Button>
           </CardContent>
@@ -125,8 +161,10 @@ const QuestionCard = memo(function QuestionCard({
   removeFillInBlank,
   updateFillInBlank,
   calculateAndUpdatePoints,
+  autoGenerateBlanks,
   onRemoveQuestion
 }) {
+  // Auto-generation is handled in onChange handlers to avoid infinite loops
   const questionTypes = [
     { value: "multiple_choice", label: "Multiple Choice" },
     { value: "fill_in_blanks", label: "Fill in the Blanks" },
@@ -172,6 +210,7 @@ const QuestionCard = memo(function QuestionCard({
           size="sm"
           onClick={onRemoveQuestion}
           disabled={moduleIndex === 0 && questionIndex === 0}
+          className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -185,7 +224,23 @@ const QuestionCard = memo(function QuestionCard({
         <select
           className="w-full rounded-md border border-gray-300 p-2"
           value={question.type || "multiple_choice"}
-          onChange={(e) => updateQuestion(moduleIndex, questionIndex, "type", e.target.value)}
+          onChange={(e) => {
+            const newType = e.target.value;
+            updateQuestion(moduleIndex, questionIndex, "type", newType);
+            // Auto-generate blanks when switching to fill-in-blanks
+            if (newType === "fill_in_blanks") {
+              // Trigger immediately for any existing text
+              if (question.question) {
+                autoGenerateBlanks(moduleIndex, questionIndex, question.question);
+              }
+              // Also trigger on next tick to ensure the type change is processed
+              setTimeout(() => {
+                if (question.question) {
+                  autoGenerateBlanks(moduleIndex, questionIndex, question.question);
+                }
+              }, 0);
+            }
+          }}
         >
           {questionTypes.map(type => (
             <option key={type.value} value={type.value}>
@@ -201,7 +256,7 @@ const QuestionCard = memo(function QuestionCard({
           Question <span className="text-red-500">*</span>
           {question.type === "fill_in_blanks" && (
             <p className="text-xs ml-2 text-gray-600">
-              {`[ Use ___ (3 underscores) to represent blanks in your question. ]`}
+              {`[ Use ___ (3 underscores) to mark where students should fill in answers. ]`}
             </p>
           )}
         </label>
@@ -210,7 +265,14 @@ const QuestionCard = memo(function QuestionCard({
           placeholder="Enter your question"
           rows={2}
           value={question.question}
-          onChange={(e) => updateQuestion(moduleIndex, questionIndex, "question", e.target.value)}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            updateQuestion(moduleIndex, questionIndex, "question", newValue);
+            // Auto-generate blanks for fill-in-blanks questions
+            if (question.type === "fill_in_blanks") {
+              autoGenerateBlanks(moduleIndex, questionIndex, newValue);
+            }
+          }}
         />
         {renderValidationError(`quiz_${moduleIndex}_question_${questionIndex}`)}
       </div>
@@ -333,14 +395,14 @@ const FillInBlanksQuestion = memo(function FillInBlanksQuestion({
     <div className="space-y-4">
       <div className="space-y-2">
         <label className="text-sm font-medium">
-          Answers for Blanks <span className="text-red-500">*</span>
+          Fill-in Answers <span className="text-red-500">*</span>
         </label>
         <p className="text-xs text-gray-600">
           Each blank is worth 1 point. Total points = number of blanks.
         </p>
         {question.blanks?.map((blank, blankIndex) => (
           <div key={blankIndex} className="flex gap-2 items-center">
-            <span className="text-sm font-medium w-16">Blank {blankIndex + 1}:</span>
+            <span className="text-sm font-medium w-24">Answer {blankIndex + 1}:</span>
             <input
               className="flex-1 rounded-md border border-gray-300 p-2"
               placeholder="Correct answer"
@@ -353,25 +415,10 @@ const FillInBlanksQuestion = memo(function FillInBlanksQuestion({
               value={blank.alternatives?.[0] || ""}
               onChange={(e) => updateFillInBlank(moduleIndex, questionIndex, blankIndex, "alternatives", [e.target.value])}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => removeFillInBlank(moduleIndex, questionIndex, blankIndex)}
-              disabled={question.blanks?.length === 1}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {/* Delete button removed - answers are auto-generated based on question text */}
           </div>
         ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => addFillInBlank(moduleIndex, questionIndex)}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Blank
-        </Button>
+        {/* Add Answer button removed - answers are auto-generated based on underscores in question */}
         {renderValidationError(`quiz_${moduleIndex}_question_${questionIndex}_blanks`)}
       </div>
     </div>
@@ -427,6 +474,7 @@ const MatchingQuestion = memo(function MatchingQuestion({
               size="sm"
               onClick={() => removeMatchingPair(moduleIndex, questionIndex, pairIndex)}
               disabled={question.pairs?.length === 1}
+              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
