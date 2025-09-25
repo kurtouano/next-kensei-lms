@@ -233,7 +233,7 @@ export default function BlogPostPage({ params }) {
     <>
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Back Button */}
           <div className="mb-6">
             <Link
@@ -289,9 +289,9 @@ export default function BlogPostPage({ params }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-8 gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-6">
               {/* Featured Image */}
               {blogPost.featuredImage && (
                 <div className="mb-8">
