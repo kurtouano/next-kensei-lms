@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Loader2, UserPlus, Star, CheckCircle, Trophy, Heart, MessageCircle, Activity, User } from "lucide-react"
-import { BonsaiSVG } from "@/components/bonsai-icon"
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 
 export function RecentActivitySection({ recentActivity, activityLoading, loadingMoreActivity, handleLoadMoreActivity }) {
   // Helper function to format relative time
