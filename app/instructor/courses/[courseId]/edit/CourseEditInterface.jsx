@@ -124,37 +124,72 @@ export default function CourseEditInterface() {
         </p>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-        <div className="text-center">
-          <h3 className="text-xl font-semibold text-[#2c3e2d] mb-4">
-            Course Loaded Successfully
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Ready to edit "{courseData?.title}". This will open the course editor with all your current content loaded.
-          </p>
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-lg border border-gray-200 p-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-12 h-12 bg-[#4a7c59] rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-semibold text-gray-900 mb-2">Course Ready to Edit</h3>
+            <p className="text-gray-600">"{courseData?.title}" is loaded and ready for editing</p>
+          </div>
           
-          <div className="grid gap-4 md:grid-cols-2 mb-6 text-sm">
-            <div className="bg-gray-50 p-4 rounded">
-              <strong>Modules:</strong> {modules?.length || 0}
+          {/* Course Stats */}
+          <div className="grid grid-cols-3 gap-6 mb-8">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-[#4a7c59] mb-1">
+                {modules?.length || 0}
+              </div>
+              <div className="text-sm text-gray-600">Modules</div>
             </div>
-            <div className="bg-gray-50 p-4 rounded">
-              <strong>Total Lessons:</strong> {modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0}
+            <div className="text-center">
+              <div className="text-3xl font-bold text-[#4a7c59] mb-1">
+                {modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0}
+              </div>
+              <div className="text-sm text-gray-600">Lessons</div>
             </div>
-            <div className="bg-gray-50 p-4 rounded">
-              <strong>Price:</strong> ${courseData?.price || 0}
-            </div>
-            <div className="bg-gray-50 p-4 rounded">
-              <strong>Status:</strong> {courseData?.status || 'Unknown'}
+            <div className="text-center">
+              <div className="text-3xl font-bold text-[#4a7c59] mb-1">
+                {modules?.reduce((acc, mod) => acc + (mod.quiz?.questions?.length || 0), 0) || 0}
+              </div>
+              <div className="text-sm text-gray-600">Quiz Questions</div>
             </div>
           </div>
+          
+          {/* Course Details */}
+          <div className="bg-gray-50 rounded-lg p-6 mb-8">
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Level</div>
+                <div className="font-medium text-gray-900">{courseData?.level || 'Not set'}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Price</div>
+                <div className="font-medium text-gray-900">${courseData?.price || 0}</div>
+              </div>
+            </div>
+            
+            {courseData?.description && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="text-sm text-gray-600 mb-2">Description</div>
+                <p className="text-gray-700 leading-relaxed">{courseData.description}</p>
+              </div>
+            )}
+          </div>
 
-          <Button
-            onClick={handleEditCourse}
-            className="bg-[#4a7c59] hover:bg-[#3a6147]"
-            size="lg"
-          >
-            Open Course Editor
-          </Button>
+          {/* Action Button */}
+          <div className="text-center">
+            <Button
+              onClick={handleEditCourse}
+              className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-8 py-3 rounded-lg font-medium"
+              size="lg"
+            >
+              Open Course Editor
+            </Button>
+          </div>
         </div>
       </div>
     </div>
