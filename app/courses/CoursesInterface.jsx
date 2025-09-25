@@ -23,10 +23,14 @@ export default function CoursesInterface() {
     categories,
     courseStats,
     searchQuery,
+    priceFilter,
+    sortBy,
     pagination,
     handleCategoryChange,
     handleSearchChange,
     handleClearSearch,
+    handlePriceFilterChange,
+    handleSortByChange,
     handlePageChange,
     handleNextPage,
     handlePrevPage,
@@ -37,10 +41,6 @@ export default function CoursesInterface() {
   const [searchInput, setSearchInput] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [activeFiltersCount, setActiveFiltersCount] = useState(0)
-  
-  // Additional filter states
-  const [priceFilter, setPriceFilter] = useState("all") // "all", "free", "paid"
-  const [sortBy, setSortBy] = useState("rating") // "rating", "newest", "popular"
 
   // Keep user profile logic as-is
   useEffect(() => {
@@ -78,40 +78,6 @@ export default function CoursesInterface() {
     handleClearSearch()
   }
 
-  // Apply additional filters to courses
-  const filteredCourses = useMemo(() => {
-    let filtered = [...courses]
-
-    // Apply price filter
-    if (priceFilter === "free") {
-      filtered = filtered.filter(course => course.price === 0)
-    } else if (priceFilter === "paid") {
-      filtered = filtered.filter(course => course.price > 0)
-    }
-
-    // Apply sorting
-    switch (sortBy) {
-      case "newest":
-        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        break
-      case "popular":
-        filtered.sort((a, b) => (b.enrolledStudents || 0) - (a.enrolledStudents || 0))
-        break
-      case "rating":
-      default:
-        filtered.sort((a, b) => {
-          const aRating = a.ratingStats?.averageRating || a.averageRating || 0
-          const bRating = b.ratingStats?.averageRating || b.averageRating || 0
-          if (aRating !== bRating) {
-            return bRating - aRating
-          }
-          return (b.enrolledStudents || 0) - (a.enrolledStudents || 0)
-        })
-        break
-    }
-
-    return filtered
-  }, [courses, priceFilter, sortBy])
 
   // Calculate active filters count
   useEffect(() => {
@@ -126,8 +92,8 @@ export default function CoursesInterface() {
     setSearchInput("")
     handleClearSearch()
     handleCategoryChange("all")
-    setPriceFilter("all")
-    setSortBy("rating")
+    handlePriceFilterChange("all")
+    handleSortByChange("rating")
   }
 
   // Helper function to check if user is the instructor of a course
@@ -228,7 +194,7 @@ export default function CoursesInterface() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Price</label>
                   <select
                     value={priceFilter}
-                    onChange={(e) => setPriceFilter(e.target.value)}
+                    onChange={(e) => handlePriceFilterChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
                   >
                     <option value="all">All Prices</option>
@@ -242,7 +208,7 @@ export default function CoursesInterface() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
                   <select
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => handleSortByChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm"
                   >
                     <option value="rating">Highest Rated</option>
@@ -291,7 +257,7 @@ export default function CoursesInterface() {
             {priceFilter !== "all" && (
               <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
                 {priceFilter === "free" ? "Free Courses" : "Paid Courses"}
-                <button onClick={() => setPriceFilter("all")} className="hover:text-[#3a6147]">
+                <button onClick={() => handlePriceFilterChange("all")} className="hover:text-[#3a6147]">
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -299,7 +265,7 @@ export default function CoursesInterface() {
             {sortBy !== "rating" && (
               <span className="inline-flex items-center gap-1 bg-[#eef2eb] text-[#4a7c59] px-3 py-1 rounded-full text-sm">
                 Sort: {sortBy === "newest" ? "Newest First" : "Most Popular"}
-                <button onClick={() => setSortBy("rating")} className="hover:text-[#3a6147]">
+                <button onClick={() => handleSortByChange("rating")} className="hover:text-[#3a6147]">
                   <X className="h-3 w-3" />
                 </button>
               </span>
@@ -309,14 +275,14 @@ export default function CoursesInterface() {
 
         {/* Results Count */}
         <div className="text-sm text-gray-600 mb-6">
-          Showing {filteredCourses.length} of {courseStats.total} courses
+          Showing {courses.length} of {courseStats.total} courses
           {searchInput && ` for "${searchInput}"`}
         </div>
       </div>
 
       {/* Results Section */}
       <CourseGrid 
-        courses={filteredCourses}
+        courses={courses}
         courseStats={courseStats}
         selectedCategory={selectedCategory}
         pagination={pagination}

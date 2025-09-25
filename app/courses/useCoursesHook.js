@@ -10,6 +10,8 @@ export function useCourses() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
+  const [priceFilter, setPriceFilter] = useState("all") // "all", "free", "paid"
+  const [sortBy, setSortBy] = useState("rating") // "rating", "newest", "popular"
   
   // Use enhanced API hook with retry logic
   const { loading, error, get, clearError, retryCount, isRetrying } = useApiWithRetry({
@@ -78,6 +80,13 @@ export function useCourses() {
           return (matchesLevel || matchesCategory) && isPublished
         })
 
+    // Apply price filter
+    if (priceFilter === "free") {
+      filtered = filtered.filter(course => course.price === 0)
+    } else if (priceFilter === "paid") {
+      filtered = filtered.filter(course => course.price > 0)
+    }
+
     // Apply search filter with fuzzy matching
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
@@ -100,6 +109,7 @@ export function useCourses() {
       })
     }
 
+    // Apply sorting
     return filtered.sort((a, b) => {
       // If searching, prioritize title matches
       if (searchQuery.trim()) {
@@ -111,16 +121,25 @@ export function useCourses() {
         if (!aTitleMatch && bTitleMatch) return 1
       }
       
-      const aRating = a.ratingStats?.averageRating || a.averageRating || 0
-      const bRating = b.ratingStats?.averageRating || b.averageRating || 0
-      
-      if (aRating !== bRating) {
-        return bRating - aRating
+      // Apply the selected sorting method
+      switch (sortBy) {
+        case "newest":
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        case "popular":
+          return (b.enrolledStudents || 0) - (a.enrolledStudents || 0)
+        case "rating":
+        default:
+          const aRating = a.ratingStats?.averageRating || a.averageRating || 0
+          const bRating = b.ratingStats?.averageRating || b.averageRating || 0
+          
+          if (aRating !== bRating) {
+            return bRating - aRating
+          }
+          
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
       }
-      
-      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
     })
-  }, [courses, selectedCategory, searchQuery])
+  }, [courses, selectedCategory, searchQuery, priceFilter, sortBy])
 
   // Pagination calculations
   const paginationData = useMemo(() => {
@@ -173,6 +192,16 @@ export function useCourses() {
     setCurrentPage(1)
   }, [])
 
+  const handlePriceFilterChange = useCallback((filter) => {
+    setPriceFilter(filter)
+    setCurrentPage(1)
+  }, [])
+
+  const handleSortByChange = useCallback((sort) => {
+    setSortBy(sort)
+    setCurrentPage(1)
+  }, [])
+
   const handlePageChange = useCallback((page) => {
     setCurrentPage(page)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -215,6 +244,10 @@ export function useCourses() {
     // Search
     searchQuery,
     
+    // Additional filters
+    priceFilter,
+    sortBy,
+    
     // Pagination
     pagination: {
       currentPage: paginationData.currentPage,
@@ -228,6 +261,8 @@ export function useCourses() {
     handleCategoryChange,
     handleSearchChange,
     handleClearSearch,
+    handlePriceFilterChange,
+    handleSortByChange,
     handlePageChange,
     handleNextPage,
     handlePrevPage,
