@@ -35,7 +35,8 @@ export const CourseSidebar = memo(function CourseSidebar({
   previewVideoUrl,
   courseData,
   progress,
-  rewardData
+  rewardData,
+  isMobile = false
 }) {
   const [claimingCertificate, setClaimingCertificate] = useState(false)
   const [showCertificateModal, setShowCertificateModal] = useState(false)
@@ -192,16 +193,18 @@ const isModuleAccessible = useCallback((moduleIndex) => {
   }
 
   return (
-    <div className="sticky top-4 rounded-lg border border-[#dce4d7] bg-white shadow-sm">
-      <div className="border-b border-[#dce4d7] bg-[#eef2eb] p-4">
-        <h2 className="font-semibold text-[#2c3e2d]">Course Content</h2>
-        <p className="text-sm text-[#5c6d5e]">
-          {isEnrolled 
-            ? `${completedItems.length} of ${totalItems} lessons completed`
-            : `${totalItems} lessons available`
-          }
-        </p>
-      </div>
+    <div className={`${isMobile ? '' : 'sticky top-4 rounded-lg border border-[#dce4d7] bg-white shadow-sm'}`}>
+      {!isMobile && (
+        <div className="border-b border-[#dce4d7] bg-[#eef2eb] p-4">
+          <h2 className="font-semibold text-[#2c3e2d]">Course Content</h2>
+          <p className="text-sm text-[#5c6d5e]">
+            {isEnrolled 
+              ? `${completedItems.length} of ${totalItems} lessons completed`
+              : `${totalItems} lessons available`
+            }
+          </p>
+        </div>
+      )}
 
       {/* Back to Module button when quiz is active */}
       {showModuleQuiz && onBackToModule && (
@@ -242,7 +245,7 @@ const isModuleAccessible = useCallback((moduleIndex) => {
         </div>
       )}
 
-      <div className="max-h-[calc(100vh-250px)] overflow-y-auto">
+      <div className={`${isMobile ? 'overflow-y-auto' : 'max-h-[calc(100vh-250px)] overflow-y-auto'}`}>
         {modules.map((module, moduleIndex) => (
           <ModuleSection
             key={module.id}

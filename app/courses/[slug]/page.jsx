@@ -21,6 +21,7 @@ import { CourseInfo } from "./components/CourseInfo"
 import { ModuleCompleteNotif } from "./components/ModuleCompleteNotif"
 import { EnrollmentPrompt } from "./components/EnrollmentPrompt"
 import { InstructorPreviewToggle } from "./components/InstructorPreviewToggle"
+import { MobileCourseSidebar } from "./components/MobileCourseSidebar"
 import { RewardModal } from "@/components/RewardModal"
 import { Confetti } from "@/components/Confetti"
 
@@ -729,6 +730,27 @@ export default function LessonPage() {
                 )
               ) : (
                 <>
+                  {/* Mobile Course Content Button */}
+                  <MobileCourseSidebar
+                    modules={lessonData.modules}
+                    activeModule={activeModule}
+                    activeVideoId={activeVideoId}
+                    completedItems={completedItems}
+                    moduleQuizCompleted={moduleQuizCompleted}
+                    currentModuleCompleted={currentModuleCompleted}
+                    showModuleQuiz={quizState.showModuleQuiz}
+                    onSelectItem={handleSelectItem}
+                    onToggleCompletion={handleToggleCompletion}
+                    onTakeQuiz={showQuiz}
+                    onBackToModule={handleBackToModule}
+                    isEnrolled={effectiveIsEnrolled}
+                    previewVideoUrl={lessonData.previewVideoUrl}
+                    courseData={lessonData}
+                    progress={progress || { courseProgress: 0 }}
+                    isModuleAccessible={isModuleAccessible}
+                    rewardData={rewardData}
+                  />
+                  
                   {/* NEW: Enhanced VideoPlayer with auto-completion and auto-next */}
                   <VideoPlayer 
                     activeItem={activeItem} 
@@ -807,28 +829,28 @@ export default function LessonPage() {
               )}
             </div>
 
-            {/* Sidebar */}
-                         <div className="mt-4 w-full lg:mt-0 lg:w-1/3 lg:pl-4">
-               <CourseSidebar
-                 modules={lessonData.modules}
-                 activeModule={activeModule}
-                 activeVideoId={activeVideoId}
-                 completedItems={completedItems}
-                 moduleQuizCompleted={moduleQuizCompleted}
-                 currentModuleCompleted={currentModuleCompleted}
-                 showModuleQuiz={quizState.showModuleQuiz}
-                 onSelectItem={handleSelectItem}
-                 onToggleCompletion={handleToggleCompletion}
-                 onTakeQuiz={showQuiz}
-                 onBackToModule={handleBackToModule}
-                 isEnrolled={effectiveIsEnrolled}
-                 previewVideoUrl={lessonData.previewVideoUrl}
-                 courseData={lessonData}
-                 progress={progress || { courseProgress: 0 }}
-                 isModuleAccessible={isModuleAccessible}
-                 rewardData={rewardData}
-               />
-             </div>
+            {/* Desktop Sidebar - Hidden on mobile */}
+            <div className="hidden lg:block mt-4 w-full lg:mt-0 lg:w-1/3 lg:pl-4">
+              <CourseSidebar
+                modules={lessonData.modules}
+                activeModule={activeModule}
+                activeVideoId={activeVideoId}
+                completedItems={completedItems}
+                moduleQuizCompleted={moduleQuizCompleted}
+                currentModuleCompleted={currentModuleCompleted}
+                showModuleQuiz={quizState.showModuleQuiz}
+                onSelectItem={handleSelectItem}
+                onToggleCompletion={handleToggleCompletion}
+                onTakeQuiz={showQuiz}
+                onBackToModule={handleBackToModule}
+                isEnrolled={effectiveIsEnrolled}
+                previewVideoUrl={lessonData.previewVideoUrl}
+                courseData={lessonData}
+                progress={progress || { courseProgress: 0 }}
+                isModuleAccessible={isModuleAccessible}
+                rewardData={rewardData}
+              />
+            </div>
           </div>
         </div>
       </main>
@@ -850,7 +872,6 @@ export default function LessonPage() {
         duration={4000}
         onComplete={() => setShowConfetti(false)}
       />
-      
 
 
     </div>
