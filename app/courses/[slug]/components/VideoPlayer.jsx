@@ -21,7 +21,11 @@ export const VideoPlayer = memo(function VideoPlayer({
   onPreviousLesson,
   onNextLesson,
   hasPreviousLesson = false,
-  hasNextLesson = false
+  hasNextLesson = false,
+  // NEW: Quiz props
+  onTakeQuiz = null,
+  currentModuleCompleted = false,
+  currentModuleQuizCompleted = false
 }) {
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -239,9 +243,29 @@ export const VideoPlayer = memo(function VideoPlayer({
             {/* Mark as Complete / Completed Button - only for enrolled users on actual lessons */}
             {isEnrolled && !activeItem.isPreview && (() => {
               const isCompleted = completedItems.includes(activeItem.id)
+              const hasQuiz = moduleData?.quiz && moduleData.quiz.questions && moduleData.quiz.questions.length > 0
+              const showQuizButton = currentModuleCompleted && !currentModuleQuizCompleted && hasQuiz && onTakeQuiz
               
               return (
                 <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full lg:w-auto">
+                  {/* Quiz Button - Desktop: above navigation buttons */}
+                  {showQuizButton && (
+                    <div className="hidden lg:block">
+                      <Button
+                        size="sm"
+                        className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full lg:w-auto"
+                        onClick={() => {
+                          onTakeQuiz()
+                          setTimeout(() => {
+                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                          }, 100)
+                        }}
+                      >
+                        Take Module Quiz
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Navigation Buttons - Desktop: beside Mark as Complete */}
                   <div className="hidden lg:flex gap-2">
                     <Button
@@ -289,6 +313,29 @@ export const VideoPlayer = memo(function VideoPlayer({
               )
             })()}
           </div>
+
+          {/* Quiz Button - Mobile: below Mark as Complete */}
+          {isEnrolled && !activeItem.isPreview && (() => {
+            const hasQuiz = moduleData?.quiz && moduleData.quiz.questions && moduleData.quiz.questions.length > 0
+            const showQuizButton = currentModuleCompleted && !currentModuleQuizCompleted && hasQuiz && onTakeQuiz
+            
+            return showQuizButton ? (
+              <div className="lg:hidden mt-4 flex justify-center">
+                <Button
+                  size="sm"
+                  className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full max-w-xs"
+                  onClick={() => {
+                    onTakeQuiz()
+                    setTimeout(() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }, 100)
+                  }}
+                >
+                  Take Module Quiz
+                </Button>
+              </div>
+            ) : null
+          })()}
 
           {/* Navigation Buttons - Mobile: below Mark as Complete */}
           {isEnrolled && !activeItem.isPreview && (

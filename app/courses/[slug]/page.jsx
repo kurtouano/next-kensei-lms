@@ -858,6 +858,9 @@ export default function LessonPage() {
                     onNextLesson={handleNextLesson}
                     hasPreviousLesson={hasPreviousLesson}
                     hasNextLesson={hasNextLesson}
+                    onTakeQuiz={showQuiz}
+                    currentModuleCompleted={currentModuleCompleted}
+                    currentModuleQuizCompleted={currentModuleQuizCompleted}
                   />
                   
                   {/* Show enrollment prompt for non-enrolled users */}
@@ -866,7 +869,7 @@ export default function LessonPage() {
                   )}
                   
                   {effectiveIsLoggedIn && effectiveIsEnrolled && currentModuleCompleted && !currentModuleQuizCompleted && (
-                    <ModuleCompleteNotif onTakeQuiz={showQuiz} />
+                    <ModuleCompleteNotif />
                   )}
 
                   <CourseInfo 
