@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, memo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { FileText, Download, User, Lock, Play, CheckCircle } from "lucide-react"
+import { FileText, Download, User, Lock, Play, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react"
 
 export const VideoPlayer = memo(function VideoPlayer({ 
   activeItem, 
@@ -16,7 +16,12 @@ export const VideoPlayer = memo(function VideoPlayer({
   moduleData = null,
   activeModule = 0,
   // NEW: Add completed items to check completion status
-  completedItems = []
+  completedItems = [],
+  // NEW: Navigation props
+  onPreviousLesson,
+  onNextLesson,
+  hasPreviousLesson = false,
+  hasNextLesson = false
 }) {
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -217,7 +222,7 @@ export const VideoPlayer = memo(function VideoPlayer({
       {activeItem?.type === "video" && (
         <div className="border-t border-[#dce4d7] p-4 bg-[#f8f7f4]">
           {/* Mobile: 2 rows, Desktop: 1 row */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
             <div className="flex items-center">
               <span className="font-medium text-[#2c3e2d] text-sm">{activeItem.title}</span>
               {/* Only show preview badge for non-enrolled users */}
@@ -236,27 +241,80 @@ export const VideoPlayer = memo(function VideoPlayer({
               const isCompleted = completedItems.includes(activeItem.id)
               
               return (
-                <Button
-                  size="sm"
-                  variant={isCompleted ? "default" : "outline"}
-                  className={
-                    isCompleted
-                      ? "bg-[#4a7c59] text-white hover:bg-[#3a6147] border-[#4a7c59] w-full sm:w-auto"
-                      : "border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-colors w-full sm:w-auto"
-                  }
-                  onClick={() => {
-                    if (!isCompleted && onAutoComplete) {
-                      onAutoComplete(activeItem.id)
+                <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full lg:w-auto">
+                  {/* Navigation Buttons - Desktop: beside Mark as Complete */}
+                  <div className="hidden lg:flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={onPreviousLesson}
+                      disabled={!hasPreviousLesson}
+                    >
+                      <ChevronLeft className="mr-2 h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={onNextLesson}
+                      disabled={!hasNextLesson}
+                    >
+                      Next
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Mark as Complete Button */}
+                  <Button
+                    size="sm"
+                    variant={isCompleted ? "default" : "outline"}
+                    className={
+                      isCompleted
+                        ? "bg-[#4a7c59] text-white hover:bg-[#3a6147] border-[#4a7c59] w-full lg:w-auto lg:px-6"
+                        : "border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 w-full lg:w-auto lg:px-6"
                     }
-                  }}
-                  disabled={isCompleted}
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  {isCompleted ? "Completed" : "Mark as Complete"}
-                </Button>
+                    onClick={() => {
+                      if (!isCompleted && onAutoComplete) {
+                        onAutoComplete(activeItem.id)
+                      }
+                    }}
+                    disabled={isCompleted}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    {isCompleted ? "Completed" : "Mark as Complete"}
+                  </Button>
+                </div>
               )
             })()}
           </div>
+
+          {/* Navigation Buttons - Mobile: below Mark as Complete */}
+          {isEnrolled && !activeItem.isPreview && (
+            <div className="lg:hidden mt-4 flex gap-2 justify-center">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={onPreviousLesson}
+                disabled={!hasPreviousLesson}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Previous
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={onNextLesson}
+                disabled={!hasNextLesson}
+              >
+                Next
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
           {/* Preview notice - only show for non-enrolled users */}
           {activeItem.isPreview && !isEnrolled && (

@@ -654,6 +654,95 @@ export default function LessonPage() {
     }
   }, [quizState.score, existingScore, lessonData, activeModule, hideQuiz])
 
+  // Navigation functions for previous/next lesson
+  const handlePreviousLesson = useCallback(() => {
+    if (!lessonData?.modules) return
+    
+    const currentModule = lessonData.modules[activeModule]
+    if (!currentModule) return
+    
+    const currentItemIndex = currentModule.items.findIndex(item => item.id === activeVideoId)
+    
+    if (currentItemIndex > 0) {
+      // Go to previous item in same module
+      const previousItem = currentModule.items[currentItemIndex - 1]
+      setActiveVideoId(previousItem.id)
+    } else if (activeModule > 0) {
+      // Go to last item in previous module
+      const previousModule = lessonData.modules[activeModule - 1]
+      const lastItem = previousModule.items[previousModule.items.length - 1]
+      setActiveModule(activeModule - 1)
+      setActiveVideoId(lastItem.id)
+    }
+  }, [lessonData, activeModule, activeVideoId])
+
+  const handleNextLesson = useCallback(() => {
+    if (!lessonData?.modules) return
+    
+    const currentModule = lessonData.modules[activeModule]
+    if (!currentModule) return
+    
+    const currentItemIndex = currentModule.items.findIndex(item => item.id === activeVideoId)
+    
+    if (currentItemIndex < currentModule.items.length - 1) {
+      // Go to next item in same module
+      const nextItem = currentModule.items[currentItemIndex + 1]
+      setActiveVideoId(nextItem.id)
+    } else if (activeModule < lessonData.modules.length - 1) {
+      // Check if next module is accessible before navigating
+      const nextModuleIndex = activeModule + 1
+      if (isModuleAccessible(nextModuleIndex)) {
+        const nextModule = lessonData.modules[nextModuleIndex]
+        const firstItem = nextModule.items[0]
+        setActiveModule(nextModuleIndex)
+        setActiveVideoId(firstItem.id)
+      }
+    }
+  }, [lessonData, activeModule, activeVideoId, isModuleAccessible])
+
+  // Check if previous/next lessons exist
+  const hasPreviousLesson = useMemo(() => {
+    if (!lessonData?.modules) return false
+    
+    const currentModule = lessonData.modules[activeModule]
+    if (!currentModule) return false
+    
+    const currentItemIndex = currentModule.items.findIndex(item => item.id === activeVideoId)
+    
+    // Has previous item in same module
+    if (currentItemIndex > 0) {
+      return true
+    }
+    
+    // Check if previous module exists AND is accessible
+    if (activeModule > 0) {
+      return isModuleAccessible(activeModule - 1)
+    }
+    
+    return false
+  }, [lessonData, activeModule, activeVideoId, isModuleAccessible])
+
+  const hasNextLesson = useMemo(() => {
+    if (!lessonData?.modules) return false
+    
+    const currentModule = lessonData.modules[activeModule]
+    if (!currentModule) return false
+    
+    const currentItemIndex = currentModule.items.findIndex(item => item.id === activeVideoId)
+    
+    // Has next item in same module
+    if (currentItemIndex < currentModule.items.length - 1) {
+      return true
+    }
+    
+    // Check if next module exists AND is accessible
+    if (activeModule < lessonData.modules.length - 1) {
+      return isModuleAccessible(activeModule + 1)
+    }
+    
+    return false
+  }, [lessonData, activeModule, activeVideoId, isModuleAccessible])
+
   const handleBackToModule = useCallback(() => {
     hideQuiz()
   }, [hideQuiz])
@@ -765,6 +854,10 @@ export default function LessonPage() {
                     moduleData={lessonData?.modules?.[activeModule]}
                     activeModule={activeModule}
                     completedItems={completedItems}
+                    onPreviousLesson={handlePreviousLesson}
+                    onNextLesson={handleNextLesson}
+                    hasPreviousLesson={hasPreviousLesson}
+                    hasNextLesson={hasNextLesson}
                   />
                   
                   {/* Show enrollment prompt for non-enrolled users */}
