@@ -21,7 +21,61 @@ export const InstructorPreviewToggle = memo(function InstructorPreviewToggle({
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm mb-6">
       <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
+        {/* Mobile Layout */}
+        <div className="block md:hidden space-y-3">
+          {/* Top Row: Back Button and Toggle */}
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onBackToDashboard}
+              className="flex items-center gap-2 text-gray-600 border-gray-300 hover:bg-gray-50"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden xs:inline">Dashboard</span>
+            </Button>
+
+            {/* Toggle Buttons - Mobile */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => handleToggle('enrolled')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  previewMode === 'enrolled'
+                    ? 'bg-[#4a7c59] text-white shadow-sm'
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Enrolled
+              </button>
+              <button
+                onClick={() => handleToggle('guest')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  previewMode === 'guest'
+                    ? 'bg-gray-500 text-white shadow-sm'
+                    : 'text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Guest
+              </button>
+            </div>
+          </div>
+
+          {/* Course Title and View Mode - Mobile */}
+          <div className="flex items-center gap-2">
+            <Eye className="h-4 w-4 text-gray-500 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <span className="text-xs font-medium text-gray-700 block">
+                {previewMode === 'enrolled' ? 'Enrolled Student View' : 'Guest View'}
+              </span>
+              <span className="text-xs text-gray-600 truncate block">
+                {courseTitle}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden md:flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Back to Dashboard Button */}
             <Button
@@ -43,7 +97,7 @@ export const InstructorPreviewToggle = memo(function InstructorPreviewToggle({
             </div>
           </div>
 
-          {/* Toggle Buttons */}
+          {/* Toggle Buttons - Desktop */}
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => handleToggle('enrolled')}
