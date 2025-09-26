@@ -390,8 +390,8 @@ const formatTime = (seconds) => {
 const MaterialView = memo(function MaterialView({ item, isEnrolled }) {
   if (item?.type === "resource") {
     return (
-      <div className="flex h-full items-center justify-center bg-[#eef2eb] p-8 text-center text-[#4a7c59]">
-        <div className="max-w-md">
+      <div className="flex min-h-full items-center justify-center bg-[#eef2eb] p-3 sm:p-4 text-center text-[#4a7c59]">
+        <div className="w-full max-w-xs sm:max-w-sm md:max-w-md">
           {!isEnrolled ? (
             <>
               <Lock className="mx-auto mb-2 h-12 w-12 text-[#e67e22]" />
@@ -408,17 +408,20 @@ const MaterialView = memo(function MaterialView({ item, isEnrolled }) {
                 Download this resource to enhance your learning experience.
               </p>
               
-              <div className="space-y-3 text-sm">
+              <div className="space-y-2">
                 {item.resources?.map((resource, index) => (
                   <a 
                     key={index} 
                     href={item.selectedResource?.fileUrl || item.selectedResource?.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="block"
                   >
-                    <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147]">
-                      <Download className="mr-2 h-4 w-4" />
-                      Download {resource.title}
+                    <Button className="bg-[#4a7c59] text-white hover:bg-[#3a6147] w-full text-xs sm:text-sm py-2 px-2 sm:px-3 h-auto min-h-[36px] sm:min-h-[40px] flex items-center justify-start">
+                      <Download className="mr-1.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="text-left flex-1 truncate text-xs sm:text-sm">
+                        Download {resource.title}
+                      </span>
                     </Button>
                   </a>
                 ))}
@@ -431,8 +434,8 @@ const MaterialView = memo(function MaterialView({ item, isEnrolled }) {
   }
 
   return (
-    <div className="flex h-full items-center justify-center bg-[#eef2eb] p-4 text-center text-[#4a7c59]">
-      <div>
+    <div className="flex min-h-full items-center justify-center bg-[#eef2eb] p-3 sm:p-4 text-center text-[#4a7c59]">
+      <div className="w-full max-w-xs sm:max-w-sm md:max-w-md">
         {!isEnrolled ? (
           <>
             <Lock className="mx-auto mb-2 h-12 w-12 text-[#e67e22]" />
