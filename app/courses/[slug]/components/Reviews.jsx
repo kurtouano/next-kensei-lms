@@ -10,13 +10,16 @@ export const ReviewSection = memo(function ReviewSection({
   onDeleteReview,
   onUpdateReview,
   onToggleForm,
+  onLoadMore,
   isEnrolled = false
 }) {
   const {
     reviews,
     loading,
+    loadingMore,
     averageRating,
     totalReviews,
+    hasMore,
     userHasReviewed,
     userReview,
     showForm,
@@ -105,7 +108,14 @@ export const ReviewSection = memo(function ReviewSection({
           </div>
         )}
 
-        <ReviewsList reviews={reviews} loading={loading} />
+        <ReviewsList 
+          reviews={reviews} 
+          loading={loading} 
+          loadingMore={loadingMore}
+          hasMore={hasMore}
+          totalReviews={totalReviews}
+          onLoadMore={onLoadMore}
+        />
       </div>
 
       {showDeleteConfirm && (
@@ -294,7 +304,14 @@ const ReviewForm = memo(function ReviewForm({
   )
 })
 
-const ReviewsList = memo(function ReviewsList({ reviews, loading }) {
+const ReviewsList = memo(function ReviewsList({ 
+  reviews, 
+  loading, 
+  loadingMore, 
+  hasMore, 
+  totalReviews, 
+  onLoadMore 
+}) {
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -314,11 +331,46 @@ const ReviewsList = memo(function ReviewsList({ reviews, loading }) {
   }
 
   return (
-    <div className="space-y-4 pt-4">
-      {reviews.map((review) => (
-        <ReviewItem key={review.id} review={review} />
-      ))}
-    </div>
+    <>
+      <div className="space-y-4 pt-4">
+        {reviews.map((review) => (
+          <ReviewItem key={review.id} review={review} />
+        ))}
+      </div>
+
+      {!loading && reviews.length > 0 && hasMore && (
+        <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb] w-full sm:w-auto"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+          >
+            {loadingMore ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4a7c59] mr-2"></div>
+                Loading more reviews...
+              </>
+            ) : (
+              <>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Load More Reviews
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {!loading && reviews.length > 0 && !hasMore && (
+        <div className="mt-6 text-center border-t border-[#dce4d7] pt-6">
+          <p className="text-xs text-[#5c6d5e] mt-1">
+            All reviews loaded
+          </p>
+        </div>
+      )}
+
+    </>
   )
 })
 

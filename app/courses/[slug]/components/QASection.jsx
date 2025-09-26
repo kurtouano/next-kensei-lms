@@ -247,9 +247,6 @@ export const QASection = memo(function QASection({
                     </>
                   )}
                 </Button>
-                <p className="text-xs text-[#5c6d5e] mt-2">
-                  Showing {questions.length} of {totalQuestions} questions
-                </p>
               </div>
             )}
 

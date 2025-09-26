@@ -1136,8 +1136,11 @@ export function useReviews(lessonSlug, session) {
   const [reviewsState, setReviewsState] = useState({
     reviews: [],
     loading: false,
+    loadingMore: false,
     averageRating: 0,
     totalReviews: 0,
+    hasMore: false,
+    currentPage: 1,
     userHasReviewed: false,
     userReview: null,
     showForm: false,
@@ -1145,10 +1148,20 @@ export function useReviews(lessonSlug, session) {
     newReview: { rating: 0, comment: "" }
   })
 
-  const fetchReviews = useCallback(async () => {
-    setReviewsState(prev => ({ ...prev, loading: true }))
+  const REVIEWS_PER_PAGE = 5
+
+  const fetchReviews = useCallback(async (page = 1, append = false, silent = false) => {
+    // Set appropriate loading state (skip if silent)
+    if (!silent) {
+      if (append) {
+        setReviewsState(prev => ({ ...prev, loadingMore: true }))
+      } else {
+        setReviewsState(prev => ({ ...prev, loading: true }))
+      }
+    }
+
     try {
-      const response = await fetch(`/api/courses/${lessonSlug}/reviews`)
+      const response = await fetch(`/api/courses/${lessonSlug}/reviews?page=${page}&limit=${REVIEWS_PER_PAGE}`)
       const data = await response.json()
       
       if (data.success) {
@@ -1158,10 +1171,14 @@ export function useReviews(lessonSlug, session) {
 
         setReviewsState(prev => ({
           ...prev,
-          reviews: data.reviews,
+          reviews: append 
+            ? [...prev.reviews, ...data.reviews]
+            : data.reviews,
           averageRating: data.averageRating,
           totalReviews: data.totalReviews,
-          userHasReviewed: !!existingReview,
+          hasMore: data.hasMore,
+          currentPage: page,
+          userHasReviewed: append ? prev.userHasReviewed || !!existingReview : !!existingReview,
           userReview: existingReview,
           newReview: existingReview 
             ? { rating: existingReview.rating, comment: existingReview.comment }
@@ -1171,9 +1188,13 @@ export function useReviews(lessonSlug, session) {
     } catch (error) {
       console.error("Error fetching reviews:", error)
     } finally {
-      setReviewsState(prev => ({ ...prev, loading: false }))
+      setReviewsState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        loadingMore: false 
+      }))
     }
-  }, [lessonSlug, session?.user])
+  }, [lessonSlug, session?.user, REVIEWS_PER_PAGE])
 
   const submitReview = useCallback(async () => {
     if (!session?.user || reviewsState.newReview.rating === 0 || !reviewsState.newReview.comment.trim()) {
@@ -1237,6 +1258,12 @@ export function useReviews(lessonSlug, session) {
     }))
   }, [])
 
+  const loadMoreReviews = useCallback(async () => {
+    if (reviewsState.hasMore && !reviewsState.loadingMore) {
+      await fetchReviews(reviewsState.currentPage + 1, true)
+    }
+  }, [reviewsState.hasMore, reviewsState.loadingMore, reviewsState.currentPage, fetchReviews])
+
   const toggleForm = useCallback((show) => {
     setReviewsState(prev => ({ ...prev, showForm: show }))
   }, [])
@@ -1244,6 +1271,7 @@ export function useReviews(lessonSlug, session) {
   return {
     reviewsState,
     fetchReviews,
+    loadMoreReviews,
     submitReview,
     deleteReview,
     updateReview,

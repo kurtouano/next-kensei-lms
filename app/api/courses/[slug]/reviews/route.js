@@ -8,12 +8,16 @@ import Rating from "@/models/Rating";
 import User from "@/models/User";
 import Activity from "@/models/Activity";
 
-// GET - Fetch all reviews for a course
+// GET - Fetch reviews for a course with pagination
 export async function GET(request, { params }) {
   await connectDb();
 
   try {
     const { slug } = await params;
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page')) || 1;
+    const limit = parseInt(searchParams.get('limit')) || 5;
+    const skip = (page - 1) * limit;
 
     // Find the course by slug
     const course = await Course.findOne({ slug }).lean();
@@ -21,7 +25,10 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    // Fetch all ratings/reviews for this course
+    // Get total count
+    const totalReviews = await Rating.countDocuments({ courseId: course._id });
+
+    // Fetch ratings/reviews with pagination
     const ratings = await Rating.find({ courseId: course._id })
       .populate({
         path: 'user',
@@ -32,6 +39,8 @@ export async function GET(request, { params }) {
         }
       })
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .lean();
 
     // Format reviews for frontend
@@ -53,10 +62,10 @@ export async function GET(request, { params }) {
       }
     }));
 
-    // Calculate statistics
-    const totalReviews = ratings.length;
-    const averageRating = totalReviews > 0 
-      ? ratings.reduce((sum, rating) => sum + rating.rating, 0) / totalReviews 
+    // Calculate statistics from ALL reviews (not just current page)
+    const allRatings = await Rating.find({ courseId: course._id }).lean();
+    const averageRating = allRatings.length > 0 
+      ? allRatings.reduce((sum, rating) => sum + rating.rating, 0) / allRatings.length 
       : 0;
 
     return NextResponse.json({
@@ -64,7 +73,9 @@ export async function GET(request, { params }) {
       reviews,
       averageRating: Number(averageRating.toFixed(1)),
       totalReviews,
-      distribution: calculateRatingDistribution(ratings)
+      hasMore: skip + limit < totalReviews,
+      currentPage: page,
+      distribution: calculateRatingDistribution(allRatings)
     });
 
   } catch (error) {

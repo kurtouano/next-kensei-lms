@@ -306,7 +306,7 @@ export default function LessonPage() {
   )
   
   // Only run reviews hook if user is logged in
-  const { reviewsState, fetchReviews, submitReview, deleteReview, updateReview, toggleForm } = useReviews(
+  const { reviewsState, fetchReviews, loadMoreReviews, submitReview, deleteReview, updateReview, toggleForm } = useReviews(
     lessonSlug, 
     effectiveIsLoggedIn ? session : null
   )
@@ -885,6 +885,7 @@ export default function LessonPage() {
                         onDeleteReview={deleteReview}
                         onUpdateReview={updateReview}
                         onToggleForm={toggleForm}
+                        onLoadMore={loadMoreReviews}
                         isEnrolled={effectiveIsEnrolled}
                       />
                     </div>
