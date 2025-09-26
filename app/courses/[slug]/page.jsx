@@ -256,7 +256,6 @@ export default function LessonPage() {
           if (itemIndex > -1) {
             cleanedCompletedItems.splice(itemIndex, 1)
             needsCleanup = true
-            console.log('🧹 Cleaning up completed item from locked module:', item.title)
           }
         })
         
@@ -265,13 +264,11 @@ export default function LessonPage() {
         if (quizIndex > -1) {
           cleanedModuleQuizCompleted.splice(quizIndex, 1)
           needsCleanup = true
-          console.log('🧹 Cleaning up quiz completion from locked module:', moduleIndex + 1)
         }
       }
     })
     
     if (needsCleanup) {
-      console.log('🔧 Auto-cleaning locked module progress')
       setCompletedItems(cleanedCompletedItems)
       setModuleQuizCompleted(cleanedModuleQuizCompleted)
       
@@ -289,7 +286,6 @@ export default function LessonPage() {
           
           const data = await response.json()
           if (data.success && data.cleaned) {
-            console.log('✅ Backend progress cleanup completed')
           }
         } catch (error) {
           console.error('❌ Failed to sync cleanup with backend:', error)
@@ -322,9 +318,14 @@ export default function LessonPage() {
 
   // NEW: Auto-completion and auto-next functionality
   const handleAutoComplete = useCallback(async (lessonId) => {
-    if (!effectiveIsLoggedIn || !effectiveIsEnrolled || isInstructorPreview) return
+    if (!effectiveIsLoggedIn || !effectiveIsEnrolled) {
+      return
+    }
     
-    console.log('🎯 Auto-completing lesson:', lessonId)
+    // Allow auto-completion in instructor preview mode when in "enrolled" mode
+    if (isInstructorPreview && instructorPreviewMode !== 'enrolled') {
+      return
+    }
     
     // Update UI immediately for better UX
     setCompletedItems(prev => {
@@ -342,7 +343,7 @@ export default function LessonPage() {
       setCompletedItems(prev => prev.filter(id => id !== lessonId))
       console.error('Failed to auto-complete lesson')
     }
-  }, [effectiveIsLoggedIn, effectiveIsEnrolled, isInstructorPreview, updateLessonProgress])
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, isInstructorPreview, instructorPreviewMode, updateLessonProgress])
 
   // NEW: Find next video in the course or check if quiz should be shown
   const getNextAction = useCallback(() => {
@@ -418,11 +419,9 @@ export default function LessonPage() {
     if (!nextAction) return
     
     if (nextAction.type === 'video') {
-      console.log('⏭️ Auto-advancing to next video:', nextAction.video.title)
       setActiveVideoId(nextAction.video.id)
       setActiveModule(nextAction.moduleIndex)
     } else if (nextAction.type === 'quiz') {
-      console.log('📝 Auto-triggering module quiz for module:', nextAction.moduleIndex + 1)
       setActiveModule(nextAction.moduleIndex)
       showQuiz() // Automatically show the quiz
     }
@@ -482,7 +481,6 @@ export default function LessonPage() {
       
       // 🔧 FIX: Sync reward data from progress
       if (progress.rewardData) {
-        console.log('🎁 Syncing reward data from progress:', progress.rewardData)
         setRewardData(progress.rewardData)
       }
     } else if (!effectiveIsLoggedIn || !effectiveIsEnrolled) {
@@ -624,8 +622,8 @@ export default function LessonPage() {
         : prev.filter(id => id !== itemId)
     )
     
-    // Only update database if not in instructor preview mode
-    if (!isInstructorPreview) {
+    // Update database (allow in instructor preview mode when in enrolled mode)
+    if (!isInstructorPreview || instructorPreviewMode === 'enrolled') {
       const success = await updateLessonProgress(itemId, newCompletionState)
       
       if (!success) {
@@ -768,16 +766,6 @@ export default function LessonPage() {
     return <ErrorLayout error={lessonError || "Failed to load lesson data"} />
   }
 
-  console.log('🔍 INSTRUCTOR PREVIEW STATUS:', {
-    isInstructorPreview,
-    instructorPreviewMode, 
-    isInstructorOwned,
-    effectiveIsLoggedIn,
-    effectiveIsEnrolled,
-    actualIsEnrolled,
-    sessionUserEmail: session?.user?.email,
-    lessonInstructorEmail: lessonData?.instructor?.email
-  })
 
   // ============ MAIN RENDER ============
   return (
@@ -861,6 +849,7 @@ export default function LessonPage() {
                     onTakeQuiz={showQuiz}
                     currentModuleCompleted={currentModuleCompleted}
                     currentModuleQuizCompleted={currentModuleQuizCompleted}
+                    onToggleCompletion={handleToggleCompletion}
                   />
                   
                   {/* Show enrollment prompt for non-enrolled users */}

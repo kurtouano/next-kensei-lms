@@ -125,14 +125,12 @@ export const QASection = memo(function QASection({
   }, [])
 
   const handleSubmitComment = useCallback((questionId) => {
-    console.log('🔍 handleSubmitComment called:', { questionId, commentText: commentText.trim() });
     
     if (commentText.trim()) {
       onSubmitComment(questionId, commentText.trim());
       setCommentText("");
       setReplyingTo(null);
     } else {
-      console.log('❌ Comment text is empty');
       alert('Please enter a comment before submitting');
     }
   }, [commentText, onSubmitComment])

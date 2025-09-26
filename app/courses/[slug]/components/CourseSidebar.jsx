@@ -83,16 +83,6 @@ const isModuleAccessible = useCallback((moduleIndex) => {
     
     const completed = allLessonsCompleted && allQuizzesPassed
     
-    // Debug log for course completion state
-    if (completed) {
-      console.log('🎓 Course completion detected:', {
-        allLessonsCompleted,
-        allQuizzesPassed,
-        completedItems: completedItems.length,
-        totalItems,
-        moduleQuizCompleted: moduleQuizCompleted.length
-      })
-    }
     
     return completed
   }, [isEnrolled, modules, completedItems, moduleQuizCompleted, totalItems])
@@ -114,7 +104,6 @@ const isModuleAccessible = useCallback((moduleIndex) => {
   // IMMEDIATE certificate check when course completion state changes
   useEffect(() => {
     if (isCourseCompleted && courseData?.id) {
-      console.log('🎓 Course completed - checking certificate immediately')
       // Small delay to ensure backend has processed the completion
       const timer = setTimeout(() => {
         checkExistingCertificate()
@@ -127,22 +116,18 @@ const isModuleAccessible = useCallback((moduleIndex) => {
   // Additional check when progress.isCompleted changes
   useEffect(() => {
     if (progress?.isCompleted && courseData?.id) {
-      console.log('📊 Progress shows completed - checking certificate')
       checkExistingCertificate()
     }
   }, [progress?.isCompleted, courseData?.id])
 
   const checkExistingCertificate = async () => {
     try {
-      console.log('🔍 Checking certificate for course:', courseData.id)
       const response = await fetch(`/api/certificates/${courseData.id}`)
       const data = await response.json()
       
       if (data.success) {
-        console.log('✅ Certificate found:', data.certificate)
         setHasCertificate(true)
       } else {
-        console.log('❌ No certificate found:', data.error)
         setHasCertificate(false)
       }
     } catch (error) {

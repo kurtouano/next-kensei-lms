@@ -25,7 +25,9 @@ export const VideoPlayer = memo(function VideoPlayer({
   // NEW: Quiz props
   onTakeQuiz = null,
   currentModuleCompleted = false,
-  currentModuleQuizCompleted = false
+  currentModuleQuizCompleted = false,
+  // NEW: Manual completion toggle
+  onToggleCompletion = null
 }) {
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -70,19 +72,16 @@ export const VideoPlayer = memo(function VideoPlayer({
 
     // NEW: Handle video end
     const handleVideoEnd = () => {
-      console.log('🎬 Video ended')
       setIsPlaying(false)
       
       // Auto-complete the lesson if enrolled and not preview
       if (isEnrolled && !activeItem.isPreview && onAutoComplete && !hasAutoCompletedRef.current) {
-        console.log('✅ Auto-completing lesson')
         hasAutoCompletedRef.current = true
         onAutoComplete(activeItem.id)
       }
       
       // Auto-advance to next video immediately if there's a next video and user is enrolled
       if (hasNextAction && isEnrolled && !activeItem.isPreview && onAutoNext) {
-        console.log('⏭️ Auto-advancing to next action immediately')
         // Small delay to allow auto-complete to process
         setTimeout(() => {
           onAutoNext()
@@ -121,33 +120,27 @@ export const VideoPlayer = memo(function VideoPlayer({
     const video = videoRef.current
     
     const updateProgress = () => {
-      if (video.duration && !video.paused) {
+      if (video.duration) {
         const progressPercent = (video.currentTime / video.duration) * 100
         setVideoProgress(progressPercent)
         
-        // NEW: Auto-complete at 90% progress and auto-advance
-        if (progressPercent >= 90 && onAutoComplete && !hasAutoCompletedRef.current) {
-          console.log('🎯 Auto-completing lesson at 90% progress')
+        
+        // NEW: Auto-complete at 85% progress (but don't auto-advance yet)
+        if (progressPercent >= 85 && onAutoComplete && !hasAutoCompletedRef.current) {
           hasAutoCompletedRef.current = true
           onAutoComplete(activeItem.id)
-          
-          // If video reaches 90%, also auto-advance to next video
-          if (hasNextAction && onAutoNext) {
-            console.log('⏭️ Auto-advancing to next action at 90%')
-            // Small delay to allow auto-complete to process
-            setTimeout(() => {
-              onAutoNext()
-            }, 2000)
-          }
         }
         
-        // Only save if we've moved significantly (more than 30 seconds from last save)
-        const timeDiff = Math.abs(video.currentTime - lastSavedTimeRef.current)
-        
-        if (timeDiff >= 30) { // Save every 30 seconds of actual progress
-          if (onProgressUpdate && activeItem?.id) {
-            onProgressUpdate(activeItem.id, video.currentTime)
-            lastSavedTimeRef.current = video.currentTime
+        // Only save progress when video is playing (to avoid saving on every pause)
+        if (!video.paused) {
+          // Only save if we've moved significantly (more than 30 seconds from last save)
+          const timeDiff = Math.abs(video.currentTime - lastSavedTimeRef.current)
+          
+          if (timeDiff >= 30) { // Save every 30 seconds of actual progress
+            if (onProgressUpdate && activeItem?.id) {
+              onProgressUpdate(activeItem.id, video.currentTime)
+              lastSavedTimeRef.current = video.currentTime
+            }
           }
         }
       }
@@ -171,12 +164,30 @@ export const VideoPlayer = memo(function VideoPlayer({
         onProgressUpdate(activeItem.id, video.currentTime)
         lastSavedTimeRef.current = video.currentTime
       }
+      
+      // Check for auto-completion when user pauses at 90% or higher
+      if (video.duration && onAutoComplete && !hasAutoCompletedRef.current) {
+        const progressPercent = (video.currentTime / video.duration) * 100
+        if (progressPercent >= 85) {
+          hasAutoCompletedRef.current = true
+          onAutoComplete(activeItem.id)
+        }
+      }
     }
 
     const saveProgressOnSeeked = () => {
       if (onProgressUpdate && activeItem?.id && video.currentTime > 0) {
         onProgressUpdate(activeItem.id, video.currentTime)
         lastSavedTimeRef.current = video.currentTime
+      }
+      
+      // Check for auto-completion when user seeks to 90% or higher
+      if (video.duration && onAutoComplete && !hasAutoCompletedRef.current) {
+        const progressPercent = (video.currentTime / video.duration) * 100
+        if (progressPercent >= 85) {
+          hasAutoCompletedRef.current = true
+          onAutoComplete(activeItem.id)
+        }
       }
     }
 
@@ -299,12 +310,11 @@ export const VideoPlayer = memo(function VideoPlayer({
                         ? "bg-[#4a7c59] text-white hover:bg-[#3a6147] border-[#4a7c59] w-full lg:w-auto lg:px-6"
                         : "border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 w-full lg:w-auto lg:px-6"
                     }
-                    onClick={() => {
-                      if (!isCompleted && onAutoComplete) {
-                        onAutoComplete(activeItem.id)
+                    onClick={(e) => {
+                      if (onToggleCompletion) {
+                        onToggleCompletion(activeItem.id, e)
                       }
                     }}
-                    disabled={isCompleted}
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
                     {isCompleted ? "Completed" : "Mark as Complete"}

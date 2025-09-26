@@ -14,14 +14,12 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
   const handleEnrollClick = useCallback(async () => {
     // Check if user is logged in first
     if (!session?.user) {
-      console.log('❌ User not logged in, redirecting to login')
       window.location.href = '/auth/login'
       return
     }
 
     try {
       setIsLoading(true)
-      console.log('🛒 Starting enrollment for course:', course?.id || course?._id, 'Free:', isFree)
       
       const response = await fetch('/api/courses/stripe/create-checkout-session', {
         method: 'POST',
@@ -42,7 +40,6 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
         console.error('API response error:', errorData);
         
         if (response.status === 401) {
-          console.log('🔒 Unauthorized - redirecting to login')
           window.location.href = '/auth/login'
           return
         }
@@ -51,10 +48,8 @@ export const EnrollmentPrompt = memo(function EnrollmentPrompt({ course }) {
       }
 
       const data = await response.json();
-      console.log('✅ Enrollment response:', data);
       
       if (data.url) {
-        console.log('🔗 Redirecting to:', data.url)
         // For free courses, this goes directly to success page
         // For paid courses, this goes to Stripe checkout
         window.location.assign(data.url);

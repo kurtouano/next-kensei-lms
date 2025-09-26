@@ -604,7 +604,6 @@ export function useProgress(slug) {
   const updateLessonProgress = useCallback(async (lessonId, isCompleted, currentTime = 0) => {
     if (!session?.user || !slug) return false
     
-    console.log('📝 Updating lesson progress:', { lessonId, isCompleted, currentTime })
     
     // Optimistic update for better UX
     const previousProgress = { ...progress }
@@ -650,7 +649,6 @@ export function useProgress(slug) {
           lessonProgress: data.progress.lessonProgress || []
         }))
         
-        console.log('✅ Lesson progress updated successfully')
         return true
       } else {
         // Revert optimistic update on error
@@ -745,7 +743,6 @@ export function useProgress(slug) {
 
   // NEW: Auto-completion helper
   const autoCompleteLesson = useCallback(async (lessonId) => {
-    console.log('🎯 Auto-completing lesson:', lessonId)
     return await updateLessonProgress(lessonId, true, 0)
   }, [updateLessonProgress])
 
