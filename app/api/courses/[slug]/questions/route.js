@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
     const skip = (page - 1) * limit
 
     // Find course by slug
-    const course = await Course.findOne({ slug }).select('_id')
+    const course = await Course.findOne({ slug }).select('_id').lean()
     if (!course) {
       return NextResponse.json({ 
         success: false, 
@@ -30,7 +30,7 @@ export async function GET(request, { params }) {
 
     // Get session for like status
     const session = await getServerSession(authOptions)
-    const currentUser = session?.user?.email ? await User.findOne({ email: session.user.email }).select('_id') : null
+    const currentUser = session?.user?.email ? await User.findOne({ email: session.user.email }).select('_id').lean() : null
 
     // Get total count
     const totalQuestions = await Question.countDocuments({ courseId: course._id })
@@ -149,6 +149,7 @@ export async function POST(request, { params }) {
     const course = await Course.findOne({ slug })
       .populate('instructor', '_id name email') // Get instructor details for activity
       .select('_id title instructor')
+      .lean()
     
     if (!course) {
       return NextResponse.json({ 
@@ -158,7 +159,7 @@ export async function POST(request, { params }) {
     }
 
     // Find user
-    const user = await User.findOne({ email: session.user.email }).select('_id name email')
+    const user = await User.findOne({ email: session.user.email }).select('_id name email').lean()
     if (!user) {
       return NextResponse.json({ 
         success: false, 

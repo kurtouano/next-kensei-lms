@@ -126,13 +126,13 @@ export async function POST(request, { params }) {
     }
 
     // Find the course
-    const course = await Course.findOne({ slug });
+    const course = await Course.findOne({ slug }).lean();
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
     // Find the user
-    const user = await User.findOne({ email: session.user.email });
+    const user = await User.findOne({ email: session.user.email }).lean();
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -141,7 +141,7 @@ export async function POST(request, { params }) {
     const existingRating = await Rating.findOne({
       courseId: course._id,
       user: user._id
-    });
+    }).lean();
 
     let savedRating;
     let isNewRating = false;
@@ -177,7 +177,7 @@ export async function POST(request, { params }) {
           course: course._id,
           user: user._id,
           type: 'course_rated'
-        });
+        }).lean();
 
         if (!existingActivity) {
           const ratingActivity = new Activity({
@@ -241,13 +241,13 @@ export async function DELETE(request, { params }) {
     const { slug } = await params;
 
     // Find the course
-    const course = await Course.findOne({ slug });
+    const course = await Course.findOne({ slug }).lean();
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
     // Find the user
-    const user = await User.findOne({ email: session.user.email });
+    const user = await User.findOne({ email: session.user.email }).lean();
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
