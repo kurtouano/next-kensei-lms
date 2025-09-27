@@ -112,7 +112,7 @@ export default function Home() {
       <main className="flex-1">
         {/* Banner Slider */}
         <section className="relative">
-          <BannerSlider banners={banners} />
+          <BannerSlider banners={banners} autoSlideInterval={5000} />
         </section>
 
         {/* What You'll Get Section */}
