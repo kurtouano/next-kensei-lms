@@ -138,6 +138,8 @@ UserSchema.index({ provider: 1 })              // Fast login provider checks
 UserSchema.index({ role: 1 })                  // Fast role-based queries
 UserSchema.index({ lastLogin: -1 })            // Recent login queries (newest first)
 UserSchema.index({ credits: -1 })              // Credit-based queries (highest first)
+UserSchema.index({ email: 1 })                 // CRITICAL: Fast session lookups
+UserSchema.index({ createdAt: -1 })            // For user listing and sorting
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema)
 export default User

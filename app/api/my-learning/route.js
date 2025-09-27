@@ -113,8 +113,7 @@ export async function GET() {
           instructor: course.instructor?.name || "Unknown Instructor",
           slug: course.slug
         };
-      })
-    );
+      });
 
     return NextResponse.json({
       success: true,
