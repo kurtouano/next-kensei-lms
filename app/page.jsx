@@ -12,6 +12,7 @@ export default function Home() {
   const [featuredCourses, setFeaturedCourses] = useState([])
   const [coursesLoading, setCoursesLoading] = useState(true)
   const [coursesError, setCourseError] = useState(null)
+  const [openFeature, setOpenFeature] = useState(null)
 
   // Handle loading completion
   const handleLoadingComplete = () => {
@@ -180,61 +181,111 @@ export default function Home() {
         </section>
 
         {/* Bonsai Credit System */}
-        <section className="bg-[#eef2eb] py-16">
+        <section className="bg-white py-24">
           <div className="container mx-auto px-4">
-            <div className="grid items-center gap-10 md:grid-cols-2">
+            <div className="grid items-center gap-16 md:grid-cols-2">
               <div>
-                <h2 className="mb-4 text-3xl font-bold text-[#2c3e2d]">Bonsai Credit System</h2>
-                <p className="mb-6 text-lg text-[#5c6d5e]">
+                <h2 className="mb-6 text-3xl font-bold text-[#2c3e2d]">Grow Your Bonsai Tree</h2>
+                <p className="mb-10 text-[#5c6d5e]">
                   Our unique learning approach combines Japanese language acquisition with the art of bonsai
                   cultivation.
                 </p>
-                <ul className="mb-8 space-y-4">
-                  <li className="flex items-start">
-                    <div className="mr-3 rounded-full bg-[#4a7c59] p-1">
-                      <ChevronRight className="h-4 w-4 text-white" />
+                <div className="mb-8 space-y-2">
+                  <div className="border border-[#dce4d7] rounded-lg">
+                    <button
+                      onClick={() => setOpenFeature(openFeature === 1 ? null : 1)}
+                      className="w-full flex items-center justify-between p-4 text-left  transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <div className="mr-3 rounded-full bg-[#4a7c59] p-1">
+                          <ChevronRight className="h-4 w-4 text-white" />
+                        </div>
+                        <h3 className="font-medium text-[#2c3e2d]">Earn Credits as You Learn</h3>
+                      </div>
+                      <ChevronRight 
+                        className={`h-4 w-4 text-[#4a7c59] transition-transform ${
+                          openFeature === 1 ? 'rotate-90' : ''
+                        }`} 
+                      />
+                    </button>
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      openFeature === 1 ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'
+                    }`}>
+                      <div className="px-4 pb-4">
+                        <p className="text-[#5c6d5e] ml-8">
+                          Complete courses to earn Bonsai Credits. Use credits to buy decorations for your bonsai tree.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-[#2c3e2d]">Earn Credits as You Learn</h3>
-                      <p className="text-[#5c6d5e]">
-                        Complete lessons and exercises to earn Bonsai Credits that help your virtual tree grow
-                      </p>
+                  </div>
+                  
+                  <div className="border border-[#dce4d7] rounded-lg">
+                    <button
+                      onClick={() => setOpenFeature(openFeature === 2 ? null : 2)}
+                      className="w-full flex items-center justify-between p-4 text-left  transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <div className="mr-3 rounded-full bg-[#4a7c59] p-1">
+                          <ChevronRight className="h-4 w-4 text-white" />
+                        </div>
+                        <h3 className="font-medium text-[#2c3e2d]">Visual Progress Tracking</h3>
+                      </div>
+                      <ChevronRight 
+                        className={`h-4 w-4 text-[#4a7c59] transition-transform ${
+                          openFeature === 2 ? 'rotate-90' : ''
+                        }`} 
+                      />
+                    </button>
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      openFeature === 2 ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'
+                    }`}>
+                      <div className="px-4 pb-4">
+                        <p className="text-[#5c6d5e] ml-8">
+                          The more credits you earn, the bigger your bonsai tree becomes. Watch your tree grow as you complete more courses.
+                        </p>
+                      </div>
                     </div>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="mr-3 rounded-full bg-[#4a7c59] p-1">
-                      <ChevronRight className="h-4 w-4 text-white" />
+                  </div>
+                  
+                  <div className="border border-[#dce4d7] rounded-lg">
+                    <button
+                      onClick={() => setOpenFeature(openFeature === 3 ? null : 3)}
+                      className="w-full flex items-center justify-between p-4 text-left  transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <div className="mr-3 rounded-full bg-[#4a7c59] p-1">
+                          <ChevronRight className="h-4 w-4 text-white" />
+                        </div>
+                        <h3 className="font-medium text-[#2c3e2d]">Share Your Progress</h3>
+                      </div>
+                      <ChevronRight 
+                        className={`h-4 w-4 text-[#4a7c59] transition-transform ${
+                          openFeature === 3 ? 'rotate-90' : ''
+                        }`} 
+                      />
+                    </button>
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      openFeature === 3 ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'
+                    }`}>
+                      <div className="px-4 pb-4">
+                        <p className="text-[#5c6d5e] ml-8">
+                          Show off your growing bonsai tree to friends and the community. Compare your progress with other learners.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-[#2c3e2d]">Track Your Progress</h3>
-                      <p className="text-[#5c6d5e]">
-                        Watch your bonsai tree flourish as your Japanese language skills develop
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="mr-3 rounded-full bg-[#4a7c59] p-1">
-                      <ChevronRight className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-[#2c3e2d]">Unlock Rewards</h3>
-                      <p className="text-[#5c6d5e]">
-                        Redeem credits for bonus lessons, materials, and exclusive content
-                      </p>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-              <div className="relative mx-auto max-w-md">
-                <div className="aspect-square overflow-hidden rounded-full border-8 border-white bg-[#dce4d7] shadow-lg">
-                  <div className="flex h-full items-center justify-center">
-                    <BonsaiTreeIllustration className="h-4/5 w-4/5" />
                   </div>
                 </div>
-                <div className="absolute -bottom-4 -right-4 rounded-full border-4 border-white bg-[#eef2eb] p-4 shadow-lg">
-                  <div className="rounded-full bg-[#4a7c59] p-2 text-white">
-                    <span className="block text-center text-xl font-bold">250</span>
-                    <span className="block text-center text-xs">Credits</span>
+              </div>
+              <div className="flex justify-center">
+                <div className="relative max-w-md">
+                  <div className="aspect-square overflow-hidden">
+                    <div className="flex h-full items-center justify-center p-8">
+                      <img 
+                        src="/bonsaiLevelThree.svg" 
+                        alt="Level 3 Bonsai Tree" 
+                        className="h-full w-full object-contain" 
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -373,32 +424,3 @@ function EmptyFeaturedCourses() {
   )
 }
 
-function BonsaiTreeIllustration(props) {
-  return (
-    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-      <rect x="90" y="140" width="20" height="50" fill="#8B5E3C" />
-      <path
-        d="M100 20C80 20 65 35 65 55C65 75 80 90 100 90C120 90 135 75 135 55C135 35 120 20 100 20Z"
-        fill="#4a7c59"
-      />
-      <path d="M70 80C55 80 45 90 45 105C45 120 55 130 70 130C85 130 95 120 95 105C95 90 85 80 70 80Z" fill="#5d9e75" />
-      <path
-        d="M130 80C145 80 155 90 155 105C155 120 145 130 130 130C115 130 105 120 105 105C105 90 115 80 130 80Z"
-        fill="#5d9e75"
-      />
-      <path
-        d="M85 120C75 120 65 125 65 135C65 145 75 150 85 150C95 150 105 145 105 135C105 125 95 120 85 120Z"
-        fill="#6fb58a"
-      />
-      <path
-        d="M115 120C125 120 135 125 135 135C135 145 125 150 115 150C105 150 95 145 95 135C95 125 105 120 115 120Z"
-        fill="#6fb58a"
-      />
-      <circle cx="100" cy="55" r="5" fill="#8B5E3C" />
-      <circle cx="70" cy="105" r="4" fill="#8B5E3C" />
-      <circle cx="130" cy="105" r="4" fill="#8B5E3C" />
-      <circle cx="85" cy="135" r="3" fill="#8B5E3C" />
-      <circle cx="115" cy="135" r="3" fill="#8B5E3C" />
-    </svg>
-  )
-}
