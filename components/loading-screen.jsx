@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { JotatsuLogoFull } from "./jotatsu-logo-full"
 
 export function LoadingScreen({ onLoadingComplete }) {
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -121,14 +122,14 @@ export function LoadingScreen({ onLoadingComplete }) {
           <AnimatedBonsaiIcon progress={loadingProgress} />
         </motion.div>
         
-        <motion.h1 
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mb-2 text-2xl font-bold text-[#2c3e2d]"
+          className="mb-2"
         >
-          Jotatsu
-        </motion.h1>
+          <JotatsuLogoFull className="h-8 mx-auto" />
+        </motion.div>
         
         <motion.p 
           initial={{ opacity: 0, y: 20 }}
