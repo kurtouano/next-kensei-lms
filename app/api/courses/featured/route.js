@@ -21,39 +21,47 @@ export async function GET() {
     .limit(3)
     .select('title slug shortDescription thumbnail level ratingStats modules')
 
-    // Calculate additional data for each course
-    const coursesWithStats = await Promise.all(
-      featuredCourses.map(async (course) => {
-        // Count total lessons across all modules
-        const courseWithModules = await Course.findById(course._id)
-          .populate({
-            path: 'modules',
-            populate: {
-              path: 'lessons',
-              select: 'title'
-            }
-          })
-
-        const totalLessons = courseWithModules?.modules?.reduce((total, module) => {
-          return total + (module.lessons?.length || 0)
-        }, 0) || 0
-
-        return {
-          id: course._id.toString(),
-          title: course.title,
-          slug: course.slug,
-          description: course.shortDescription,
-          thumbnail: course.thumbnail,
-          level: course.level,
-          averageRating: course.ratingStats?.averageRating || 0,
-          totalRatings: course.ratingStats?.totalRatings || 0,
-          modulesCount: course.modules?.length || 0,
-          lessonsCount: totalLessons,
-          // Generate learning highlights based on level
-          highlights: generateHighlights(course.level)
+    // OPTIMIZED: Get all course data with modules and lessons in one query
+    const courseIds = featuredCourses.map(course => course._id);
+    
+    const coursesWithModules = await Course.find({ _id: { $in: courseIds } })
+      .populate({
+        path: 'modules',
+        populate: {
+          path: 'lessons',
+          select: 'title'
         }
       })
-    )
+      .lean();
+
+    // Create a map for quick lookup
+    const courseModulesMap = {};
+    coursesWithModules.forEach(course => {
+      const totalLessons = course.modules?.reduce((total, module) => {
+        return total + (module.lessons?.length || 0)
+      }, 0) || 0;
+      
+      courseModulesMap[course._id.toString()] = {
+        modulesCount: course.modules?.length || 0,
+        lessonsCount: totalLessons
+      };
+    });
+
+    // Build the response with pre-fetched data
+    const coursesWithStats = featuredCourses.map(course => ({
+      id: course._id.toString(),
+      title: course.title,
+      slug: course.slug,
+      description: course.shortDescription,
+      thumbnail: course.thumbnail,
+      level: course.level,
+      averageRating: course.ratingStats?.averageRating || 0,
+      totalRatings: course.ratingStats?.totalRatings || 0,
+      modulesCount: courseModulesMap[course._id.toString()]?.modulesCount || 0,
+      lessonsCount: courseModulesMap[course._id.toString()]?.lessonsCount || 0,
+      // Generate learning highlights based on level
+      highlights: generateHighlights(course.level)
+    }))
 
     return Response.json({
       success: true,

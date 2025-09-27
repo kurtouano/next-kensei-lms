@@ -35,13 +35,28 @@ export async function GET() {
       progressMap[progress.course.toString()] = progress;
     });
 
-    const enrolledCourses = await Promise.all(
-      user.enrolledCourses.map(async (course) => {
-        const progress = progressMap[course._id.toString()];
+    // OPTIMIZED: Get all lessons for all courses in one query
+    const courseIds = user.enrolledCourses.map(course => course._id);
+    const allLessons = await Lesson.find({ courseRef: { $in: courseIds } })
+      .select('_id title courseRef')
+      .lean();
 
-        // Get all lessons for the course (regardless of status)
-        const lessons = await Lesson.find({ courseRef: course._id }).select('_id title');
-        const totalLessons = lessons.length;
+    // Create a map for quick lookup
+    const lessonsMap = {};
+    allLessons.forEach(lesson => {
+      const courseId = lesson.courseRef.toString();
+      if (!lessonsMap[courseId]) {
+        lessonsMap[courseId] = [];
+      }
+      lessonsMap[courseId].push(lesson);
+    });
+
+    const enrolledCourses = user.enrolledCourses.map(course => {
+      const progress = progressMap[course._id.toString()];
+
+      // Get lessons for this specific course
+      const lessons = lessonsMap[course._id.toString()] || [];
+      const totalLessons = lessons.length;
 
         // FIXED: Use the same logic as your course progress system
         // Count completed lessons from the lessonProgress array
@@ -68,7 +83,8 @@ export async function GET() {
           const incompleteLessons = progress.lessonProgress.filter(lp => lp.lesson && !lp.isCompleted);
 
           if (incompleteLessons.length > 0) {
-            const nextLesson = await Lesson.findById(incompleteLessons[0].lesson).select('title');
+            // Find the lesson in our pre-fetched lessons
+            const nextLesson = lessons.find(l => l._id.toString() === incompleteLessons[0].lesson.toString());
             if (nextLesson) {
               lastLesson = `Next: ${nextLesson.title}`;
             }
@@ -78,7 +94,8 @@ export async function GET() {
               .sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0))[0];
 
             if (lastCompleted) {
-              const completedLesson = await Lesson.findById(lastCompleted.lesson).select('title');
+              // Find the lesson in our pre-fetched lessons
+              const completedLesson = lessons.find(l => l._id.toString() === lastCompleted.lesson.toString());
               lastLesson = completedLesson?.title || "Course Completed";
             }
           }

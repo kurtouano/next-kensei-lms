@@ -33,49 +33,95 @@ export async function GET() {
             )
             .populate('bonsai', 'level totalCredits customization')
             .sort({ createdAt: -1 }) // Newest users first
-            .limit(50); // Limit to 50 users for performance
+            .limit(50) // Limit to 50 users for performance
+            .skip(0) // Add pagination support later
+            .lean(); // Use lean() for better performance
 
-            // Get certificate counts and friend status for each user
-            const usersWithStats = await Promise.all(
-                users.map(async (user) => {
-                    const certificateCount = await Certificate.countDocuments({ user: user._id });
-                    
-                        // Get friend status between current user and this user
-                    const friendStatus = await Friend.findOne({
-                        $or: [
-                            { requester: session.user.id, recipient: user._id },
-                            { requester: user._id, recipient: session.user.id }
-                        ]
-                    });
+            const userIds = users.map(user => user._id);
 
-                    // Calculate mutual friends count
-                    let mutualFriends = 0;
-                    if (friendStatus && friendStatus.status === 'accepted') {
-                        mutualFriends = await Friend.getMutualFriendsCount(session.user.id, user._id.toString());
+            // OPTIMIZED: Get all certificate counts in one aggregation
+            const certificateCounts = await Certificate.aggregate([
+                { $match: { user: { $in: userIds } } },
+                { $group: { _id: '$user', count: { $sum: 1 } } }
+            ]);
+            const certificateMap = {};
+            certificateCounts.forEach(item => {
+                certificateMap[item._id.toString()] = item.count;
+            });
+
+            // OPTIMIZED: Get all friend relationships in one query
+            const friendRelationships = await Friend.find({
+                $or: [
+                    { requester: session.user.id, recipient: { $in: userIds } },
+                    { requester: { $in: userIds }, recipient: session.user.id }
+                ]
+            }).lean();
+
+            const friendMap = {};
+            const acceptedFriends = [];
+            friendRelationships.forEach(friend => {
+                const otherUserId = friend.requester.toString() === session.user.id 
+                    ? friend.recipient.toString() 
+                    : friend.requester.toString();
+                friendMap[otherUserId] = friend.status;
+                if (friend.status === 'accepted') {
+                    acceptedFriends.push(otherUserId);
+                }
+            });
+
+            // OPTIMIZED: Get mutual friends count for accepted friends only
+            const mutualFriendsMap = {};
+            if (acceptedFriends.length > 0) {
+                const mutualFriendsData = await Friend.aggregate([
+                    {
+                        $match: {
+                            $or: [
+                                { requester: session.user.id, recipient: { $in: acceptedFriends } },
+                                { requester: { $in: acceptedFriends }, recipient: session.user.id }
+                            ],
+                            status: 'accepted'
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                $cond: [
+                                    { $eq: ['$requester', session.user.id] },
+                                    '$recipient',
+                                    '$requester'
+                                ]
+                            },
+                            mutualCount: { $sum: 1 }
+                        }
                     }
-                    
-                    return {
-                        id: user._id,
-                        name: user.name,
-                        country: user.country,
-                        icon: user.icon,
-                        joinDate: user.createdAt,
-                        role: user.role,
-                        bonsai: user.bonsai ? {
-                            level: user.bonsai.level || 1,
-                            totalCredits: user.bonsai.totalCredits || 0,
-                            customization: user.bonsai.customization || {}
-                        } : {
-                            level: 1,
-                            totalCredits: 0,
-                            customization: {}
-                        },
-                        certificateCount,
-                        friendStatus: friendStatus ? friendStatus.status : null,
-                        mutualFriends
-                    };
-                })
-            );
+                ]);
+
+                mutualFriendsData.forEach(item => {
+                    mutualFriendsMap[item._id.toString()] = item.mutualCount;
+                });
+            }
+
+            // Build the response with pre-fetched data
+            const usersWithStats = users.map(user => ({
+                id: user._id,
+                name: user.name,
+                country: user.country,
+                icon: user.icon,
+                joinDate: user.createdAt,
+                role: user.role,
+                bonsai: user.bonsai ? {
+                    level: user.bonsai.level || 1,
+                    totalCredits: user.bonsai.totalCredits || 0,
+                    customization: user.bonsai.customization || {}
+                } : {
+                    level: 1,
+                    totalCredits: 0,
+                    customization: {}
+                },
+                certificateCount: certificateMap[user._id.toString()] || 0,
+                friendStatus: friendMap[user._id.toString()] || null,
+                mutualFriends: mutualFriendsMap[user._id.toString()] || 0
+            }));
 
             return {
                 success: true,
