@@ -3,10 +3,11 @@
 import { useState, useMemo, useEffect, useRef } from "react"
 import Link from "next/link"
 import Fuse from "fuse.js"
-import { ArrowLeft, Search, X, LoaderCircle, Star, TrendingUp, User } from "lucide-react"
+import { ArrowLeft, Search, X, Star, TrendingUp, User } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
+import { SearchBarSkeleton, BlogGridSkeleton } from "@/components/BlogSkeleton"
 
 export default function RecentArticlesPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -233,18 +234,26 @@ export default function RecentArticlesPage() {
 
   if (loading) {
     return (
-      <>
-        <div className="min-h-screen bg-gray-50">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <LoaderCircle className="h-8 w-8 animate-spin mx-auto mb-4 text-[#4a7c59]" />
-                <p className="text-gray-600">Loading recent articles...</p>
-              </div>
-            </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          {/* Back Button Skeleton */}
+          <div className="mb-6">
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
           </div>
+
+          {/* Page Header Skeleton */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-10 w-64 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="h-6 w-96 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          <SearchBarSkeleton />
+          <BlogGridSkeleton count={12} />
         </div>
-      </>
+      </div>
     )
   }
 

@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { useRouter } from "next/navigation"
+import { CoursePageSkeleton } from "@/components/CourseSkeleton"
 
 // Import custom hooks
 import { useProgress, useLessonData, useQuiz, useReviews, useEnrollmentCheck, useCourseLike, useQA } from "./hooks/useCoursePreviewHook"
@@ -28,16 +29,7 @@ import { Confetti } from "@/components/Confetti"
 // ============ LOADING & ERROR LAYOUTS ============
 
 const LoadingLayout = memo(function LoadingLayout() {
-  return (
-    <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      <main className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4a7c59] mx-auto mb-4"></div>
-          <p className="text-[#5c6d5e]">Loading lesson data...</p>
-        </div>
-      </main>
-    </div>
-  )
+  return <CoursePageSkeleton />
 })
 
 const ErrorLayout = memo(function ErrorLayout({ error }) {

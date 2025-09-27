@@ -3,10 +3,11 @@
 import { useState, useMemo, useEffect, useRef } from "react"
 import Link from "next/link"
 import Fuse from "fuse.js"
-import { ArrowRight, Search, X, LoaderCircle, Star, TrendingUp, User } from "lucide-react"
+import { ArrowRight, Search, X, Star, TrendingUp, User } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
+import { BlogsPageSkeleton } from "@/components/BlogSkeleton"
 
 
 export default function BlogsPage() {
@@ -309,20 +310,7 @@ export default function BlogsPage() {
   const hasActiveFilters = debouncedSearchTerm.trim() || selectedCategory !== "all" || sortBy !== "newest"
 
   if (loading) {
-    return (
-      <>
-        <div className="min-h-screen bg-gray-50">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <LoaderCircle className="h-8 w-8 animate-spin mx-auto mb-4 text-[#4a7c59]" />
-                <p className="text-gray-600">Loading blogs...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    )
+    return <BlogsPageSkeleton />
   }
 
   return (

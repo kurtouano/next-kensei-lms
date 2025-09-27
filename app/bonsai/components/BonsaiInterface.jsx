@@ -5,7 +5,8 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
-import { Award, Palette, Flower, ShoppingBag, Eye, EyeClosed, Loader2, Sparkles, Crown } from "lucide-react"
+import { Award, Palette, Flower, ShoppingBag, Eye, EyeClosed, Sparkles, Crown } from "lucide-react"
+import { BonsaiPageSkeleton } from "@/components/BonsaiSkeleton"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "./BonsaiSVG"
 import { BonsaiShop } from "./BonsaiShop"
@@ -281,14 +282,7 @@ export default function BonsaiInterface() {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-[#4a7c59]" />
-          <p className="mt-2 text-[#5c6d5e]">Loading your bonsai...</p>
-        </div>
-      </div>
-    )
+    return <BonsaiPageSkeleton />
   }
 
   if (!bonsaiData) {

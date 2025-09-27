@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { BarChart, LineChart, Users, BookOpen, DollarSign, Star, Plus, Loader2, UserPlus, Trophy, CheckCircle, Activity, Heart, User, MessageCircle } from "lucide-react"
+import { BarChart, LineChart, Users, BookOpen, DollarSign, Star, Plus, UserPlus, Trophy, CheckCircle, Activity, Heart, User, MessageCircle } from "lucide-react"
+import { InstructorDashboardSkeleton } from "@/components/InstructorSkeleton"
 import dynamic from 'next/dynamic'
 // Lazy load the Header component to reduce initial bundle size
 const Header = dynamic(() => import("@/components/header").then(mod => ({ default: mod.Header })), {
@@ -53,14 +54,19 @@ const RecentActivitySection = dynamic(() => import("./components/recent-activity
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-sm sm:text-base">Recent Activity</CardTitle>
-        <Loader2 className="h-4 w-4 animate-spin text-[#4a7c59]" />
+        <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
       </CardHeader>
       <CardContent className="h-[200px] sm:h-[350px] overflow-y-auto">
-        <div className="flex items-center justify-center h-full text-center text-muted-foreground">
-          <div>
-            <Activity className="mx-auto h-8 w-8 text-[#4a7c59] opacity-50 mb-2" />
-            <p className="text-xs sm:text-sm">Loading recent activity...</p>
-          </div>
+        <div className="space-y-4">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="flex items-center gap-3">
+              <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-gray-200 rounded w-full mb-1 animate-pulse"></div>
+                <div className="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
@@ -77,11 +83,18 @@ const CoursesSection = dynamic(() => import("./components/courses-section").then
         <CardDescription className="text-sm">Manage your published courses</CardDescription>
       </CardHeader>
       <CardContent className="px-0 sm:px-6">
-        <div className="flex items-center justify-center h-32">
-          <div className="text-center">
-            <BookOpen className="mx-auto h-8 w-8 text-[#4a7c59] opacity-50 mb-2" />
-            <p className="text-sm text-[#5c6d5e]">Loading courses...</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+              <div className="h-32 bg-gray-200 rounded mb-4 animate-pulse"></div>
+              <div className="h-5 bg-gray-200 rounded w-full mb-2 animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-4 animate-pulse"></div>
+              <div className="flex justify-between">
+                <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-12 animate-pulse"></div>
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
@@ -210,16 +223,7 @@ export default function AdminDashboard() {
 
   // Show minimal loading only if we have no data at all
   if (loading && !dashboardData) {
-    return (
-      <>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-[#4a7c59]" />
-            <span className="ml-2 text-[#4a7c59]">Loading dashboard...</span>
-          </div>
-        </div>
-      </>
-    );
+    return <InstructorDashboardSkeleton />
   }
 
   // Error state

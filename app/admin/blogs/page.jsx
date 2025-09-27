@@ -3,11 +3,12 @@
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Fuse from "fuse.js"
-import { Plus, Search, Edit, Trash2, Eye, LoaderCircle, RefreshCcw, ChevronDown } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Eye, RefreshCcw, ChevronDown } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { AdminBlogsSkeleton } from "@/components/AdminSkeleton"
 
 export default function AdminBlogPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -167,18 +168,7 @@ export default function AdminBlogPage() {
   }, [categoryFilter, sortBy])
 
   if (loading && blogs.length === 0) {
-    return (
-      <>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <LoaderCircle className="h-8 w-8 animate-spin mx-auto mb-4 text-[#4a7c59]" />
-              <p className="text-gray-600">Loading blogs...</p>
-            </div>
-          </div>
-        </div>
-      </>
-    )
+    return <AdminBlogsSkeleton />
   }
 
   return (

@@ -1,18 +1,11 @@
 "use client"
 
 import dynamic from 'next/dynamic'
-import { Loader2 } from 'lucide-react'
+import { BonsaiPageSkeleton } from '@/components/BonsaiSkeleton'
 
 // Lazy load the heavy Bonsai components
 const BonsaiInterface = dynamic(() => import('./components/BonsaiInterface'), {
-  loading: () => (
-    <div className="flex justify-center items-center min-h-[70vh]">
-      <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-[#4a7c59]" />
-        <p className="text-[#2c3e2d] text-sm">Loading your bonsai garden...</p>
-      </div>
-    </div>
-  ),
+  loading: () => <BonsaiPageSkeleton />,
   ssr: false // Bonsai interface is interactive, doesn't need SSR
 })
 

@@ -144,7 +144,7 @@ CourseSchema.index({ category: 1, level: 1 });
 CourseSchema.index({ 'revenue.total': -1 });
 CourseSchema.index({ enrolledStudents: -1 });
 CourseSchema.index({ isPublished: 1 });
-CourseSchema.index({ slug: 1 });                 // CRITICAL: Fast course lookups by slug
+// CourseSchema.index({ slug: 1 }) - REMOVED: unique: true already creates this index
 CourseSchema.index({ instructor: 1 });         // For instructor course queries
 
 const Course = mongoose.models.Course || mongoose.model("Course", CourseSchema)

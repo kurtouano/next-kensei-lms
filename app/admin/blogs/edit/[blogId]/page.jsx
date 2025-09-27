@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowLeft, LoaderCircle } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import BlogForm from "@/components/BlogForm"
+import { AdminPageSkeleton } from "@/components/AdminSkeleton"
 
 export default function EditBlogPage({ params }) {
   const [blogId, setBlogId] = useState(null)
@@ -92,14 +93,7 @@ export default function EditBlogPage({ params }) {
     return (
       <>
         <Header/>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <LoaderCircle className="h-8 w-8 animate-spin mx-auto mb-4 text-[#4a7c59]" />
-              <p className="text-gray-600">Loading blog data...</p>
-            </div>
-          </div>
-        </div>
+        <AdminPageSkeleton />
         <Footer/>
       </>
     )
