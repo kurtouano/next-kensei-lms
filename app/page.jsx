@@ -61,10 +61,11 @@ export default function Home() {
     },
     {
       id: 2,
-      title: "Try a Free Demo Lesson",
-      description: "Experience our teaching methodology with a complimentary lesson",
-      buttonText: "Get Free Access",
-      buttonLink: "/demo",
+      title: "Explore Our Free Courses",
+      description: "Start learning Japanese with free courses that include certificates",
+      buttonText: "View Free Courses",
+      buttonLink: "#featured-courses",
+      scrollTo: true,
       image: "/banner2.png",
     },
     {
@@ -143,7 +144,7 @@ export default function Home() {
         </section>
 
         {/* Featured Courses */}
-        <section className="py-16">
+        <section id="featured-courses" className="py-16">
           <div className="container mx-auto px-4">
             <div className="mb-10 text-center">
               <h2 className="mb-3 text-3xl font-bold text-[#2c3e2d]">Featured Courses</h2>

@@ -32,6 +32,37 @@ export function BannerSlider({ banners, autoSlideInterval = 5000 }) {
     return () => clearInterval(interval)
   }, [isAutoPlaying, nextBanner, autoSlideInterval])
 
+  // Function to handle scroll to section with custom smooth animation
+  const handleScrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId.replace('#', ''))
+    if (element) {
+      const targetPosition = element.offsetTop - 80 // Account for header height
+      const startPosition = window.pageYOffset
+      const distance = targetPosition - startPosition
+      const duration = 800 // Animation duration in milliseconds
+      let start = null
+
+      const animation = (currentTime) => {
+        if (start === null) start = currentTime
+        const timeElapsed = currentTime - start
+        const progress = Math.min(timeElapsed / duration, 1)
+        
+        // Easing function for smooth animation
+        const easeInOutCubic = progress < 0.5 
+          ? 4 * progress * progress * progress 
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2
+        
+        window.scrollTo(0, startPosition + distance * easeInOutCubic)
+        
+        if (timeElapsed < duration) {
+          requestAnimationFrame(animation)
+        }
+      }
+      
+      requestAnimationFrame(animation)
+    }
+  }
+
   // Function to render the appropriate button based on target
   const renderButton = (banner) => {
     const buttonContent = (
@@ -43,7 +74,18 @@ export function BannerSlider({ banners, autoSlideInterval = 5000 }) {
 
     const buttonClasses = "rounded-md bg-[#4a7c59] px-6 py-3 text-base font-medium text-white transition-colors hover:bg-[#3a6147] shadow-lg"
 
-    if (banner.target === "_blank" || banner.external) {
+    if (banner.scrollTo) {
+      // Scroll to section
+      return (
+        <Button 
+          size="lg" 
+          className={buttonClasses}
+          onClick={() => handleScrollToSection(banner.buttonLink)}
+        >
+          {buttonContent}
+        </Button>
+      )
+    } else if (banner.target === "_blank" || banner.external) {
       // External link - opens in new tab
       return (
         <Button size="lg" className={buttonClasses} asChild>
