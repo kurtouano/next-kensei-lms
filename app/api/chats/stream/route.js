@@ -73,35 +73,38 @@ export async function GET(request) {
           sessionId: connectionId, // Store session ID for debugging
         }
         
-        // Clean up any existing dead connections for this user/chat first
+        // Allow up to 5 connections per user per chat (restored for stability)
         const existingConnections = Array.from(connections.entries()).filter(
           ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId
         )
         
-        // Remove dead connections immediately
-        existingConnections.forEach(([id, conn]) => {
-          if (!conn.isAlive || (Date.now() - new Date(conn.lastPing).getTime()) > 30000) {
-            console.log(`🧹 Removing dead connection: ${id}`)
-            connections.delete(id)
-          }
-        })
-        
-        // Allow up to 3 connections per user per chat (reduced for better management)
-        const activeConnections = Array.from(connections.entries()).filter(
-          ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId && conn.isAlive
-        )
-        
-        if (activeConnections.length >= 3) {
-          // Remove oldest connections, keep the 2 most recent
-          const sortedConnections = activeConnections.sort((a, b) => 
-            new Date(b[1].connectedAt) - new Date(a[1].connectedAt)
+        if (existingConnections.length >= 5) {
+          // Only remove connections that are clearly dead (not just old)
+          const deadConnections = existingConnections.filter(([_, conn]) => 
+            !conn.isAlive || (Date.now() - new Date(conn.lastPing).getTime()) > 120000 // 2 minutes
           )
           
-          // Remove all but the 2 most recent
-          sortedConnections.slice(2).forEach(([id, conn]) => {
-            console.log(`🧹 Removing old connection: ${id} (age: ${Date.now() - new Date(conn.connectedAt).getTime()}ms)`)
+          deadConnections.forEach(([id, conn]) => {
+            console.log(`🧹 Removing dead connection: ${id}`)
             connections.delete(id)
           })
+          
+          // If still too many connections, remove oldest ones
+          const remainingConnections = Array.from(connections.entries()).filter(
+            ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId
+          )
+          
+          if (remainingConnections.length >= 5) {
+            const sortedConnections = remainingConnections.sort((a, b) => 
+              new Date(b[1].connectedAt) - new Date(a[1].connectedAt)
+            )
+            
+            // Remove all but the 4 most recent
+            sortedConnections.slice(4).forEach(([id, conn]) => {
+              console.log(`🧹 Removing old connection: ${id} (age: ${Date.now() - new Date(conn.connectedAt).getTime()}ms)`)
+              connections.delete(id)
+            })
+          }
         }
         
         connections.set(connectionId, connectionData)

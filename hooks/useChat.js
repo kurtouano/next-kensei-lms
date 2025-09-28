@@ -632,18 +632,12 @@ export function useChatMessages(chatId, onNewMessage = null) {
             connectSSE()
           }
           
-          // Check for missing messages by comparing with database
-          if (messages.length > 0) {
-            const currentMessageCount = messages.length
-            if (currentMessageCount !== lastKnownMessageCount) {
-              lastKnownMessageCount = currentMessageCount
-            } else {
-              // No new messages received, check if we're missing any
-              console.log('🔍 Checking for missing messages...')
-              fetchMessages(1).catch(error => {
-                console.error('Failed to check for missing messages:', error)
-              })
-            }
+          // Only check for missing messages if we haven't received any for a while
+          if (messages.length > 0 && (Date.now() - lastMessageTime) > 120000) { // 2 minutes
+            console.log('🔍 Checking for missing messages after long silence...')
+            fetchMessages(1).catch(error => {
+              console.error('Failed to check for missing messages:', error)
+            })
           }
         }, 30000) // Check every 30 seconds
         
@@ -675,7 +669,9 @@ export function useChatMessages(chatId, onNewMessage = null) {
                 }
                 
                 console.log('✅ Adding new message to chat:', data.message.id)
-                return [...prev, data.message]
+                // Ensure messages are added in chronological order
+                const newMessages = [...prev, data.message]
+                return newMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
               })
               
               // Update chat list with new message

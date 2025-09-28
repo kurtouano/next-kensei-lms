@@ -20,10 +20,19 @@ export async function GET(request) {
       timestamp: new Date().toISOString()
     }
     
+    // Add detailed connection info for debugging
+    const debugInfo = {
+      connectionsByChat: status.connectionsByChat,
+      connectionsByUser: status.connectionsByUser,
+      serverUptime: process.uptime(),
+      memoryUsage: process.memoryUsage()
+    }
+    
     return NextResponse.json({
       success: true,
       status,
       health: healthInfo,
+      debug: debugInfo,
       timestamp: new Date().toISOString()
     })
   } catch (error) {
