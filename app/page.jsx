@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { BannerSlider } from "@/components/banner-slider"
 import { LoadingScreen } from "@/components/loading-screen"
 import { ChevronRight, BookOpen, PlayCircle, Star, Award, ShoppingBag, Palette, MessageCircle, Users, GraduationCap } from "lucide-react"
 
 export default function Home() {
+  const { data: session } = useSession()
   const [isLoading, setIsLoading] = useState(true)
   const [featuredCourses, setFeaturedCourses] = useState([])
   const [coursesLoading, setCoursesLoading] = useState(true)
@@ -321,12 +323,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Floating Sign Up Button (visible on scroll) */}
-        <div className="fixed bottom-6 right-6 z-50 md:hidden">
-          <Button className="rounded-full bg-[#4a7c59] px-6 py-6 text-white shadow-lg hover:bg-[#3a6147]" asChild>
-            <Link href="/auth/signup">Get Started</Link>
-          </Button>
-        </div>
+        {/* Floating Sign Up Button (visible on scroll) - Only show for non-authenticated users */}
+        {!session && (
+          <div className="fixed bottom-6 right-6 z-50 md:hidden">
+            <Button className="rounded-full bg-[#4a7c59] px-6 py-6 text-white shadow-lg hover:bg-[#3a6147]" asChild>
+              <Link href="/auth/signup">Get Started</Link>
+            </Button>
+          </div>
+        )}
       </main>
     </div>
   )
