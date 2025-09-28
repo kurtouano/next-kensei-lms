@@ -25,6 +25,8 @@ export async function POST(req) {
       password: hashedPassword,
       provider,
       providerId,
+      credits: 150, // Give new users 150 initial credits
+      lifetimeCredits: 150, // Track lifetime credits earned
     });
 
     // Create bonsai with proper defaults
@@ -34,7 +36,7 @@ export async function POST(req) {
     const bonsai = await Bonsai.create({ 
       userRef: createUser._id,
       level: 1,
-      totalCredits: 0,
+      totalCredits: 150, // Match user's initial lifetime credits
       milestones: defaultMilestones,
       customization: {
         eyes: 'default_eyes',

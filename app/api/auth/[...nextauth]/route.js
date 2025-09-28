@@ -74,13 +74,18 @@ export const authOptions = {
               providerId: account.providerAccountId,
               role: "student", // Default role for new Google users
               country: "Bonsai Garden Resident",
+              credits: 150, // Give new users 150 initial credits
+              lifetimeCredits: 150, // Track lifetime credits earned
               lastSeen: new Date(),
               lastLogin: new Date()
             });
             
             // Create bonsai for new user
             const Bonsai = (await import("@/models/Bonsai")).default;
-            const bonsai = await Bonsai.create({ userRef: newUser._id });
+            const bonsai = await Bonsai.create({ 
+              userRef: newUser._id,
+              totalCredits: 150 // Match user's initial lifetime credits
+            });
             newUser.bonsai = bonsai._id;
             await newUser.save();
             

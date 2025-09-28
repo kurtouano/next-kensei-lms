@@ -377,6 +377,7 @@ async function handleCourseCompletionRewards(user, course) {
     // 1. Give credit reward if course has one
     if (course.creditReward > 0) {
       user.credits += course.creditReward
+      user.lifetimeCredits += course.creditReward // Track lifetime earnings
       totalCreditsEarned += course.creditReward
       rewardData.creditsEarned += course.creditReward
       console.log(`💰 Added ${course.creditReward} credits from course reward`)
@@ -424,6 +425,7 @@ async function handleCourseCompletionRewards(user, course) {
         await bonsai.save()
         itemReward = [randomItem]
         user.credits += 150 // Give half the credits since only 1 item
+        user.lifetimeCredits += 150 // Track lifetime earnings
         totalCreditsEarned += 150
         rewardData.creditsEarned += 150
         rewardData.itemsEarned = [{
@@ -435,6 +437,7 @@ async function handleCourseCompletionRewards(user, course) {
       } else {
         // User owns all items, give 300 credits instead
         user.credits += 300
+        user.lifetimeCredits += 300 // Track lifetime earnings
         totalCreditsEarned += 300
         rewardData.creditsEarned += 300
         console.log('🎁 User owns all items, gave 300 credits instead')

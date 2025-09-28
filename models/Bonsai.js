@@ -182,9 +182,9 @@ BonsaiSchema.statics.getDefaultMilestones = function() {
   return getDefaultMilestones();
 }
 
-BonsaiSchema.methods.syncWithUserCredits = function(userCredits) {
-  this.totalCredits = userCredits;
-  this.milestones = updateMilestoneAchievements(this.milestones, userCredits);
+BonsaiSchema.methods.syncWithUserCredits = function(userLifetimeCredits) {
+  this.totalCredits = userLifetimeCredits;
+  this.milestones = updateMilestoneAchievements(this.milestones, userLifetimeCredits);
 }
 
 BonsaiSchema.index({ totalCredits: -1 })

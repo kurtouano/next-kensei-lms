@@ -67,7 +67,11 @@ const UserSchema = new mongoose.Schema(
     },
     credits: {
       type: Number,
-      default: 0
+      default: 150
+    },
+    lifetimeCredits: {
+      type: Number,
+      default: 150
     },
     bonsai: {
       type: mongoose.Schema.Types.ObjectId,

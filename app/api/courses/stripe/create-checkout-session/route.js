@@ -105,6 +105,7 @@ export async function POST(request) {
       // Add credits if course has credit reward
       if (course.creditReward > 0) {
         user.credits += course.creditReward;
+        user.lifetimeCredits += course.creditReward; // Track lifetime earnings
       }
 
       // Create progress record

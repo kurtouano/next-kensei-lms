@@ -106,6 +106,7 @@ export async function GET(request) {
       // Add credits to user if course has credit reward
       if (course.creditReward > 0) {
         user.credits += course.creditReward;
+        user.lifetimeCredits += course.creditReward; // Track lifetime earnings
       }
 
       // Create progress record

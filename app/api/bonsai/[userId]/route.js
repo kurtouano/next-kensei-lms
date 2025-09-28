@@ -49,7 +49,7 @@ export async function GET(request, { params }) {
       });
       await bonsai.save();
     } else {
-      bonsai.syncWithUserCredits(user.credits);
+      bonsai.syncWithUserCredits(user.lifetimeCredits);
 
       const defaultItems = Bonsai.getDefaultOwnedItems();
       const mergedItems = [...new Set([...defaultItems, ...bonsai.ownedItems])];
@@ -58,13 +58,13 @@ export async function GET(request, { params }) {
       await bonsai.save();
     }
 
-    const levelInfo = getLevelInfo(user.credits);
+    const levelInfo = getLevelInfo(user.lifetimeCredits);
 
     const response = {
       ...bonsai.toObject(),
       levelInfo, 
       level: levelInfo.level,
-      totalCredits: user.credits
+      totalCredits: user.lifetimeCredits
     };
 
     return NextResponse.json(response, { status: 200 });
