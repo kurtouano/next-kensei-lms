@@ -30,6 +30,95 @@ export async function POST(request) {
         existingSubscriber.subscribedAt = new Date()
         await existingSubscriber.save()
         
+        // Send welcome email for reactivated subscribers too
+        try {
+          const { Resend } = await import('resend')
+          const resend = new Resend(process.env.RESEND_API_KEY)
+          
+          await resend.emails.send({
+            from: 'Jotatsu Academy <noreply@jotatsu.com>',
+            to: [email],
+            subject: 'Welcome back to Jotatsu Blog!',
+            html: `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Welcome back to Jotatsu Academy</title>
+              </head>
+              <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+                                 <!-- Header -->
+                   <div style="background: linear-gradient(135deg, #4a7c59 0%, #6b8e6b 100%); padding: 40px 30px; text-align: center;">
+                                       <div style="background-color: rgba(255, 255, 255, 1); border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255, 255, 255, 0.2);">
+                      <img src="https://jotatsu.com/jotatsu_logo.png" alt="Jotatsu Academy" style="width: 50px; padding-left: 20px; padding-top: 18px; height: 45px; object-fit: contain;">
+                    </div>
+                   <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Welcome back to Jotatsu Academy</h1>
+                   <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px; font-weight: 300;">We're glad to have you back!</p>
+                 </div>
+                
+                <!-- Content -->
+                <div style="padding: 40px 30px;">
+                  <div style="text-align: center; margin-bottom: 30px;">
+                    <h2 style="color: #1f2937; margin: 0 0 15px 0; font-size: 24px; font-weight: 600;">Welcome back!</h2>
+                    <p style="color: #6b7280; margin: 0; font-size: 16px; line-height: 1.6;">We're excited to have you back in our community of Japanese language learners. You'll continue to receive our latest insights and learning resources.</p>
+                  </div>
+                  
+                                  <!-- What you'll receive -->
+                   <div style="background-color: #f9fafb; border-radius: 12px; padding: 25px; margin: 30px 0; border-left: 4px solid #4a7c59;">
+                     <h3 style="color: #1f2937; margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">What you'll receive:</h3>
+                                     <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                        <div style="background-color: #4a7c59; border-radius: 50%; width: 20px; height: 20px; margin-right: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                          <span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; padding-left: 5px; padding-top: 3px;">✓</span>
+                        </div>
+                        <span style="color: #374151; font-size: 15px; line-height: 1.4; flex: 1; padding-top: 1px;">Expert Japanese language learning strategies</span>
+                      </div>
+                      <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                        <div style="background-color: #4a7c59; border-radius: 50%; width: 20px; height: 20px; margin-right: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                          <span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; padding-left: 5px; padding-top: 3px;">✓</span>
+                        </div>
+                        <span style="color: #374151; font-size: 15px; line-height: 1.4; flex: 1; padding-top: 1px;">Hiragana, Katakana & Kanji mastery techniques</span>
+                      </div>
+                      <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                        <div style="background-color: #4a7c59; border-radius: 50%; width: 20px; height: 20px; margin-right: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                          <span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; padding-left: 5px; padding-top: 3px;">✓</span>
+                        </div>
+                        <span style="color: #374151; font-size: 15px; line-height: 1.4; flex: 1; padding-top: 1px;">JLPT preparation tips and practice materials</span>
+                      </div>
+                      <div style="display: flex; align-items: center; margin-bottom: 0;">
+                        <div style="background-color: #4a7c59; border-radius: 50%; width: 20px; height: 20px; margin-right: 15px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                          <span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; padding-left: 5px; padding-top: 3px;">✓</span>
+                        </div>
+                        <span style="color: #374151; font-size: 15px; line-height: 1.4; flex: 1; padding-top: 1px;">Cultural insights and authentic Japanese experiences</span>
+                      </div>
+                   </div>
+                  
+                  <!-- Next steps -->
+                  <div style="text-align: center; margin: 30px 0 0 0;">
+                    <div style="background-color: #4a7c59; color: white; padding: 12px 24px; border-radius: 8px; display: inline-block; font-weight: 500; font-size: 14px;">
+                      🚀 Ready to continue your Japanese learning journey?
+                    </div>
+                  </div>
+                </div>
+                
+                                <!-- Footer -->
+                   <div style="background-color: #f3f4f6; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                     <p style="color: #6b7280; margin: 0 0 10px 0; font-size: 14px;">© 2024 Jotatsu Academy. All rights reserved.</p>
+                                   <p style="color: #9ca3af; margin: 0; font-size: 12px; line-height: 1.5;">
+                      To unsubscribe, <a href="https://jotatsu.com/api/blogs/subscribe?action=unsubscribe&email=${email}" style="color: #4a7c59; text-decoration: none;">click here</a>
+                    </p>
+                   </div>
+                </div>
+              </body>
+              </html>
+            `
+          })
+        } catch (emailError) {
+          console.error('Failed to send welcome back email:', emailError)
+          // Don't fail the subscription if email fails
+        }
+        
         return NextResponse.json({
           success: true,
           message: "Welcome back! Your subscription has been reactivated."
@@ -113,7 +202,6 @@ export async function POST(request) {
                 
                 <!-- Next steps -->
                 <div style="text-align: center; margin: 30px 0 0 0;">
-                  <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Your first email will arrive shortly. We typically send 2-3 emails per week, so you won't be overwhelmed.</p>
                   <div style="background-color: #4a7c59; color: white; padding: 12px 24px; border-radius: 8px; display: inline-block; font-weight: 500; font-size: 14px;">
                     🚀 Ready to accelerate your Japanese learning?
                   </div>
@@ -124,7 +212,7 @@ export async function POST(request) {
                <div style="background-color: #f3f4f6; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                  <p style="color: #6b7280; margin: 0 0 10px 0; font-size: 14px;">© 2024 Jotatsu Academy. All rights reserved.</p>
                                    <p style="color: #9ca3af; margin: 0; font-size: 12px; line-height: 1.5;">
-                    To unsubscribe, <a href="http://localhost:3000/api/blogs/subscribe?action=unsubscribe&email=${email}" style="color: #4a7c59; text-decoration: none;">click here</a> or reply to this email with "UNSUBSCRIBE"
+                    To unsubscribe, <a href="https://jotatsu.com/api/blogs/subscribe?action=unsubscribe&email=${email}" style="color: #4a7c59; text-decoration: none;">click here</a>
                   </p>
                </div>
             </div>
