@@ -282,26 +282,48 @@ export function useChatMessages(chatId, onNewMessage = null) {
       const response = await fetch(url)
       const data = await response.json()
       
-      if (data.success && data.newMessages?.length > 0) {
+      if (data.success) {
         setMessages(prev => {
-          const existingIds = new Set(prev.map(msg => msg.id))
-          const newMessages = data.newMessages.filter(msg => !existingIds.has(msg.id))
+          let hasChanges = false
+          let newMessages = [...prev]
           
-          if (newMessages.length > 0) {
-            // Update last message timestamp
-            const latestMessage = newMessages[newMessages.length - 1]
-            setLastMessageTimestamp(latestMessage.createdAt)
+          // Handle new messages
+          if (data.newMessages?.length > 0) {
+            const existingIds = new Set(prev.map(msg => msg.id))
+            const filteredNewMessages = data.newMessages.filter(msg => !existingIds.has(msg.id))
             
-            // Update chat list
-            if (onNewMessage && latestMessage.sender?.email !== session.user.email) {
-              onNewMessage(chatId, latestMessage)
+            if (filteredNewMessages.length > 0) {
+              // Update last message timestamp
+              const latestMessage = filteredNewMessages[filteredNewMessages.length - 1]
+              setLastMessageTimestamp(latestMessage.createdAt)
+              
+              // Update chat list
+              if (onNewMessage && latestMessage.sender?.email !== session.user.email) {
+                onNewMessage(chatId, latestMessage)
+              }
+              
+              // Add new messages and sort
+              newMessages = [...newMessages, ...filteredNewMessages]
+              newMessages = newMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+              hasChanges = true
             }
-            
-            const combined = [...prev, ...newMessages]
-            return combined.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
           }
           
-          return prev
+          // Handle reaction updates
+          if (data.reactionUpdates?.length > 0) {
+            data.reactionUpdates.forEach(reactionUpdate => {
+              const messageIndex = newMessages.findIndex(msg => msg.id === reactionUpdate.id)
+              if (messageIndex !== -1) {
+                newMessages[messageIndex] = {
+                  ...newMessages[messageIndex],
+                  reactions: reactionUpdate.reactions
+                }
+                hasChanges = true
+              }
+            })
+          }
+          
+          return hasChanges ? newMessages : prev
         })
         
         // Auto-scroll for new messages
@@ -504,11 +526,24 @@ export function useChatMessages(chatId, onNewMessage = null) {
     // Track optimistic message
     pendingOptimisticMessages.current.set(tempId, optimisticMessage)
 
-    // Add optimistic message immediately
+    // Add optimistic message immediately with better deduplication
     setMessages(prev => {
-      if (prev.some(msg => msg.id === tempId)) {
-        return prev // Prevent duplicates
+      // Check for existing optimistic messages from same user with similar content
+      const existingOptimistic = prev.find(msg => 
+        msg.isOptimistic && 
+        msg.sender?.email === session.user.email &&
+        msg.content === content &&
+        Math.abs(new Date(msg.createdAt) - new Date(optimisticTimestamp)) < 5000 // 5 second window
+      )
+      
+      if (existingOptimistic) {
+        return prev // Don't add duplicate optimistic message
       }
+      
+      if (prev.some(msg => msg.id === tempId)) {
+        return prev // Prevent exact duplicates
+      }
+      
       return [...prev, optimisticMessage]
     })
     
@@ -534,11 +569,20 @@ export function useChatMessages(chatId, onNewMessage = null) {
 
       if (data.success) {
         // Replace optimistic message with real message
-        setMessages(prev => prev.map(msg => 
-          msg.id === tempId 
-            ? { ...data.message, isOptimistic: false }
-            : msg
-        ))
+        setMessages(prev => {
+          const messageIndex = prev.findIndex(msg => msg.id === tempId)
+          if (messageIndex !== -1) {
+            const newMessages = [...prev]
+            newMessages[messageIndex] = { ...data.message, isOptimistic: false }
+            return newMessages
+          }
+          // If optimistic message not found, check if real message already exists
+          const existingMessage = prev.find(msg => msg.id === data.message.id)
+          if (!existingMessage) {
+            return [...prev, { ...data.message, isOptimistic: false }]
+          }
+          return prev
+        })
         
         pendingOptimisticMessages.current.delete(tempId)
         

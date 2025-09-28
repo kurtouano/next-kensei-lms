@@ -68,6 +68,26 @@ export async function GET(request, { params }) {
       .sort({ createdAt: 1 }) // Ascending order
       .limit(50) // Limit to prevent large responses
 
+    // Also check for reaction updates on existing messages
+    let reactionUpdates = []
+    if (since) {
+      // Get messages that might have reaction updates
+      const existingMessages = await Message.find({
+        chat: chatId,
+        isDeleted: false,
+        updatedAt: { $gt: new Date(since) },
+        reactions: { $exists: true, $ne: [] }
+      })
+      .select('_id reactions updatedAt')
+      .sort({ updatedAt: 1 })
+
+      reactionUpdates = existingMessages.map(msg => ({
+        id: msg._id,
+        reactions: msg.reactions,
+        updatedAt: msg.updatedAt
+      }))
+    }
+
     const formattedMessages = newMessages.map((message) => ({
       id: message._id,
       content: message.content,
@@ -110,6 +130,7 @@ export async function GET(request, { params }) {
     return NextResponse.json({
       success: true,
       newMessages: formattedMessages,
+      reactionUpdates: reactionUpdates,
       count: formattedMessages.length,
       since: since || null,
     })
