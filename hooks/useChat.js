@@ -631,6 +631,9 @@ export function useChatMessages(chatId, onNewMessage = null) {
             connectSSE()
           }
         }, 30000) // Check every 30 seconds
+        
+        // Log connection status for debugging
+        console.log(`Chat ${chatId} SSE connection active. Ready to receive messages.`)
       }
 
       source.onmessage = (event) => {
@@ -647,21 +650,22 @@ export function useChatMessages(chatId, onNewMessage = null) {
               // Handle ping/health check messages
               break
             case "new_message":
-              console.log('Received new message via SSE:', data.message.id)
+              console.log('📨 Received new message via SSE:', data.message.id, 'for chat:', chatId)
               setMessages(prev => {
                 // Check if message already exists to prevent duplicates
                 const messageExists = prev.some(msg => msg.id === data.message.id)
                 if (messageExists) {
-                  console.log('Message already exists, skipping duplicate')
+                  console.log('⚠️ Message already exists, skipping duplicate:', data.message.id)
                   return prev
                 }
                 
-                console.log('Adding new message to chat')
+                console.log('✅ Adding new message to chat:', data.message.id)
                 return [...prev, data.message]
               })
               
               // Update chat list with new message
               if (onNewMessage) {
+                console.log('📋 Updating chat list with new message')
                 onNewMessage(chatId, data.message)
               }
               
@@ -738,8 +742,25 @@ export function useChatMessages(chatId, onNewMessage = null) {
 
     const source = connectSSE()
 
+    // Add connection validation
+    const validateConnection = async () => {
+      try {
+        const response = await fetch(`/api/chats/debug/connections`)
+        const data = await response.json()
+        if (data.success) {
+          const chatConnections = data.status.connectionsByChat[chatId] || []
+          console.log(`🔍 Connection validation for chat ${chatId}:`, chatConnections)
+        }
+      } catch (error) {
+        console.error('Failed to validate connection:', error)
+      }
+    }
+
+    // Validate connection after 5 seconds
+    setTimeout(validateConnection, 5000)
+
     return () => {
-      console.log(`Cleaning up SSE connection for chat ${chatId}`)
+      console.log(`🧹 Cleaning up SSE connection for chat ${chatId}`)
       if (reconnectTimer) {
         clearTimeout(reconnectTimer)
       }

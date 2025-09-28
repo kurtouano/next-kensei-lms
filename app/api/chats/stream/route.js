@@ -60,7 +60,8 @@ export async function GET(request) {
     const stream = new ReadableStream({
       start(controller) {
         // Store connection with enhanced metadata
-        const connectionId = `${user._id}-${chatId}-${Date.now()}`
+        // Use a more unique connection ID to handle multiple tabs
+        const connectionId = `${user._id}-${chatId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         const connectionData = {
           controller,
           userId: user._id.toString(),
@@ -69,10 +70,22 @@ export async function GET(request) {
           connectedAt: new Date(),
           lastPing: new Date(),
           isAlive: true,
+          sessionId: connectionId, // Store session ID for debugging
         }
         
+        // Remove any existing connections for this user in this chat to prevent duplicates
+        const existingConnections = Array.from(connections.entries()).filter(
+          ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId
+        )
+        
+        existingConnections.forEach(([id, _]) => {
+          console.log(`Removing existing connection: ${id}`)
+          connections.delete(id)
+        })
+        
         connections.set(connectionId, connectionData)
-        console.log(`SSE connection established: ${connectionId}`)
+        console.log(`SSE connection established: ${connectionId} for user ${user._id} in chat ${chatId}`)
+        console.log(`Total active connections: ${connections.size}`)
 
         // Send initial connection message
         try {
@@ -170,19 +183,32 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
   )
 
   console.log(`Broadcasting to ${chatConnections.length} connections for chat ${chatId}`)
+  console.log(`Active connections for chat ${chatId}:`, chatConnections.map(([id, conn]) => ({
+    connectionId: id,
+    userId: conn.userId,
+    email: conn.email,
+    isAlive: conn.isAlive
+  })))
+
+  let successCount = 0
+  let failureCount = 0
 
   chatConnections.forEach(([connectionId, connection]) => {
     try {
       const messageData = `data: ${JSON.stringify(message)}\n\n`
       connection.controller.enqueue(messageData)
-      console.log(`Message broadcasted to connection ${connectionId}`)
+      successCount++
+      console.log(`✅ Message broadcasted to connection ${connectionId} (user: ${connection.userId})`)
     } catch (error) {
-      console.error(`Failed to broadcast to connection ${connectionId}:`, error)
+      failureCount++
+      console.error(`❌ Failed to broadcast to connection ${connectionId}:`, error)
       // Mark connection as dead and remove it
       connection.isAlive = false
       connections.delete(connectionId)
     }
   })
+  
+  console.log(`Broadcast complete: ${successCount} successful, ${failureCount} failed`)
   
   // Clean up dead connections after broadcast
   cleanupDeadConnections()
@@ -248,4 +274,43 @@ export function broadcastOnlineStatus(userId, isOnline) {
       connections.delete(connectionId)
     }
   })
+}
+
+// Function to get connection status for debugging
+export function getConnectionStatus() {
+  const status = {
+    totalConnections: connections.size,
+    connectionsByChat: {},
+    connectionsByUser: {}
+  }
+  
+  connections.forEach((connection, connectionId) => {
+    const chatId = connection.chatId
+    const userId = connection.userId
+    
+    if (!status.connectionsByChat[chatId]) {
+      status.connectionsByChat[chatId] = []
+    }
+    if (!status.connectionsByUser[userId]) {
+      status.connectionsByUser[userId] = []
+    }
+    
+    status.connectionsByChat[chatId].push({
+      connectionId,
+      userId,
+      email: connection.email,
+      isAlive: connection.isAlive,
+      connectedAt: connection.connectedAt
+    })
+    
+    status.connectionsByUser[userId].push({
+      connectionId,
+      chatId,
+      email: connection.email,
+      isAlive: connection.isAlive,
+      connectedAt: connection.connectedAt
+    })
+  })
+  
+  return status
 }
