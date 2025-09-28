@@ -2,6 +2,58 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
 
+// Message queue processor to handle rapid message sequences
+class MessageQueue {
+  constructor(processCallback) {
+    this.queue = []
+    this.processing = false
+    this.processCallback = processCallback
+    this.processTimeout = null
+  }
+
+  enqueue(message) {
+    this.queue.push(message)
+    this.scheduleProcess()
+  }
+
+  scheduleProcess() {
+    if (this.processTimeout) {
+      clearTimeout(this.processTimeout)
+    }
+    
+    // Process messages in batches with a small delay
+    this.processTimeout = setTimeout(() => {
+      this.processBatch()
+    }, 50) // 50ms batching window
+  }
+
+  processBatch() {
+    if (this.processing || this.queue.length === 0) {
+      return
+    }
+
+    this.processing = true
+    const messagesToProcess = [...this.queue]
+    this.queue = []
+
+    // Process all queued messages at once
+    this.processCallback(messagesToProcess)
+    this.processing = false
+
+    // If more messages were queued during processing, schedule another batch
+    if (this.queue.length > 0) {
+      this.scheduleProcess()
+    }
+  }
+
+  clear() {
+    this.queue = []
+    if (this.processTimeout) {
+      clearTimeout(this.processTimeout)
+    }
+  }
+}
+
 export function useChat() {
   const { data: session } = useSession()
   const [chats, setChats] = useState([])
@@ -179,6 +231,115 @@ export function useChatMessages(chatId, onNewMessage = null) {
   const shouldScrollToBottom = useRef(false)
   const isUserAtBottom = useRef(true)
   const isLoadingMoreMessages = useRef(false)
+  
+  // Message queue for handling rapid SSE messages
+  const messageQueueRef = useRef(null)
+  const pendingOptimisticMessages = useRef(new Map()) // Track optimistic messages
+
+  // Initialize message queue
+  useEffect(() => {
+    const processMessageBatch = (messagesToProcess) => {
+      setMessages(prevMessages => {
+        const existingIds = new Set(prevMessages.map(msg => msg.id))
+        const newMessages = [...prevMessages]
+        let hasChanges = false
+
+        messagesToProcess.forEach(messageData => {
+          const { type, data } = messageData
+
+          switch (type) {
+            case "new_message":
+              const message = data.message
+              
+              // Skip if already exists
+              if (existingIds.has(message.id)) {
+                console.log('Skipping duplicate message:', message.id)
+                return
+              }
+
+              // Check if this replaces an optimistic message
+              const optimisticIndex = newMessages.findIndex(msg => 
+                msg.isOptimistic && 
+                msg.sender?.email === message.sender?.email &&
+                Math.abs(new Date(msg.createdAt) - new Date(message.createdAt)) < 10000 // 10 second window
+              )
+
+              if (optimisticIndex !== -1) {
+                console.log('Replacing optimistic message with real message')
+                newMessages[optimisticIndex] = { ...message, isOptimistic: false }
+                pendingOptimisticMessages.current.delete(newMessages[optimisticIndex].id)
+              } else {
+                console.log('Adding new message:', message.id)
+                newMessages.push(message)
+                existingIds.add(message.id)
+              }
+              
+              hasChanges = true
+
+              // Update chat list
+              if (onNewMessage) {
+                onNewMessage(chatId, message)
+              }
+              break
+
+            case "message_edited":
+              const editIndex = newMessages.findIndex(msg => msg.id === data.messageId)
+              if (editIndex !== -1) {
+                newMessages[editIndex] = { 
+                  ...newMessages[editIndex], 
+                  content: data.updatedContent, 
+                  isEdited: true 
+                }
+                hasChanges = true
+              }
+              break
+
+            case "message_deleted":
+              const deleteIndex = newMessages.findIndex(msg => msg.id === data.messageId)
+              if (deleteIndex !== -1) {
+                newMessages.splice(deleteIndex, 1)
+                hasChanges = true
+              }
+              break
+
+            case "reaction_updated":
+              const reactionIndex = newMessages.findIndex(msg => msg.id === data.messageId)
+              if (reactionIndex !== -1) {
+                newMessages[reactionIndex] = {
+                  ...newMessages[reactionIndex],
+                  reactions: data.reactions
+                }
+                hasChanges = true
+              }
+              break
+          }
+        })
+
+        return hasChanges ? newMessages : prevMessages
+      })
+
+      // Handle auto-scroll after batch processing
+      const shouldScroll = messagesToProcess.some(msg => 
+        msg.type === "new_message" && checkIfAtBottom() && !isLoadingMoreMessages.current
+      )
+
+      if (shouldScroll) {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            scrollToBottom()
+          }, 100)
+        })
+      }
+    }
+
+    messageQueueRef.current = new MessageQueue(processMessageBatch)
+
+    return () => {
+      if (messageQueueRef.current) {
+        messageQueueRef.current.clear()
+      }
+    }
+  }, [chatId, onNewMessage])
 
   // Fetch messages for a chat with simple page-based pagination
   const fetchMessages = useCallback(async (page = 1, append = false) => {
@@ -263,12 +424,13 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [])
 
-  // Send a message with optimistic updates
+  // Enhanced optimistic message sending
   const sendMessage = useCallback(async (content, type = "text", attachments = [], replyTo = null) => {
     if (!session?.user?.email || !chatId) throw new Error("Not authenticated or no chat selected")
 
-    // Create optimistic message with temporary ID
-    const tempId = `temp_${Date.now()}_${Math.random()}`
+    const tempId = `optimistic_${chatId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const optimisticTimestamp = new Date().toISOString()
+    
     const optimisticMessage = {
       id: tempId,
       content,
@@ -281,18 +443,24 @@ export function useChatMessages(chatId, onNewMessage = null) {
         icon: session.user.icon || null,
         bonsai: session.user.bonsai || null
       },
-      createdAt: new Date().toISOString(),
-      isOptimistic: true, // Flag to show loading state
-      isFailed: false
+      createdAt: optimisticTimestamp,
+      isOptimistic: true,
+      isFailed: false,
+      _tempId: tempId
     }
 
+    // Track optimistic message
+    pendingOptimisticMessages.current.set(tempId, optimisticMessage)
+
     // Add optimistic message immediately
-    setMessages(prev => [...prev, optimisticMessage])
+    setMessages(prev => {
+      if (prev.some(msg => msg.id === tempId)) {
+        return prev // Prevent duplicates
+      }
+      return [...prev, optimisticMessage]
+    })
     
-    // Scroll to bottom immediately for optimistic message
-    setTimeout(() => {
-      scrollToBottom()
-    }, 50)
+    setTimeout(scrollToBottom, 50)
 
     try {
       const response = await fetch(`/api/chats/${chatId}/messages`, {
@@ -305,6 +473,8 @@ export function useChatMessages(chatId, onNewMessage = null) {
           type,
           attachments,
           replyTo,
+          _clientTimestamp: optimisticTimestamp,
+          _tempId: tempId
         }),
       })
 
@@ -318,28 +488,31 @@ export function useChatMessages(chatId, onNewMessage = null) {
             : msg
         ))
         
-        // Update chat list with new message
+        pendingOptimisticMessages.current.delete(tempId)
+        
         if (onNewMessage) {
           onNewMessage(chatId, data.message)
         }
         
         return data.message
       } else {
-        // Mark message as failed
+        // Mark as failed
         setMessages(prev => prev.map(msg => 
           msg.id === tempId 
             ? { ...msg, isOptimistic: false, isFailed: true }
             : msg
         ))
+        pendingOptimisticMessages.current.delete(tempId)
         throw new Error(data.error || "Failed to send message")
       }
     } catch (error) {
-      // Mark message as failed
+      // Mark as failed
       setMessages(prev => prev.map(msg => 
         msg.id === tempId 
           ? { ...msg, isOptimistic: false, isFailed: true }
           : msg
       ))
+      pendingOptimisticMessages.current.delete(tempId)
       console.error("Error sending message:", error)
       throw error
     }
@@ -594,21 +767,20 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [hasMore, loading, isLoadingMore, currentPage, fetchMessages])
 
-  // Set up real-time connection with enhanced reconnection logic
+  // Enhanced SSE connection with message queuing
   useEffect(() => {
-    if (!session?.user?.email || !chatId) {
-      return
-    }
+    if (!session?.user?.email || !chatId) return
     
     let reconnectAttempts = 0
-    const maxReconnectAttempts = 10 // Increased from 5
+    const maxReconnectAttempts = 10
     let reconnectTimer = null
-    let connectionState = 'disconnected' // 'connecting', 'connected', 'disconnected', 'failed'
+    let connectionState = 'disconnected'
     let lastMessageTime = Date.now()
     let heartbeatInterval = null
+    let messageBuffer = [] // Buffer for handling rapid messages
 
     const connectSSE = () => {
-      if (connectionState === 'connecting') return // Prevent multiple simultaneous connections
+      if (connectionState === 'connecting') return
       
       connectionState = 'connecting'
       console.log(`Attempting SSE connection to chat ${chatId} (attempt ${reconnectAttempts + 1})`)
@@ -618,82 +790,61 @@ export function useChatMessages(chatId, onNewMessage = null) {
       source.onopen = () => {
         console.log(`SSE connection established for chat ${chatId}`)
         connectionState = 'connected'
-        reconnectAttempts = 0 // Reset on successful connection
+        reconnectAttempts = 0
         lastMessageTime = Date.now()
         
-        // Set up heartbeat monitoring
+        // Clear any buffered messages from previous connection
+        messageBuffer = []
+        
         heartbeatInterval = setInterval(() => {
           const timeSinceLastMessage = Date.now() - lastMessageTime
-          if (timeSinceLastMessage > 60000) { // 60 seconds without any message
+          if (timeSinceLastMessage > 90000) { // 90 seconds without message
             console.log('SSE connection appears stale, reconnecting...')
             source.close()
             connectionState = 'disconnected'
             connectSSE()
           }
-        }, 30000) // Check every 30 seconds
-        
-        // Log connection status for debugging
-        console.log(`Chat ${chatId} SSE connection active. Ready to receive messages.`)
+        }, 30000)
       }
 
       source.onmessage = (event) => {
         try {
-          lastMessageTime = Date.now() // Update last message time
-          const data = JSON.parse(event.data)
+          lastMessageTime = Date.now()
+          const eventData = JSON.parse(event.data)
           
-          switch (data.type) {
+          // Handle different message types
+          switch (eventData.type) {
             case "connected":
-              console.log(`SSE connected to chat ${chatId} with connection ID: ${data.connectionId}`)
+              console.log(`SSE connected to chat ${chatId}`)
               break
+              
             case "ping":
             case "health_check":
-              // Handle ping/health check messages
+            case "connection_test":
+              // Just acknowledge - no action needed
               break
+              
             case "new_message":
-              console.log('📨 Received new message via SSE:', data.message.id, 'for chat:', chatId)
-              setMessages(prev => {
-                // Check if message already exists to prevent duplicates
-                const messageExists = prev.some(msg => msg.id === data.message.id)
-                if (messageExists) {
-                  console.log('⚠️ Message already exists, skipping duplicate:', data.message.id)
-                  return prev
-                }
-                
-                console.log('✅ Adding new message to chat:', data.message.id)
-                return [...prev, data.message]
-              })
-              
-              // Update chat list with new message
-              if (onNewMessage) {
-                console.log('📋 Updating chat list with new message')
-                onNewMessage(chatId, data.message)
-              }
-              
-              // Only scroll to bottom for received messages if user is at the bottom
-              const wasAtBottom = checkIfAtBottom()
-              if (wasAtBottom && !isLoadingMoreMessages.current) {
-                setTimeout(() => {
-                  scrollToBottom()
-                }, 100)
-              }
-              break
             case "message_edited":
-              setMessages(prev => 
-                prev.map(msg => 
-                  msg.id === data.messageId 
-                    ? { ...msg, content: data.updatedContent, isEdited: true }
-                    : msg
-                )
-              )
-              break
             case "message_deleted":
-              setMessages(prev => prev.filter(msg => msg.id !== data.messageId))
+            case "reaction_updated":
+              // Queue message for batch processing
+              if (messageQueueRef.current) {
+                messageQueueRef.current.enqueue({
+                  type: eventData.type,
+                  data: eventData,
+                  timestamp: Date.now()
+                })
+              }
               break
+              
             case "typing":
-              // Handle typing indicators
+              // Handle typing indicators immediately (don't queue)
+              console.log("User typing:", eventData.userId, eventData.isTyping)
               break
+              
             default:
-              console.log('Unknown SSE message type:', data.type)
+              console.log('Unknown SSE message type:', eventData.type)
           }
         } catch (error) {
           console.error("Error parsing SSE data:", error)
@@ -770,12 +921,15 @@ export function useChatMessages(chatId, onNewMessage = null) {
       if (source) {
         source.close()
       }
+      if (messageQueueRef.current) {
+        messageQueueRef.current.clear()
+      }
       setEventSource(null)
       connectionState = 'disconnected'
     }
   }, [session, chatId, onNewMessage, scrollToBottom, checkIfAtBottom, fetchMessages])
 
-  // Initial load
+  // Clear message queue when switching chats
   useEffect(() => {
     if (chatId) {
       setMessages([])
@@ -783,9 +937,17 @@ export function useChatMessages(chatId, onNewMessage = null) {
       setCurrentPage(1)
       isInitialLoad.current = true
       shouldScrollToBottom.current = false
-      isUserAtBottom.current = true // Reset to bottom when switching chats
+      isUserAtBottom.current = true
       isLoadingMoreMessages.current = false
-      previousMessageCount.current = 0 // Reset message count for new chat
+      
+      // Clear optimistic message tracking
+      pendingOptimisticMessages.current.clear()
+      
+      // Clear message queue
+      if (messageQueueRef.current) {
+        messageQueueRef.current.clear()
+      }
+      
       fetchMessages(1)
     }
   }, [chatId, fetchMessages])

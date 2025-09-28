@@ -73,13 +73,33 @@ export async function GET(request) {
           sessionId: connectionId, // Store session ID for debugging
         }
         
-        // Remove any existing connections for this user in this chat to prevent duplicates
-        const existingConnections = Array.from(connections.entries()).filter(
-          ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId
+        // FIXED: Be more selective about which connections to remove
+        // Only remove truly dead connections, not all connections for this user/chat
+        const deadConnections = Array.from(connections.entries()).filter(
+          ([id, conn]) => {
+            if (conn.userId === user._id.toString() && conn.chatId === chatId) {
+              // Check if connection is actually dead before removing
+              const timeSinceLastPing = new Date() - conn.lastPing
+              if (timeSinceLastPing > 90000 || !conn.isAlive) { // 90 seconds grace period
+                return true
+              }
+              // Test if connection is still responsive
+              try {
+                conn.controller.enqueue(`data: ${JSON.stringify({ 
+                  type: "connection_test", 
+                  timestamp: new Date().toISOString() 
+                })}\n\n`)
+                return false // Connection is alive
+              } catch (error) {
+                return true // Connection is dead
+              }
+            }
+            return false
+          }
         )
         
-        existingConnections.forEach(([id, _]) => {
-          console.log(`Removing existing connection: ${id}`)
+        deadConnections.forEach(([id, _]) => {
+          console.log(`Removing dead connection: ${id}`)
           connections.delete(id)
         })
         
@@ -101,9 +121,14 @@ export async function GET(request) {
           return
         }
 
-        // Send a ping every 15 seconds to keep connection alive (reduced from 30s)
+        // FIXED: More reliable ping mechanism
         const pingInterval = setInterval(() => {
           try {
+            if (!connections.has(connectionId)) {
+              clearInterval(pingInterval)
+              return
+            }
+            
             const pingData = {
               type: "ping",
               timestamp: new Date().toISOString(),
@@ -112,8 +137,9 @@ export async function GET(request) {
             controller.enqueue(`data: ${JSON.stringify(pingData)}\n\n`)
             
             // Update last ping time
-            if (connections.has(connectionId)) {
-              connections.get(connectionId).lastPing = new Date()
+            const conn = connections.get(connectionId)
+            if (conn) {
+              conn.lastPing = new Date()
             }
           } catch (error) {
             console.error(`Ping failed for connection ${connectionId}:`, error)
@@ -122,10 +148,10 @@ export async function GET(request) {
             try {
               controller.close()
             } catch (closeError) {
-              // Connection already closed
+              // Already closed
             }
           }
-        }, 15000) // Reduced to 15 seconds for better reliability
+        }, 20000) // 20 seconds for more frequent health checks
 
         // Handle connection cleanup
         const cleanup = () => {
@@ -141,10 +167,12 @@ export async function GET(request) {
 
         request.signal.addEventListener("abort", cleanup)
         
-        // Also handle controller errors
+        // Handle controller errors more gracefully
+        const originalError = controller.error
         controller.error = (error) => {
           console.error(`Controller error for ${connectionId}:`, error)
           cleanup()
+          if (originalError) originalError.call(controller, error)
         }
       },
       
@@ -156,12 +184,16 @@ export async function GET(request) {
     return new NextResponse(stream, {
       headers: {
         "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
         "Connection": "keep-alive",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Cache-Control",
-        "X-Accel-Buffering": "no", // Disable nginx buffering
+        "X-Accel-Buffering": "no",
         "Transfer-Encoding": "chunked",
+        // FIXED: Add headers to prevent proxy buffering
+        "X-Accel-Buffer": "no",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     })
   } catch (error) {
@@ -183,35 +215,46 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
   )
 
   console.log(`Broadcasting to ${chatConnections.length} connections for chat ${chatId}`)
-  console.log(`Active connections for chat ${chatId}:`, chatConnections.map(([id, conn]) => ({
-    connectionId: id,
-    userId: conn.userId,
-    email: conn.email,
-    isAlive: conn.isAlive
-  })))
+
+  if (chatConnections.length === 0) {
+    console.log(`No active connections found for chat ${chatId}`)
+    return
+  }
 
   let successCount = 0
   let failureCount = 0
+  const messageData = `data: ${JSON.stringify(message)}\n\n`
 
+  // FIXED: Add retry mechanism for failed broadcasts
   chatConnections.forEach(([connectionId, connection]) => {
-    try {
-      const messageData = `data: ${JSON.stringify(message)}\n\n`
-      connection.controller.enqueue(messageData)
-      successCount++
-      console.log(`✅ Message broadcasted to connection ${connectionId} (user: ${connection.userId})`)
-    } catch (error) {
-      failureCount++
-      console.error(`❌ Failed to broadcast to connection ${connectionId}:`, error)
-      // Mark connection as dead and remove it
-      connection.isAlive = false
-      connections.delete(connectionId)
+    const broadcastWithRetry = (retryCount = 0) => {
+      try {
+        connection.controller.enqueue(messageData)
+        successCount++
+        console.log(`✅ Message broadcasted to connection ${connectionId} (user: ${connection.userId})`)
+      } catch (error) {
+        if (retryCount < 2) { // Retry up to 2 times
+          setTimeout(() => {
+            if (connections.has(connectionId)) {
+              broadcastWithRetry(retryCount + 1)
+            }
+          }, 100 * (retryCount + 1)) // Exponential backoff
+        } else {
+          failureCount++
+          console.error(`❌ Failed to broadcast to connection ${connectionId} after retries:`, error)
+          connection.isAlive = false
+          connections.delete(connectionId)
+        }
+      }
     }
+    
+    broadcastWithRetry()
   })
   
   console.log(`Broadcast complete: ${successCount} successful, ${failureCount} failed`)
   
-  // Clean up dead connections after broadcast
-  cleanupDeadConnections()
+  // Clean up after broadcast
+  setTimeout(cleanupDeadConnections, 1000)
 }
 
 // Function to clean up dead connections
