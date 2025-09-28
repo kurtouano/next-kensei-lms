@@ -12,9 +12,18 @@ export async function GET(request) {
 
     const status = getConnectionStatus()
     
+    // Add health check information
+    const healthInfo = {
+      totalConnections: status.totalConnections,
+      connectionsByChat: Object.keys(status.connectionsByChat).length,
+      connectionsByUser: Object.keys(status.connectionsByUser).length,
+      timestamp: new Date().toISOString()
+    }
+    
     return NextResponse.json({
       success: true,
       status,
+      health: healthInfo,
       timestamp: new Date().toISOString()
     })
   } catch (error) {

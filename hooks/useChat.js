@@ -652,11 +652,12 @@ export function useChatMessages(chatId, onNewMessage = null) {
             case "new_message":
               console.log('📨 Received new message via SSE:', data.message.id, 'for chat:', chatId)
               setMessages(prev => {
+                // TEMPORARY: Disable deduplication to test if it's causing issues
                 // Check if message already exists to prevent duplicates
                 const messageExists = prev.some(msg => msg.id === data.message.id)
                 if (messageExists) {
-                  console.log('⚠️ Message already exists, skipping duplicate:', data.message.id)
-                  return prev
+                  console.log('⚠️ Message already exists, but adding anyway for testing:', data.message.id)
+                  // return prev // COMMENTED OUT FOR TESTING
                 }
                 
                 console.log('✅ Adding new message to chat:', data.message.id)
