@@ -118,13 +118,13 @@ export default function Home() {
           <BannerSlider banners={banners} autoSlideInterval={5000} />
         </section>
 
-        {/* What You'll Get Section */}
+        {/* Why Jotatsu Section */}
         <section className="py-8 md:py-16 bg-white">
           <div className="container mx-auto px-4">
             <div className="mb-12 text-center">
-              <h2 className="mb-4 text-3xl font-bold text-[#2c3e2d]">What You'll Get</h2>
+              <h2 className="mb-4 text-3xl font-bold text-[#2c3e2d]">Why Choose Us?</h2>
               <p className="mx-auto max-w-2xl text-[#5c6d5e]">
-                Every course completion comes with valuable rewards that enhance your learning experience and celebrate your progress
+                Discover what makes Jotatsu the perfect choice for your Japanese learning journey
               </p>
             </div>
 
