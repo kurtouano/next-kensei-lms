@@ -594,47 +594,69 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [hasMore, loading, isLoadingMore, currentPage, fetchMessages])
 
-  // Set up real-time connection with reconnection logic
+  // Set up real-time connection with enhanced reconnection logic
   useEffect(() => {
     if (!session?.user?.email || !chatId) {
       return
     }
+    
     let reconnectAttempts = 0
-    const maxReconnectAttempts = 5
+    const maxReconnectAttempts = 10 // Increased from 5
     let reconnectTimer = null
+    let connectionState = 'disconnected' // 'connecting', 'connected', 'disconnected', 'failed'
+    let lastMessageTime = Date.now()
+    let heartbeatInterval = null
 
     const connectSSE = () => {
+      if (connectionState === 'connecting') return // Prevent multiple simultaneous connections
+      
+      connectionState = 'connecting'
+      console.log(`Attempting SSE connection to chat ${chatId} (attempt ${reconnectAttempts + 1})`)
+      
       const source = new EventSource(`/api/chats/stream?chatId=${chatId}`)
 
       source.onopen = () => {
+        console.log(`SSE connection established for chat ${chatId}`)
+        connectionState = 'connected'
         reconnectAttempts = 0 // Reset on successful connection
+        lastMessageTime = Date.now()
+        
+        // Set up heartbeat monitoring
+        heartbeatInterval = setInterval(() => {
+          const timeSinceLastMessage = Date.now() - lastMessageTime
+          if (timeSinceLastMessage > 60000) { // 60 seconds without any message
+            console.log('SSE connection appears stale, reconnecting...')
+            source.close()
+            connectionState = 'disconnected'
+            connectSSE()
+          }
+        }, 30000) // Check every 30 seconds
       }
 
       source.onmessage = (event) => {
         try {
+          lastMessageTime = Date.now() // Update last message time
           const data = JSON.parse(event.data)
           
           switch (data.type) {
             case "connected":
+              console.log(`SSE connected to chat ${chatId} with connection ID: ${data.connectionId}`)
               break
             case "ping":
-              // Handle ping messages to keep connection alive
+            case "health_check":
+              // Handle ping/health check messages
               break
             case "new_message":
+              console.log('Received new message via SSE:', data.message.id)
               setMessages(prev => {
                 // Check if message already exists to prevent duplicates
                 const messageExists = prev.some(msg => msg.id === data.message.id)
                 if (messageExists) {
+                  console.log('Message already exists, skipping duplicate')
                   return prev
                 }
                 
-                // For system messages, ensure they appear immediately
-                if (data.message.type === 'system') {
-                  // Force a re-render by creating a new array reference
-                  const newMessages = [...prev, data.message]
-                  return newMessages
-                }
-                
+                console.log('Adding new message to chat')
                 return [...prev, data.message]
               })
               
@@ -664,10 +686,10 @@ export function useChatMessages(chatId, onNewMessage = null) {
               setMessages(prev => prev.filter(msg => msg.id !== data.messageId))
               break
             case "typing":
-              // Handle typing indicators (you can implement UI for this)
+              // Handle typing indicators
               break
             default:
-              break
+              console.log('Unknown SSE message type:', data.type)
           }
         } catch (error) {
           console.error("Error parsing SSE data:", error)
@@ -676,11 +698,18 @@ export function useChatMessages(chatId, onNewMessage = null) {
 
       source.onerror = (error) => {
         console.error("SSE error for chat", chatId, ":", error)
+        connectionState = 'disconnected'
         source.close()
+        
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval)
+          heartbeatInterval = null
+        }
         
         // Attempt reconnection with exponential backoff
         if (reconnectAttempts < maxReconnectAttempts) {
-          const delay = Math.pow(2, reconnectAttempts) * 1000 // 1s, 2s, 4s, 8s, 16s
+          const delay = Math.min(Math.pow(2, reconnectAttempts) * 1000, 30000) // Max 30 seconds
+          console.log(`SSE reconnection scheduled in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`)
           
           reconnectTimer = setTimeout(() => {
             reconnectAttempts++
@@ -688,10 +717,18 @@ export function useChatMessages(chatId, onNewMessage = null) {
           }, delay)
         } else {
           console.error("Max reconnection attempts reached. SSE connection failed for chat", chatId)
+          connectionState = 'failed'
+          
           // Fallback: refresh messages periodically
-          setInterval(() => {
+          const fallbackInterval = setInterval(() => {
+            console.log('Using fallback polling for messages')
             fetchMessages(1)
-          }, 10000) // Refresh every 10 seconds as fallback
+          }, 15000) // Refresh every 15 seconds as fallback
+          
+          // Clean up fallback after 5 minutes
+          setTimeout(() => {
+            clearInterval(fallbackInterval)
+          }, 300000)
         }
       }
 
@@ -702,13 +739,18 @@ export function useChatMessages(chatId, onNewMessage = null) {
     const source = connectSSE()
 
     return () => {
+      console.log(`Cleaning up SSE connection for chat ${chatId}`)
       if (reconnectTimer) {
         clearTimeout(reconnectTimer)
+      }
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval)
       }
       if (source) {
         source.close()
       }
       setEventSource(null)
+      connectionState = 'disconnected'
     }
   }, [session, chatId, onNewMessage, scrollToBottom, checkIfAtBottom, fetchMessages])
 

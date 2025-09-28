@@ -5,8 +5,20 @@ import { connectDb } from "@/lib/mongodb"
 import ChatParticipant from "@/models/ChatParticipant"
 import User from "@/models/User"
 
-// Store active connections
+// Store active connections with enhanced metadata
 const connections = new Map()
+
+// Connection health monitoring
+let healthCheckInterval = null
+
+// Start health monitoring if not already running
+function startHealthMonitoring() {
+  if (healthCheckInterval) return
+  
+  healthCheckInterval = setInterval(() => {
+    cleanupDeadConnections()
+  }, 30000) // Check every 30 seconds
+}
 
 export async function GET(request) {
   try {
@@ -41,41 +53,70 @@ export async function GET(request) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Create SSE response
+    // Start health monitoring
+    startHealthMonitoring()
+
+    // Create SSE response with enhanced error handling
     const stream = new ReadableStream({
       start(controller) {
-        // Store connection
+        // Store connection with enhanced metadata
         const connectionId = `${user._id}-${chatId}-${Date.now()}`
-        connections.set(connectionId, {
+        const connectionData = {
           controller,
           userId: user._id.toString(),
           chatId,
           email: session.user.email,
-        })
-
-        // SSE connection established
+          connectedAt: new Date(),
+          lastPing: new Date(),
+          isAlive: true,
+        }
+        
+        connections.set(connectionId, connectionData)
+        console.log(`SSE connection established: ${connectionId}`)
 
         // Send initial connection message
-        controller.enqueue(`data: ${JSON.stringify({
-          type: "connected",
-          message: "Connected to chat stream",
-          timestamp: new Date().toISOString(),
-        })}\n\n`)
+        try {
+          controller.enqueue(`data: ${JSON.stringify({
+            type: "connected",
+            message: "Connected to chat stream",
+            timestamp: new Date().toISOString(),
+            connectionId,
+          })}\n\n`)
+        } catch (error) {
+          console.error("Failed to send initial connection message:", error)
+          connections.delete(connectionId)
+          return
+        }
 
-        // Send a ping every 30 seconds to keep connection alive
+        // Send a ping every 15 seconds to keep connection alive (reduced from 30s)
         const pingInterval = setInterval(() => {
           try {
-            controller.enqueue(`data: ${JSON.stringify({
+            const pingData = {
               type: "ping",
               timestamp: new Date().toISOString(),
-            })}\n\n`)
+              connectionId,
+            }
+            controller.enqueue(`data: ${JSON.stringify(pingData)}\n\n`)
+            
+            // Update last ping time
+            if (connections.has(connectionId)) {
+              connections.get(connectionId).lastPing = new Date()
+            }
           } catch (error) {
+            console.error(`Ping failed for connection ${connectionId}:`, error)
             clearInterval(pingInterval)
+            connections.delete(connectionId)
+            try {
+              controller.close()
+            } catch (closeError) {
+              // Connection already closed
+            }
           }
-        }, 30000)
+        }, 15000) // Reduced to 15 seconds for better reliability
 
         // Handle connection cleanup
-        request.signal.addEventListener("abort", () => {
+        const cleanup = () => {
+          console.log(`Cleaning up SSE connection: ${connectionId}`)
           clearInterval(pingInterval)
           connections.delete(connectionId)
           try {
@@ -83,8 +124,20 @@ export async function GET(request) {
           } catch (error) {
             // Connection already closed
           }
-        })
+        }
+
+        request.signal.addEventListener("abort", cleanup)
+        
+        // Also handle controller errors
+        controller.error = (error) => {
+          console.error(`Controller error for ${connectionId}:`, error)
+          cleanup()
+        }
       },
+      
+      cancel() {
+        console.log(`SSE stream cancelled for chat ${chatId}`)
+      }
     })
 
     return new NextResponse(stream, {
@@ -94,6 +147,8 @@ export async function GET(request) {
         "Connection": "keep-alive",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Cache-Control",
+        "X-Accel-Buffering": "no", // Disable nginx buffering
+        "Transfer-Encoding": "chunked",
       },
     })
   } catch (error) {
@@ -110,40 +165,59 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
   const chatConnections = Array.from(connections.entries()).filter(
     ([_, connection]) => 
       connection.chatId === chatId && 
-      connection.userId !== excludeUserId?.toString()
+      connection.userId !== excludeUserId?.toString() &&
+      connection.isAlive
   )
+
+  console.log(`Broadcasting to ${chatConnections.length} connections for chat ${chatId}`)
 
   chatConnections.forEach(([connectionId, connection]) => {
     try {
       const messageData = `data: ${JSON.stringify(message)}\n\n`
       connection.controller.enqueue(messageData)
+      console.log(`Message broadcasted to connection ${connectionId}`)
     } catch (error) {
       console.error(`Failed to broadcast to connection ${connectionId}:`, error)
-      // Remove broken connection
+      // Mark connection as dead and remove it
+      connection.isAlive = false
       connections.delete(connectionId)
     }
   })
   
-  // Clean up dead connections periodically
+  // Clean up dead connections after broadcast
   cleanupDeadConnections()
 }
 
 // Function to clean up dead connections
 function cleanupDeadConnections() {
   const deadConnections = []
+  const now = new Date()
   
   connections.forEach((connection, connectionId) => {
     try {
-      // Test if connection is still alive
-      connection.controller.enqueue(`data: ${JSON.stringify({ type: "ping" })}\n\n`)
+      // Check if connection is marked as dead or hasn't been pinged recently
+      if (!connection.isAlive || (now - connection.lastPing) > 60000) { // 60 seconds timeout
+        deadConnections.push(connectionId)
+        return
+      }
+      
+      // Test if connection is still alive by sending a test ping
+      connection.controller.enqueue(`data: ${JSON.stringify({ 
+        type: "health_check", 
+        timestamp: new Date().toISOString() 
+      })}\n\n`)
     } catch (error) {
+      console.error(`Health check failed for connection ${connectionId}:`, error)
       deadConnections.push(connectionId)
     }
   })
   
-  deadConnections.forEach(connectionId => {
-    connections.delete(connectionId)
-  })
+  if (deadConnections.length > 0) {
+    console.log(`Cleaning up ${deadConnections.length} dead connections`)
+    deadConnections.forEach(connectionId => {
+      connections.delete(connectionId)
+    })
+  }
 }
 
 // Function to broadcast typing indicators

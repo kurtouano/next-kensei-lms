@@ -149,65 +149,133 @@ export function useOptimizedChatMessages(chatId, onNewMessage = null) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [])
 
-  // Set up real-time connection with optimized message handling
+  // Set up real-time connection with enhanced reconnection logic
   useEffect(() => {
     if (!session?.user?.email || !chatId) return
 
-    const source = new EventSource(`/api/chats/stream?chatId=${chatId}`)
+    let reconnectAttempts = 0
+    const maxReconnectAttempts = 10
+    let reconnectTimer = null
+    let connectionState = 'disconnected'
+    let lastMessageTime = Date.now()
+    let heartbeatInterval = null
 
-    source.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
+    const connectSSE = () => {
+      if (connectionState === 'connecting') return
+      
+      connectionState = 'connecting'
+      console.log(`OptimizedChat: Attempting SSE connection to chat ${chatId} (attempt ${reconnectAttempts + 1})`)
+      
+      const source = new EventSource(`/api/chats/stream?chatId=${chatId}`)
+
+      source.onopen = () => {
+        console.log(`OptimizedChat: SSE connection established for chat ${chatId}`)
+        connectionState = 'connected'
+        reconnectAttempts = 0
+        lastMessageTime = Date.now()
         
-        switch (data.type) {
-          case "connected":
-            console.log("Connected to chat stream")
-            break
-          case "new_message":
-            setMessages(prev => {
-              const newMessages = [...prev, data.message]
-              const cleanedMessages = cleanupOldMessages(newMessages)
-              return cleanedMessages
-            })
-            
-            // Update chat list with new message
-            if (onNewMessage) {
-              onNewMessage(chatId, data.message)
-            }
-            break
-          case "message_edited":
-            setMessages(prev => 
-              prev.map(msg => 
-                msg.id === data.messageId 
-                  ? { ...msg, content: data.updatedContent, isEdited: true }
-                  : msg
-              )
-            )
-            break
-          case "message_deleted":
-            setMessages(prev => prev.filter(msg => msg.id !== data.messageId))
-            break
-          case "typing":
-            // Handle typing indicators
-            console.log("User typing:", data)
-            break
-          default:
-            console.log("Unknown event type:", data.type)
-        }
-      } catch (error) {
-        console.error("Error parsing SSE data:", error)
+        // Set up heartbeat monitoring
+        heartbeatInterval = setInterval(() => {
+          const timeSinceLastMessage = Date.now() - lastMessageTime
+          if (timeSinceLastMessage > 60000) {
+            console.log('OptimizedChat: SSE connection appears stale, reconnecting...')
+            source.close()
+            connectionState = 'disconnected'
+            connectSSE()
+          }
+        }, 30000)
       }
+
+      source.onmessage = (event) => {
+        try {
+          lastMessageTime = Date.now()
+          const data = JSON.parse(event.data)
+          
+          switch (data.type) {
+            case "connected":
+              console.log(`OptimizedChat: SSE connected to chat ${chatId}`)
+              break
+            case "ping":
+            case "health_check":
+              break
+            case "new_message":
+              console.log('OptimizedChat: Received new message via SSE:', data.message.id)
+              setMessages(prev => {
+                const newMessages = [...prev, data.message]
+                const cleanedMessages = cleanupOldMessages(newMessages)
+                return cleanedMessages
+              })
+              
+              if (onNewMessage) {
+                onNewMessage(chatId, data.message)
+              }
+              break
+            case "message_edited":
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === data.messageId 
+                    ? { ...msg, content: data.updatedContent, isEdited: true }
+                    : msg
+                )
+              )
+              break
+            case "message_deleted":
+              setMessages(prev => prev.filter(msg => msg.id !== data.messageId))
+              break
+            case "typing":
+              console.log("User typing:", data)
+              break
+            default:
+              console.log("Unknown event type:", data.type)
+          }
+        } catch (error) {
+          console.error("Error parsing SSE data:", error)
+        }
+      }
+
+      source.onerror = (error) => {
+        console.error("OptimizedChat: SSE error for chat", chatId, ":", error)
+        connectionState = 'disconnected'
+        source.close()
+        
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval)
+          heartbeatInterval = null
+        }
+        
+        if (reconnectAttempts < maxReconnectAttempts) {
+          const delay = Math.min(Math.pow(2, reconnectAttempts) * 1000, 30000)
+          console.log(`OptimizedChat: SSE reconnection scheduled in ${delay}ms`)
+          
+          reconnectTimer = setTimeout(() => {
+            reconnectAttempts++
+            connectSSE()
+          }, delay)
+        } else {
+          console.error("OptimizedChat: Max reconnection attempts reached")
+          connectionState = 'failed'
+        }
+      }
+
+      setEventSource(source)
+      return source
     }
 
-    source.onerror = (error) => {
-      console.error("SSE error:", error)
-    }
-
-    setEventSource(source)
+    const source = connectSSE()
 
     return () => {
-      source.close()
+      console.log(`OptimizedChat: Cleaning up SSE connection for chat ${chatId}`)
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer)
+      }
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval)
+      }
+      if (source) {
+        source.close()
+      }
       setEventSource(null)
+      connectionState = 'disconnected'
     }
   }, [session, chatId, onNewMessage, cleanupOldMessages])
 
