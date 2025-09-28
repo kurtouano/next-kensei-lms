@@ -99,13 +99,10 @@ export async function GET(request) {
         )
         
         deadConnections.forEach(([id, _]) => {
-          console.log(`Removing dead connection: ${id}`)
           connections.delete(id)
         })
         
         connections.set(connectionId, connectionData)
-        console.log(`SSE connection established: ${connectionId} for user ${user._id} in chat ${chatId}`)
-        console.log(`Total active connections: ${connections.size}`)
 
         // Send initial connection message
         try {
@@ -116,7 +113,6 @@ export async function GET(request) {
             connectionId,
           })}\n\n`)
         } catch (error) {
-          console.error("Failed to send initial connection message:", error)
           connections.delete(connectionId)
           return
         }
@@ -142,7 +138,6 @@ export async function GET(request) {
               conn.lastPing = new Date()
             }
           } catch (error) {
-            console.error(`Ping failed for connection ${connectionId}:`, error)
             clearInterval(pingInterval)
             connections.delete(connectionId)
             try {
@@ -155,7 +150,6 @@ export async function GET(request) {
 
         // Handle connection cleanup
         const cleanup = () => {
-          console.log(`Cleaning up SSE connection: ${connectionId}`)
           clearInterval(pingInterval)
           connections.delete(connectionId)
           try {
@@ -170,14 +164,13 @@ export async function GET(request) {
         // Handle controller errors more gracefully
         const originalError = controller.error
         controller.error = (error) => {
-          console.error(`Controller error for ${connectionId}:`, error)
           cleanup()
           if (originalError) originalError.call(controller, error)
         }
       },
       
       cancel() {
-        console.log(`SSE stream cancelled for chat ${chatId}`)
+        // SSE stream cancelled
       }
     })
 
@@ -214,10 +207,7 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
       connection.isAlive
   )
 
-  console.log(`Broadcasting to ${chatConnections.length} connections for chat ${chatId}`)
-
   if (chatConnections.length === 0) {
-    console.log(`No active connections found for chat ${chatId}`)
     return
   }
 
@@ -231,7 +221,6 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
       try {
         connection.controller.enqueue(messageData)
         successCount++
-        console.log(`✅ Message broadcasted to connection ${connectionId} (user: ${connection.userId})`)
       } catch (error) {
         if (retryCount < 2) { // Retry up to 2 times
           setTimeout(() => {
@@ -241,7 +230,6 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
           }, 100 * (retryCount + 1)) // Exponential backoff
         } else {
           failureCount++
-          console.error(`❌ Failed to broadcast to connection ${connectionId} after retries:`, error)
           connection.isAlive = false
           connections.delete(connectionId)
         }
@@ -250,8 +238,6 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
     
     broadcastWithRetry()
   })
-  
-  console.log(`Broadcast complete: ${successCount} successful, ${failureCount} failed`)
   
   // Clean up after broadcast
   setTimeout(cleanupDeadConnections, 1000)
@@ -276,13 +262,11 @@ function cleanupDeadConnections() {
         timestamp: new Date().toISOString() 
       })}\n\n`)
     } catch (error) {
-      console.error(`Health check failed for connection ${connectionId}:`, error)
       deadConnections.push(connectionId)
     }
   })
   
   if (deadConnections.length > 0) {
-    console.log(`Cleaning up ${deadConnections.length} dead connections`)
     deadConnections.forEach(connectionId => {
       connections.delete(connectionId)
     })

@@ -283,15 +283,11 @@ export function useChatMessages(chatId, onNewMessage = null) {
       const data = await response.json()
       
       if (data.success && data.newMessages?.length > 0) {
-        console.log(`📨 Polling found ${data.newMessages.length} new messages`)
-        
         setMessages(prev => {
           const existingIds = new Set(prev.map(msg => msg.id))
           const newMessages = data.newMessages.filter(msg => !existingIds.has(msg.id))
           
           if (newMessages.length > 0) {
-            console.log(`➕ Adding ${newMessages.length} new messages via polling`)
-            
             // Update last message timestamp
             const latestMessage = newMessages[newMessages.length - 1]
             setLastMessageTimestamp(latestMessage.createdAt)
@@ -315,7 +311,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
         }
       }
     } catch (error) {
-      console.error("Polling error:", error)
+      // Handle polling errors silently
     } finally {
       isPollingRef.current = false
     }
@@ -338,7 +334,6 @@ export function useChatMessages(chatId, onNewMessage = null) {
               
               // Skip if already exists
               if (existingIds.has(message.id)) {
-                console.log('Skipping duplicate message:', message.id)
                 return
               }
 
@@ -350,11 +345,9 @@ export function useChatMessages(chatId, onNewMessage = null) {
               )
 
               if (optimisticIndex !== -1) {
-                console.log('Replacing optimistic message with real message')
                 newMessages[optimisticIndex] = { ...message, isOptimistic: false }
                 pendingOptimisticMessages.current.delete(newMessages[optimisticIndex].id)
               } else {
-                console.log('Adding new message:', message.id)
                 newMessages.push(message)
                 existingIds.add(message.id)
               }
@@ -837,14 +830,12 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
     
     // Start polling every 2 seconds
-    console.log(`🔄 Starting message polling for chat ${chatId}`)
     pollingIntervalRef.current = setInterval(pollForNewMessages, 2000)
     
     // Initial poll
     setTimeout(pollForNewMessages, 500)
     
     return () => {
-      console.log(`⏹️ Stopping message polling for chat ${chatId}`)
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current)
       }

@@ -141,8 +141,6 @@ export async function POST(request, { params }) {
     const { chatId } = await params
     const { content, type = "text", attachments = [], replyTo } = await request.json()
 
-    console.log(`💬 Creating message in chat ${chatId}`)
-
     // Find user
     const user = await User.findOne({ email: session.user.email })
     if (!user) {
@@ -176,7 +174,6 @@ export async function POST(request, { params }) {
     })
 
     await message.save()
-    console.log(`✅ Message saved: ${message._id}`)
 
     // Update chat's last activity
     await Chat.findByIdAndUpdate(chatId, {
@@ -228,8 +225,6 @@ export async function POST(request, { params }) {
       createdAt: populatedMessage.createdAt,
       updatedAt: populatedMessage.updatedAt,
     }
-
-    console.log(`📤 Returning message: ${formattedMessage.id}`)
 
     // NO SSE BROADCASTING - Let polling handle message delivery
     // The message is saved and will be picked up by other clients via polling
