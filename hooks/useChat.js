@@ -235,6 +235,91 @@ export function useChatMessages(chatId, onNewMessage = null) {
   // Message queue for handling rapid SSE messages
   const messageQueueRef = useRef(null)
   const pendingOptimisticMessages = useRef(new Map()) // Track optimistic messages
+  
+  // Polling system state
+  const [lastMessageTimestamp, setLastMessageTimestamp] = useState(null)
+  const pollingIntervalRef = useRef(null)
+  const isPollingRef = useRef(false)
+
+  // Check if user is at the bottom of the chat
+  const checkIfAtBottom = useCallback(() => {
+    const container = messagesEndRef.current?.parentElement
+    if (container) {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const isNearBottom = scrollTop + clientHeight > scrollHeight - 100
+      isUserAtBottom.current = isNearBottom
+      return isNearBottom
+    }
+    return true
+  }, [])
+
+  // Scroll to bottom
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      try {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" })
+        isUserAtBottom.current = true
+      } catch (error) {
+        // Fallback for older browsers
+        messagesEndRef.current.scrollIntoView(false)
+        isUserAtBottom.current = true
+      }
+    }
+  }, [])
+
+  // Polling function to check for new messages
+  const pollForNewMessages = useCallback(async () => {
+    if (!chatId || !session?.user?.email || isPollingRef.current) return
+    
+    isPollingRef.current = true
+    
+    try {
+      const url = new URL(`/api/chats/${chatId}/messages/poll`, window.location.origin)
+      if (lastMessageTimestamp) {
+        url.searchParams.set("since", lastMessageTimestamp)
+      }
+      
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      if (data.success && data.newMessages?.length > 0) {
+        console.log(`📨 Polling found ${data.newMessages.length} new messages`)
+        
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(msg => msg.id))
+          const newMessages = data.newMessages.filter(msg => !existingIds.has(msg.id))
+          
+          if (newMessages.length > 0) {
+            console.log(`➕ Adding ${newMessages.length} new messages via polling`)
+            
+            // Update last message timestamp
+            const latestMessage = newMessages[newMessages.length - 1]
+            setLastMessageTimestamp(latestMessage.createdAt)
+            
+            // Update chat list
+            if (onNewMessage && latestMessage.sender?.email !== session.user.email) {
+              onNewMessage(chatId, latestMessage)
+            }
+            
+            const combined = [...prev, ...newMessages]
+            return combined.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+          }
+          
+          return prev
+        })
+        
+        // Auto-scroll for new messages
+        const wasAtBottom = checkIfAtBottom()
+        if (wasAtBottom) {
+          setTimeout(() => scrollToBottom(), 100)
+        }
+      }
+    } catch (error) {
+      console.error("Polling error:", error)
+    } finally {
+      isPollingRef.current = false
+    }
+  }, [chatId, session, lastMessageTimestamp, onNewMessage, checkIfAtBottom, scrollToBottom])
 
   // Initialize message queue
   useEffect(() => {
@@ -397,32 +482,6 @@ export function useChatMessages(chatId, onNewMessage = null) {
       }
     }
   }, [session, chatId])
-
-  // Check if user is at the bottom of the chat
-  const checkIfAtBottom = useCallback(() => {
-    const container = messagesEndRef.current?.parentElement
-    if (container) {
-      const { scrollTop, scrollHeight, clientHeight } = container
-      const isNearBottom = scrollTop + clientHeight > scrollHeight - 100
-      isUserAtBottom.current = isNearBottom
-      return isNearBottom
-    }
-    return true
-  }, [])
-
-  // Scroll to bottom
-  const scrollToBottom = useCallback(() => {
-    if (messagesEndRef.current) {
-      try {
-        messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" })
-        isUserAtBottom.current = true
-      } catch (error) {
-        // Fallback for older browsers
-        messagesEndRef.current.scrollIntoView(false)
-        isUserAtBottom.current = true
-      }
-    }
-  }, [])
 
   // Enhanced optimistic message sending
   const sendMessage = useCallback(async (content, type = "text", attachments = [], replyTo = null) => {
@@ -767,167 +826,41 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [hasMore, loading, isLoadingMore, currentPage, fetchMessages])
 
-  // Enhanced SSE connection with message queuing
+  // Replace SSE with polling system
   useEffect(() => {
-    if (!session?.user?.email || !chatId) return
+    if (!chatId || !session?.user?.email) return
     
-    let reconnectAttempts = 0
-    const maxReconnectAttempts = 10
-    let reconnectTimer = null
-    let connectionState = 'disconnected'
-    let lastMessageTime = Date.now()
-    let heartbeatInterval = null
-    let messageBuffer = [] // Buffer for handling rapid messages
-
-    const connectSSE = () => {
-      if (connectionState === 'connecting') return
-      
-      connectionState = 'connecting'
-      console.log(`Attempting SSE connection to chat ${chatId} (attempt ${reconnectAttempts + 1})`)
-      
-      const source = new EventSource(`/api/chats/stream?chatId=${chatId}`)
-
-      source.onopen = () => {
-        console.log(`SSE connection established for chat ${chatId}`)
-        connectionState = 'connected'
-        reconnectAttempts = 0
-        lastMessageTime = Date.now()
-        
-        // Clear any buffered messages from previous connection
-        messageBuffer = []
-        
-        heartbeatInterval = setInterval(() => {
-          const timeSinceLastMessage = Date.now() - lastMessageTime
-          if (timeSinceLastMessage > 90000) { // 90 seconds without message
-            console.log('SSE connection appears stale, reconnecting...')
-            source.close()
-            connectionState = 'disconnected'
-            connectSSE()
-          }
-        }, 30000)
-      }
-
-      source.onmessage = (event) => {
-        try {
-          lastMessageTime = Date.now()
-          const eventData = JSON.parse(event.data)
-          
-          // Handle different message types
-          switch (eventData.type) {
-            case "connected":
-              console.log(`SSE connected to chat ${chatId}`)
-              break
-              
-            case "ping":
-            case "health_check":
-            case "connection_test":
-              // Just acknowledge - no action needed
-              break
-              
-            case "new_message":
-            case "message_edited":
-            case "message_deleted":
-            case "reaction_updated":
-              // Queue message for batch processing
-              if (messageQueueRef.current) {
-                messageQueueRef.current.enqueue({
-                  type: eventData.type,
-                  data: eventData,
-                  timestamp: Date.now()
-                })
-              }
-              break
-              
-            case "typing":
-              // Handle typing indicators immediately (don't queue)
-              console.log("User typing:", eventData.userId, eventData.isTyping)
-              break
-              
-            default:
-              console.log('Unknown SSE message type:', eventData.type)
-          }
-        } catch (error) {
-          console.error("Error parsing SSE data:", error)
-        }
-      }
-
-      source.onerror = (error) => {
-        console.error("SSE error for chat", chatId, ":", error)
-        connectionState = 'disconnected'
-        source.close()
-        
-        if (heartbeatInterval) {
-          clearInterval(heartbeatInterval)
-          heartbeatInterval = null
-        }
-        
-        // Attempt reconnection with exponential backoff
-        if (reconnectAttempts < maxReconnectAttempts) {
-          const delay = Math.min(Math.pow(2, reconnectAttempts) * 1000, 30000) // Max 30 seconds
-          console.log(`SSE reconnection scheduled in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`)
-          
-          reconnectTimer = setTimeout(() => {
-            reconnectAttempts++
-            connectSSE()
-          }, delay)
-        } else {
-          console.error("Max reconnection attempts reached. SSE connection failed for chat", chatId)
-          connectionState = 'failed'
-          
-          // Fallback: refresh messages periodically
-          const fallbackInterval = setInterval(() => {
-            console.log('Using fallback polling for messages')
-            fetchMessages(1)
-          }, 15000) // Refresh every 15 seconds as fallback
-          
-          // Clean up fallback after 5 minutes
-          setTimeout(() => {
-            clearInterval(fallbackInterval)
-          }, 300000)
-        }
-      }
-
-      setEventSource(source)
-      return source
+    // Set initial timestamp from latest message
+    if (messages.length > 0) {
+      const latestMessage = messages[messages.length - 1]
+      setLastMessageTimestamp(latestMessage.createdAt)
     }
-
-    const source = connectSSE()
-
-    // Add connection validation
-    const validateConnection = async () => {
-      try {
-        const response = await fetch(`/api/chats/debug/connections`)
-        const data = await response.json()
-        if (data.success) {
-          const chatConnections = data.status.connectionsByChat[chatId] || []
-          console.log(`🔍 Connection validation for chat ${chatId}:`, chatConnections)
-        }
-      } catch (error) {
-        console.error('Failed to validate connection:', error)
-      }
-    }
-
-    // Validate connection after 5 seconds
-    setTimeout(validateConnection, 5000)
-
+    
+    // Start polling every 2 seconds
+    console.log(`🔄 Starting message polling for chat ${chatId}`)
+    pollingIntervalRef.current = setInterval(pollForNewMessages, 2000)
+    
+    // Initial poll
+    setTimeout(pollForNewMessages, 500)
+    
     return () => {
-      console.log(`🧹 Cleaning up SSE connection for chat ${chatId}`)
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer)
+      console.log(`⏹️ Stopping message polling for chat ${chatId}`)
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
       }
-      if (heartbeatInterval) {
-        clearInterval(heartbeatInterval)
-      }
-      if (source) {
-        source.close()
-      }
-      if (messageQueueRef.current) {
-        messageQueueRef.current.clear()
-      }
-      setEventSource(null)
-      connectionState = 'disconnected'
+      isPollingRef.current = false
     }
-  }, [session, chatId, onNewMessage, scrollToBottom, checkIfAtBottom, fetchMessages])
+  }, [chatId, session, pollForNewMessages])
+
+  // Update when messages change to set timestamp
+  useEffect(() => {
+    if (messages.length > 0) {
+      const latestMessage = messages[messages.length - 1]
+      if (latestMessage.createdAt > (lastMessageTimestamp || '')) {
+        setLastMessageTimestamp(latestMessage.createdAt)
+      }
+    }
+  }, [messages, lastMessageTimestamp])
 
   // Clear message queue when switching chats
   useEffect(() => {

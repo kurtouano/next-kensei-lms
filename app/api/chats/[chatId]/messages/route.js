@@ -141,13 +141,15 @@ export async function POST(request, { params }) {
     const { chatId } = await params
     const { content, type = "text", attachments = [], replyTo } = await request.json()
 
+    console.log(`💬 Creating message in chat ${chatId}`)
+
     // Find user
     const user = await User.findOne({ email: session.user.email })
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Verify user is participant in this chat
+    // Verify user is participant
     const participation = await ChatParticipant.findOne({
       chat: chatId,
       user: user._id,
@@ -174,14 +176,15 @@ export async function POST(request, { params }) {
     })
 
     await message.save()
+    console.log(`✅ Message saved: ${message._id}`)
 
-    // Update chat's last activity and last message
+    // Update chat's last activity
     await Chat.findByIdAndUpdate(chatId, {
       lastMessage: message._id,
       lastActivity: new Date(),
     })
 
-    // Populate the created message
+    // Populate the created message for response
     const populatedMessage = await Message.findById(message._id)
       .populate({
         path: "sender",
@@ -226,8 +229,10 @@ export async function POST(request, { params }) {
       updatedAt: populatedMessage.updatedAt,
     }
 
-    // Broadcast message to other participants in real-time
-    await notifyNewMessage(chatId, formattedMessage, user._id)
+    console.log(`📤 Returning message: ${formattedMessage.id}`)
+
+    // NO SSE BROADCASTING - Let polling handle message delivery
+    // The message is saved and will be picked up by other clients via polling
 
     return NextResponse.json({
       success: true,
