@@ -60,6 +60,12 @@ const CourseSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    randomItemCount: {
+      type: Number,
+      default: 2,
+      min: 1,
+      max: 2,
+    },
     modules: [ // Module Schema Ref
       {
        type: mongoose.Schema.Types.ObjectId,

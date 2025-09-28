@@ -402,10 +402,13 @@ async function handleCourseCompletionRewards(user, course) {
         !item.unlocked && !bonsai.ownedItems.includes(item.id)
       )
       
-      if (availableItems.length >= 2) {
-        // Give 2 random different items
+      // Get the number of items to give (from course.randomItemCount)
+      const itemsToGive = course.randomItemCount || 2
+      
+      if (availableItems.length >= itemsToGive) {
+        // Give the specified number of random different items
         const shuffledItems = [...availableItems].sort(() => Math.random() - 0.5)
-        const randomItems = shuffledItems.slice(0, 2)
+        const randomItems = shuffledItems.slice(0, itemsToGive)
         
         randomItems.forEach(item => {
           bonsai.ownedItems.push(item.id)
@@ -417,30 +420,40 @@ async function handleCourseCompletionRewards(user, course) {
           name: item.name,
           image: item.image
         }))
-        console.log(`🎁 Gave 2 random items: ${randomItems.map(item => item.name).join(', ')}`)
-      } else if (availableItems.length === 1) {
-        // Only 1 item available, give that + credits
-        const randomItem = availableItems[0]
-        bonsai.ownedItems.push(randomItem.id)
+        console.log(`🎁 Gave ${itemsToGive} random items: ${randomItems.map(item => item.name).join(', ')}`)
+      } else if (availableItems.length > 0) {
+        // Not enough items available, give what we can + credits
+        const shuffledItems = [...availableItems].sort(() => Math.random() - 0.5)
+        const randomItems = shuffledItems.slice(0, availableItems.length)
+        
+        randomItems.forEach(item => {
+          bonsai.ownedItems.push(item.id)
+        })
         await bonsai.save()
-        itemReward = [randomItem]
-        user.credits += 150 // Give half the credits since only 1 item
-        user.lifetimeCredits += 150 // Track lifetime earnings
-        totalCreditsEarned += 150
-        rewardData.creditsEarned += 150
-        rewardData.itemsEarned = [{
-          id: randomItem.id,
-          name: randomItem.name,
-          image: randomItem.image
-        }]
-        console.log(`🎁 Gave 1 random item: ${randomItem.name} + 150 credits`)
+        itemReward = randomItems
+        
+        // Calculate credit compensation for missing items
+        const missingItems = itemsToGive - availableItems.length
+        const creditCompensation = missingItems * 80 // 80 credits per missing item
+        
+        user.credits += creditCompensation
+        user.lifetimeCredits += creditCompensation
+        totalCreditsEarned += creditCompensation
+        rewardData.creditsEarned += creditCompensation
+        rewardData.itemsEarned = randomItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          image: item.image
+        }))
+        console.log(`🎁 Gave ${availableItems.length} random items + ${creditCompensation} credits (${missingItems} missing items)`)
       } else {
-        // User owns all items, give 300 credits instead
-        user.credits += 300
-        user.lifetimeCredits += 300 // Track lifetime earnings
-        totalCreditsEarned += 300
-        rewardData.creditsEarned += 300
-        console.log('🎁 User owns all items, gave 300 credits instead')
+        // User owns all items, give credits instead
+        const creditReward = itemsToGive * 80 // 80 credits per item
+        user.credits += creditReward
+        user.lifetimeCredits += creditReward
+        totalCreditsEarned += creditReward
+        rewardData.creditsEarned += creditReward
+        console.log(`🎁 User owns all items, gave ${creditReward} credits instead of ${itemsToGive} items`)
       }
     }
     

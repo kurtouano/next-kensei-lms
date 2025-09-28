@@ -5,6 +5,19 @@ import { Button } from "@/components/ui/button"
 import { Plus, Trash2, LoaderCircle } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 
+// Credit calculation functions
+const calculateAutoCredits = (level) => {
+  const creditRanges = {
+    'N5': 80,   // Beginner - helps reach Level 2 with 2-3 courses
+    'N4': 120,  // Elementary - helps reach Level 2 with 2-3 courses  
+    'N3': 160,  // Intermediate - helps reach Level 2 with 2-3 courses
+    'N2': 200,  // Upper Intermediate - helps reach Level 3 with 3-4 courses
+    'N1': 250   // Advanced - helps reach Level 3 with 3-4 courses
+  };
+  return creditRanges[level] || 0;
+};
+
+
 // Reusable components
 import FileUploadInput from "./FileUploadInput"
 import ArrayInput from "./ArrayInput"
@@ -130,7 +143,15 @@ const CourseDetailsStep = memo(({
             <select
               className={`w-full rounded-md border p-2 ${showValidation && validationErrors.level ? 'border-red-500' : 'border-gray-300'}`}
               value={courseData.level}
-              onChange={(e) => updateCourseData("level", e.target.value.trim())} // ✅ Add .trim()
+              onChange={(e) => {
+                const level = e.target.value.trim();
+                updateCourseData("level", level);
+                // Auto-calculate credits when level changes
+                if (level) {
+                  const autoCredits = calculateAutoCredits(level);
+                  updateCourseData("creditReward", autoCredits);
+                }
+              }}
             >
               <option value="">Select level</option>
               <option value="N5">Beginner (N5)</option>
@@ -159,40 +180,65 @@ const CourseDetailsStep = memo(({
 
           {/* Credit Reward */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Credit Reward</label>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">Credit Reward</label>
+              <div className="group relative">
+                <span className="cursor-help text-gray-500 hover:text-gray-700 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-full w-5 h-5 flex items-center justify-center font-bold">?</span>
+                <div className="absolute bottom-full w-80 left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 max-w-xs">
+                  <div className="space-y-1">
+                    <div>• N5 (Beginner): 80 credits</div>
+                    <div>• N4 (Elementary): 120 credits</div>
+                    <div>• N3 (Intermediate): 160 credits</div>
+                    <div>• N2 (Upper Intermediate): 200 credits</div>
+                    <div>• N1 (Advanced): 250 credits</div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <input
               type="number"
-              className="w-full rounded-md border border-gray-300 p-2"
-              placeholder="100"
+              className="w-full rounded-md border border-gray-300 p-2 bg-gray-100 cursor-not-allowed"
               value={courseData.creditReward}
-              onChange={(e) => updateCourseData("creditReward", parseInt(e.target.value) || 0)}
+              readOnly
             />
           </div>
 
           {/* Random Item Reward */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">Random Item Reward</label>
-              <div className="group relative">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Random Item Reward
+              <div className="group relative inline-block ml-2">
                 <span className="cursor-help text-gray-500 hover:text-gray-700 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-full w-5 h-5 flex items-center justify-center font-bold">?</span>
                 <div className="absolute bottom-full w-72 left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 max-w-xs">
                   <div className="text-center">
-                    Students will receive 2 random items upon course completion. If they own all items, they'll get 300 credits instead.
+                    Students will receive random items upon course completion. If they own all items, they'll get credits instead.
                   </div>
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="randomReward"
-                className="rounded border-gray-300 w-6 h-6"
-                checked={courseData.randomReward || false}
-                onChange={(e) => updateCourseData("randomReward", e.target.checked)}
-              />
-              <label htmlFor="randomReward" className="text-sm text-gray-700">
-                Random 2 items reward
+            </label>
+            <div className="flex gap-4 p-2 border border-gray-300 rounded-md bg-gray-50">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="randomItemCount"
+                  value="1"
+                  checked={courseData.randomItemCount === 1}
+                  onChange={(e) => updateCourseData("randomItemCount", parseInt(e.target.value))}
+                  className="w-4 h-4 text-[#4a7c59] focus:ring-[#4a7c59]"
+                />
+                <span className="text-sm text-gray-700">1 item</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="randomItemCount"
+                  value="2"
+                  checked={courseData.randomItemCount === 2}
+                  onChange={(e) => updateCourseData("randomItemCount", parseInt(e.target.value))}
+                  className="w-4 h-4 text-[#4a7c59] focus:ring-[#4a7c59]"
+                />
+                <span className="text-sm text-gray-700">2 items</span>
               </label>
             </div>
           </div>

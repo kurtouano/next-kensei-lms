@@ -13,7 +13,8 @@ const initialCourseData = {
   previewVideoUrl: "", 
   price: 0,
   creditReward: 0,
-  randomReward: false,
+  randomReward: true,
+  randomItemCount: 2,
   tags: [""],
   isPublished: false,
 }
