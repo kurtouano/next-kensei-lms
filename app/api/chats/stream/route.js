@@ -73,20 +73,32 @@ export async function GET(request) {
           sessionId: connectionId, // Store session ID for debugging
         }
         
-        // Allow up to 5 connections per user per chat (more generous for multiple tabs)
-        // Only clean up if we have too many connections
+        // Clean up any existing dead connections for this user/chat first
         const existingConnections = Array.from(connections.entries()).filter(
           ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId
         )
         
-        if (existingConnections.length >= 5) {
-          // Remove oldest connections, keep the 4 most recent
-          const sortedConnections = existingConnections.sort((a, b) => 
+        // Remove dead connections immediately
+        existingConnections.forEach(([id, conn]) => {
+          if (!conn.isAlive || (Date.now() - new Date(conn.lastPing).getTime()) > 30000) {
+            console.log(`🧹 Removing dead connection: ${id}`)
+            connections.delete(id)
+          }
+        })
+        
+        // Allow up to 3 connections per user per chat (reduced for better management)
+        const activeConnections = Array.from(connections.entries()).filter(
+          ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId && conn.isAlive
+        )
+        
+        if (activeConnections.length >= 3) {
+          // Remove oldest connections, keep the 2 most recent
+          const sortedConnections = activeConnections.sort((a, b) => 
             new Date(b[1].connectedAt) - new Date(a[1].connectedAt)
           )
           
-          // Remove all but the 4 most recent
-          sortedConnections.slice(4).forEach(([id, conn]) => {
+          // Remove all but the 2 most recent
+          sortedConnections.slice(2).forEach(([id, conn]) => {
             console.log(`🧹 Removing old connection: ${id} (age: ${Date.now() - new Date(conn.connectedAt).getTime()}ms)`)
             connections.delete(id)
           })
@@ -301,6 +313,23 @@ function cleanupDeadConnections() {
       connections.delete(connectionId)
     })
   }
+  
+  // Log connection health status
+  const activeConnections = Array.from(connections.values()).filter(conn => conn.isAlive)
+  console.log(`📊 Connection Health: ${activeConnections.length} active connections`)
+  
+  // Group by chat for better visibility
+  const connectionsByChat = {}
+  activeConnections.forEach(conn => {
+    if (!connectionsByChat[conn.chatId]) {
+      connectionsByChat[conn.chatId] = []
+    }
+    connectionsByChat[conn.chatId].push(conn.userId)
+  })
+  
+  Object.entries(connectionsByChat).forEach(([chatId, userIds]) => {
+    console.log(`📱 Chat ${chatId}: ${userIds.length} active users`)
+  })
 }
 
 // Function to broadcast typing indicators

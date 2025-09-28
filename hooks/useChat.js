@@ -606,6 +606,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
     let connectionState = 'disconnected' // 'connecting', 'connected', 'disconnected', 'failed'
     let lastMessageTime = Date.now()
     let heartbeatInterval = null
+    let lastKnownMessageCount = 0
 
     const connectSSE = () => {
       if (connectionState === 'connecting') return // Prevent multiple simultaneous connections
@@ -630,6 +631,20 @@ export function useChatMessages(chatId, onNewMessage = null) {
             connectionState = 'disconnected'
             connectSSE()
           }
+          
+          // Check for missing messages by comparing with database
+          if (messages.length > 0) {
+            const currentMessageCount = messages.length
+            if (currentMessageCount !== lastKnownMessageCount) {
+              lastKnownMessageCount = currentMessageCount
+            } else {
+              // No new messages received, check if we're missing any
+              console.log('🔍 Checking for missing messages...')
+              fetchMessages(1).catch(error => {
+                console.error('Failed to check for missing messages:', error)
+              })
+            }
+          }
         }, 30000) // Check every 30 seconds
         
         // Log connection status for debugging
@@ -652,12 +667,11 @@ export function useChatMessages(chatId, onNewMessage = null) {
             case "new_message":
               console.log('📨 Received new message via SSE:', data.message.id, 'for chat:', chatId)
               setMessages(prev => {
-                // TEMPORARY: Disable deduplication to test if it's causing issues
                 // Check if message already exists to prevent duplicates
                 const messageExists = prev.some(msg => msg.id === data.message.id)
                 if (messageExists) {
-                  console.log('⚠️ Message already exists, but adding anyway for testing:', data.message.id)
-                  // return prev // COMMENTED OUT FOR TESTING
+                  console.log('⚠️ Message already exists, skipping duplicate:', data.message.id)
+                  return prev
                 }
                 
                 console.log('✅ Adding new message to chat:', data.message.id)
