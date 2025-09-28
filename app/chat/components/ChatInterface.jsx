@@ -13,6 +13,14 @@ import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
 import MessageItem from "./MessageItem"
 import LazyAvatar from "./LazyAvatar"
 import EmojiPicker from "./EmojiPicker"
+import { 
+  ChatListSkeleton, 
+  ChatMessagesSkeleton, 
+  ChatHeaderSkeleton, 
+  MessageInputSkeleton,
+  LoadingMoreChatsSkeleton,
+  LoadingMoreMessagesSkeleton 
+} from "@/components/ChatSkeleton"
 
 // Lazy load the modals
 const CreateGroupChatModal = lazy(() => import("./CreateGroupChatModal"))
@@ -56,6 +64,7 @@ export default function ChatInterface() {
   const [messageHeight, setMessageHeight] = useState(32) // Initial height for textarea
   const [fileErrorPopup, setFileErrorPopup] = useState(null) // For file upload error popup
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // Mobile sidebar state
+  const [isInitialChatLoad, setIsInitialChatLoad] = useState(false) // Track initial chat load
 
 
   // Handle URL parameters for auto-opening specific chat
@@ -84,6 +93,20 @@ export default function ChatInterface() {
       setSelectedChatId(chats[0].id)
     }
   }, [chats, selectedChatId, searchParams])
+
+  // Track initial chat load to prevent flickering
+  useEffect(() => {
+    if (selectedChatId) {
+      setIsInitialChatLoad(true)
+    }
+  }, [selectedChatId])
+
+  // Reset initial load state when messages are loaded
+  useEffect(() => {
+    if (!messagesLoading && messages.length >= 0) {
+      setIsInitialChatLoad(false)
+    }
+  }, [messagesLoading, messages.length])
 
   // Listen for chat refresh events (e.g., after role changes)
   useEffect(() => {
@@ -556,7 +579,9 @@ export default function ChatInterface() {
               </div>
 
               <div ref={sidebarRef} className="flex-1 overflow-y-auto overflow-x-hidden">
-                {chatsError ? (
+                {chatsLoading ? (
+                  <ChatListSkeleton count={6} />
+                ) : chatsError ? (
                   <div className="p-4 text-center">
                     <p className="text-red-500 text-sm">Error loading chats</p>
                     <p className="text-gray-500 text-xs mt-1">{chatsError}</p>
@@ -680,27 +705,7 @@ export default function ChatInterface() {
                     
                     {/* Skeleton Loading for More Chats */}
                     {chats.length > 0 && pagination?.hasMore && (
-                      <>
-                        {[...Array(3)].map((_, index) => (
-                          <div key={`skeleton-${index}`} className="p-4 border-b">
-                            <div className="flex items-center gap-3 animate-pulse">
-                              {/* Avatar skeleton */}
-                              <div className="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0"></div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-2">
-                                  {/* Name skeleton */}
-                                  <div className="h-4 bg-gray-200 rounded w-24"></div>
-                                  {/* Time skeleton */}
-                                  <div className="h-3 bg-gray-200 rounded w-12"></div>
-                                </div>
-                                {/* Message skeleton */}
-                                <div className="h-3 bg-gray-200 rounded w-32"></div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </>
+                      <LoadingMoreChatsSkeleton />
                     )}
                   </>
                 )}
@@ -814,11 +819,9 @@ export default function ChatInterface() {
                     className="flex-1 overflow-y-auto overflow-x-hidden p-1 sm:p-2 space-y-3 sm:space-y-4 bg-gray-50 scroll-smooth"
                     style={{ scrollBehavior: 'smooth' }}
                   >
-                    {messagesLoading && messages.length === 0 ? (
-                      <div className="flex justify-center items-center h-full">
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                      </div>
-                    ) : messages.length === 0 ? (
+                    {(messagesLoading || isInitialChatLoad) ? (
+                      <ChatMessagesSkeleton count={8} />
+                    ) : !messagesLoading && messages.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="mb-4">
                           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#eef2eb] flex items-center justify-center mb-4">
@@ -873,10 +876,7 @@ export default function ChatInterface() {
                               className="transition-all duration-200 hover:bg-gray-100"
                             >
                               {isLoadingMore ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  Loading older messages...
-                                </>
+                                <LoadingMoreMessagesSkeleton />
                               ) : (
                                 "Load more messages"
                               )}
@@ -903,12 +903,7 @@ export default function ChatInterface() {
                         
                         {/* Loading indicator for new messages */}
                         {messagesLoading && messages.length > 0 && (
-                          <div className="flex justify-center py-2">
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Loading new messages...
-                            </div>
-                          </div>
+                          <LoadingMoreMessagesSkeleton />
                         )}
                       </>
                     )}
@@ -1034,6 +1029,12 @@ export default function ChatInterface() {
                     </div>
                   )}
                 </>
+              ) : chatsLoading ? (
+                <div className="flex-1 flex flex-col">
+                  <ChatHeaderSkeleton />
+                  <ChatMessagesSkeleton count={8} />
+                  <MessageInputSkeleton />
+                </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
                   <p className="text-gray-500">Select a chat to start messaging</p>

@@ -46,17 +46,29 @@ export async function POST(request, { params }) {
     })
 
     if (userParticipant?.role === 'admin') {
-      const adminCount = await ChatParticipant.countDocuments({
+      // Check total active participants in the group
+      const totalActiveParticipants = await ChatParticipant.countDocuments({
         chat: chatId,
-        role: 'admin',
         isActive: true
       })
 
-      if (adminCount <= 1) {
-        return NextResponse.json({ 
-          success: false, 
-          error: 'You are the only admin. Transfer admin rights to another member before leaving the group.' 
-        }, { status: 400 })
+      // If user is the only person left in the group, allow them to leave
+      if (totalActiveParticipants <= 1) {
+        // Allow leaving - this will delete the group since they're the only one left
+      } else {
+        // Check if they're the only admin among multiple people
+        const adminCount = await ChatParticipant.countDocuments({
+          chat: chatId,
+          role: 'admin',
+          isActive: true
+        })
+
+        if (adminCount <= 1) {
+          return NextResponse.json({ 
+            success: false, 
+            error: 'You are the only admin. Transfer admin rights to another member before leaving the group.' 
+          }, { status: 400 })
+        }
       }
     }
 
