@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { BannerSlider } from "@/components/banner-slider"
 import { LoadingScreen } from "@/components/loading-screen"
-import { ChevronRight, BookOpen, PlayCircle, Star, Award, ShoppingBag, Palette } from "lucide-react"
+import { ChevronRight, BookOpen, PlayCircle, Star, Award, ShoppingBag, Palette, MessageCircle, Users, GraduationCap } from "lucide-react"
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
@@ -82,27 +82,27 @@ export default function Home() {
 
   const benefits = [
     {
+      icon: GraduationCap,
+      title: "Native Japanese Instructors",
+      description: "Learn from certified Japanese instructors in Japan with high-quality video content. Get authentic pronunciation, cultural insights, and credible language education.",
+      color: "bg-emerald-500"
+    },
+    {
+      icon: BookOpen,
+      title: "Interactive Quizzes & Exercises",
+      description: "Test your knowledge with engaging quizzes and practice exercises in every course to reinforce your learning and track your progress.",
+      color: "bg-violet-500"
+    },
+    {
       icon: Award,
       title: "Official Certificates",
       description: "Earn recognized completion certificates for each course you finish, perfect for your professional portfolio and language learning journey.",
       color: "bg-amber-500"
     },
     {
-      icon: ShoppingBag,
-      title: "Bonsai Store Credits",
-      description: "Collect credits as you learn and spend them in our exclusive store to customize your virtual bonsai tree with unique decorations.",
-      color: "bg-emerald-500"
-    },
-    {
-      icon: Palette,
-      title: "Customizable Bonsai Tree",
-      description: "Express your personality by decorating your bonsai with pots, ornaments, backgrounds, and seasonal themes as you progress.",
-      color: "bg-violet-500"
-    },
-    {
-      icon: BookOpen,
-      title: "Interactive Quizzes & Exercises",
-      description: "Test your knowledge with engaging quizzes and practice exercises in every course to reinforce your learning and track your progress.",
+      icon: MessageCircle,
+      title: "Direct Chat with Instructors",
+      description: "Connect directly with your instructors and the learning community through our integrated chat feature. Get personalized help and support whenever you need it.",
       color: "bg-blue-500"
     }
   ]
@@ -117,7 +117,7 @@ export default function Home() {
         </section>
 
         {/* What You'll Get Section */}
-        <section className="py-16 bg-white">
+        <section className="py-8 md:py-16 bg-white">
           <div className="container mx-auto px-4">
             <div className="mb-12 text-center">
               <h2 className="mb-4 text-3xl font-bold text-[#2c3e2d]">What You'll Get</h2>
@@ -128,15 +128,15 @@ export default function Home() {
 
             <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
               {benefits.map((benefit, index) => (
-                <div key={index} className="group flex items-start gap-6 rounded-2xl bg-gradient-to-r from-white to-gray-50 p-6 shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-default">
+                <div key={index} className="flex items-start gap-6 rounded-2xl bg-gradient-to-r from-white to-gray-50 p-6 shadow-sm border border-gray-100">
                   <div className="flex-shrink-0">
-                    <div className={`${benefit.color} rounded-2xl p-4 shadow-md transition-transform duration-300 group-hover:scale-110`}>
+                    <div className={`${benefit.color} rounded-2xl p-4 shadow-md`}>
                       <benefit.icon className="h-8 w-8 text-white" />
                     </div>
                   </div>
                   <div className="flex-1">
                     <h3 className="mb-3 text-xl font-bold text-[#2c3e2d]">{benefit.title}</h3>
-                    <p className="text-[#5c6d5e] leading-relaxed">{benefit.description}</p>
+                    <p className="text-sm md:text-base text-[#5c6d5e] leading-relaxed">{benefit.description}</p>
                   </div>
                 </div>
               ))}
@@ -181,9 +181,9 @@ export default function Home() {
         </section>
 
         {/* Bonsai Credit System */}
-        <section className="bg-white py-24">
+        <section className="bg-white py-8 md:py-24">
           <div className="container mx-auto px-4">
-            <div className="grid items-center gap-16 md:grid-cols-2">
+            <div className="grid items-center md:gap-16 md:grid-cols-2">
               <div>
                 <h2 className="mb-6 text-3xl font-bold text-[#2c3e2d]">Grow Your Bonsai Tree</h2>
                 <p className="mb-10 text-[#5c6d5e]">
@@ -191,6 +191,34 @@ export default function Home() {
                   cultivation.
                 </p>
                 <div className="mb-8 space-y-2">
+                  <div className="border border-[#dce4d7] rounded-lg">
+                    <button
+                      onClick={() => setOpenFeature(openFeature === 0 ? null : 0)}
+                      className="w-full flex items-center justify-between p-4 text-left  transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <div className="mr-3 rounded-full bg-[#4a7c59] p-1">
+                          <ChevronRight className="h-4 w-4 text-white" />
+                        </div>
+                        <h3 className="font-medium text-[#2c3e2d]">Customizable Bonsai Tree</h3>
+                      </div>
+                      <ChevronRight 
+                        className={`h-4 w-4 text-[#4a7c59] transition-transform ${
+                          openFeature === 0 ? 'rotate-90' : ''
+                        }`} 
+                      />
+                    </button>
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      openFeature === 0 ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'
+                    }`}>
+                      <div className="px-4 pb-4">
+                        <p className="text-[#5c6d5e] ml-8">
+                          Express your personality by decorating your bonsai as you progress through your learning journey.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="border border-[#dce4d7] rounded-lg">
                     <button
                       onClick={() => setOpenFeature(openFeature === 1 ? null : 1)}
