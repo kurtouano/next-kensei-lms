@@ -73,15 +73,24 @@ export async function GET(request) {
           sessionId: connectionId, // Store session ID for debugging
         }
         
-        // Remove any existing connections for this user in this chat to prevent duplicates
+        // Only remove connections if we have more than 3 connections for the same user in the same chat
+        // This allows multiple tabs but prevents connection spam
         const existingConnections = Array.from(connections.entries()).filter(
           ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId
         )
         
-        existingConnections.forEach(([id, _]) => {
-          console.log(`Removing existing connection: ${id}`)
-          connections.delete(id)
-        })
+        if (existingConnections.length >= 3) {
+          // Remove oldest connections, keep the 2 most recent
+          const sortedConnections = existingConnections.sort((a, b) => 
+            new Date(b[1].connectedAt) - new Date(a[1].connectedAt)
+          )
+          
+          // Remove all but the 2 most recent
+          sortedConnections.slice(2).forEach(([id, _]) => {
+            console.log(`Removing old connection: ${id}`)
+            connections.delete(id)
+          })
+        }
         
         connections.set(connectionId, connectionData)
         console.log(`SSE connection established: ${connectionId} for user ${user._id} in chat ${chatId}`)
@@ -127,24 +136,40 @@ export async function GET(request) {
           }
         }, 15000) // Reduced to 15 seconds for better reliability
 
-        // Handle connection cleanup
+        // Handle connection cleanup with better error handling
         const cleanup = () => {
-          console.log(`Cleaning up SSE connection: ${connectionId}`)
+          console.log(`🧹 Cleaning up SSE connection: ${connectionId}`)
           clearInterval(pingInterval)
-          connections.delete(connectionId)
+          
+          // Mark connection as dead instead of immediately deleting
+          if (connections.has(connectionId)) {
+            const conn = connections.get(connectionId)
+            conn.isAlive = false
+            conn.disconnectedAt = new Date()
+            console.log(`Connection ${connectionId} marked as dead`)
+          }
+          
           try {
             controller.close()
           } catch (error) {
-            // Connection already closed
+            console.log(`Controller already closed for ${connectionId}`)
           }
         }
 
-        request.signal.addEventListener("abort", cleanup)
-        
-        // Also handle controller errors
-        controller.error = (error) => {
-          console.error(`Controller error for ${connectionId}:`, error)
+        request.signal.addEventListener("abort", () => {
+          console.log(`🔄 Connection aborted for ${connectionId}`)
           cleanup()
+        })
+        
+        // Handle controller errors more gracefully
+        const originalEnqueue = controller.enqueue.bind(controller)
+        controller.enqueue = (data) => {
+          try {
+            originalEnqueue(data)
+          } catch (error) {
+            console.error(`❌ Failed to enqueue data for ${connectionId}:`, error)
+            cleanup()
+          }
         }
       },
       
@@ -195,6 +220,13 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
 
   chatConnections.forEach(([connectionId, connection]) => {
     try {
+      // Validate connection is still alive before broadcasting
+      if (!connection.isAlive || !connection.controller) {
+        console.log(`⚠️ Skipping dead connection ${connectionId}`)
+        failureCount++
+        return
+      }
+      
       const messageData = `data: ${JSON.stringify(message)}\n\n`
       connection.controller.enqueue(messageData)
       successCount++
@@ -202,9 +234,10 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
     } catch (error) {
       failureCount++
       console.error(`❌ Failed to broadcast to connection ${connectionId}:`, error)
-      // Mark connection as dead and remove it
+      // Mark connection as dead but don't delete immediately
       connection.isAlive = false
-      connections.delete(connectionId)
+      connection.lastError = new Date()
+      console.log(`Connection ${connectionId} marked as dead due to broadcast failure`)
     }
   })
   

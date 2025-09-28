@@ -689,6 +689,16 @@ export function useChatMessages(chatId, onNewMessage = null) {
             case "message_deleted":
               setMessages(prev => prev.filter(msg => msg.id !== data.messageId))
               break
+            case "reaction_updated":
+              console.log('📨 Received reaction update via SSE:', data.messageId)
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === data.messageId 
+                    ? { ...msg, reactions: data.reactions }
+                    : msg
+                )
+              )
+              break
             case "typing":
               // Handle typing indicators
               break

@@ -222,6 +222,16 @@ export function useOptimizedChatMessages(chatId, onNewMessage = null) {
             case "message_deleted":
               setMessages(prev => prev.filter(msg => msg.id !== data.messageId))
               break
+            case "reaction_updated":
+              console.log('OptimizedChat: Received reaction update via SSE:', data.messageId)
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === data.messageId 
+                    ? { ...msg, reactions: data.reactions }
+                    : msg
+                )
+              )
+              break
             case "typing":
               console.log("User typing:", data)
               break

@@ -70,6 +70,14 @@ export async function POST(request, { params }) {
 
     await message.save()
 
+    // Broadcast reaction update to all chat participants via SSE
+    try {
+      const { notifyReactionUpdate } = await import("@/lib/chatUtils")
+      await notifyReactionUpdate(chatId, messageId, message.reactions, user._id)
+    } catch (error) {
+      console.error("Failed to broadcast reaction update:", error)
+    }
+
     return NextResponse.json({
       success: true,
       message: "Reaction updated successfully",
