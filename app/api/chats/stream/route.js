@@ -73,39 +73,15 @@ export async function GET(request) {
           sessionId: connectionId, // Store session ID for debugging
         }
         
-        // Allow up to 5 connections per user per chat (restored for stability)
+        // Remove any existing connections for this user in this chat to prevent duplicates
         const existingConnections = Array.from(connections.entries()).filter(
           ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId
         )
         
-        if (existingConnections.length >= 5) {
-          // Only remove connections that are clearly dead (not just old)
-          const deadConnections = existingConnections.filter(([_, conn]) => 
-            !conn.isAlive || (Date.now() - new Date(conn.lastPing).getTime()) > 120000 // 2 minutes
-          )
-          
-          deadConnections.forEach(([id, conn]) => {
-            console.log(`🧹 Removing dead connection: ${id}`)
-            connections.delete(id)
-          })
-          
-          // If still too many connections, remove oldest ones
-          const remainingConnections = Array.from(connections.entries()).filter(
-            ([_, conn]) => conn.userId === user._id.toString() && conn.chatId === chatId
-          )
-          
-          if (remainingConnections.length >= 5) {
-            const sortedConnections = remainingConnections.sort((a, b) => 
-              new Date(b[1].connectedAt) - new Date(a[1].connectedAt)
-            )
-            
-            // Remove all but the 4 most recent
-            sortedConnections.slice(4).forEach(([id, conn]) => {
-              console.log(`🧹 Removing old connection: ${id} (age: ${Date.now() - new Date(conn.connectedAt).getTime()}ms)`)
-              connections.delete(id)
-            })
-          }
-        }
+        existingConnections.forEach(([id, _]) => {
+          console.log(`Removing existing connection: ${id}`)
+          connections.delete(id)
+        })
         
         connections.set(connectionId, connectionData)
         console.log(`SSE connection established: ${connectionId} for user ${user._id} in chat ${chatId}`)
@@ -151,40 +127,24 @@ export async function GET(request) {
           }
         }, 15000) // Reduced to 15 seconds for better reliability
 
-        // Handle connection cleanup with better error handling
+        // Handle connection cleanup
         const cleanup = () => {
-          console.log(`🧹 Cleaning up SSE connection: ${connectionId}`)
+          console.log(`Cleaning up SSE connection: ${connectionId}`)
           clearInterval(pingInterval)
-          
-          // Mark connection as dead instead of immediately deleting
-          if (connections.has(connectionId)) {
-            const conn = connections.get(connectionId)
-            conn.isAlive = false
-            conn.disconnectedAt = new Date()
-            console.log(`Connection ${connectionId} marked as dead`)
-          }
-          
+          connections.delete(connectionId)
           try {
             controller.close()
           } catch (error) {
-            console.log(`Controller already closed for ${connectionId}`)
+            // Connection already closed
           }
         }
 
-        request.signal.addEventListener("abort", () => {
-          console.log(`🔄 Connection aborted for ${connectionId}`)
-          cleanup()
-        })
+        request.signal.addEventListener("abort", cleanup)
         
-        // Handle controller errors more gracefully
-        const originalEnqueue = controller.enqueue.bind(controller)
-        controller.enqueue = (data) => {
-          try {
-            originalEnqueue(data)
-          } catch (error) {
-            console.error(`❌ Failed to enqueue data for ${connectionId}:`, error)
-            cleanup()
-          }
+        // Also handle controller errors
+        controller.error = (error) => {
+          console.error(`Controller error for ${connectionId}:`, error)
+          cleanup()
         }
       },
       
@@ -213,7 +173,7 @@ export async function GET(request) {
   }
 }
 
-// Enhanced broadcastToChat function with better error handling
+// Function to broadcast message to chat participants
 export function broadcastToChat(chatId, message, excludeUserId = null) {
   const chatConnections = Array.from(connections.entries()).filter(
     ([_, connection]) => 
@@ -222,68 +182,36 @@ export function broadcastToChat(chatId, message, excludeUserId = null) {
       connection.isAlive
   )
 
-  console.log(`📡 Broadcasting to ${chatConnections.length} connections for chat ${chatId}`)
-  console.log(`Message ID: ${message.message?.id || 'unknown'}`)
-
-  if (chatConnections.length === 0) {
-    console.warn(`⚠️ No active connections found for chat ${chatId}`)
-    return
-  }
+  console.log(`Broadcasting to ${chatConnections.length} connections for chat ${chatId}`)
+  console.log(`Active connections for chat ${chatId}:`, chatConnections.map(([id, conn]) => ({
+    connectionId: id,
+    userId: conn.userId,
+    email: conn.email,
+    isAlive: conn.isAlive
+  })))
 
   let successCount = 0
   let failureCount = 0
-  const failedConnections = []
 
   chatConnections.forEach(([connectionId, connection]) => {
     try {
-      // Double-check connection is still valid
-      if (!connection.controller || !connection.isAlive) {
-        console.log(`❌ Connection ${connectionId} is invalid, skipping`)
-        failedConnections.push(connectionId)
-        return
-      }
-      
       const messageData = `data: ${JSON.stringify(message)}\n\n`
-      
-      // Test if controller is writable before enqueuing
-      if (connection.controller.desiredSize === null) {
-        console.log(`❌ Connection ${connectionId} controller is closed`)
-        failedConnections.push(connectionId)
-        return
-      }
-      
       connection.controller.enqueue(messageData)
-      connection.lastMessageTime = new Date()
       successCount++
       console.log(`✅ Message broadcasted to connection ${connectionId} (user: ${connection.userId})`)
-      
     } catch (error) {
       failureCount++
-      failedConnections.push(connectionId)
       console.error(`❌ Failed to broadcast to connection ${connectionId}:`, error)
-      
-      // Mark connection as dead
+      // Mark connection as dead and remove it
       connection.isAlive = false
-      connection.lastError = new Date()
+      connections.delete(connectionId)
     }
   })
   
-  console.log(`📊 Broadcast complete: ${successCount} successful, ${failureCount} failed`)
+  console.log(`Broadcast complete: ${successCount} successful, ${failureCount} failed`)
   
-  // Immediately clean up failed connections
-  if (failedConnections.length > 0) {
-    console.log(`🧹 Cleaning up ${failedConnections.length} failed connections`)
-    failedConnections.forEach(connectionId => {
-      connections.delete(connectionId)
-    })
-  }
-
-  // If no messages were successfully sent, log warning
-  if (successCount === 0) {
-    console.error(`🚨 CRITICAL: No messages were successfully broadcast for chat ${chatId}`)
-    console.error(`Total connections found: ${chatConnections.length}`)
-    console.error(`All failed connections:`, failedConnections)
-  }
+  // Clean up dead connections after broadcast
+  cleanupDeadConnections()
 }
 
 // Function to clean up dead connections
@@ -316,23 +244,6 @@ function cleanupDeadConnections() {
       connections.delete(connectionId)
     })
   }
-  
-  // Log connection health status
-  const activeConnections = Array.from(connections.values()).filter(conn => conn.isAlive)
-  console.log(`📊 Connection Health: ${activeConnections.length} active connections`)
-  
-  // Group by chat for better visibility
-  const connectionsByChat = {}
-  activeConnections.forEach(conn => {
-    if (!connectionsByChat[conn.chatId]) {
-      connectionsByChat[conn.chatId] = []
-    }
-    connectionsByChat[conn.chatId].push(conn.userId)
-  })
-  
-  Object.entries(connectionsByChat).forEach(([chatId, userIds]) => {
-    console.log(`📱 Chat ${chatId}: ${userIds.length} active users`)
-  })
 }
 
 // Function to broadcast typing indicators

@@ -606,7 +606,6 @@ export function useChatMessages(chatId, onNewMessage = null) {
     let connectionState = 'disconnected' // 'connecting', 'connected', 'disconnected', 'failed'
     let lastMessageTime = Date.now()
     let heartbeatInterval = null
-    let lastKnownMessageCount = 0
 
     const connectSSE = () => {
       if (connectionState === 'connecting') return // Prevent multiple simultaneous connections
@@ -630,14 +629,6 @@ export function useChatMessages(chatId, onNewMessage = null) {
             source.close()
             connectionState = 'disconnected'
             connectSSE()
-          }
-          
-          // Only check for missing messages if we haven't received any for a while
-          if (messages.length > 0 && (Date.now() - lastMessageTime) > 120000) { // 2 minutes
-            console.log('🔍 Checking for missing messages after long silence...')
-            fetchMessages(1).catch(error => {
-              console.error('Failed to check for missing messages:', error)
-            })
           }
         }, 30000) // Check every 30 seconds
         
@@ -669,9 +660,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
                 }
                 
                 console.log('✅ Adding new message to chat:', data.message.id)
-                // Ensure messages are added in chronological order
-                const newMessages = [...prev, data.message]
-                return newMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                return [...prev, data.message]
               })
               
               // Update chat list with new message
@@ -699,16 +688,6 @@ export function useChatMessages(chatId, onNewMessage = null) {
               break
             case "message_deleted":
               setMessages(prev => prev.filter(msg => msg.id !== data.messageId))
-              break
-            case "reaction_updated":
-              console.log('📨 Received reaction update via SSE:', data.messageId)
-              setMessages(prev => 
-                prev.map(msg => 
-                  msg.id === data.messageId 
-                    ? { ...msg, reactions: data.reactions }
-                    : msg
-                )
-              )
               break
             case "typing":
               // Handle typing indicators
