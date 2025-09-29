@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import         { BookOpen, Clock, Search, Loader2, Award, CheckCircle } from "lucide-react"
 import { useMyLearning } from './useMyLearningHook'
 import { CourseCard } from './CourseCard'
+import { MyLearningSkeleton } from '@/components/MyLearningSkeleton'
 import { useMemo } from "react"
 
 export default function MyLearning() {
@@ -28,7 +29,7 @@ export default function MyLearning() {
     return enrolledCourses && enrolledCourses.length > 0;
   }, [enrolledCourses]);
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) return <MyLearningSkeleton />;
   if (error) return <ErrorState error={error} onRetry={refetch} />;
 
   return (
@@ -82,9 +83,10 @@ function WelcomeHeader({ userName }) {
 
 function CourseGrid({ courses, totalCourses, title, icon }) {
   const isCompleted = title === "Completed";
+  const isInProgress = title === "In Progress";
   
   return (
-    <div className={`mb-12 ${isCompleted ? 'mt-8 pt-8 border-t border-gray-100' : ''}`}>
+    <div className={`mb-12 ${isCompleted || isInProgress ? 'mt-8 pt-8 border-t border-gray-100' : ''}`}>
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {icon}
@@ -170,47 +172,6 @@ function ErrorState({ error, onRetry }) {
             >
               Try Again
             </Button>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
-          <div className="mb-8">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-64"></div>
-            </div>
-          </div>
-          <div className="mb-12">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="overflow-hidden border-gray-200 shadow-sm">
-                  <div className="aspect-video w-full h-full bg-gray-200 animate-pulse"></div>
-                  <CardContent className="p-4">
-                    <div className="animate-pulse space-y-3">
-                      <div className="h-6 bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-2 bg-gray-200 rounded"></div>
-                      <div className="flex justify-between">
-                        <div className="h-4 bg-gray-200 rounded w-24"></div>
-                        <div className="h-8 bg-gray-200 rounded w-20"></div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </div>
         </div>
       </main>
