@@ -192,7 +192,7 @@ export function Header() {
         </Link>
  
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-6 lg:flex">
           {isAuthenticated ? (
             <>
               {/* Student/Common routes */}
@@ -303,7 +303,7 @@ export function Header() {
         </nav>
 
         {/* Auth Buttons */}
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               {/* Friends/Users Button */}
@@ -356,7 +356,7 @@ export function Header() {
 
         {/* Mobile Menu Button */}
         <button
-          className="inline-flex items-center justify-center rounded-md p-2 text-[#2c3e2d] md:hidden"
+          className="inline-flex items-center justify-center rounded-md p-2 text-[#2c3e2d] lg:hidden"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
           <span className="sr-only">Open main menu</span>
@@ -366,7 +366,7 @@ export function Header() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="border-t border-[#dce4d7] bg-white md:hidden">
+        <div className="border-t border-[#dce4d7] bg-white lg:hidden">
           <div className="px-4 py-4 space-y-4">
             {/* Mobile Navigation Links */}
             {isAuthenticated ? (
