@@ -6,6 +6,7 @@ import { User, Award, Settings, Loader2 } from "lucide-react";
 import { CertificateModal } from "@/components/certificate-modal";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { ProfileSkeleton } from "@/components/ProfileSkeleton";
 
 // Import our new components
 import { ProfileHeader } from "./components/ProfileHeader";
@@ -96,16 +97,7 @@ function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-[#4a7c59]" />
-            <span className="text-[#2c3e2d]">Loading profile...</span>
-          </div>
-        </main>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (error && !userData) {

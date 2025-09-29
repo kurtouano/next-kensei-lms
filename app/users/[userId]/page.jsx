@@ -7,6 +7,7 @@ import { BonsaiIcon } from "@/components/bonsai-icon";
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
 import { Award, BookOpen, User, TreePine, Flag, UserCheck, Loader2, UserPlus, ArrowLeft, Clock, Check, UserMinus, MessageCircle, X, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { PublicProfileSkeleton } from "@/components/PublicProfileSkeleton";
 import { 
   FacebookIcon, 
   TwitterIcon, 
@@ -243,16 +244,7 @@ function PublicProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin text-[#4a7c59]" />
-            <span className="text-[#2c3e2d]">Loading profile...</span>
-          </div>
-        </main>
-      </div>
-    );
+    return <PublicProfileSkeleton />;
   }
 
   if (error && !userData) {
