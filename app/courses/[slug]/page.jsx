@@ -138,6 +138,20 @@ export default function LessonPage() {
     (effectiveIsLoggedIn && effectiveIsEnrolled) ? lessonSlug : null
   )
   
+  // Debouncing mechanism for rapid completion toggles
+  const pendingUpdates = useRef(new Map())
+  const updateTimeouts = useRef(new Map())
+  const [pendingItems, setPendingItems] = useState(new Set())
+  
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      updateTimeouts.current.forEach(timeoutId => clearTimeout(timeoutId))
+      updateTimeouts.current.clear()
+      pendingUpdates.current.clear()
+    }
+  }, [])
+  
   // Custom updateModuleProgress that handles reward modal
   const updateModuleProgress = useCallback(async (moduleId, quizScore) => {
     const result = await originalUpdateModuleProgress(moduleId, quizScore)
@@ -212,6 +226,19 @@ export default function LessonPage() {
   
   // Confetti state
   const [showConfetti, setShowConfetti] = useState(false)
+
+  // Calculate optimistic progress that reflects immediate UI changes
+  const optimisticProgress = useMemo(() => {
+    if (!lessonData?.modules || !effectiveIsEnrolled) {
+      return progress?.courseProgress || 0
+    }
+    
+    const totalItems = lessonData.modules.flatMap(m => m.items).length
+    const completedCount = completedItems.length
+    const optimisticPercentage = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0
+    
+    return optimisticPercentage
+  }, [lessonData?.modules, completedItems.length, effectiveIsEnrolled, progress?.courseProgress])
 
   const isModuleAccessible = useCallback((moduleIndex) => {
     if (!effectiveIsLoggedIn || !effectiveIsEnrolled) return false
@@ -608,26 +635,61 @@ export default function LessonPage() {
     const isCurrentlyCompleted = completedItems.includes(itemId)
     const newCompletionState = !isCurrentlyCompleted
     
+    // OPTIMISTIC UPDATE: Update UI immediately for better UX
     setCompletedItems(prev => 
       newCompletionState 
         ? [...prev, itemId] 
         : prev.filter(id => id !== itemId)
     )
     
-    // Update database (allow in instructor preview mode when in enrolled mode)
-    if (!isInstructorPreview || instructorPreviewMode === 'enrolled') {
-      const success = await updateLessonProgress(itemId, newCompletionState)
-      
-      if (!success) {
-        setCompletedItems(prev => 
-          isCurrentlyCompleted 
-            ? [...prev, itemId] 
-            : prev.filter(id => id !== itemId)
-        )
-        alert('Failed to update progress. Please try again.')
-      }
+    // Clear any existing timeout for this item
+    if (updateTimeouts.current.has(itemId)) {
+      clearTimeout(updateTimeouts.current.get(itemId))
     }
-  }, [effectiveIsLoggedIn, effectiveIsEnrolled, isInstructorPreview, instructorPreviewMode, completedItems, updateLessonProgress])
+    
+    // Store the pending update
+    pendingUpdates.current.set(itemId, newCompletionState)
+    setPendingItems(prev => new Set([...prev, itemId]))
+    
+    // Debounce the database update to prevent race conditions
+    const timeoutId = setTimeout(async () => {
+      if (!isInstructorPreview || instructorPreviewMode === 'enrolled') {
+        try {
+          const success = await updateLessonProgress(itemId, newCompletionState)
+          
+          if (!success) {
+            // Revert optimistic update if database update failed
+            setCompletedItems(prev => 
+              isCurrentlyCompleted 
+                ? [...prev, itemId] 
+                : prev.filter(id => id !== itemId)
+            )
+            console.warn('Failed to update progress for lesson:', itemId)
+            // Don't show alert for every failure to avoid spam
+          }
+        } catch (error) {
+          // Revert optimistic update on error
+          setCompletedItems(prev => 
+            isCurrentlyCompleted 
+              ? [...prev, itemId] 
+              : prev.filter(id => id !== itemId)
+          )
+          console.error('Error updating lesson progress:', error)
+        }
+      }
+      
+      // Clean up
+      pendingUpdates.current.delete(itemId)
+      updateTimeouts.current.delete(itemId)
+      setPendingItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(itemId)
+        return newSet
+      })
+    }, 300) // 300ms debounce
+    
+    updateTimeouts.current.set(itemId, timeoutId)
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, isInstructorPreview, instructorPreviewMode, updateLessonProgress])
 
   const handleNextModule = useCallback(() => {
     if (quizState.score >= 70 || existingScore >= 70) {
@@ -815,9 +877,10 @@ export default function LessonPage() {
                     isEnrolled={effectiveIsEnrolled}
                     previewVideoUrl={lessonData.previewVideoUrl}
                     courseData={lessonData}
-                    progress={progress || { courseProgress: 0 }}
+                    progress={{ ...progress, courseProgress: optimisticProgress }}
                     isModuleAccessible={isModuleAccessible}
                     rewardData={rewardData}
+                    pendingItems={pendingItems}
                   />
                   
                   {/* NEW: Enhanced VideoPlayer with auto-completion and auto-next */}
@@ -857,7 +920,7 @@ export default function LessonPage() {
                     lesson={lessonData}
                     showFullDescription={showFullDescription}
                     onToggleDescription={() => setShowFullDescription(!showFullDescription)}
-                    progress={effectiveIsLoggedIn && effectiveIsEnrolled && progress ? progress.courseProgress || 0 : 0}
+                    progress={effectiveIsLoggedIn && effectiveIsEnrolled ? optimisticProgress : 0}
                     isEnrolled={effectiveIsEnrolled}
                     likeState={likeState}
                     onToggleLike={toggleLike}
@@ -924,9 +987,10 @@ export default function LessonPage() {
                 isEnrolled={effectiveIsEnrolled}
                 previewVideoUrl={lessonData.previewVideoUrl}
                 courseData={lessonData}
-                progress={progress || { courseProgress: 0 }}
+                progress={{ ...progress, courseProgress: optimisticProgress }}
                 isModuleAccessible={isModuleAccessible}
                 rewardData={rewardData}
+                pendingItems={pendingItems}
               />
             </div>
           </div>

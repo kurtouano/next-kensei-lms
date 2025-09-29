@@ -36,6 +36,7 @@ export const CourseSidebar = memo(function CourseSidebar({
   courseData,
   progress,
   rewardData,
+  pendingItems = new Set(),
   isMobile = false
 }) {
   const [claimingCertificate, setClaimingCertificate] = useState(false)
@@ -247,6 +248,7 @@ const isModuleAccessible = useCallback((moduleIndex) => {
             onTakeQuiz={onTakeQuiz}
             isEnrolled={isEnrolled}
             moduleQuizCompleted={moduleQuizCompleted}
+            pendingItems={pendingItems}
           />
         ))}
       </div>
@@ -360,7 +362,8 @@ const ModuleSection = memo(function ModuleSection({
   onToggleCompletion,
   onTakeQuiz,
   isEnrolled,
-  moduleQuizCompleted
+  moduleQuizCompleted,
+  pendingItems = new Set()
 }) {
   const isModuleComplete = useMemo(() =>
     module.items.every(item => completedItems.includes(item.id)),
@@ -452,6 +455,7 @@ const ModuleSection = memo(function ModuleSection({
               onSelectItem={onSelectItem}
               onToggleCompletion={onToggleCompletion}
               isEnrolled={isEnrolled}
+              isPending={pendingItems.has(item.id)}
             />
           </div>
         ))}
@@ -493,7 +497,8 @@ const LessonItem = memo(function LessonItem({
   isAccessible,
   onSelectItem,
   onToggleCompletion,
-  isEnrolled
+  isEnrolled,
+  isPending = false
 }) {
   const handleItemClick = useCallback(() => {
     if (isAccessible) {
@@ -581,9 +586,11 @@ const LessonItem = memo(function LessonItem({
                   : "border-[#dce4d7] hover:border-[#4a7c59]"
           }`}
           onClick={handleToggleClick}
-          disabled={!isAccessible}
+          disabled={!isAccessible || isPending}
         >
-          {isCompleted ? (
+          {isPending ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : isCompleted ? (
             <Check className="h-3 w-3" />
           ) : (
             <Circle className="h-3 w-3 opacity-0" />

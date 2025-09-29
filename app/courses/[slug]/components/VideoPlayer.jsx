@@ -282,7 +282,7 @@ export const VideoPlayer = memo(function VideoPlayer({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#f0f4f1] hover:border-[#3a6147] transition-all duration-200 px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={onPreviousLesson}
                       disabled={!hasPreviousLesson}
                     >
@@ -292,7 +292,7 @@ export const VideoPlayer = memo(function VideoPlayer({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#f0f4f1] hover:border-[#3a6147] transition-all duration-200 px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={onNextLesson}
                       disabled={!hasNextLesson}
                     >
@@ -308,7 +308,7 @@ export const VideoPlayer = memo(function VideoPlayer({
                     className={
                       isCompleted
                         ? "bg-[#4a7c59] text-white hover:bg-[#3a6147] border-[#4a7c59] w-full lg:w-auto lg:px-6"
-                        : "border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 w-full lg:w-auto lg:px-6"
+                        : "border-[#4a7c59] text-[#4a7c59] hover:bg-[#f0f4f1] hover:border-[#3a6147] transition-all duration-200 w-full lg:w-auto lg:px-6"
                     }
                     onClick={(e) => {
                       if (onToggleCompletion) {
@@ -353,7 +353,7 @@ export const VideoPlayer = memo(function VideoPlayer({
               <Button
                 size="sm"
                 variant="outline"
-                className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#f0f4f1] hover:border-[#3a6147] transition-all duration-200 flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={onPreviousLesson}
                 disabled={!hasPreviousLesson}
               >
@@ -363,7 +363,7 @@ export const VideoPlayer = memo(function VideoPlayer({
               <Button
                 size="sm"
                 variant="outline"
-                className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#4a7c59] hover:text-white transition-all duration-200 flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#f0f4f1] hover:border-[#3a6147] transition-all duration-200 flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={onNextLesson}
                 disabled={!hasNextLesson}
               >
