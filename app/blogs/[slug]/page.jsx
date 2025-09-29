@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { ArrowLeft, Calendar, Clock, Eye, Heart, Share2, User, LoaderCircle } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, Eye, Heart, Share2, User } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
+import { BlogPostSkeleton } from "@/components/BlogPostSkeleton"
 
 export default function BlogPostPage({ params }) {
   const { data: session, status } = useSession()
@@ -192,20 +193,7 @@ export default function BlogPostPage({ params }) {
   }
 
   if (loading || status === "loading") {
-    return (
-      <>
-        <div className="min-h-screen bg-gray-50">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <LoaderCircle className="h-8 w-8 animate-spin mx-auto mb-4 text-[#4a7c59]" />
-                <p className="text-gray-600">Loading blog post...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    )
+    return <BlogPostSkeleton />
   }
 
   if (error || !blogPost) {
