@@ -19,7 +19,7 @@ export async function GET(request, { params }) {
     }
 
     // Get user data to check their total credits
-    const user = await User.findById(userId).select('credits');
+    const user = await User.findById(userId).select('credits lifetimeCredits');
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -34,7 +34,7 @@ export async function GET(request, { params }) {
 
       bonsai = new Bonsai({
         userRef: userId,
-        totalCredits: user.credits || 0,
+        totalCredits: user.lifetimeCredits || 0,
         milestones: defaultMilestones,
         customization: {
           eyes: 'default_eyes',

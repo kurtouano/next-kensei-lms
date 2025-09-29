@@ -336,6 +336,7 @@ export default function BonsaiInterface() {
   let isMaxLevel = false
 
   if (nextLevelMilestone && currentLevelMilestone) {
+    // Calculate progress from current level's starting point to next level
     const creditsInCurrentLevel = currentCredits - currentLevelMilestone.creditsRequired
     const creditsNeededForNextLevel = nextLevelMilestone.creditsRequired - currentLevelMilestone.creditsRequired
     progressToNextLevel = Math.min(100, Math.max(0, (creditsInCurrentLevel / creditsNeededForNextLevel) * 100))
