@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, lazy, Suspense } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,10 +9,12 @@ import { Award, Palette, Flower, ShoppingBag, Eye, EyeClosed, Sparkles, Crown } 
 import { BonsaiPageSkeleton } from "@/components/BonsaiSkeleton"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "./BonsaiSVG"
-import { BonsaiShop } from "./BonsaiShop"
-import { BonsaiMilestones } from "./BonsaiMilestones"
 import { getDecorationSubcategories, getOwnedDecorationsBySubcategory, getItemById } from "@/components/bonsai/shopItems"
 import { BonsaiConfigHelpers, BONSAI_CONFIG } from "@/components/bonsai/BonsaiConfig"
+
+// Lazy load heavy components
+const BonsaiShop = lazy(() => import("./BonsaiShop").then(module => ({ default: module.BonsaiShop })))
+const BonsaiMilestones = lazy(() => import("./BonsaiMilestones").then(module => ({ default: module.BonsaiMilestones })))
 
 export default function BonsaiInterface() {
   const { data: session } = useSession()
@@ -928,27 +930,31 @@ export default function BonsaiInterface() {
 
             {/* Shop Tab */}
             <TabsContent value="shop" className="mt-0 border-0 p-0">
-              <BonsaiShop
-                bonsaiData={bonsaiData}
-                credits={credits}
-                setCredits={setCredits}
-                setBonsaiData={setBonsaiData}
-                previewItem={previewItem}
-                setPreviewItem={setPreviewItem}
-                getTreeColor={getTreeColor}
-                getPotColor={getPotColor}
-                getActiveDecorations={getActiveDecorations}
-                selectedEyes={selectedEyes}
-                selectedMouth={selectedMouth}
-                getGroundStyle={getGroundStyle}
-                selectedPotStyle={selectedPotStyle}
-                getDecorationSubcategoryById={getDecorationSubcategoryById}
-              />
+              <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4a7c59]"></div></div>}>
+                <BonsaiShop
+                  bonsaiData={bonsaiData}
+                  credits={credits}
+                  setCredits={setCredits}
+                  setBonsaiData={setBonsaiData}
+                  previewItem={previewItem}
+                  setPreviewItem={setPreviewItem}
+                  getTreeColor={getTreeColor}
+                  getPotColor={getPotColor}
+                  getActiveDecorations={getActiveDecorations}
+                  selectedEyes={selectedEyes}
+                  selectedMouth={selectedMouth}
+                  getGroundStyle={getGroundStyle}
+                  selectedPotStyle={selectedPotStyle}
+                  getDecorationSubcategoryById={getDecorationSubcategoryById}
+                />
+              </Suspense>
             </TabsContent>
 
             {/* Milestones Tab */}
             <TabsContent value="milestones" className="mt-0 border-0 p-0">
-              <BonsaiMilestones bonsaiData={bonsaiData} />
+              <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4a7c59]"></div></div>}>
+                <BonsaiMilestones bonsaiData={bonsaiData} />
+              </Suspense>
             </TabsContent>
           </Tabs>
         </div>
