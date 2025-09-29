@@ -211,7 +211,7 @@ export const BonsaiShop = ({
                 </>
               ) : (
                 <>
-                  <p className="font-medium text-[#2c3e2d]">Level {bonsaiData.level} Bonsai</p>
+                  <p className="font-medium text-[#2c3e2d]">Your Bonsai</p>
                   <p className="text-sm text-[#5c6d5e]">{credits} Credits Available</p>
                 </>
               )}

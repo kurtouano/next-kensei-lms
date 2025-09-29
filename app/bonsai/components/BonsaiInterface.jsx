@@ -412,8 +412,9 @@ export default function BonsaiInterface() {
               <div className="grid gap-6 md:grid-cols-3">
                 {/* Bonsai Preview */}
                 <div className="md:sticky md:top-20 md:self-start md:h-fit">
-                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm min-h-[500px] flex flex-col justify-center">
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm min-h-[500px] flex flex-col justify-center relative">
                     <h2 className="mb-6 text-xl font-semibold text-center text-[#2c3e2d]">Your Bonsai</h2>
+                    
                     <div className="flex flex-col items-center flex-1 justify-center">
                       <div className="mb-6">
                         <BonsaiSVG 
@@ -933,17 +934,6 @@ export default function BonsaiInterface() {
     {/* Mobile Floating Preview */}
     {showMobilePreview && (
       <div className="md:hidden fixed inset-x-4 top-16 z-50 bg-white rounded-lg border border-[#dce4d7] shadow-xl p-4">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="font-semibold text-sm text-[#2c3e2d]">
-            {previewItem ? "Item Preview" : "Your Bonsai"}
-          </h3>
-          <button 
-            onClick={() => setShowMobilePreview(false)}
-            className="text-gray-400 hover:text-gray-600 text-lg font-bold"
-          >
-            ✕
-          </button>
-        </div>
         <div className="flex flex-col items-center">
           <div className="w-44 h-44 mb-2">
             <BonsaiSVG 
@@ -965,7 +955,6 @@ export default function BonsaiInterface() {
               </>
             ) : (
               <>
-                <p className="font-medium text-sm text-[#2c3e2d]">Level {bonsaiData.level} Bonsai</p>
                 <p className="text-xs text-[#5c6d5e]">{credits} Credits Available</p>
               </>
             )}
@@ -974,13 +963,19 @@ export default function BonsaiInterface() {
       </div>
     )}
     
-    {/* Mobile Preview Toggle Button */}
+    {/* Mobile Preview Toggle Button - Fixed Position */}
     <button 
-      onClick={() => setShowMobilePreview(!showMobilePreview)}
-      className="md:hidden fixed bottom-6 right-6 z-40 bg-[#4a7c59] text-white p-4 rounded-full shadow-lg hover:bg-[#3a6147] transition-colors"
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        console.log('Eye button clicked, current state:', showMobilePreview)
+        setShowMobilePreview(!showMobilePreview)
+      }}
+      className="md:hidden fixed top-20 right-8 z-50 bg-[#4a7c59] text-white p-2 rounded-full shadow-lg hover:bg-[#3a6147] transition-colors"
     >
-      {showMobilePreview ? <EyeClosed /> : <Eye /> }
+      {showMobilePreview ? <Eye className="h-5 w-5" /> : <EyeClosed className="h-5 w-5" /> }
     </button>
+    
     </>
   )
 }
