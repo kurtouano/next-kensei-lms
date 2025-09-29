@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation";
 import { useRealTimeFriends } from "@/hooks/useRealTimeFriends";
 import { formatLastSeen } from "@/lib/utils";
 import { useApiWithRetry } from "@/hooks/useApiWithRetry";
+import { FriendsSkeleton } from "@/components/FriendsSkeleton";
+import { UsersGridSkeleton } from "@/components/UsersGridSkeleton";
 
 function UsersPage() {
   const { data: session, status } = useSession();
@@ -303,28 +305,6 @@ function UsersPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-6 w-6 animate-pulse text-[#4a7c59]" />
-              <span className="text-[#2c3e2d]">
-                {isRetrying ? `Connecting... (Attempt ${retryCount + 1})` : 'Loading users...'}
-              </span>
-            </div>
-            {isRetrying && (
-              <div className="text-sm text-[#5c6d5e] text-center">
-                <RefreshCw className="h-4 w-4 animate-spin inline mr-2" />
-                Reconnecting to database...
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   // Enhanced error state with retry option
   if (error && !loading) {
@@ -376,19 +356,7 @@ function UsersPage() {
 
           {/* Friends Section */}
           {friendsLoading ? (
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-[#2c3e2d]">Your Friends</h2>
-              </div>
-              <div className="flex gap-4">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[100px] animate-pulse">
-                    <div className="h-16 w-16 rounded-full bg-gray-200"></div>
-                    <div className="h-4 bg-gray-200 rounded w-20"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <FriendsSkeleton />
           ) : friends.length > 0 ? (
             <div className="mb-8">
               <div className="mb-4">
@@ -557,35 +525,32 @@ function UsersPage() {
             </div>
           ) : null}
 
-          {/* Find Friends Section */}
-          <div className="mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
-              <div className="flex items-center gap-3">
-                <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 text-[#4a7c59]" />
-                <h2 className="text-lg font-semibold text-[#2c3e2d]">Find Friends</h2>
-              </div>
-              <div className="relative w-full sm:max-w-xs">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
-                <input
-                  type="text"
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 text-sm pr-4 py-2 border border-[#dce4d7] rounded-lg bg-white text-[#2c3e2d] placeholder-[#5c6d5e] focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Users Grid */}
           {!dataReady ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-2">
-                <Users className="h-6 w-6 animate-pulse text-[#4a7c59]" />
-                <span className="text-[#2c3e2d]">Preparing user list...</span>
+            <UsersGridSkeleton />
+          ) : (
+            <>
+              {/* Find Friends Section */}
+              <div className="mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                  <div className="flex items-center gap-3">
+                    <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 text-[#4a7c59]" />
+                    <h2 className="text-lg font-semibold text-[#2c3e2d]">Find Friends</h2>
+                  </div>
+                  <div className="relative w-full sm:max-w-xs">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 text-sm pr-4 py-2 border border-[#dce4d7] rounded-lg bg-white text-[#2c3e2d] placeholder-[#5c6d5e] focus:outline-none focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          ) : filteredUsers.length > 0 ? (
+
+              {filteredUsers.length > 0 ? (
             <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {paginatedUsers.map((user, index) => (
                 <div key={user.id || `user-${index}`} className="bg-white rounded-lg border border-[#dce4d7] p-4 sm:p-6 hover:shadow-md transition-shadow">
@@ -696,20 +661,22 @@ function UsersPage() {
                 {searchTerm ? "Try adjusting your search terms" : "No users to display"}
               </p>
             </div>
-          )}
-          
-          {/* Load More Button */}
-          {dataReady && filteredUsers.length > 0 && hasMoreUsers && (
-            <div className="flex justify-center mt-6">
-              <button
-                onClick={loadMoreUsers}
-                className="flex items-center gap-2 bg-white text-[#4a7c59] border border-[#4a7c59] py-2 px-4 rounded-lg hover:bg-[#f0f8f0] transition-colors shadow-sm text-xs sm:text-sm"
-              >
-                <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Load More Users</span>
-                <span className="sm:hidden">More</span>
-              </button>
-            </div>
+              )}
+              
+              {/* Load More Button */}
+              {filteredUsers.length > 0 && hasMoreUsers && (
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={loadMoreUsers}
+                    className="flex items-center gap-2 bg-white text-[#4a7c59] border border-[#4a7c59] py-2 px-4 rounded-lg hover:bg-[#f0f8f0] transition-colors shadow-sm text-xs sm:text-sm"
+                  >
+                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Load More Users</span>
+                    <span className="sm:hidden">More</span>
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
