@@ -34,6 +34,7 @@ export default function BonsaiInterface() {
   const [previewItem, setPreviewItem] = useState(null)
   const [credits, setCredits] = useState(0)
   const [showMobilePreview, setShowMobilePreview] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Clear preview when switching to customize tab
   const handleTabChange = (tabValue) => {
@@ -49,6 +50,29 @@ export default function BonsaiInterface() {
       loadBonsaiData()
     }
   }, [session])
+
+  // Check if mobile menu is open
+  useEffect(() => {
+    const checkMobileMenu = () => {
+      const mobileMenu = document.querySelector('[data-mobile-menu]') || 
+                        document.querySelector('.md\\:hidden .border-t')
+      setIsMobileMenuOpen(!!mobileMenu)
+    }
+
+    // Check initially
+    checkMobileMenu()
+
+    // Set up observer to watch for mobile menu changes
+    const observer = new MutationObserver(checkMobileMenu)
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true, 
+      attributes: true,
+      attributeFilter: ['class']
+    })
+
+    return () => observer.disconnect()
+  }, [])
 
   const loadBonsaiData = async () => {
     try {
@@ -964,17 +988,19 @@ export default function BonsaiInterface() {
     )}
     
     {/* Mobile Preview Toggle Button - Fixed Position */}
-    <button 
-      onClick={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        console.log('Eye button clicked, current state:', showMobilePreview)
-        setShowMobilePreview(!showMobilePreview)
-      }}
-      className="md:hidden fixed top-20 right-8 z-50 bg-[#4a7c59] text-white p-2 rounded-full shadow-lg hover:bg-[#3a6147] transition-colors"
-    >
-      {showMobilePreview ? <Eye className="h-5 w-5" /> : <EyeClosed className="h-5 w-5" /> }
-    </button>
+    {!isMobileMenuOpen && (
+      <button 
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          console.log('Eye button clicked, current state:', showMobilePreview)
+          setShowMobilePreview(!showMobilePreview)
+        }}
+        className="md:hidden fixed top-20 right-8 z-50 bg-[#4a7c59] text-white p-2 rounded-full shadow-lg hover:bg-[#3a6147] transition-colors"
+      >
+        {showMobilePreview ? <Eye className="h-5 w-5" /> : <EyeClosed className="h-5 w-5" /> }
+      </button>
+    )}
     
     </>
   )
