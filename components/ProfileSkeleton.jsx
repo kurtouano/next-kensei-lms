@@ -51,31 +51,32 @@ export function ProfileSkeleton() {
 
           {/* Tabs Skeleton */}
           <div className="space-y-4">
-            {/* Mobile-Optimized Tabs Skeleton */}
+            {/* Mobile-Optimized Tabs - Static Text */}
             <div className="grid w-full grid-cols-3 bg-[#eef2eb] h-auto p-1 rounded-lg">
-              <div className="bg-[#4a7c59] rounded-md py-3 sm:py-3 px-3 sm:px-4 flex items-center justify-center gap-0 sm:gap-2 animate-pulse">
+              <div className="bg-[#4a7c59] rounded-md py-3 sm:py-3 px-3 sm:px-4 flex items-center justify-center gap-0 sm:gap-2">
                 <User className="h-5 w-5 sm:h-4 sm:w-4 text-white" />
-                <div className="hidden sm:inline h-4 bg-white/50 rounded w-16"></div>
+                <span className="hidden sm:inline text-sm text-white">My Profile</span>
               </div>
-              <div className="py-3 sm:py-3 px-3 sm:px-4 flex items-center justify-center gap-0 sm:gap-2 animate-pulse">
+              <div className="py-3 sm:py-3 px-3 sm:px-4 flex items-center justify-center gap-0 sm:gap-2">
                 <Award className="h-5 w-5 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                <div className="hidden sm:inline h-4 bg-gray-300 rounded w-20"></div>
+                <span className="hidden sm:inline text-sm text-[#4a7c59]">Certifications</span>
               </div>
-              <div className="py-3 sm:py-3 px-3 sm:px-4 flex items-center justify-center gap-0 sm:gap-2 animate-pulse">
+              <div className="py-3 sm:py-3 px-3 sm:px-4 flex items-center justify-center gap-0 sm:gap-2">
                 <Settings className="h-5 w-5 sm:h-4 sm:w-4 text-[#4a7c59]" />
-                <div className="hidden sm:inline h-4 bg-gray-300 rounded w-16"></div>
+                <span className="hidden sm:inline text-sm text-[#4a7c59]">Settings</span>
               </div>
             </div>
 
-            {/* Tab Content Skeleton */}
+            {/* Tab Content Skeleton - Shows content for active tab */}
             <div className="mt-0 border-0 p-0">
+              {/* My Profile Tab Content */}
               <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
                 {/* Left Side - Profile Summary (2/3 width) */}
                 <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-                  {/* Learning Progress Skeleton */}
-                  <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 animate-pulse">
-                    <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
+                  {/* Learning Progress - Static Header */}
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+                    <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Learning Progress</h2>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4 animate-pulse">
                       {Array.from({ length: 4 }).map((_, index) => (
                         <div key={index} className="rounded-lg bg-gray-200 p-3 sm:p-4 text-center">
                           <div className="h-6 sm:h-8 bg-gray-300 rounded w-8 mx-auto mb-2"></div>
@@ -85,26 +86,26 @@ export function ProfileSkeleton() {
                     </div>
                   </div>
 
-                  {/* My Bonsai Skeleton */}
-                  <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 flex flex-col h-fit animate-pulse">
-                    <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
-                    <div className="flex-1 flex flex-col justify-center">
+                  {/* My Bonsai - Static Header */}
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 flex flex-col h-fit">
+                    <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">My Bonsai</h2>
+                    <div className="flex-1 flex flex-col justify-center animate-pulse">
                       <div className="h-60 sm:h-80 lg:h-[440px] bg-gray-200 rounded mb-4"></div>
                     </div>
-                    <div className="h-10 bg-gray-200 rounded w-full mt-auto"></div>
+                    <div className="h-10 bg-gray-200 rounded w-full mt-auto animate-pulse"></div>
                   </div>
                 </div>
 
                 {/* Right Sidebar (1/3 width) */}
                 <div className="lg:col-span-1 flex flex-col h-full">
                   <div className="space-y-4 sm:space-y-6 flex-1">
-                    {/* Social Links Skeleton */}
-                    <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 animate-pulse">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="h-6 bg-gray-200 rounded w-24"></div>
-                        <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    {/* Social Links - Static Header */}
+                    <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+                      <div className="flex items-center justify-between mb-3 sm:mb-4">
+                        <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Social Links</h2>
+                        <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-2 animate-pulse">
                         {Array.from({ length: 2 }).map((_, index) => (
                           <div key={index} className="p-3 sm:p-4 rounded-lg bg-gray-200">
                             <div className="flex items-center justify-between mb-2">
@@ -123,10 +124,10 @@ export function ProfileSkeleton() {
                       </div>
                     </div>
 
-                    {/* Recent Achievement Skeleton */}
-                    <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 animate-pulse">
-                      <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
-                      <div className="text-center p-3 sm:p-4 rounded-lg bg-gray-200">
+                    {/* Recent Achievement - Static Header */}
+                    <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+                      <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Recent Achievement</h2>
+                      <div className="text-center p-3 sm:p-4 rounded-lg bg-gray-200 animate-pulse">
                         <div className="h-6 w-6 bg-gray-300 rounded mx-auto mb-2"></div>
                         <div className="h-4 bg-gray-300 rounded w-24 mx-auto mb-1"></div>
                         <div className="h-3 bg-gray-300 rounded w-32 mx-auto mb-2"></div>
@@ -134,10 +135,10 @@ export function ProfileSkeleton() {
                       </div>
                     </div>
 
-                    {/* Quick Stats Skeleton */}
-                    <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6 animate-pulse">
-                      <div className="h-6 bg-gray-200 rounded w-24 mb-4"></div>
-                      <div className="space-y-3 sm:space-y-4">
+                    {/* Quick Stats - Static Header */}
+                    <div className="rounded-lg border border-[#dce4d7] bg-white p-4 sm:p-6">
+                      <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">Quick Stats</h2>
+                      <div className="space-y-3 sm:space-y-4 animate-pulse">
                         {Array.from({ length: 3 }).map((_, index) => (
                           <div key={index} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-gray-200">
                             <div className="flex items-center">
