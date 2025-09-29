@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Bell, UserPlus, Check, X, Users, MoreVertical, Trash2, Trash } from "lucide-react";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
+import { NotificationsSkeleton } from "@/components/NotificationsSkeleton";
 
 // Lazy load the confirmation modal
 const ConfirmationModal = lazy(() => import('./components/ConfirmationModal'));
@@ -295,16 +296,7 @@ function NotificationsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-        <main className="flex-1 flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <Bell className="h-6 w-6 animate-pulse text-[#4a7c59]" />
-            <span className="text-[#2c3e2d]">Loading notifications...</span>
-          </div>
-        </main>
-      </div>
-    );
+    return <NotificationsSkeleton />;
   }
 
   return (
@@ -312,7 +304,7 @@ function NotificationsPage() {
       <main className="flex-1 py-4 sm:py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-6 sm:mb-8">
+          <div className="">
             <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <Bell className="h-6 w-6 sm:h-8 sm:w-8 text-[#4a7c59]" />
               <h1 className="text-xl sm:text-2xl font-bold text-[#2c3e2d]">Notifications</h1>
@@ -323,13 +315,12 @@ function NotificationsPage() {
                   Stay updated with friend requests and activities
                 </p>
                 {notifications.length > 0 && (
-                  <p className="text-[#5c6d5e] text-xs sm:text-sm mt-1">
+                  <p className="text-[#5c6d5e] text-xs sm:text-sm mt-9 mb-6">
                     Showing {notifications.length} notification{notifications.length !== 1 ? 's' : ''}
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <span className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage</span>
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 mt-9">
                  <div className="relative actions-menu-container">
                    <button
                      onClick={() => setShowActionsMenu(!showActionsMenu)}
@@ -339,7 +330,7 @@ function NotificationsPage() {
                      {cleanupLoading ? (
                        <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                      ) : (
-                       <Trash className="w-3 h-3 sm:w-4 sm:h-4" />
+                       <MoreVertical className="w-3 h-3 sm:w-4 sm:h-4" />
                      )}
                    </button>
                    
@@ -384,11 +375,7 @@ function NotificationsPage() {
                {notifications.map((notification) => (
                                   <div 
                     key={notification._id} 
-                    className={`bg-white rounded-lg border p-3 sm:p-4 lg:p-6 hover:shadow-md transition-shadow border-l-4 ${
-                      notification.read 
-                        ? 'border-[#dce4d7] border-l-[#9ca3af] opacity-75' 
-                        : 'border-[#dce4d7] border-l-[#4a7c59]'
-                    }`}
+                    className="bg-white rounded-lg border border-[#dce4d7] p-3 sm:p-4 lg:p-6"
                   >
                    <div className="flex items-start justify-between">
                      <div className="flex items-start gap-2 sm:gap-3 flex-1">
@@ -416,25 +403,8 @@ function NotificationsPage() {
                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
                            <span className="text-[#5c6d5e]">{formatTimeAgo(notification.createdAt)}</span>
                            
-                           {/* Age Badge */}
-                           {(() => {
-                             const ageInfo = getNotificationAge(notification.createdAt);
-                             const isOld = isOldNotification(notification.createdAt);
-                             return (
-                               <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium border ${ageInfo.color} ${ageInfo.bgColor} ${ageInfo.borderColor} ${isOld ? 'ring-2 ring-red-200' : ''}`}>
-                                 {ageInfo.age}
-                               </span>
-                             );
-                           })()}
-                           
                            {!notification.read && (
                              <span className="text-[#4a7c59] font-medium bg-[#eef2eb] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs">New</span>
-                           )}
-                           
-                           {isOldNotification(notification.createdAt) && (
-                             <span className="text-red-600 font-medium bg-red-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-red-200 text-xs">
-                               Old
-                             </span>
                            )}
                          </div>
                        </div>
@@ -484,11 +454,11 @@ function NotificationsPage() {
                    <button
                      onClick={loadMoreNotifications}
                      disabled={loadingMore}
-                     className="px-3 sm:px-4 py-1.5 bg-[#4a7c59] text-white text-xs sm:text-sm rounded-md hover:bg-[#3a6147] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                     className="px-3 sm:px-4 py-1.5 bg-white text-[#4a7c59] border border-[#4a7c59] text-xs sm:text-sm rounded-md hover:bg-[#4a7c59] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
                    >
                      {loadingMore ? (
                        <>
-                         <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                         <div className="w-3 h-3 bg-[#4a7c59] rounded animate-pulse"></div>
                          <span className="hidden sm:inline">Loading...</span>
                          <span className="sm:hidden">Loading</span>
                        </>
@@ -512,23 +482,25 @@ function NotificationsPage() {
       </main>
 
       {/* Lazy-loaded Confirmation Modal */}
-      <Suspense fallback={
-        <div className="fixed inset-0 bg-[#2c3e2d] bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-[#f8f7f4] rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-[#4a7c59] border-opacity-20 p-8">
-            <div className="flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-[#4a7c59] border-t-transparent rounded-full animate-spin"></div>
+      {showConfirmModal && (
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-[#2c3e2d] bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-[#f8f7f4] rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-[#4a7c59] border-opacity-20 p-8">
+              <div className="flex items-center justify-center">
+                <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
+              </div>
             </div>
           </div>
-        </div>
-      }>
-        <ConfirmationModal
-          showModal={showConfirmModal}
-          confirmAction={confirmAction}
-          cleanupLoading={cleanupLoading}
-          onConfirm={confirmActionHandler}
-          onCancel={() => setShowConfirmModal(false)}
-        />
-      </Suspense>
+        }>
+          <ConfirmationModal
+            showModal={showConfirmModal}
+            confirmAction={confirmAction}
+            cleanupLoading={cleanupLoading}
+            onConfirm={confirmActionHandler}
+            onCancel={() => setShowConfirmModal(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
