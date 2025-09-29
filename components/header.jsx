@@ -105,7 +105,7 @@ export function Header() {
 
   const renderUserIcon = () => {
     if (iconLoading && !userIcon) {
-      return <User size={18} className="text-[#4a7c59]" />;
+      return <User size={19} className="text-[#4a7c59]" />;
     }
     
     // Debug logging
@@ -309,28 +309,28 @@ export function Header() {
               {/* Friends/Users Button */}
               <Link 
                 href="/users" 
-                className="h-9 w-9 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+                className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
                 title="Find Friends"
               >
-                <Users size={18} className="text-[#4a7c59]" />
+                <Users size={19} className="text-[#4a7c59]" />
               </Link>
               
               {/* Chat Button */}
               <Link 
                 href="/chat" 
-                className="h-9 w-9 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+                className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
                 title="Chat"
               >
-                <MessageCircleMore size={18} className="text-[#4a7c59]" />
+                <MessageCircleMore size={19} className="text-[#4a7c59]" />
               </Link>
               
               {/* Notifications Button */}
               <Link 
                 href="/notifications" 
-                className="h-9 w-9 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
+                className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                 title="Notifications"
               >
-                <Bell size={18} className="text-[#4a7c59]" />
+                <Bell size={19} className="text-[#4a7c59]" />
                 {/* Notification Badge */}
                 {notificationCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
@@ -341,7 +341,7 @@ export function Header() {
               
               {/* Profile Button */}
               <Link href="/profile" className="flex flex-row items-center gap-2">
-                <div className="h-9 w-9 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden hover:bg-[#eef2eb] transition-colors">
+                <div className="h-8 w-8 rounded-full flex items-center justify-center overflow-hidden hover:bg-[#eef2eb] transition-colors">
                   {renderUserIcon()}
                 </div>  
               </Link>
@@ -354,23 +354,76 @@ export function Header() {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="inline-flex items-center justify-center rounded-md p-2 text-[#2c3e2d] lg:hidden"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <span className="sr-only">Open main menu</span>
-          {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
+        {/* Mobile Right Side - Social Buttons + Profile + Menu Button */}
+        <div className="flex items-center gap-2 lg:hidden">
+          {/* Mobile Social Buttons */}
+          <div className="flex items-center gap-1">
+            {/* Friends/Users Button */}
+            <Link 
+              href="/users" 
+              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+              title="Find Friends"
+            >
+              <Users size={18} className="text-[#4a7c59]" />
+            </Link>
+            
+            {/* Chat Button */}
+            <Link 
+              href="/chat" 
+              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+              title="Chat"
+            >
+              <MessageCircleMore size={18} className="text-[#4a7c59]" />
+            </Link>
+            
+            {/* Notifications Button */}
+            <Link 
+              href="/notifications" 
+              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
+              title="Notifications"
+            >
+              <Bell size={18} className="text-[#4a7c59]" />
+              {/* Notification Badge */}
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {notificationCount > 9 ? '9+' : notificationCount}
+                </span>
+              )}
+            </Link>
+            
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="inline-flex items-center justify-center rounded-md p-2 text-[#2c3e2d]"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            <span className="sr-only">Open main menu</span>
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="border-t border-[#dce4d7] bg-white lg:hidden">
-          <div className="px-4 py-4 space-y-4">
+          <div className="px-4 py-4 space-y-4 text-right">
             {/* Mobile Navigation Links */}
             {isAuthenticated ? (
               <>
+                {/* Mobile Profile Link - Back in dropdown */}
+                <div>
+                  <Link 
+                    href="/profile" 
+                    className="flex items-center justify-end"
+                    onClick={closeMobileMenu}
+                  >
+                    <div className="h-8 w-8 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden">
+                      {renderMobileUserIcon()}
+                    </div>
+                  </Link>
+                </div>
+                
                 <Link 
                   href="/my-learning" 
                   className={`block text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
@@ -422,51 +475,6 @@ export function Header() {
                   </Link>
                 </RoleGuard>
                 
-                {/* Mobile Find Friends Link */}
-                <Link 
-                  href="/users" 
-                  className={`block text-sm font-medium ${isActive("/users") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
-                  onClick={closeMobileMenu}
-                >
-                  Find Friends
-                </Link>
-                
-                {/* Mobile Chat Link */}
-                <Link 
-                  href="/chat" 
-                  className={`block text-sm font-medium ${isActive("/chat") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
-                  onClick={closeMobileMenu}
-                >
-                  Chat
-                </Link>
-                
-                {/* Mobile Notifications Link */}
-                <Link 
-                  href="/notifications" 
-                  className={`block text-sm font-medium ${isActive("/notifications") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
-                  onClick={closeMobileMenu}
-                >
-                  Notifications
-                  {notificationCount > 0 && (
-                    <span className="ml-2 inline-flex items-center justify-center h-5 w-5 bg-red-500 text-white text-xs rounded-full">
-                      {notificationCount > 9 ? '9+' : notificationCount}
-                    </span>
-                  )}
-                </Link>
-                
-                {/* Mobile Profile Link */}
-                <div className="pt-4 border-t border-[#dce4d7]">
-                  <Link 
-                    href="/profile" 
-                    className="flex items-center gap-3"
-                    onClick={closeMobileMenu}
-                  >
-                    <div className="h-8 w-8 rounded-full border border-[#4a7c59] bg-white flex items-center justify-center overflow-hidden">
-                      {renderMobileUserIcon()}
-                    </div>
-                    <span className="text-sm font-medium text-[#2c3e2d]">My Profile</span>
-                  </Link>
-                </div>
               </>
             ) : (
               <>
