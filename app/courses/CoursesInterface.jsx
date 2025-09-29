@@ -105,7 +105,8 @@ export default function CoursesInterface() {
            course.instructorId === session.user.id
   }
 
-  if (loading) {
+  // Show loading skeleton if loading OR if courses is empty and no error (initial load)
+  if (loading || (courses.length === 0 && !error)) {
     return (
       <PageLayout session={session}>
         <LoadingSkeleton isRetrying={isRetrying} retryCount={retryCount} />
@@ -350,9 +351,10 @@ const ErrorDisplay = memo(function ErrorDisplay({ error, onRetry }) {
 const LoadingSkeleton = memo(function LoadingSkeleton({ isRetrying = false, retryCount = 0 }) {
   return (
     <>
+      {/* Page Header - Static Text */}
       <div className="mb-8">
-        <div className="h-8 bg-gray-200 rounded w-80 animate-pulse mb-2"></div>
-        <div className="h-5 bg-gray-200 rounded w-96 animate-pulse"></div>
+        <h1 className="mb-2 text-3xl font-bold text-[#2c3e2d]">Course Catalog</h1>
+        <p className="text-[#5c6d5e]">Browse our comprehensive selection of Japanese language courses</p>
         {isRetrying && (
           <div className="mt-4 flex items-center gap-2 text-sm text-[#5c6d5e]">
             <RefreshCw className="h-4 w-4 animate-spin" />
@@ -361,15 +363,37 @@ const LoadingSkeleton = memo(function LoadingSkeleton({ isRetrying = false, retr
         )}
       </div>
 
+      {/* Search and Filter Section - Mixed Static and Skeleton */}
       <div className="mb-8">
         <div className="flex flex-col lg:flex-row gap-4 mb-6">
-          <div className="flex-1 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
-          <div className="w-32 h-12 bg-gray-200 rounded animate-pulse"></div>
+          {/* Search Bar - Static */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder="Search courses by title, instructor, or level..."
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm bg-white"
+              disabled
+            />
+          </div>
+
+          {/* Filter Button - Static */}
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 py-1 border-gray-300 hover:bg-gray-50"
+            disabled
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+            <ChevronDown className="h-4 w-4" />
+          </Button>
         </div>
         
+        {/* Course Count - Skeleton */}
         <div className="h-4 bg-gray-200 rounded w-64 animate-pulse mb-6"></div>
       </div>
 
+      {/* Courses Grid Skeleton */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <CourseSkeleton key={i} />
