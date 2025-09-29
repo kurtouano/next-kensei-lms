@@ -1,18 +1,19 @@
 import { Skeleton } from "@/components/ui/skeleton"
+import { Palette, ShoppingBag, Award } from "lucide-react"
 
-// Skeleton for bonsai page - matching courses styling
+// Skeleton for bonsai page - Only truly static elements
 export function BonsaiPageSkeleton() {
   return (
     <div className="flex min-h-screen flex-col bg-[#f9fafb]">
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          {/* Page Header */}
+          {/* Page Header - Static Text */}
           <div className="mb-8">
-            <div className="h-8 bg-gray-200 rounded w-80 animate-pulse mb-2"></div>
-            <div className="h-5 bg-gray-200 rounded w-96 animate-pulse"></div>
+            <h1 className="mb-2 text-3xl font-bold text-[#2c3e2d]">My Bonsai Garden</h1>
+            <p className="text-[#5c6d5e]">Customize and grow your bonsai as you learn Japanese</p>
           </div>
 
-          {/* Level Progress Bar Skeleton */}
+          {/* Level Progress Bar - Skeleton */}
           <div className="mb-8 rounded-lg border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
@@ -39,12 +40,21 @@ export function BonsaiPageSkeleton() {
             </div>
           </div>
 
-          {/* Tabs Skeleton */}
+          {/* Tabs - Static Text Only */}
           <div className="space-y-4">
-            <div className="grid w-full grid-cols-3 bg-gray-100 p-1 rounded-lg">
-              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            <div className="grid w-full grid-cols-3 bg-[#eef2eb] p-1 rounded-lg">
+              <div className="bg-[#4a7c59] rounded-md py-2 px-2 flex items-center justify-center gap-1 sm:gap-2">
+                <Palette className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                <span className="text-xs sm:text-sm text-white">Customize Bonsai</span>
+              </div>
+              <div className="py-2 px-2 flex items-center justify-center gap-1 sm:gap-2">
+                <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4 text-[#5c6d5e]" />
+                <span className="text-xs sm:text-sm text-[#5c6d5e]">Bonsai Shop</span>
+              </div>
+              <div className="py-2 px-2 flex items-center justify-center gap-1 sm:gap-2">
+                <Award className="h-3 w-3 sm:h-4 sm:w-4 text-[#5c6d5e]" />
+                <span className="text-xs sm:text-sm text-[#5c6d5e]">Growth Milestones</span>
+              </div>
             </div>
 
             {/* Tab Content Skeleton */}
