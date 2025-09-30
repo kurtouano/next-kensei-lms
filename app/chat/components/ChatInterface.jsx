@@ -66,6 +66,7 @@ export default function ChatInterface() {
   const [fileErrorPopup, setFileErrorPopup] = useState(null) // For file upload error popup
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // Mobile sidebar state
   const [isInitialChatLoad, setIsInitialChatLoad] = useState(false) // Track initial chat load
+  const [isInitialLoad, setIsInitialLoad] = useState(true) // Track overall initial load
 
 
   // Handle URL parameters for auto-opening specific chat
@@ -95,19 +96,33 @@ export default function ChatInterface() {
     }
   }, [chats, selectedChatId, searchParams])
 
-  // Track initial chat load to prevent flickering
+  // Set initial chat load state when a chat is selected
   useEffect(() => {
     if (selectedChatId) {
       setIsInitialChatLoad(true)
+    } else {
+      setIsInitialChatLoad(false)
     }
   }, [selectedChatId])
 
-  // Reset initial load state when messages are loaded
+  // Reset initial load state when messages are loaded or when there's an error
   useEffect(() => {
-    if (!messagesLoading && messages.length >= 0) {
+    if (!messagesLoading && (messages.length >= 0 || selectedChatId === null)) {
       setIsInitialChatLoad(false)
     }
-  }, [messagesLoading, messages.length])
+  }, [messagesLoading, messages.length, selectedChatId])
+
+  // Manage overall initial load state
+  useEffect(() => {
+    if (!chatsLoading && chats.length >= 0) {
+      // Add a small delay to prevent flashing
+      const timer = setTimeout(() => {
+        setIsInitialLoad(false)
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [chatsLoading, chats.length])
+
 
   // Listen for chat refresh events (e.g., after role changes)
   useEffect(() => {
@@ -581,7 +596,7 @@ export default function ChatInterface() {
 
               <div ref={sidebarRef} className="flex-1 overflow-y-auto overflow-x-hidden">
                 {chatsLoading ? (
-                  <ChatListSkeleton count={6} />
+                  <ChatListSkeleton count={10} />
                 ) : chatsError ? (
                   <div className="p-4 text-center">
                     <p className="text-red-500 text-sm">Error loading chats</p>
@@ -820,9 +835,9 @@ export default function ChatInterface() {
                     className="flex-1 overflow-y-auto overflow-x-hidden p-1 sm:p-2 space-y-3 sm:space-y-4 bg-gray-50 scroll-smooth"
                     style={{ scrollBehavior: 'smooth' }}
                   >
-                    {(messagesLoading || isInitialChatLoad) ? (
+                    {(messagesLoading || isInitialChatLoad || isInitialLoad) ? (
                       <ChatMessagesSkeleton count={8} />
-                    ) : !messagesLoading && messages.length === 0 ? (
+                    ) : !messagesLoading && !isInitialChatLoad && !isInitialLoad && messages.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="mb-4">
                           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#eef2eb] flex items-center justify-center mb-4">
@@ -1030,17 +1045,17 @@ export default function ChatInterface() {
                     </div>
                   )}
                 </>
-              ) : chatsLoading ? (
+              ) : (chatsLoading || isInitialLoad) ? (
                 <div className="flex-1 flex flex-col">
                   <ChatHeaderSkeleton />
                   <ChatMessagesSkeleton count={8} />
                   <MessageInputSkeleton />
                 </div>
-              ) : (
+              ) : !chatsLoading && !isInitialLoad && !selectedChat ? (
                 <div className="flex-1 flex items-center justify-center">
                   <p className="text-gray-500">Select a chat to start messaging</p>
                 </div>
-              )}
+              ) : null}
             </Card>
           </div>
         </div>

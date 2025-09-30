@@ -1,7 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Send, ImageIcon, Paperclip, Smile } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Send, ImageIcon, Paperclip, Smile, Plus } from "lucide-react"
 
 // Skeleton for individual chat item in sidebar
 export function ChatItemSkeleton() {
@@ -9,19 +10,18 @@ export function ChatItemSkeleton() {
     <div className="p-3 sm:p-4 border-b">
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="relative">
-          <Skeleton className="w-8 h-8 sm:w-10 sm:h-10 rounded-full" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full animate-pulse" />
         </div>
         <div className="flex-1 min-w-0 max-w-[180px] sm:max-w-none">
           <div className="flex items-center justify-between mb-1">
             <div className="min-w-0 flex-1 flex items-center gap-1">
-              <Skeleton className="h-4 w-24 truncate" />
-              <Skeleton className="h-3 w-3 rounded flex-shrink-0" />
+              <div className="h-4 w-24 bg-gray-200 rounded truncate animate-pulse" />
+              <div className="h-3 w-3 bg-gray-200 rounded flex-shrink-0 animate-pulse" />
             </div>
-            <Skeleton className="h-3 w-12 flex-shrink-0" />
+            <div className="h-3 w-12 bg-gray-200 rounded flex-shrink-0 animate-pulse" />
           </div>
           <div className="flex items-center justify-between">
-            <Skeleton className="h-3 w-32 truncate" />
-            <Skeleton className="w-2 h-2 rounded-full flex-shrink-0" />
+            <div className="h-3 w-32 bg-gray-200 rounded truncate animate-pulse" />
           </div>
         </div>
       </div>
@@ -30,7 +30,7 @@ export function ChatItemSkeleton() {
 }
 
 // Skeleton for chat list items only (without header and search)
-export function ChatListSkeleton({ count = 6 }) {
+export function ChatListSkeleton({ count = 10 }) {
   return (
     <div className="flex-1 overflow-y-auto">
       {Array.from({ length: count }).map((_, i) => (
@@ -41,27 +41,33 @@ export function ChatListSkeleton({ count = 6 }) {
 }
 
 // Skeleton for complete chat list sidebar (with header and search)
-export function ChatListSidebarSkeleton({ count = 6 }) {
+export function ChatListSidebarSkeleton({ count = 10 }) {
   return (
     <Card className="h-full flex flex-col">
       <div className="p-4 border-b">
         {/* Messages Header - Static */}
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-900">Messages</h2>
-          <Skeleton className="h-8 w-8 rounded" />
         </div>
         
         {/* Search Bar - Mixed Static and Skeleton */}
         <div className="flex items-center gap-2">
           <div className="flex-1 relative">
-            <input
-              type="text"
+            <Input
               placeholder="Search conversations..."
-              className="w-full pl-3 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4a7c59] focus:border-transparent text-sm bg-white"
+              className="pl-3 flex-1"
               disabled
             />
           </div>
-          <Skeleton className="h-10 w-10" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb] h-10 w-10 p-0"
+            disabled
+            title="Create Group Chat"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       
@@ -78,10 +84,10 @@ export function ChatListSidebarSkeleton({ count = 6 }) {
 export function MessageSkeleton({ isOwn = false }) {
   return (
     <div className={`flex gap-3 ${isOwn ? "flex-row-reverse" : ""}`}>
-      <Skeleton className="w-8 h-8 rounded-full flex-shrink-0" />
+      <div className="w-8 h-8 bg-gray-200 rounded-full flex-shrink-0 animate-pulse" />
       <div className={`max-w-[70%] ${isOwn ? "text-right" : ""}`}>
-        <Skeleton className={`h-10 ${isOwn ? "w-48" : "w-32"} rounded-lg`} />
-        <Skeleton className="h-3 w-16 mt-1" />
+        <div className={`h-10 ${isOwn ? "w-48" : "w-32"} bg-gray-200 rounded-lg animate-pulse`} />
+        <div className="h-3 w-16 mt-1 bg-gray-200 rounded animate-pulse" />
       </div>
     </div>
   )
@@ -104,15 +110,15 @@ export function ChatHeaderSkeleton() {
     <div className="p-3 sm:p-4 border-b bg-white">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
+          <div className="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0 animate-pulse" />
           <div className="min-w-0 flex-1 max-w-[200px] sm:max-w-none">
-            <Skeleton className="h-5 w-32 mb-1 truncate" />
-            <Skeleton className="h-3 w-20 truncate" />
+            <div className="h-5 w-32 mb-1 bg-gray-200 rounded truncate animate-pulse" />
+            <div className="h-3 w-20 bg-gray-200 rounded truncate animate-pulse" />
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Skeleton className="w-8 h-8 rounded" />
-          <Skeleton className="w-8 h-8 rounded" />
+          <div className="w-8 h-8 bg-gray-200 rounded animate-pulse" />
+          <div className="w-8 h-8 bg-gray-200 rounded animate-pulse" />
         </div>
       </div>
     </div>
@@ -122,7 +128,7 @@ export function ChatHeaderSkeleton() {
 // Skeleton for message input area
 export function MessageInputSkeleton() {
   return (
-    <div className="p-3 sm:p-4 border-t bg-white">
+    <div className="p-2 sm:p-4 border-t bg-white">
       <div className="flex items-center min-w-0">
         <div className="flex items-center gap-1 sm:gap-6 flex-shrink-0">
           {/* Paperclip icon - Static */}
