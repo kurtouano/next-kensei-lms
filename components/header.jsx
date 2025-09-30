@@ -10,6 +10,7 @@ import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useSession } from "next-auth/react"
 import { useRoleAccess, RoleGuard } from "@/hooks/useRoleAccess"
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications"
+import { useOnlineFriendsCount } from "@/hooks/useOnlineFriendsCount"
 
 // Cache for user icon and bonsai data to persist across navigation
 let cachedUserIcon = null;
@@ -31,6 +32,9 @@ export function Header() {
   
   // Use real-time notifications hook
   const { notificationCount, loading: notificationLoading } = useRealTimeNotifications();
+  
+  // Use online friends count hook
+  const { onlineCount, loading: onlineCountLoading } = useOnlineFriendsCount();
 
   // Close mobile menu when pathname changes
   useEffect(() => {
@@ -309,10 +313,16 @@ export function Header() {
               {/* Friends/Users Button */}
               <Link 
                 href="/users" 
-                className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+                className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                 title="Find Friends"
               >
                 <Users size={19} className="text-[#4a7c59]" />
+                {/* Online Friends Badge */}
+                {onlineCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {onlineCount > 9 ? '9+' : onlineCount}
+                  </span>
+                )}
               </Link>
               
               {/* Chat Button */}
@@ -361,10 +371,16 @@ export function Header() {
             {/* Friends/Users Button */}
             <Link 
               href="/users" 
-              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
               title="Find Friends"
             >
               <Users size={18} className="text-[#4a7c59]" />
+              {/* Online Friends Badge */}
+              {onlineCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {onlineCount > 9 ? '9+' : onlineCount}
+                </span>
+              )}
             </Link>
             
             {/* Chat Button */}
