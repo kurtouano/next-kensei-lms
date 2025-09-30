@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Smile, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -178,6 +179,7 @@ const EMOJIS = {
 export default function EmojiPicker({ onEmojiSelect, isOpen, onClose, emojiButtonRef }) {
   const [selectedCategory, setSelectedCategory] = useState('recent')
   const [recentEmojis, setRecentEmojis] = useState([])
+  const [position, setPosition] = useState({ top: 0, left: 0 })
   const pickerRef = useRef(null)
 
   // Load recent emojis from localStorage
@@ -234,7 +236,7 @@ export default function EmojiPicker({ onEmojiSelect, isOpen, onClose, emojiButto
   return (
     <div 
       ref={pickerRef}
-      className="absolute bottom-14 left-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-72 sm:w-80 max-h-80 overflow-hidden"
+      className="absolute bottom-14 left-2 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] w-72 sm:w-80 max-h-80 overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-200">

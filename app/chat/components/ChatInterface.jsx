@@ -926,7 +926,7 @@ export default function ChatInterface() {
                   </div>
 
                   {/* Message Input */}
-                  <div className="p-2 sm:p-4 border-t bg-white relative overflow-hidden">
+                  <div className="p-2 sm:p-4 border-t bg-white relative">
                     {!isUserParticipant && (
                       <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-md">
                         <p className="text-red-600 text-sm font-medium">You are no longer a member of this chat</p>
