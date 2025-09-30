@@ -794,7 +794,6 @@ export function useChatMessages(chatId, onNewMessage = null) {
     
     // Check if this exact reaction is already being processed
     if (window.reactionProcessing && window.reactionProcessing.has(reactionKey)) {
-      console.log("Reaction already being processed, skipping:", reactionKey)
       return // Skip if already processing this exact reaction
     }
     
@@ -822,25 +821,13 @@ export function useChatMessages(chatId, onNewMessage = null) {
             ? { ...msg, reactions: data.reactions }
             : msg
         ))
-        console.log("Reaction updated successfully:", { messageId, emoji, reactions: data.reactions })
       } else {
-        console.error("Failed to update reaction:", {
-          messageId,
-          emoji,
-          error: data.error,
-          status: response.status,
-          response: data
-        })
+        console.error("Failed to update reaction:", data.error)
         // Show user-friendly error message
         alert(`Failed to update reaction: ${data.error || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error("Error updating reaction:", {
-        messageId,
-        emoji,
-        error: error.message,
-        stack: error.stack
-      })
+      console.error("Error updating reaction:", error.message)
       // Show user-friendly error message
       alert(`Failed to update reaction: ${error.message}`)
     } finally {

@@ -156,10 +156,8 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
         fileType: 'image/jpeg'
       }
 
-      console.log('Compressing group avatar...')
       const compressedFile = await compressImage(file, compressionOptions)
       
-      console.log(`Avatar compressed: ${(file.size / 1024).toFixed(2)}KB → ${(compressedFile.size / 1024).toFixed(2)}KB`)
 
       // Upload to S3
       const formData = new FormData()
@@ -176,7 +174,6 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
       if (data.success) {
         setGroupAvatar(data.url)
         setAvatarPreview(URL.createObjectURL(compressedFile))
-        console.log('✅ Group avatar uploaded successfully')
       } else {
         throw new Error(data.error || 'Failed to upload avatar')
       }

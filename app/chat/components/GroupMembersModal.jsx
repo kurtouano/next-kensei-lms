@@ -74,7 +74,6 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
           })
           
           const members = await Promise.all(memberPromises)
-          console.log('Fetched members with bonsai data:', members)
           setMembersWithBonsai(members)
           
           // Fetch admin roles after getting members
@@ -96,7 +95,6 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
 
     try {
       setLeaving(true)
-      console.log('Leaving group:', chat.id, 'User:', session.user.id)
       
       const response = await fetch(`/api/chats/${chat.id}/leave`, {
         method: 'POST',
@@ -108,9 +106,7 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
         })
       })
 
-      console.log('Leave response status:', response.status)
       const data = await response.json()
-      console.log('Leave response data:', data)
 
       if (data.success) {
         onMemberLeft?.()

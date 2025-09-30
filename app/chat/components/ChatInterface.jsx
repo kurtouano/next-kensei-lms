@@ -231,12 +231,6 @@ export default function ChatInterface() {
         const newScrollHeight = sidebar.scrollHeight
         const heightDifference = newScrollHeight - oldScrollHeight
         
-        console.log('Restoring sidebar scroll:', {
-          oldScrollHeight,
-          newScrollHeight,
-          heightDifference,
-          oldScrollTop
-        })
         
         // Restore scroll position by adjusting for the new content height
         // The new scroll position should be the old position plus the height of new content
@@ -255,7 +249,6 @@ export default function ChatInterface() {
 
     // Check if user is still a participant in the chat
     if (!isUserParticipant) {
-      console.log("User is no longer a participant in this chat")
       return
     }
 
@@ -348,12 +341,10 @@ export default function ChatInterface() {
 
     try {
       setUploading(true)
-      console.log("Uploading image with optimistic updates...")
       
       // Use optimistic upload - shows immediately, uploads in background
       await sendAttachmentOptimistic(file, "image", "image")
       
-      console.log("✅ Image uploaded and message sent successfully")
     } catch (error) {
       console.error("Failed to upload image:", error)
       setFileErrorPopup({
@@ -438,8 +429,6 @@ export default function ChatInterface() {
 
     try {
       setUploading(true)
-      console.log("Uploading general file with optimistic updates...")
-      console.log("File details:", { name: file.name, type: file.type, size: file.size })
       
       // Determine file type for proper categorization
       let detectedFileType = 'general' // default
@@ -452,21 +441,12 @@ export default function ChatInterface() {
         detectedFileType = 'spreadsheet'
       }
       
-      console.log("Detected file type:", detectedFileType)
       
       // Use optimistic upload - shows immediately, uploads in background
       await sendAttachmentOptimistic(file, "attachment", detectedFileType)
       
-      console.log("✅ File uploaded and message sent successfully")
     } catch (error) {
       console.error("Failed to upload file:", error)
-      console.error("Error details:", {
-        message: error.message,
-        stack: error.stack,
-        file: file.name,
-        fileType: file.type,
-        detectedFileType: detectedFileType || 'unknown'
-      })
       setFileErrorPopup({
         title: "Upload failed",
         description: `Failed to upload file: ${error.message}`
@@ -1105,7 +1085,6 @@ export default function ChatInterface() {
             isOpen={showCreateGroupModal}
             onClose={() => setShowCreateGroupModal(false)}
             onGroupCreated={(group) => {
-              console.log('Group created:', group)
               refetchChats() // Refresh the chat list
               setSelectedChatId(group.id)
               setShowCreateGroupModal(false)
