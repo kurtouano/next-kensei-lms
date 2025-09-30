@@ -413,10 +413,10 @@ export default function BonsaiInterface() {
           </div>
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 bg-[#eef2eb] p-1">
+            <TabsList className="grid w-full grid-cols-3 bg-[#eef2eb] p-1 gap-0">
               <TabsTrigger
                 value="customize"
-                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm px-2 py-2"
+                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm px-2 py-2 border-r border-[#dce4d7]"
               >
                 <Palette className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Customize Bonsai</span>
@@ -424,7 +424,7 @@ export default function BonsaiInterface() {
               </TabsTrigger>
               <TabsTrigger 
                 value="shop" 
-                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm px-2 py-2"
+                className="data-[state=active]:bg-[#4a7c59] data-[state=active]:text-white text-xs sm:text-sm px-2 py-2 border-r border-[#dce4d7]"
               >
                 <ShoppingBag className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Bonsai Shop</span>
