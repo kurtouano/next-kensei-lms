@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-import { Send, ImageIcon, Paperclip, MoreVertical, Smile, Loader2, User, Users, Plus, Menu, X } from "lucide-react"
+import { Send, ImageIcon, Paperclip, Smile, Loader2, User, Users, Plus, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -838,9 +838,6 @@ export default function ChatInterface() {
                             <User className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
                       </div>
                     </div>
                   </div>
