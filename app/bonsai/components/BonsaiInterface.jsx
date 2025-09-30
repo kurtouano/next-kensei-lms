@@ -37,6 +37,7 @@ export default function BonsaiInterface() {
   const [credits, setCredits] = useState(0)
   const [showMobilePreview, setShowMobilePreview] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [hasInteractedWithPreview, setHasInteractedWithPreview] = useState(false)
 
   // Clear preview when switching to customize tab
   const handleTabChange = (tabValue) => {
@@ -52,6 +53,11 @@ export default function BonsaiInterface() {
       loadBonsaiData()
     }
   }, [session])
+
+  // Reset interaction state when component mounts (user comes back to page)
+  useEffect(() => {
+    setHasInteractedWithPreview(false)
+  }, [])
 
   // Check if mobile menu is open
   useEffect(() => {
@@ -132,7 +138,7 @@ export default function BonsaiInterface() {
           }
         }
         
-        setCredits(data.totalCredits || 0)
+        setCredits(data.availableCredits || 0)
       } else {
         console.error('Failed to load bonsai data')
       }
@@ -457,7 +463,7 @@ export default function BonsaiInterface() {
                       </div>
                       <div className="text-center mb-4">
                         <p className="font-medium text-[#2c3e2d]">Level {bonsaiData.level} Bonsai</p>
-                        <p className="text-sm text-[#5c6d5e]">{bonsaiData.totalCredits} Credits Total</p>
+                        <p className="text-sm text-[#5c6d5e]">{credits} Available Credits</p>
                       </div>
                     </div>
                   </div>
@@ -996,17 +1002,23 @@ export default function BonsaiInterface() {
     
     {/* Mobile Preview Toggle Button - Fixed Position */}
     {!isMobileMenuOpen && (
-      <button 
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          console.log('Eye button clicked, current state:', showMobilePreview)
-          setShowMobilePreview(!showMobilePreview)
-        }}
-        className="md:hidden fixed top-20 right-8 z-50 bg-[#4a7c59] text-white p-2 rounded-full shadow-lg hover:bg-[#3a6147] transition-colors"
-      >
-        {showMobilePreview ? <Eye className="h-5 w-5" /> : <EyeClosed className="h-5 w-5" /> }
-      </button>
+      <div className="md:hidden fixed bottom-6 right-6 z-50">
+        {/* Notification Dot - Behind the button */}
+        <div className={`absolute inset-[0.32rem] bg-[#4a7c59] rounded-full opacity-75 ${!hasInteractedWithPreview ? 'animate-ping' : ''}`}></div>
+        
+        <button 
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            console.log('Eye button clicked, current state:', showMobilePreview)
+            setShowMobilePreview(!showMobilePreview)
+            setHasInteractedWithPreview(true)
+          }}
+          className="relative bg-[#4a7c59] text-white p-3 rounded-full shadow-xl hover:bg-[#3a6147] transition-all duration-300 hover:scale-110 z-10"
+        >
+          {showMobilePreview ? <EyeClosed className="h-6 w-6" /> : <Eye className="h-6 w-6" /> }
+        </button>
+      </div>
     )}
     
     </>

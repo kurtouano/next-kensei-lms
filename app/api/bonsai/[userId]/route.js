@@ -64,7 +64,8 @@ export async function GET(request, { params }) {
       ...bonsai.toObject(),
       levelInfo, 
       level: levelInfo.level,
-      totalCredits: user.lifetimeCredits
+      totalCredits: user.lifetimeCredits,
+      availableCredits: user.credits
     };
 
     return NextResponse.json(response, { status: 200 });

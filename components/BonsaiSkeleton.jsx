@@ -45,15 +45,18 @@ export function BonsaiPageSkeleton() {
             <div className="grid w-full grid-cols-3 bg-[#eef2eb] p-1 rounded-lg">
               <div className="bg-[#4a7c59] rounded-md py-2 px-2 flex items-center justify-center gap-1 sm:gap-2">
                 <Palette className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                <span className="text-xs sm:text-sm text-white">Customize Bonsai</span>
+                <span className="hidden sm:inline text-xs sm:text-sm text-white">Customize Bonsai</span>
+                <span className="sm:hidden text-xs text-white">Customize</span>
               </div>
               <div className="py-2 px-2 flex items-center justify-center gap-1 sm:gap-2">
                 <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4 text-[#5c6d5e]" />
-                <span className="text-xs sm:text-sm text-[#5c6d5e]">Bonsai Shop</span>
+                <span className="hidden sm:inline text-xs sm:text-sm text-[#5c6d5e]">Bonsai Shop</span>
+                <span className="sm:hidden text-xs text-[#5c6d5e]">Shop</span>
               </div>
               <div className="py-2 px-2 flex items-center justify-center gap-1 sm:gap-2">
                 <Award className="h-3 w-3 sm:h-4 sm:w-4 text-[#5c6d5e]" />
-                <span className="text-xs sm:text-sm text-[#5c6d5e]">Growth Milestones</span>
+                <span className="hidden sm:inline text-xs sm:text-sm text-[#5c6d5e]">Growth Milestones</span>
+                <span className="sm:hidden text-xs text-[#5c6d5e]">Milestones</span>
               </div>
             </div>
 
