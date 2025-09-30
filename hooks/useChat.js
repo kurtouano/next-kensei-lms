@@ -778,7 +778,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
   }, [session, chatId, onNewMessage, scrollToBottom])
 
 
-  // Handle message reactions with debouncing to prevent double-clicks
+  // Handle message reactions with improved debouncing and error handling
   const handleReaction = useCallback(async (messageId, emoji) => {
     if (!session?.user?.email || !chatId || !messageId || !emoji) return
 
@@ -789,14 +789,12 @@ export function useChatMessages(chatId, onNewMessage = null) {
     const currentReactions = currentMessage.reactions || []
     const userEmail = session.user.email
     
-    // Check if user already reacted with this emoji
-    const existingReaction = currentReactions.find(r => r.emoji === emoji && r.user === userEmail)
-    
     // Create a unique key for this reaction action to prevent double-processing
     const reactionKey = `${messageId}-${emoji}-${userEmail}`
     
     // Check if this exact reaction is already being processed
     if (window.reactionProcessing && window.reactionProcessing.has(reactionKey)) {
+      console.log("Reaction already being processed, skipping:", reactionKey)
       return // Skip if already processing this exact reaction
     }
     
@@ -824,18 +822,34 @@ export function useChatMessages(chatId, onNewMessage = null) {
             ? { ...msg, reactions: data.reactions }
             : msg
         ))
+        console.log("Reaction updated successfully:", { messageId, emoji, reactions: data.reactions })
       } else {
-        console.error("Failed to update reaction:", data.error)
+        console.error("Failed to update reaction:", {
+          messageId,
+          emoji,
+          error: data.error,
+          status: response.status,
+          response: data
+        })
+        // Show user-friendly error message
+        alert(`Failed to update reaction: ${data.error || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error("Error updating reaction:", error)
+      console.error("Error updating reaction:", {
+        messageId,
+        emoji,
+        error: error.message,
+        stack: error.stack
+      })
+      // Show user-friendly error message
+      alert(`Failed to update reaction: ${error.message}`)
     } finally {
       // Remove from processing set after a short delay to prevent rapid double-clicks
       setTimeout(() => {
         if (window.reactionProcessing) {
           window.reactionProcessing.delete(reactionKey)
         }
-      }, 500) // 500ms debounce
+      }, 300) // Reduced to 300ms for better responsiveness
     }
   }, [session, chatId, messages])
 

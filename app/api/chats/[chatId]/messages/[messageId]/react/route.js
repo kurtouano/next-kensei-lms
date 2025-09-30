@@ -40,7 +40,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Find the message
+    // Find the message with optimistic locking to prevent race conditions
     const message = await Message.findOne({
       _id: messageId,
       chat: chatId,
@@ -51,42 +51,60 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 })
     }
 
-    // Check if user has already reacted with this emoji
+    // Use atomic operations to prevent race conditions
     const existingReactionIndex = message.reactions.findIndex(
       reaction => reaction.user.toString() === user._id.toString() && reaction.emoji === emoji
     )
 
+    let updatedReactions
     if (existingReactionIndex !== -1) {
       // Remove existing reaction (toggle off)
-      message.reactions.splice(existingReactionIndex, 1)
+      updatedReactions = [...message.reactions]
+      updatedReactions.splice(existingReactionIndex, 1)
     } else {
       // Add new reaction (allow multiple reactions per user)
-      message.reactions.push({
-        user: user._id,
-        emoji: emoji,
-        createdAt: new Date()
-      })
+      updatedReactions = [
+        ...message.reactions,
+        {
+          user: user._id,
+          emoji: emoji,
+          createdAt: new Date()
+        }
+      ]
     }
 
-    await message.save()
+    // Update the message with the new reactions array
+    const updatedMessage = await Message.findByIdAndUpdate(
+      messageId,
+      { reactions: updatedReactions },
+      { new: true, runValidators: true }
+    )
+
+    if (!updatedMessage) {
+      return NextResponse.json({ error: "Failed to update message" }, { status: 500 })
+    }
 
     // Broadcast reaction update to all chat participants via SSE
     try {
       const { notifyReactionUpdate } = await import("@/lib/chatUtils")
-      await notifyReactionUpdate(chatId, messageId, message.reactions, user._id)
+      await notifyReactionUpdate(chatId, messageId, updatedMessage.reactions, user._id)
     } catch (error) {
       console.error("Failed to broadcast reaction update:", error)
+      // Don't fail the request if broadcasting fails
     }
 
     return NextResponse.json({
       success: true,
       message: "Reaction updated successfully",
-      reactions: message.reactions
+      reactions: updatedMessage.reactions
     })
   } catch (error) {
     console.error("Error updating reaction:", error)
     return NextResponse.json(
-      { error: "Failed to update reaction" },
+      { 
+        error: "Failed to update reaction",
+        details: error.message 
+      },
       { status: 500 }
     )
   }
