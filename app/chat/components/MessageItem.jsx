@@ -193,7 +193,7 @@ const MessageItem = memo(({
           {message.type === "image" && message.attachments?.length > 0 && (
             <div className="mb-2 group relative">
               {/* Reaction buttons for images */}
-              <div className={`absolute ${message.sender?.email === session?.user?.email ? '-left-8 sm:-left-12' : '-right-8 sm:-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
+              <div className={`absolute ${message.sender?.email === session?.user?.email ? '-left-10 sm:-left-14' : '-right-10 sm:-right-14'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
                 <button
                   onClick={() => handleReaction(message.id, '❤️')}
                   className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
@@ -305,7 +305,7 @@ const MessageItem = memo(({
           {message.type === "attachment" && message.attachments?.length > 0 && (
             <div className="mb-2 group relative">
               {/* Reaction buttons for attachments */}
-              <div className={`absolute ${message.sender?.email === session?.user?.email ? '-left-8 sm:-left-12' : '-right-8 sm:-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
+              <div className={`absolute ${message.sender?.email === session?.user?.email ? '-left-10 sm:-left-14' : '-right-10 sm:-right-14'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1 z-10`}>
                 <button
                   onClick={() => handleReaction(message.id, '❤️')}
                   className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
@@ -514,7 +514,7 @@ const MessageItem = memo(({
                 title={formatFullTimestamp(message.createdAt)}
               >
                 {/* Reaction buttons - show on hover */}
-                <div className={`absolute ${message.sender?.email === session?.user?.email ? '-left-8 sm:-left-12' : '-right-8 sm:-right-12'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1`}>
+                <div className={`absolute ${message.sender?.email === session?.user?.email ? '-left-10 sm:-left-14' : '-right-10 sm:-right-14'} top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col gap-1 bg-white rounded-full shadow-lg border p-1`}>
                   <button
                     onClick={() => handleReaction(message.id, '❤️')}
                     className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
