@@ -15,6 +15,7 @@ import LazyAvatar from "./LazyAvatar"
 import EmojiPicker from "./EmojiPicker"
 import { 
   ChatListSkeleton, 
+  ChatListSidebarSkeleton,
   ChatMessagesSkeleton, 
   ChatHeaderSkeleton, 
   MessageInputSkeleton,
@@ -644,14 +645,14 @@ export default function ChatInterface() {
                             <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 max-w-[250px] sm:max-w-none">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 min-w-0 flex-1">
                               <h3 className="font-medium text-sm text-[#2c3e2d] truncate">
                                 {chat.name}
                               </h3>
                               {chat.type === "group" && (
-                                <Users className="h-3 w-3 text-[#4a7c59] flex-shrink-0 ml-1" />
+                                <Users className="h-3 w-3 text-[#4a7c59] flex-shrink-0 ml-1 mr-2" />
                               )}
                             </div>
                             <span className="text-xs text-gray-500">
@@ -761,9 +762,9 @@ export default function ChatInterface() {
                             })
                           )}
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-[#2c3e2d]">{selectedChat.name}</h3>
-                          <p className="text-sm text-gray-500">
+                        <div className="min-w-0 flex-1 max-w-[150px] sm:max-w-none">
+                          <h3 className="font-semibold text-[#2c3e2d] truncate">{selectedChat.name}</h3>
+                          <p className="text-sm text-gray-500 truncate">
                             {selectedChat.type === "group"
                               ? `${selectedChat.participants?.length || 0} members`
                               : selectedChat.isOnline
