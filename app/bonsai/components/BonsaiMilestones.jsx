@@ -18,10 +18,10 @@ export const BonsaiMilestones = ({ bonsaiData }) => {
                 : "border-[#dce4d7] bg-white"
             }`}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-full flex-shrink-0 ${
                     milestone.isAchieved
                       ? "bg-[#4a7c59] text-white"
                       : "bg-[#dce4d7] text-[#5c6d5e]"
@@ -33,19 +33,19 @@ export const BonsaiMilestones = ({ bonsaiData }) => {
                     milestone.level
                   )}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-[#2c3e2d]">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-[#2c3e2d] text-sm sm:text-base">
                     {milestone.name} - Level {milestone.level}
                   </h3>
-                  <p className="text-sm text-[#5c6d5e]">{milestone.description}</p>
+                  <p className="text-xs sm:text-sm text-[#5c6d5e] mt-1">{milestone.description}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-medium text-[#2c3e2d]">
+              <div className="text-left sm:text-right flex-shrink-0">
+                <p className="font-medium text-[#2c3e2d] text-sm sm:text-base">
                   {milestone.creditsRequired} credits
                 </p>
                 {milestone.isAchieved && milestone.achievedAt && (
-                  <p className="text-xs text-[#5c6d5e]">
+                  <p className="text-xs text-[#5c6d5e] mt-1">
                     Achieved {new Date(milestone.achievedAt).toLocaleDateString()}
                   </p>
                 )}
