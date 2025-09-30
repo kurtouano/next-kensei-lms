@@ -241,3 +241,76 @@ export async function POST(request, { params }) {
     )
   }
 }
+
+export async function DELETE(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    await connectDb()
+
+    const { chatId } = await params
+    const { searchParams } = new URL(request.url)
+    const messageId = searchParams.get("messageId")
+
+    if (!messageId) {
+      return NextResponse.json({ error: "Message ID is required" }, { status: 400 })
+    }
+
+    // Find user
+    const user = await User.findOne({ email: session.user.email })
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    // Check if user is admin or if they're trying to delete their own message
+    const message = await Message.findOne({
+      _id: messageId,
+      chat: chatId,
+      isDeleted: false
+    })
+
+    if (!message) {
+      return NextResponse.json({ error: "Message not found" }, { status: 404 })
+    }
+
+    // Allow deletion if user is admin OR if user is deleting their own message
+    const isAdmin = user.role === 'admin'
+    const isOwnMessage = message.sender.toString() === user._id.toString()
+    
+    if (!isAdmin && !isOwnMessage) {
+      return NextResponse.json({ error: "You can only delete your own messages or admin access required" }, { status: 403 })
+    }
+
+    // Verify user is participant in this chat
+    const participation = await ChatParticipant.findOne({
+      chat: chatId,
+      user: user._id,
+      isActive: true,
+    })
+
+    if (!participation) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
+    }
+
+    // Soft delete the message
+    await Message.findByIdAndUpdate(messageId, {
+      isDeleted: true,
+      deletedAt: new Date(),
+      deletedBy: user._id
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: "Message deleted successfully"
+    })
+  } catch (error) {
+    console.error("Error deleting message:", error)
+    return NextResponse.json(
+      { error: "Failed to delete message" },
+      { status: 500 }
+    )
+  }
+}

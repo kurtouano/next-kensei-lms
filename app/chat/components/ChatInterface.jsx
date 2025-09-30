@@ -53,6 +53,7 @@ export default function ChatInterface() {
     loadMoreMessages,
     hasMore,
     handleReaction,
+    deleteMessage,
     refetch: refetchMessages
   } = useChatMessages(selectedChatId, updateChatWithNewMessage)
   const [uploading, setUploading] = useState(false)
@@ -947,6 +948,7 @@ export default function ChatInterface() {
                               formatFullTimestamp={formatFullTimestamp}
                               shouldShowTimestamp={shouldShowTimestamp}
                               handleReaction={handleReaction}
+                              handleDeleteMessage={deleteMessage}
                             />
                           )
                         })}

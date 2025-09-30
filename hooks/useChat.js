@@ -839,6 +839,33 @@ export function useChatMessages(chatId, onNewMessage = null) {
     }
   }, [session, chatId, messages])
 
+  // Delete message (admin only)
+  const deleteMessage = useCallback(async (messageId) => {
+    if (!session?.user?.email || !chatId || !messageId) return
+
+    try {
+      const response = await fetch(`/api/chats/${chatId}/messages?messageId=${messageId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // Remove message from local state
+        setMessages(prev => prev.filter(msg => msg.id !== messageId))
+      } else {
+        console.error("Failed to delete message:", data.error)
+        throw new Error(data.error || "Failed to delete message")
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error)
+      throw error
+    }
+  }, [session, chatId])
+
   // Send typing indicator
   const sendTypingIndicator = useCallback(async (isTyping) => {
     if (!session?.user?.email || !chatId) return
@@ -991,6 +1018,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
     loadMoreMessages,
     scrollToBottom,
     handleReaction,
+    deleteMessage,
     refetch: () => fetchMessages(1),
   }
 }
