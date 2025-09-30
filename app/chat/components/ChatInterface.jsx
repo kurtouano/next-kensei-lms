@@ -39,6 +39,7 @@ export default function ChatInterface() {
   const messagesContainerRef = useRef(null)
   const messageInputRef = useRef(null)
   const scrollPositionRef = useRef(null)
+  const sidebarScrollPositionRef = useRef(null)
 
   // Chat hooks
   const { chats, loading: chatsLoading, error: chatsError, pagination, loadMoreChats, updateChatWithNewMessage, refetch: refetchChats } = useChat()
@@ -166,6 +167,11 @@ export default function ChatInterface() {
       
       // If user scrolled to bottom and there are more chats
       if (scrollTop + clientHeight >= scrollHeight - 10) {
+        // Store current scroll position before loading more
+        sidebarScrollPositionRef.current = {
+          scrollHeight,
+          scrollTop
+        }
         isLoadingMoreChats.current = true
         loadMoreChats()
       }
@@ -211,6 +217,35 @@ export default function ChatInterface() {
       scrollPositionRef.current = null
     }
   }, [isLoadingMore, messages])
+
+  // Restore sidebar scroll position after loading more chats
+  useEffect(() => {
+    if (!chatsLoading && sidebarScrollPositionRef.current && sidebarRef.current) {
+      // Add a small delay to ensure DOM has updated
+      const timeoutId = setTimeout(() => {
+        const sidebar = sidebarRef.current
+        if (!sidebar) return
+        
+        const { scrollHeight: oldScrollHeight, scrollTop: oldScrollTop } = sidebarScrollPositionRef.current
+        const newScrollHeight = sidebar.scrollHeight
+        const heightDifference = newScrollHeight - oldScrollHeight
+        
+        console.log('Restoring sidebar scroll:', {
+          oldScrollHeight,
+          newScrollHeight,
+          heightDifference,
+          oldScrollTop
+        })
+        
+        // Restore scroll position by adjusting for the new content height
+        // The new scroll position should be the old position plus the height of new content
+        sidebar.scrollTop = oldScrollTop + heightDifference
+        sidebarScrollPositionRef.current = null
+      }, 50) // Small delay to ensure DOM updates
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [chatsLoading, chats])
 
   // Handle sending messages with optimistic updates
   const handleSendMessage = async () => {
@@ -595,7 +630,7 @@ export default function ChatInterface() {
               </div>
 
               <div ref={sidebarRef} className="flex-1 overflow-y-auto overflow-x-hidden">
-                {chatsLoading ? (
+                {chatsLoading && chats.length === 0 ? (
                   <ChatListSkeleton count={10} />
                 ) : chatsError ? (
                   <div className="p-4 text-center">
@@ -720,7 +755,7 @@ export default function ChatInterface() {
                     ))}
                     
                     {/* Skeleton Loading for More Chats */}
-                    {chats.length > 0 && pagination?.hasMore && (
+                    {chats.length > 0 && pagination?.hasMore && (isLoadingMoreChats.current || chatsLoading) && (
                       <LoadingMoreChatsSkeleton />
                     )}
                   </>
