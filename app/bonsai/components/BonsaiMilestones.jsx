@@ -3,13 +3,29 @@
 import { Check } from "lucide-react"
 
 export const BonsaiMilestones = ({ bonsaiData }) => {
+  // Function to get credit range for each milestone
+  const getCreditRange = (milestone, index, allMilestones) => {
+    if (index === 0) {
+      // First milestone: 0 to next milestone's credits
+      const nextMilestone = allMilestones[index + 1]
+      return nextMilestone ? `0 - ${nextMilestone.creditsRequired} credits` : '0+ credits'
+    } else if (index === allMilestones.length - 1) {
+      // Last milestone: current credits to infinity
+      return `${milestone.creditsRequired}+ credits`
+    } else {
+      // Middle milestone: current to next milestone's credits
+      const nextMilestone = allMilestones[index + 1]
+      return nextMilestone ? `${milestone.creditsRequired} - ${nextMilestone.creditsRequired} credits` : `${milestone.creditsRequired}+ credits`
+    }
+  }
+
   return (
     <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
       <h2 className="mb-6 text-xl font-semibold text-[#2c3e2d]">Bonsai Growth Milestones</h2>
 
       {/* Milestones List */}
       <div className="space-y-4">
-        {bonsaiData.milestones.map((milestone) => (
+        {bonsaiData.milestones.map((milestone, index) => (
           <div
             key={milestone.level}
             className={`rounded-lg border p-4 ${
@@ -42,7 +58,7 @@ export const BonsaiMilestones = ({ bonsaiData }) => {
               </div>
               <div className="text-left sm:text-right flex-shrink-0">
                 <p className="font-medium text-[#2c3e2d] text-sm sm:text-base">
-                  {milestone.creditsRequired} credits
+                  {getCreditRange(milestone, index, bonsaiData.milestones)}
                 </p>
                 {milestone.isAchieved && milestone.achievedAt && (
                   <p className="text-xs text-[#5c6d5e] mt-1">
