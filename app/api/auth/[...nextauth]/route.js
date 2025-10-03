@@ -138,15 +138,16 @@ export const authOptions = {
         token.country = user.country;
       }
       
-      // For Google login, get additional data from DB only on first login
-      if (account?.provider === "google" && !token.role) {
+      // For Google login, always get the MongoDB ObjectId from DB
+      if (account?.provider === "google") {
         try {
           await connectDb();
           const dbUser = await User.findOne({ email: token.email });
           
           if (dbUser) {
-            token.role = dbUser.role;
+            // Always use MongoDB ObjectId, not Google user ID
             token.id = dbUser._id.toString();
+            token.role = dbUser.role;
             token.icon = dbUser.icon;
             token.country = dbUser.country;
           }
