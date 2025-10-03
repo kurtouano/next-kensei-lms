@@ -209,7 +209,26 @@ export async function PATCH(req) {
             );
         }
 
-        const updateData = await req.json();
+        // Check if request has a body
+        const contentType = req.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return NextResponse.json(
+                { success: false, message: "Content-Type must be application/json" },
+                { status: 400 }
+            );
+        }
+
+        let updateData;
+        try {
+            updateData = await req.json();
+        } catch (error) {
+            console.error('JSON parsing error:', error);
+            return NextResponse.json(
+                { success: false, message: "Invalid JSON in request body" },
+                { status: 400 }
+            );
+        }
+
         await connectDb();
 
         // Build update object for lastSeen

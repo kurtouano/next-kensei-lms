@@ -1,13 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { GoogleIcon } from "@/components/google-icon"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -18,7 +18,22 @@ export default function LoginPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [showResendVerification, setShowResendVerification] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const verified = searchParams.get('verified');
+    const error = searchParams.get('error');
+    
+    if (verified === 'true') {
+      setSuccess("Your email has been verified successfully! You can now log in.");
+    } else if (error === 'verification_failed') {
+      setError("Email verification failed. Please try again or contact support.");
+    }
+  }, [searchParams]);
 
   const handleOnChange = (e) => {
     const { id, value } = e.target
@@ -50,12 +65,53 @@ export default function LoginPage() {
         console.log("Login successful", res);
         router.replace("/my-learning"); // redirect to dashboard
       } else {
-        setError(res.error || "An error occurred. Please try again.");
+        const errorMessage = res.error || "An error occurred. Please try again.";
+        setError(errorMessage);
+        
+        // Check if it's an email verification error
+        if (errorMessage.includes("verify your email")) {
+          setShowResendVerification(true);
+        } else {
+          setShowResendVerification(false);
+        }
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!formData.email) {
+      setError("Please enter your email address first");
+      return;
+    }
+
+    setIsResending(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setSuccess("Verification email sent! Please check your inbox and click the verification link.");
+        setShowResendVerification(false);
+      } else {
+        setError(data.error || "Failed to send verification email. Please try again.");
+      }
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -90,6 +146,37 @@ export default function LoginPage() {
           </div>
 
           {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+          {success && <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-600">{success}</div>}
+          
+          {showResendVerification && (
+            <div className="mb-4 rounded-md bg-blue-50 p-4 border border-blue-200">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <h3 className="text-sm font-medium text-blue-800">
+                    Email verification required
+                  </h3>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <p>Please verify your email address before logging in. Check your inbox for a verification link.</p>
+                  </div>
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={isResending}
+                      className="bg-blue-100 text-blue-800 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isResending ? "Sending..." : "Resend Verification Email"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">

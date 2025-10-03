@@ -25,13 +25,18 @@ export const authOptions = {
           }
 
           if (user.provider !== "credentials") {
-            throw new Error("Please log in using Google.");
+            throw new Error("This email is already registered with Google. Please use 'Sign in with Google' instead.");
           }
 
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
 
           if (!isPasswordValid) {
             throw new Error("Invalid password.")
+          }
+
+          // Check if email is verified for credentials login
+          if (!user.emailVerified) {
+            throw new Error("Please verify your email before logging in. Check your inbox for a verification link.")
           }
 
           // Return user data including role and additional fields
@@ -91,11 +96,23 @@ export const authOptions = {
             
             console.log("Created new Google user:", newUser.email, "with role:", newUser.role);
           } else {
-            // Update lastSeen and lastLogin for existing user
-            await User.findByIdAndUpdate(existingUser._id, {
+            // Update existing user - handle provider switching
+            const updateData = {
               lastSeen: new Date(),
               lastLogin: new Date()
-            });
+            };
+
+            // If user was previously using credentials, switch to Google
+            if (existingUser.provider === "credentials") {
+              updateData.provider = "google";
+              updateData.providerId = account.providerAccountId;
+              updateData.emailVerified = new Date(); // Google emails are pre-verified
+              updateData.emailVerificationToken = null; // Clear any pending verification
+              updateData.emailVerificationExpires = null;
+              console.log("Switched user from credentials to Google:", existingUser.email);
+            }
+
+            await User.findByIdAndUpdate(existingUser._id, updateData);
             console.log("Google user already exists:", existingUser.email, "role:", existingUser.role);
           }
         } else if (account.provider === "credentials") {

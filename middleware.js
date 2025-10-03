@@ -14,6 +14,7 @@ export default withAuth(
       '/auth/signup', 
       '/auth/signin',
       '/auth/forgot-password',
+      '/auth/verify-email',  // ← Add email verification page
       '/demo',
       '/about',
       '/contact',
@@ -169,6 +170,7 @@ export default withAuth(
           '/auth/signup',
           '/auth/signin', 
           '/auth/forgot-password',
+          '/auth/verify-email',  // ← Add email verification page
           '/about',
           '/contact',
           '/courses',

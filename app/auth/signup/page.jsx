@@ -23,6 +23,8 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
   const router = useRouter()
 
   const handleOnChange = (e) => {
@@ -56,13 +58,18 @@ export default function SignUpPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setFormData({
-          name: "",
-          email: "",
-          password: "",
-          agreedToTerms: false,
-        })
-        router.push("/auth/login") // redirect to login page after successful signup
+        if (formData.provider === "credentials") {
+          setSuccess(true)
+          setUserEmail(formData.email)
+          setFormData({
+            name: "",
+            email: "",
+            password: "",
+            agreedToTerms: false,
+          })
+        } else {
+          router.push("/auth/login") // redirect to login page for Google signup
+        }
       } else {
         setError(data.error || "An error occurred. Please try again.")
       }
@@ -104,8 +111,32 @@ export default function SignUpPage() {
           </div>
 
           {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+          
+          {success && (
+            <div className="mb-6 rounded-lg bg-green-50 p-8 text-center border border-green-200">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="mb-3 text-2xl font-bold text-green-800">Check your email!</h3>
+              <p className="mb-6 text-base text-green-700">
+                We've sent a verification link to <strong className="text-green-900">{userEmail}</strong>. 
+                Click the link to verify your account and complete your registration.
+              </p>
+              <div className="mt-6">
+                <Link 
+                  href="/auth/login" 
+                  className="inline-flex items-center justify-center px-8 py-3 bg-green-600 text-white text-base font-semibold rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm hover:shadow-md"
+                >
+                  Go to Login Page
+                </Link>
+              </div>
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {!success && (
+            <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="name" className="block text-sm font-medium text-[#2c3e2d]">
                 Full Name
@@ -204,31 +235,38 @@ export default function SignUpPage() {
             >
               {isLoading ? "Creating account..." : "Get Started"}
             </Button>
-          </form>
+            </form>
+          )}
 
-          <div className="my-6 flex items-center">
-            <div className="flex-grow border-t border-[#dce4d7]"></div>
-            <span className="mx-4 flex-shrink text-sm text-[#5c6d5e]">or</span>
-            <div className="flex-grow border-t border-[#dce4d7]"></div>
-          </div>
+          {!success && (
+            <>
+              <div className="my-6 flex items-center">
+                <div className="flex-grow border-t border-[#dce4d7]"></div>
+                <span className="mx-4 flex-shrink text-sm text-[#5c6d5e]">or</span>
+                <div className="flex-grow border-t border-[#dce4d7]"></div>
+              </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full rounded-md border border-[#dce4d7] bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-[#eef2eb]"
-            onClick={handleGoogleSignUp}
-            disabled={isLoading}
-          >
-            <GoogleIcon className="mr-2 h-4 w-4" />
-            Join with Google
-          </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full rounded-md border border-[#dce4d7] bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-[#eef2eb]"
+                onClick={handleGoogleSignUp}
+                disabled={isLoading}
+              >
+                <GoogleIcon className="mr-2 h-4 w-4" />
+                Join with Google
+              </Button>
+            </>
+          )}
 
-          <p className="mt-6 text-center text-sm text-[#5c6d5e]">
-            Already have an account?{" "}
-            <Link href="/auth/login" className="font-medium text-[#4a7c59] hover:underline">
-              Log in
-            </Link>
-          </p>
+          {!success && (
+            <p className="mt-6 text-center text-sm text-[#5c6d5e]">
+              Already have an account?{" "}
+              <Link href="/auth/login" className="font-medium text-[#4a7c59] hover:underline">
+                Log in
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>

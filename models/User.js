@@ -117,6 +117,14 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    emailVerificationToken: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      default: null,
+    },
     socialLinks: [
       {
         platform: {

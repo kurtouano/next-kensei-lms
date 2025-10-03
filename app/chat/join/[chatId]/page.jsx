@@ -7,7 +7,13 @@ import { Users, CheckCircle, XCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
-export default function JoinGroupChatPage({ params }) {
+export default async function JoinGroupChatPage({ params }) {
+  const { chatId } = await params
+
+  return <JoinGroupChatClient chatId={chatId} />
+}
+
+function JoinGroupChatClient({ chatId }) {
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -17,7 +23,6 @@ export default function JoinGroupChatPage({ params }) {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
 
-  const { chatId } = params
   const inviteCode = searchParams.get('invite')
 
   useEffect(() => {
