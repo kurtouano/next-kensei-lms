@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Fuse from "fuse.js"
-import { Plus, Search, Edit, Trash2, Eye, RefreshCcw, ChevronDown, LoaderCircle } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Eye, RefreshCcw, ChevronDown, LoaderCircle, Mail } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
@@ -24,6 +24,7 @@ export default function AdminBlogPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState(null)
+  const [sendingNotification, setSendingNotification] = useState(null)
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -146,6 +147,37 @@ export default function AdminBlogPage() {
     } catch (error) {
       console.error('Error deleting blog:', error)
       alert('Failed to delete blog')
+    }
+  }
+
+  const handleSendNotification = async (blogId, blogTitle) => {
+    if (!confirm(`Send email notification for "${blogTitle}" to all subscribers?`)) {
+      return
+    }
+
+    setSendingNotification(blogId)
+    
+    try {
+      const response = await fetch('/api/admin/blogs/send-notification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ blogId })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert(`✅ ${result.message}`)
+      } else {
+        alert(`❌ ${result.error || 'Failed to send notification'}`)
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error)
+      alert('❌ Failed to send notification')
+    } finally {
+      setSendingNotification(null)
     }
   }
 
@@ -385,6 +417,20 @@ export default function AdminBlogPage() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
+                              className="text-blue-600 hover:text-blue-700"
+                              title="Send Email Notification"
+                              onClick={() => handleSendNotification(blog._id, blog.title)}
+                              disabled={sendingNotification === blog._id}
+                            >
+                              {sendingNotification === blog._id ? (
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Mail className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
                               className="text-red-600 hover:text-red-700"
                               title="Delete Post"
                               onClick={() => handleDelete(blog._id, blog.title)}
@@ -419,6 +465,20 @@ export default function AdminBlogPage() {
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Link>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
+                          title="Send Email Notification"
+                          onClick={() => handleSendNotification(blog._id, blog.title)}
+                          disabled={sendingNotification === blog._id}
+                        >
+                          {sendingNotification === blog._id ? (
+                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Mail className="h-4 w-4" />
+                          )}
+                        </Button>
                         <Button 
                           variant="ghost" 
                           size="sm" 

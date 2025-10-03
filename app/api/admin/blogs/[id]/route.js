@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { connectDb } from "@/lib/mongodb"
 import Blog from "@/models/Blog"
 import User from "@/models/User"
+import Subscriber from "@/models/Subscriber"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { sendBlogNotificationEmail } from "@/lib/blogEmailService"
 
 // GET /api/admin/blogs/[id] - Get single blog for editing
 export async function GET(request, { params }) {

@@ -4,8 +4,6 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import BlogForm from "@/components/BlogForm"
 import { AdminPageSkeleton } from "@/components/AdminSkeleton"
 
@@ -91,49 +89,37 @@ export default function EditBlogPage({ params }) {
   // Loading state
   if (loading) {
     return (
-      <>
-        <Header/>
-        <AdminPageSkeleton />
-        <Footer/>
-      </>
+      <AdminPageSkeleton />
     )
   }
 
   // Error state
   if (error) {
     return (
-      <>
-        <Header/>
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto text-center py-16">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Blog Not Found</h1>
-            <p className="text-gray-600 mb-8">{error}</p>
-            <Link href="/admin/blogs">
-              <Button className="bg-[#4a7c59] hover:bg-[#3a6147]">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Blog Management
-              </Button>
-            </Link>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto text-center py-16">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Blog Not Found</h1>
+          <p className="text-gray-600 mb-8">{error}</p>
+          <Link href="/admin/blogs">
+            <Button className="bg-[#4a7c59] hover:bg-[#3a6147]">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Blog Management
+            </Button>
+          </Link>
         </div>
-        <Footer/>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
-      <Header/>
-      <div className="container mx-auto px-4 py-8">
-        <BlogForm 
-          mode="edit"
-          initialData={initialData}
-          blogId={blogId}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-        />
-      </div>
-      <Footer/>
-    </>
+    <div className="container mx-auto px-4 py-8">
+      <BlogForm 
+        mode="edit"
+        initialData={initialData}
+        blogId={blogId}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
+    </div>
   )
 }

@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { connectDb } from "@/lib/mongodb"
 import Blog from "@/models/Blog"
 import User from "@/models/User"
+import Subscriber from "@/models/Subscriber"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { sendBlogNotificationEmail } from "@/lib/blogEmailService"
 
 // GET /api/admin/blogs - Get all blogs with filters and pagination
 export async function GET(request) {
@@ -152,6 +154,20 @@ export async function POST(request) {
 
     // Populate author info for response
     await blog.populate('author', 'name icon')
+
+    // Send email notifications to subscribers in the background
+    try {
+      const activeSubscribers = await Subscriber.find({ isActive: true }).select('email')
+      if (activeSubscribers.length > 0) {
+        // Send emails in background (don't wait for completion)
+        sendBlogNotificationEmail(blog, activeSubscribers).catch(err => 
+          console.error('Error sending blog notification emails:', err)
+        )
+      }
+    } catch (emailError) {
+      console.error('Error fetching subscribers for email notification:', emailError)
+      // Don't fail the blog creation if email fails
+    }
 
     return NextResponse.json({
       success: true,
