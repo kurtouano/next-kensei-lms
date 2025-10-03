@@ -25,18 +25,13 @@ export const authOptions = {
           }
 
           if (user.provider !== "credentials") {
-            throw new Error("This email is already registered with Google. Please use 'Sign in with Google' instead.");
+            throw new Error("Please log in using Google.");
           }
 
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
 
           if (!isPasswordValid) {
             throw new Error("Invalid password.")
-          }
-
-          // Check if email is verified for credentials login
-          if (!user.emailVerified) {
-            throw new Error("Please verify your email before logging in. Check your inbox for a verification link.")
           }
 
           // Return user data including role and additional fields
@@ -143,8 +138,8 @@ export const authOptions = {
         token.country = user.country;
       }
       
-      // For Google login, get additional data from DB
-      if (account?.provider === "google") {
+      // For Google login, get additional data from DB only on first login
+      if (account?.provider === "google" && !token.role) {
         try {
           await connectDb();
           const dbUser = await User.findOne({ email: token.email });
