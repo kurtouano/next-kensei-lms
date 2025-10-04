@@ -60,6 +60,8 @@ export function useChat() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [pagination, setPagination] = useState(null)
+  const [retryCount, setRetryCount] = useState(0)
+  const retryTimeoutRef = useRef(null)
 
   // Fetch user's chats
   const fetchChats = useCallback(async (page = 1) => {
@@ -69,13 +71,32 @@ export function useChat() {
 
     setLoading(true)
     setError(null)
+    
+    // Reset retry count for new fetch attempts
+    if (page === 1) {
+      setRetryCount(0)
+    }
 
     try {
       const response = await fetch(`/api/chats?page=${page}&limit=15`)
       
+      // Handle HTTP errors (like 500 from database connection issues)
+      if (!response.ok) {
+        if (response.status === 500) {
+          throw new Error("Database connection failed. Please wait while we reconnect...")
+        } else if (response.status === 401) {
+          throw new Error("Authentication failed. Please log in again.")
+        } else {
+          throw new Error(`Server error (${response.status}). Please try again.`)
+        }
+      }
+      
       const data = await response.json()
 
       if (data.success) {
+        // Reset retry count on successful fetch
+        setRetryCount(0)
+        
         // Sort chats by lastActivity (newest first)
         const sortedChats = data.chats.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
         
@@ -90,11 +111,31 @@ export function useChat() {
       }
     } catch (error) {
       console.error("Error fetching chats:", error)
+      
+      // Auto-retry for database connection failures
+      if (error.message.includes("Database connection failed") && retryCount < 3) {
+        console.log(`Retrying chat fetch (attempt ${retryCount + 1}/3)...`)
+        setRetryCount(prev => prev + 1)
+        
+        // Wait before retrying (exponential backoff)
+        const delay = Math.pow(2, retryCount) * 1000 // 1s, 2s, 4s
+        
+        // Clear any existing timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current)
+        }
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchChats(page)
+        }, delay)
+        return
+      }
+      
       setError(error.message)
     } finally {
       setLoading(false)
     }
-  }, [session])
+  }, [session, retryCount])
 
   // Create a new chat
   const createChat = useCallback(async (type, participantIds, name = null, description = null) => {
@@ -201,6 +242,15 @@ export function useChat() {
       fetchChats(1)
     }
   }, [session, fetchChats])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+      }
+    }
+  }, [])
 
   return {
     chats,

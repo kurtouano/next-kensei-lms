@@ -114,16 +114,16 @@ export default function ChatInterface() {
     }
   }, [messagesLoading, messages.length, selectedChatId])
 
-  // Manage overall initial load state
+  // Manage overall initial load state - only hide loading when we have data OR confirmed error
   useEffect(() => {
-    if (!chatsLoading && chats.length >= 0) {
-      // Add a small delay to prevent flashing
+    if (!chatsLoading && (chats.length > 0 || chatsError)) {
+      // Only hide loading when we have actual data or a confirmed error
       const timer = setTimeout(() => {
         setIsInitialLoad(false)
       }, 100)
       return () => clearTimeout(timer)
     }
-  }, [chatsLoading, chats.length])
+  }, [chatsLoading, chats.length, chatsError])
 
 
   // Listen for chat refresh events (e.g., after role changes)
