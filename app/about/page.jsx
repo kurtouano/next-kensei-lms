@@ -2,32 +2,10 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Users, BookOpen, Award, Globe, MessageSquare, Heart } from "lucide-react"
+import { Users, BookOpen, MessageSquare, Heart } from "lucide-react"
 import { Footer } from "@/components/footer"
 
 export default function AboutPage() {
-  const stats = [
-    {
-      icon: Users,
-      value: "1000+",
-      label: "Active Students",
-    },
-    {
-      icon: BookOpen,
-      value: "50+",
-      label: "Courses",
-    },
-    {
-      icon: Award,
-      value: "95%",
-      label: "Success Rate",
-    },
-    {
-      icon: Globe,
-      value: "120+",
-      label: "Countries",
-    },
-  ]
 
   const values = [
     {
@@ -60,7 +38,7 @@ export default function AboutPage() {
     {
       name: "Kensei Sensei",
       role: "Founder & Lead Instructor",
-      bio: "Former university professor with 15+ years of Japanese language teaching experience.",
+      bio: "Former university professor with 8+ years of Japanese language teaching experience.",
       image: "/placeholder.svg?height=300&width=300",
     },
     {
@@ -70,9 +48,9 @@ export default function AboutPage() {
       image: "/placeholder.svg?height=300&width=300",
     },
     {
-      name: "Nakamura Hiro",
-      role: "Cultural Content Creator",
-      bio: "Author and cultural consultant specializing in making Japanese traditions accessible to learners.",
+      name: "Kurt Ouano",
+      role: "Software Developer",
+      bio: "Full-stack developer passionate about creating innovative learning platforms and seamless user experiences.",
       image: "/placeholder.svg?height=300&width=300",
     },
   ]
@@ -84,23 +62,13 @@ export default function AboutPage() {
         {/* Hero Section */}
         <section className="bg-[#eef2eb] py-16">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="mb-4 text-4xl font-bold text-[#2c3e2d] md:text-5xl">Our Story</h1>
+            <h1 className="mb-4 text-4xl font-bold text-[#2c3e2d] md:text-5xl">About Jotatsu Academy</h1>
             <p className="mx-auto mb-8 max-w-2xl text-lg text-[#5c6d5e]">
-              日本語ガーデン was founded with a simple mission: to make learning Japanese as rewarding as nurturing a
-              bonsai tree — patient, mindful, and deeply satisfying.
+              Jotatsu Academy is dedicated to making Japanese language learning accessible, engaging, and effective. 
+              Our innovative approach combines traditional language instruction with modern technology and gamification 
+              to create a unique learning experience.
             </p>
             <div className="mx-auto mb-8 h-1 w-16 bg-[#4a7c59]"></div>
-            <div className="grid gap-8 md:grid-cols-4">
-              {stats.map((stat, index) => (
-                <div key={index} className="rounded-lg bg-white p-6 shadow-sm">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#eef2eb]">
-                    <stat.icon className="h-6 w-6 text-[#4a7c59]" />
-                  </div>
-                  <h3 className="mb-1 text-2xl font-bold text-[#2c3e2d]">{stat.value}</h3>
-                  <p className="text-sm text-[#5c6d5e]">{stat.label}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 
