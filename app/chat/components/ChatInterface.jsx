@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react"
 import { useSession } from "next-auth/react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Send, ImageIcon, Paperclip, Smile, Loader2, User, Users, Plus, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +31,7 @@ const GroupMembersModal = lazy(() => import("./GroupMembersModal"))
 export default function ChatInterface() {
   const { data: session } = useSession()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [selectedChatId, setSelectedChatId] = useState(null)
   const [message, setMessage] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -825,12 +826,12 @@ export default function ChatInterface() {
                               // Get the other participant's user ID for direct chats
                               if (Array.isArray(selectedChat.participants)) {
                                 const otherParticipant = selectedChat.participants.find(
-                                  (p) => p._id?.toString() !== session?.user?.id?.toString()
+                                  (p) => p.id?.toString() !== session?.user?.id?.toString()
                                 )
                                 
-                                if (otherParticipant?._id) {
-                                  const profileUrl = `/users/${otherParticipant._id}`
-                                  window.open(profileUrl, '_blank')
+                                if (otherParticipant?.id) {
+                                  const profileUrl = `/users/${otherParticipant.id}`
+                                  router.push(profileUrl)
                                 }
                               }
                             }}
