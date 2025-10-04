@@ -24,19 +24,27 @@ export async function GET() {
           select: 'name'
         }
       })
-      .populate('progressRecords');
+      .select('enrolledCourses progressRecords'); // Only select needed fields
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // OPTIMIZED: Get course IDs once and use for both queries
+    const courseIds = user.enrolledCourses.map(course => course._id);
+    
+    // OPTIMIZED: Fetch only progress records for enrolled courses
+    const progressRecords = await Progress.find({ 
+      user: user._id, 
+      course: { $in: courseIds } 
+    }).lean(); // Use lean() for better performance
+    
     const progressMap = {};
-    user.progressRecords.forEach(progress => {
+    progressRecords.forEach(progress => {
       progressMap[progress.course.toString()] = progress;
     });
 
     // OPTIMIZED: Get all lessons for all courses in one query
-    const courseIds = user.enrolledCourses.map(course => course._id);
     const allLessons = await Lesson.find({ courseRef: { $in: courseIds } })
       .select('_id title courseRef')
       .lean();
@@ -58,62 +66,44 @@ export async function GET() {
       const lessons = lessonsMap[course._id.toString()] || [];
       const totalLessons = lessons.length;
 
-        // FIXED: Use the same logic as your course progress system
-        // Count completed lessons from the lessonProgress array
-        const completedLessons = progress?.lessonProgress
-          ?.filter(lp => lp.lesson && lp.isCompleted)
-          .length || 0;
+      // FIXED: Use the same logic as your course progress system
+      // Count completed lessons from the lessonProgress array
+      const completedLessons = progress?.lessonProgress
+        ?.filter(lp => lp.lesson && lp.isCompleted)
+        .length || 0;
 
-        // Use the courseProgress directly from the progress record
-        const courseProgress = progress?.courseProgress || 0;
+      // Use the courseProgress directly from the progress record
+      const courseProgress = progress?.courseProgress || 0;
 
-        console.log('📊 My Learning Debug:', {
-          courseId: course._id.toString(),
-          courseTitle: course.title,
-          totalLessons,
-          completedLessons,
-          courseProgress,
-          lessonProgressCount: progress?.lessonProgress?.length || 0
-        });
+      // Debug logging removed for performance
 
-        // Determine last lesson (or next lesson)
-        let lastLesson = "Getting Started";
-
-        if (progress?.lessonProgress?.length > 0) {
-          const incompleteLessons = progress.lessonProgress.filter(lp => lp.lesson && !lp.isCompleted);
-
-          if (incompleteLessons.length > 0) {
-            // Find the lesson in our pre-fetched lessons
-            const nextLesson = lessons.find(l => l._id.toString() === incompleteLessons[0].lesson.toString());
-            if (nextLesson) {
-              lastLesson = `Next: ${nextLesson.title}`;
-            }
-          } else {
-            const lastCompleted = progress.lessonProgress
-              .filter(lp => lp.lesson && lp.isCompleted)
-              .sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0))[0];
-
-            if (lastCompleted) {
-              // Find the lesson in our pre-fetched lessons
-              const completedLesson = lessons.find(l => l._id.toString() === lastCompleted.lesson.toString());
-              lastLesson = completedLesson?.title || "Course Completed";
-            }
-          }
+      // OPTIMIZED: Simplified lesson determination
+      let lastLesson = "Getting Started";
+      if (progress?.lessonProgress?.length > 0) {
+        const incompleteLessons = progress.lessonProgress.filter(lp => lp.lesson && !lp.isCompleted);
+        if (incompleteLessons.length > 0) {
+          const nextLesson = lessons.find(l => l._id.toString() === incompleteLessons[0].lesson.toString());
+          lastLesson = nextLesson ? `Next: ${nextLesson.title}` : "Getting Started";
+        } else {
+          lastLesson = "Course Completed";
         }
+      } else if (lessons.length > 0) {
+        lastLesson = `Next: ${lessons[0].title}`;
+      }
 
-        return {
-          id: course._id.toString(),
-          title: course.title,
-          level: course.level.charAt(0).toUpperCase() + course.level.slice(1),
-          progress: courseProgress, // Use the already calculated progress
-          lastLesson,
-          image: course.thumbnail,
-          totalLessons,
-          completedLessons,
-          instructor: course.instructor?.name || "Unknown Instructor",
-          slug: course.slug
-        };
-      });
+      return {
+        id: course._id.toString(),
+        title: course.title,
+        level: course.level.charAt(0).toUpperCase() + course.level.slice(1),
+        progress: courseProgress, // Use the already calculated progress
+        lastLesson,
+        image: course.thumbnail,
+        totalLessons,
+        completedLessons,
+        instructor: course.instructor?.name || "Unknown Instructor",
+        slug: course.slug
+      };
+    });
 
     return NextResponse.json({
       success: true,

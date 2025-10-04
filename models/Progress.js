@@ -61,9 +61,12 @@ const ProgressSchema = new mongoose.Schema( // Individual Progress Record for a 
   { timestamps: true },
 )
 
-// Add compound index for efficient queries
+// Add compound indexes for efficient queries
 ProgressSchema.index({ user: 1, course: 1 }, { unique: true })
-ProgressSchema.index({ user: 1, lessonProgress: 1 });
+ProgressSchema.index({ user: 1, isCompleted: 1 });        // For completed courses queries
+ProgressSchema.index({ course: 1, isCompleted: 1 });      // For course completion stats
+ProgressSchema.index({ user: 1, courseProgress: -1 });    // For progress sorting
+ProgressSchema.index({ completedAt: -1 });                // For recent completions
 
 const Progress = mongoose.models.Progress || mongoose.model("Progress", ProgressSchema)
 
