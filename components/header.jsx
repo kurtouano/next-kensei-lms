@@ -368,57 +368,79 @@ export function Header() {
 
         {/* Mobile Right Side - Social Buttons + Profile + Menu Button */}
         <div className="flex items-center gap-2 lg:hidden">
-          {/* Mobile Social Buttons */}
-          <div className="flex items-center gap-1">
-            {/* Friends/Users Button */}
-            <Link 
-              href="/users" 
-              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
-              title="Find Friends"
-            >
-              <Users size={18} className="text-[#4a7c59]" />
-              {/* Online Friends Badge */}
-              {onlineCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {onlineCount > 9 ? '9+' : onlineCount}
-                </span>
-              )}
-            </Link>
-            
-            {/* Chat Button */}
-            <Link 
-              href="/chat" 
-              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
-              title="Chat"
-            >
-              <MessageCircleMore size={18} className="text-[#4a7c59]" />
-            </Link>
-            
-            {/* Notifications Button */}
-            <Link 
-              href="/notifications" 
-              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
-              title="Notifications"
-            >
-              <Bell size={18} className="text-[#4a7c59]" />
-              {/* Notification Badge */}
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {notificationCount > 9 ? '9+' : notificationCount}
-                </span>
-              )}
-            </Link>
-            
-          </div>
+          {isAuthenticated ? (
+            <>
+              {/* Mobile Social Buttons - Only show when authenticated */}
+              <div className="flex items-center gap-1">
+                {/* Friends/Users Button */}
+                <Link 
+                  href="/users" 
+                  className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
+                  title="Find Friends"
+                >
+                  <Users size={18} className="text-[#4a7c59]" />
+                  {/* Online Friends Badge */}
+                  {onlineCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {onlineCount > 9 ? '9+' : onlineCount}
+                    </span>
+                  )}
+                </Link>
+                
+                {/* Chat Button */}
+                <Link 
+                  href="/chat" 
+                  className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+                  title="Chat"
+                >
+                  <MessageCircleMore size={18} className="text-[#4a7c59]" />
+                </Link>
+                
+                {/* Notifications Button */}
+                <Link 
+                  href="/notifications" 
+                  className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
+                  title="Notifications"
+                >
+                  <Bell size={18} className="text-[#4a7c59]" />
+                  {/* Notification Badge */}
+                  {notificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {notificationCount > 9 ? '9+' : notificationCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            className="inline-flex items-center justify-center rounded-md p-2 text-[#2c3e2d]"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <span className="sr-only">Open main menu</span>
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+              {/* Mobile Menu Button */}
+              <button
+                className="inline-flex items-center justify-center rounded-md p-2 text-[#2c3e2d]"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                <span className="sr-only">Open main menu</span>
+                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Get Started Button for non-authenticated users */}
+                <Link 
+                  href="/auth/signup" 
+                  className="rounded-md bg-[#4a7c59] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]"
+                >
+                  Get Started
+                </Link>
+
+              {/* Mobile Menu Button */}
+              <button
+                className="inline-flex items-center justify-center rounded-md p-2 text-[#2c3e2d]"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                <span className="sr-only">Open main menu</span>
+                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -531,24 +553,6 @@ export function Header() {
                 >
                   About
                 </Link>
-                
-                {/* Mobile Auth Buttons */}
-                <div className="pt-4 border-t border-[#dce4d7] space-y-2">
-                  <Link 
-                    href="/auth/login" 
-                    className="block w-full rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-sm font-medium text-[#4a7c59] text-center transition-colors hover:bg-[#eef2eb]"
-                    onClick={closeMobileMenu}
-                  >
-                    Log In
-                  </Link>
-                  <Link 
-                    href="/auth/signup" 
-                    className="block w-full rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white text-center transition-colors hover:bg-[#3a6147]"
-                    onClick={closeMobileMenu}
-                  >
-                    Get Started
-                  </Link>
-                </div>
               </>
             )}
           </div>
