@@ -93,6 +93,9 @@ export async function PUT(request, { params }) {
     bonsai.updatedAt = new Date();
     await bonsai.save();
 
+    // Update user to reference the bonsai record
+    await User.findByIdAndUpdate(userId, { bonsai: bonsai._id });
+
     const levelInfo = getLevelInfo(user.credits);
     const response = {
       message: "Bonsai preferences saved successfully", 
