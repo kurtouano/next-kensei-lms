@@ -847,7 +847,7 @@ export default function ChatInterface() {
                   {/* Messages */}
                   <div 
                     ref={messagesContainerRef}
-                    className="flex-1 overflow-y-auto overflow-x-hidden p-1 sm:p-2 space-y-3 sm:space-y-4 bg-gray-50 scroll-smooth"
+                    className="flex-1 overflow-y-auto overflow-x-hidden p-1 sm:p-2 pb-8 space-y-3 sm:space-y-4 bg-gray-50 scroll-smooth"
                     style={{ scrollBehavior: 'smooth' }}
                   >
                     {(messagesLoading || isInitialChatLoad || isInitialLoad) ? (

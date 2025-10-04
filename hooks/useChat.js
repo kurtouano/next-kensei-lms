@@ -307,7 +307,7 @@ export function useChatMessages(chatId, onNewMessage = null) {
   const scrollToBottom = useCallback(() => {
     if (messagesEndRef.current) {
       try {
-        messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" })
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "start" })
         isUserAtBottom.current = true
       } catch (error) {
         // Fallback for older browsers
