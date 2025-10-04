@@ -81,36 +81,20 @@ export default function LearnJapanesePage() {
         {/* Hero Section */}
         <section className="py-20 bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">
               Learn Japanese Online
             </h1>
-            <p className="text-xl md:text-2xl mb-8 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl mb-8 max-w-4xl mx-auto leading-relaxed">
               Master the Japanese language with our comprehensive online courses. From beginner <strong>hiragana</strong> and <strong>katakana</strong> 
               to advanced <strong>JLPT N1</strong> preparation, start your journey to Japanese fluency today. Our proven learning methods 
               help thousands of students achieve their Japanese language goals faster and more effectively.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <a href="/courses" className="bg-white text-[#4a7c59] hover:bg-gray-100 px-8 py-4 text-lg font-semibold rounded-lg transition-colors">
-                Start Learning Now
-              </a>
-              <a href="/about" className="border-2 border-white text-white hover:bg-white hover:text-[#4a7c59] px-8 py-4 text-lg font-semibold rounded-lg transition-colors">
-                About Our Academy
+                Browse Courses
               </a>
             </div>
             
-            {/* Additional internal links for SEO */}
-            <div className="mt-8 text-center">
-              <p className="text-white/80 mb-4">Quick Navigation:</p>
-              <div className="flex flex-wrap justify-center gap-3 text-sm">
-                <a href="/courses" className="text-white/90 hover:text-white underline">Japanese Courses</a>
-                <span className="text-white/60">•</span>
-                <a href="/blogs" className="text-white/90 hover:text-white underline">Japanese Learning Blog</a>
-                <span className="text-white/60">•</span>
-                <a href="/subscription" className="text-white/90 hover:text-white underline">Learning Plans</a>
-                <span className="text-white/60">•</span>
-                <a href="/about" className="text-white/90 hover:text-white underline">About Jotatsu</a>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -219,11 +203,6 @@ export default function LearnJapanesePage() {
               ))}
             </div>
 
-            <div className="text-center">
-              <a href="/courses" className="bg-[#4a7c59] text-white hover:bg-[#3a6147] px-8 py-4 text-lg font-semibold rounded-lg transition-colors">
-                View JLPT Preparation Courses
-              </a>
-            </div>
           </div>
         </section>
 
@@ -324,61 +303,6 @@ export default function LearnJapanesePage() {
           </div>
         </section>
 
-        {/* Why Choose Jotatsu Section */}
-        <section className="py-16 bg-[#eef2eb]">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-[#2c3e2d] mb-6">
-                Why Choose Jotatsu Academy?
-              </h2>
-              <p className="text-xl text-[#5c6d5e] max-w-3xl mx-auto">
-                Our unique approach combines traditional Japanese language instruction with modern technology 
-                and gamification to make learning engaging and effective.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[
-                {
-                  icon: "🎓",
-                  title: "Expert Instructors",
-                  desc: "Learn from native Japanese speakers and certified language teachers with years of experience."
-                },
-                {
-                  icon: "📱",
-                  title: "Interactive Learning",
-                  desc: "Engage with multimedia content, quizzes, and practice exercises that adapt to your learning pace."
-                },
-                {
-                  icon: "🎮",
-                  title: "Gamified Experience",
-                  desc: "Earn credits and customize your virtual bonsai tree as you progress through lessons."
-                },
-                {
-                  icon: "📚",
-                  title: "Comprehensive Curriculum",
-                  desc: "From absolute beginner to advanced JLPT N1, we cover every aspect of Japanese learning."
-                },
-                {
-                  icon: "🏆",
-                  title: "Official Certificates",
-                  desc: "Earn recognized completion certificates for each course to showcase your achievements."
-                },
-                {
-                  icon: "🌍",
-                  title: "Global Community",
-                  desc: "Connect with Japanese learners worldwide and practice with native speakers."
-                }
-              ].map((feature, index) => (
-                <div key={index} className="text-center p-6 bg-white rounded-lg shadow-sm border border-[#dce4d7]">
-                  <div className="text-4xl mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold text-[#2c3e2d] mb-3">{feature.title}</h3>
-                  <p className="text-[#5c6d5e] leading-relaxed">{feature.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* FAQ Section for SEO */}
         <section className="py-16 bg-white">
@@ -443,21 +367,35 @@ export default function LearnJapanesePage() {
         {/* Final CTA Section */}
         <section className="py-20 bg-gradient-to-r from-[#4a7c59] to-[#6b8e6b] text-white">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-4xl font-bold mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
               Ready to Start Your Japanese Learning Journey?
             </h2>
-            <p className="text-xl mb-8 max-w-3xl mx-auto opacity-90">
+            <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto opacity-90">
               Whether you're a complete beginner wanting to learn hiragana and katakana, 
               or an advanced student preparing for JLPT N1, Jotatsu Academy has the perfect 
               course for you. Join our community of Japanese learners and achieve fluency faster than you ever thought possible.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="/courses" className="bg-white text-[#4a7c59] hover:bg-gray-100 px-8 py-4 text-lg font-semibold rounded-lg transition-colors">
+              <a href="/courses" className="bg-white text-[#4a7c59] hover:bg-gray-100 px-6 py-3 text-base font-semibold rounded-lg transition-colors sm:px-8 sm:py-4 sm:text-lg">
                 Browse All Courses
               </a>
-              <a href="/subscription" className="border-2 border-white text-white hover:bg-white hover:text-[#4a7c59] px-8 py-4 text-lg font-semibold rounded-lg transition-colors">
-                View Pricing Plans
+              <a href="/about" className="border-2 border-white text-white hover:bg-white hover:text-[#4a7c59] px-6 py-3 text-base font-semibold rounded-lg transition-colors sm:px-8 sm:py-4 sm:text-lg">
+                About Our Academy
               </a>
+            </div>
+            
+            {/* Quick Navigation */}
+            <div className="mt-8 text-center">
+              <p className="text-white/80 mb-4">Quick Navigation:</p>
+              <div className="flex flex-wrap justify-center gap-3 text-sm">
+                <a href="/courses" className="text-white/90 hover:text-white underline">Courses</a>
+                <span className="text-white/60">•</span>
+                <a href="/blogs" className="text-white/90 hover:text-white underline">Blogs</a>
+                <span className="text-white/60">•</span>
+                <a href="/about" className="text-white/90 hover:text-white underline">About</a>
+                <span className="text-white/60">•</span>
+                <a href="/auth/signup" className="text-white/90 hover:text-white underline">Sign Up</a>
+              </div>
             </div>
           </div>
         </section>
