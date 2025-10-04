@@ -21,6 +21,8 @@ export default function BlogsPage() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [retryCount, setRetryCount] = useState(0)
+  const retryTimeoutRef = useRef(null)
   
   // Pagination state
   const [displayedFeaturedBlogs, setDisplayedFeaturedBlogs] = useState([])
@@ -115,15 +117,33 @@ export default function BlogsPage() {
       setLoading(true)
       setError(null)
       
+      // Reset retry count for new fetch attempts
+      setRetryCount(0)
+      
       const params = new URLSearchParams({
         limit: '100',
         sortBy: 'newest'
       })
 
       const response = await fetch(`/api/blogs?${params}`)
+      
+      // Handle HTTP errors (like 500 from database connection issues)
+      if (!response.ok) {
+        if (response.status === 500) {
+          throw new Error("Database connection failed. Please wait while we reconnect...")
+        } else if (response.status === 401) {
+          throw new Error("Authentication failed. Please log in again.")
+        } else {
+          throw new Error(`Server error (${response.status}). Please try again.`)
+        }
+      }
+      
       const data = await response.json()
 
       if (data.success) {
+        // Reset retry count on successful fetch
+        setRetryCount(0)
+        
         setAllBlogs(data.blogs)
 
         // Get popular posts based on views and likes (top 3)
@@ -157,7 +177,28 @@ export default function BlogsPage() {
         setError(data.error || 'Failed to fetch blogs')
       }
     } catch (err) {
-      setError('Failed to fetch blogs')
+      console.error('Error fetching blogs:', err)
+      
+      // Auto-retry for database connection failures
+      if (err.message.includes("Database connection failed") && retryCount < 3) {
+        console.log(`Retrying blogs fetch (attempt ${retryCount + 1}/3)...`)
+        setRetryCount(prev => prev + 1)
+        
+        // Wait before retrying (exponential backoff)
+        const delay = Math.pow(2, retryCount) * 1000 // 1s, 2s, 4s
+        
+        // Clear any existing timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current)
+        }
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchAllBlogs()
+        }, delay)
+        return
+      }
+      
+      setError(err.message || 'Failed to fetch blogs')
     } finally {
       setLoading(false)
     }
@@ -166,6 +207,15 @@ export default function BlogsPage() {
   // Load data once on component mount
   useEffect(() => {
     fetchAllBlogs()
+  }, [])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+      }
+    }
   }, [])
   
   // Handle newsletter subscription

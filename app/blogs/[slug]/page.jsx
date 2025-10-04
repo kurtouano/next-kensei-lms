@@ -47,6 +47,18 @@ export default function BlogPostPage({ params }) {
 
         // Fetch the specific blog post
         const response = await fetch(`/api/blogs/${slug}`)
+        
+        // Handle HTTP errors (like 500 from database connection issues)
+        if (!response.ok) {
+          if (response.status === 500) {
+            throw new Error("Database connection failed. Please wait while we reconnect...")
+          } else if (response.status === 404) {
+            throw new Error("Blog post not found")
+          } else {
+            throw new Error(`Server error (${response.status}). Please try again.`)
+          }
+        }
+        
         const data = await response.json()
 
         if (data.success) {
@@ -64,7 +76,7 @@ export default function BlogPostPage({ params }) {
         }
       } catch (err) {
         console.error('Error fetching blog post:', err)
-        setError('Failed to load blog post')
+        setError(err.message || 'Failed to load blog post')
       } finally {
         setLoading(false)
       }
