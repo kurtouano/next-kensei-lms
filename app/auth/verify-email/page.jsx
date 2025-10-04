@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { BonsaiIcon } from "@/components/bonsai-icon"
+import JotatsuLogo from "@/components/jotatsu-logo"
 import { Button } from "@/components/ui/button"
 
 function VerifyEmailForm() {
@@ -67,9 +67,8 @@ function VerifyEmailForm() {
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
       <div className="container mx-auto flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 py-12">
-        <Link href="/" className="mb-8 flex items-center gap-2">
-          <BonsaiIcon className="h-10 w-10 text-[#4a7c59]" />
-          <span className="text-2xl font-semibold text-[#2c3e2d]">Jotatsu</span>
+        <Link href="/" className="mb-6 md:mb-8">
+          <JotatsuLogo className="h-9 w-9" />
         </Link>
 
         <div className="w-full max-w-md rounded-lg border border-[#dce4d7] bg-white p-8 shadow-sm text-center">

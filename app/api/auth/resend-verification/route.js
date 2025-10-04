@@ -8,48 +8,41 @@ export async function POST(req) {
     await connectDb();
     const { email } = await req.json();
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
-    }
-
-    // Find user with this email
+    // Check if user exists
     const user = await User.findOne({ email });
-
     if (!user) {
-      return NextResponse.json({ 
-        error: "No account found with this email address" 
-      }, { status: 404 });
+      return NextResponse.json({ error: "No account found with this email address" }, { status: 404 });
     }
 
-    // Check if user is already verified
-    if (user.emailVerified) {
+    // Check if user signed up with Google (no verification needed for OAuth users)
+    if (user.provider === "google") {
       return NextResponse.json({ 
-        error: "This email is already verified" 
+        error: "This account was created with Google. Please use 'Continue with Google' to sign in." 
       }, { status: 400 });
     }
 
-    // Check if user is using credentials (not Google)
-    if (user.provider !== "credentials") {
+    // Check if already verified
+    if (user.emailVerified) {
       return NextResponse.json({ 
-        error: "This email is registered with Google. Please use 'Sign in with Google' instead." 
+        error: "Email address is already verified." 
       }, { status: 400 });
     }
 
     // Generate new verification token
-    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
-    const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Update user with new token
-    user.emailVerificationToken = emailVerificationToken;
-    user.emailVerificationExpires = emailVerificationExpires;
+    // Update user with new verification token
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = verificationExpires;
     await user.save();
 
-    // Send verification email using Resend
+    // Send verification email
     try {
       const { Resend } = await import('resend')
       const resend = new Resend(process.env.RESEND_API_KEY)
       
-      const verificationUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${emailVerificationToken}`;
+      const verificationUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${verificationToken}`;
       
       await resend.emails.send({
         from: 'Jotatsu Academy <noreply@jotatsu.com>',
@@ -67,43 +60,55 @@ export async function POST(req) {
             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
               <!-- Header -->
               <div style="background: linear-gradient(135deg, #4a7c59 0%, #6b8e6b 100%); padding: 40px 30px; text-align: center;">
-                <div style="background-color: rgba(255, 255, 255, 1); border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255, 255, 255, 0.2);">
+                <div style="background-color: rgba(255, 255, 255, 1); border-radius: 50%; width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255, 255, 255, 0.2);">
                   <img src="https://jotatsu.com/jotatsu_logo.png" alt="Jotatsu Academy" style="width: 50px; padding-left: 20px; padding-top: 18px; height: 45px; object-fit: contain;">
                 </div>
-                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">Verify Your Email</h1>
-                <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px; font-weight: 300;">Complete your account setup</p>
               </div>
               
               <!-- Content -->
               <div style="padding: 40px 30px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                  <h2 style="color: #1f2937; margin: 0 0 15px 0; font-size: 24px; font-weight: 600;">Welcome to Jotatsu Academy!</h2>
-                  <p style="color: #6b7280; margin: 0; font-size: 16px; line-height: 1.6;">Hi ${user.name}, please verify your email address to complete your account setup and start your Japanese learning journey.</p>
-                </div>
+                <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">Hello ${user.name}!</h2>
+                <p style="color: #6b7280; margin: 0 0 30px 0; font-size: 16px; line-height: 1.6;">Thank you for signing up! To complete your registration and start your Japanese learning journey, please verify your email address by clicking the button below.</p>
                 
                 <!-- Verification Button -->
                 <div style="text-align: center; margin: 30px 0;">
                   <a href="${verificationUrl}" style="background-color: #4a7c59; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; transition: background-color 0.3s;">
-                    Verify Email Address
+                    Verify My Email Address
                   </a>
                 </div>
                 
-                <!-- Alternative Link -->
-                <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 30px 0; text-align: center;">
-                  <p style="color: #6b7280; margin: 0 0 10px 0; font-size: 14px;">If the button doesn't work, copy and paste this link:</p>
-                  <p style="color: #4a7c59; margin: 0; font-size: 12px; word-break: break-all; font-family: monospace;">${verificationUrl}</p>
+                <!-- What happens next -->
+                <div style="background-color: #f9fafb; border-left: 4px solid #4a7c59; border-radius: 0 8px 8px 0; padding: 20px; margin: 30px 0;">
+                  <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">What happens next?</h3>
+                  <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background-color: #4a7c59; border-radius: 50%; width: 24px; height: 24px; margin-right: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                      <span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; padding-left: 5px; padding-top: 3px;">1</span>
+                    </div>
+                    <span style="color: #374151; font-size: 15px;">Click the verification button above</span>
+                  </div>
+                  <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background-color: #4a7c59; border-radius: 50%; width: 24px; height: 24px; margin-right: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                      <span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; padding-left: 5px; padding-top: 3px;">2</span>
+                    </div>
+                    <span style="color: #374151; font-size: 15px;">You'll be redirected to the login page</span>
+                  </div>
+                  <div style="display: flex; align-items: center; margin-bottom: 0;">
+                    <div style="background-color: #4a7c59; border-radius: 50%; width: 24px; height: 24px; margin-right: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                      <span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; padding-left: 5px; padding-top: 3px;">3</span>
+                    </div>
+                    <span style="color: #374151; font-size: 15px;">Start your Japanese learning adventure!</span>
+                  </div>
                 </div>
                 
-                <!-- Important Note -->
+                <!-- Security Note -->
                 <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
-                  <p style="color: #92400e; margin: 0; font-size: 14px; font-weight: 500;">⏰ This verification link will expire in 24 hours for security reasons.</p>
+                  <p style="color: #92400e; margin: 0; font-size: 14px; font-weight: 500;">Security Note: This verification link will expire in 24 hours. If you didn't create an account with us, please ignore this email.</p>
                 </div>
               </div>
               
               <!-- Footer -->
               <div style="background-color: #f3f4f6; padding: 25px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                 <p style="color: #6b7280; margin: 0 0 10px 0; font-size: 14px;">© 2024 Jotatsu Academy. All rights reserved.</p>
-                <p style="color: #9ca3af; margin: 0; font-size: 12px;">If you didn't create an account, you can safely ignore this email.</p>
               </div>
             </div>
           </body>
@@ -111,15 +116,11 @@ export async function POST(req) {
         `
       });
 
-      return NextResponse.json({ 
-        message: "Verification email sent successfully" 
-      }, { status: 200 });
-
+      console.log("Verification email resent to:", email);
+      return NextResponse.json({ message: "Verification email sent successfully" }, { status: 200 });
     } catch (emailError) {
       console.error('Email sending error:', emailError);
-      return NextResponse.json({ 
-        error: "Failed to send verification email. Please try again." 
-      }, { status: 500 });
+      return NextResponse.json({ error: "Failed to send verification email" }, { status: 500 });
     }
 
   } catch (error) {

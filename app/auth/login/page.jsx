@@ -8,6 +8,13 @@ import JotatsuLogo from "@/components/jotatsu-logo"
 import { GoogleIcon } from "@/components/google-icon"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
+import dynamic from "next/dynamic"
+
+const ForgotPasswordModal = dynamic(() => import("@/components/ForgotPasswordModal"), {
+  loading: () => <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
+  </div>
+})
 
 function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -21,6 +28,7 @@ function LoginForm() {
   const [success, setSuccess] = useState("")
   const [showResendVerification, setShowResendVerification] = useState(false)
   const [isResending, setIsResending] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -203,9 +211,13 @@ function LoginForm() {
                 <label htmlFor="password" className="block text-sm font-medium text-[#2c3e2d]">
                   Password
                 </label>
-                <Link href="/forgot-password" className="text-xs text-[#4a7c59] hover:underline">
+                <button 
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-xs text-[#4a7c59] hover:underline"
+                >
                   Forgot password?
-                </Link>
+                </button>
               </div>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -264,6 +276,11 @@ function LoginForm() {
           </p>
         </div>
       </div>
+      
+      <ForgotPasswordModal 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
     </div>
   )
 }
