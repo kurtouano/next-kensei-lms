@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useState, useEffect, Suspense } from "react"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { BonsaiIcon } from "@/components/bonsai-icon"
+import JotatsuLogo from "@/components/jotatsu-logo"
 import { GoogleIcon } from "@/components/google-icon"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -134,9 +134,8 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
       <div className="container mx-auto flex min-h-[calc(100vh-8.5rem)] flex-col items-center justify-center px-4 py-12">
-        <Link href="/" className="mb-8 flex items-center gap-2">
-          <BonsaiIcon className="h-10 w-10 text-[#4a7c59]" />
-            <span className="text-2xl font-semibold text-[#2c3e2d]">Jotatsu</span>
+        <Link href="/" className="mb-8">
+          <JotatsuLogo className="h-12 w-12" />
         </Link>
 
         <div className="w-full max-w-md rounded-lg border border-[#dce4d7] bg-white p-8 shadow-sm">

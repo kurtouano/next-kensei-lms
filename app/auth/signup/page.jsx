@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { BonsaiIcon } from "@/components/bonsai-icon"
+import JotatsuLogo from "@/components/jotatsu-logo"
 import { GoogleIcon } from "@/components/google-icon"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -17,7 +17,6 @@ export default function SignUpPage() {
     email: "",
     password: "",
     provider: "credentials",
-    agreedToTerms: false,
   })
 
   const [showPassword, setShowPassword] = useState(false)
@@ -37,11 +36,6 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    if (!formData.agreedToTerms) {
-      setError("You must agree to the Terms of Service")
-      return
-    }
 
     setIsLoading(true)
     setError("")
@@ -65,7 +59,6 @@ export default function SignUpPage() {
             name: "",
             email: "",
             password: "",
-            agreedToTerms: false,
           })
         } else {
           router.push("/auth/login") // redirect to login page for Google signup
@@ -98,10 +91,9 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-      <div className="container mx-auto flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 py-12">
-        <Link href="/" className="mb-8 flex items-center gap-2">
-          <BonsaiIcon className="h-10 w-10 text-[#4a7c59]" />
-            <span className="text-2xl font-semibold text-[#2c3e2d]">Jotatsu</span>
+      <div className="container mx-auto flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 py-6">
+        <Link href="/" className="mb-8">
+          <JotatsuLogo className="h-12 w-12" />
         </Link>
 
         <div className="w-full max-w-md rounded-lg border border-[#dce4d7] bg-white p-8 shadow-sm">
@@ -112,28 +104,38 @@ export default function SignUpPage() {
 
           {error && <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>}
           
-          {success && (
-            <div className="mb-6 rounded-lg bg-green-50 p-8 text-center border border-green-200">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="mb-3 text-2xl font-bold text-green-800">Check your email!</h3>
-              <p className="mb-6 text-base text-green-700">
-                We've sent a verification link to <strong className="text-green-900">{userEmail}</strong>. 
-                Click the link to verify your account and complete your registration.
-              </p>
-              <div className="mt-6">
-                <Link 
-                  href="/auth/login" 
-                  className="inline-flex items-center justify-center px-8 py-3 bg-green-600 text-white text-base font-semibold rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm hover:shadow-md"
-                >
-                  Go to Login Page
-                </Link>
-              </div>
-            </div>
-          )}
+           {success && (
+             <div className="mb-6 rounded-xl bg-green-50 p-6 text-center border border-green-200 shadow-sm">
+               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                 <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                 </svg>
+               </div>
+               
+               <h3 className="mb-2 text-lg font-semibold text-green-800">Check your email!</h3>
+               
+               <p className="mb-4 text-sm text-green-700 leading-relaxed">
+                 We've sent a verification link to
+               </p>
+               
+               <div className="mb-6">
+                 <span className="inline-block px-3 py-1 bg-green-100 text-sm font-medium text-green-800 rounded-md">
+                   {userEmail}
+                 </span>
+               </div>
+               
+               <p className="mb-6 text-xs text-green-600">
+                 Click the link to verify your account and complete your registration.
+               </p>
+               
+               <Link 
+                 href="/auth/login" 
+                 className="inline-flex items-center justify-center px-4 py-2 bg-[#4a7c59] text-white text-sm font-medium rounded-lg hover:bg-[#3a6147] transition-colors duration-200"
+               >
+                 Login
+               </Link>
+             </div>
+           )}
 
           {!success && (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -206,27 +208,6 @@ export default function SignUpPage() {
               <p className="text-xs text-[#5c6d5e]">Password must be at least 8 characters long</p>
             </div>
 
-            <div className="flex items-start">
-              <div className="flex h-5 items-center">
-                <input
-                  id="agreedToTerms"
-                  type="checkbox"
-                  checked={formData.agreedToTerms}
-                  onChange={handleOnChange}
-                  className="h-4 w-4 rounded border-[#dce4d7] text-[#4a7c59] focus:ring-[#4a7c59]"
-                />
-              </div>
-              <label htmlFor="terms" className="ml-2 block text-sm text-[#5c6d5e]">
-                I agree to the{" "}
-                <Link href="/terms" className="font-medium text-[#4a7c59] hover:underline">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" className="font-medium text-[#4a7c59] hover:underline">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
 
             <Button
               type="submit"
