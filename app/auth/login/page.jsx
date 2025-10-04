@@ -134,8 +134,8 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
       <div className="container mx-auto flex min-h-[calc(100vh-8.5rem)] flex-col items-center justify-center px-4 py-12">
-        <Link href="/" className="mb-8">
-          <JotatsuLogo className="h-12 w-12" />
+        <Link href="/" className="mb-6 md:mb-8">
+          <JotatsuLogo className="h-9 w-9" />
         </Link>
 
         <div className="w-full max-w-md rounded-lg border border-[#dce4d7] bg-white p-8 shadow-sm">

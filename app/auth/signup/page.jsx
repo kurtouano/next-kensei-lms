@@ -27,10 +27,10 @@ export default function SignUpPage() {
   const router = useRouter()
 
   const handleOnChange = (e) => {
-    const { id, value, type, checked } = e.target
+    const { id, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [id]: type === "checkbox" ? checked : value,
+      [id]: value,
     }))
   }
 
@@ -92,8 +92,8 @@ export default function SignUpPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
       <div className="container mx-auto flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 py-6">
-        <Link href="/" className="mb-8">
-          <JotatsuLogo className="h-12 w-12" />
+        <Link href="/" className="mb-6 md:mb-8">
+          <JotatsuLogo className="h-9 w-9" />
         </Link>
 
         <div className="w-full max-w-md rounded-lg border border-[#dce4d7] bg-white p-8 shadow-sm">
