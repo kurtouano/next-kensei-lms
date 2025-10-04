@@ -44,7 +44,8 @@ export default function RecentArticlesPage() {
             selectedMouth={author.bonsai?.customization?.mouth || 'default_mouth'}
             selectedPotStyle={author.bonsai?.customization?.potStyle || 'default_pot'}
             selectedGroundStyle={author.bonsai?.customization?.groundStyle || 'default_ground'}
-            decorations={author.bonsai?.customization?.decorations ? Object.values(author.bonsai.customization.decorations).filter(Boolean) : []}
+            selectedHat={author.bonsai?.customization?.hat || null}
+            selectedBackground={author.bonsai?.customization?.background || null}
             zoomed={true}
           />
         </div>

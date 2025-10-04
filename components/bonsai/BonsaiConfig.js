@@ -79,11 +79,8 @@ export const BONSAI_CONFIG = {
     mouth: "default_mouth",
     potStyle: "default_pot",
     groundStyle: "default_ground",
-    decorations: {
-      hats: null,
-      ambient: null,
-      background: null
-    }
+    hat: null,
+    background: null
   }
 };
 

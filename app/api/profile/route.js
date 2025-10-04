@@ -12,6 +12,7 @@ import Course from "@/models/Course.js";
 import Rating from "@/models/Rating.js";
 import sseManager from "@/lib/sseManager";
 import Friend from "@/models/Friend.js";
+import { calculateBonsaiLevel, getLevelInfo } from "@/lib/levelCalculator";
 
 export async function GET() {
     try {
@@ -74,8 +75,15 @@ export async function GET() {
         
         const certifications = uniqueCertifications;
 
-        // Get bonsai data
-        const bonsai = user.bonsai || null;
+        // Get bonsai data and calculate level
+        let bonsai = user.bonsai || null;
+        
+        // If bonsai is not populated, fetch it directly
+        if (!bonsai) {
+            bonsai = await Bonsai.findOne({ userRef: user._id });
+        }
+        
+        const levelInfo = getLevelInfo(user.lifetimeCredits || 0);
 
         return NextResponse.json({
             success: true,
@@ -100,8 +108,8 @@ export async function GET() {
                 },
                 certifications: certifications,
                 bonsai: bonsai ? {
-                    level: bonsai.level || 1,
-                    totalCredits: bonsai.totalCredits || 0,
+                    level: levelInfo.level,
+                    totalCredits: user.lifetimeCredits || 0,
                     customization: {
                         eyes: bonsai.customization?.eyes || 'default_eyes',
                         mouth: bonsai.customization?.mouth || 'default_mouth',
@@ -109,12 +117,13 @@ export async function GET() {
                         potStyle: bonsai.customization?.potStyle || 'default_pot',
                         potColor: bonsai.customization?.potColor || '#FD9475',
                         groundStyle: bonsai.customization?.groundStyle || 'default_ground',
-                        decorations: bonsai.customization?.decorations || {}
+                        hat: bonsai.customization?.hat || null,
+                        background: bonsai.customization?.background || null
                     },
                     ownedItems: bonsai.ownedItems || []
                 } : {
-                    level: 1,
-                    totalCredits: 0,
+                    level: levelInfo.level,
+                    totalCredits: user.lifetimeCredits || 0,
                     customization: {
                         eyes: 'default_eyes',
                         mouth: 'default_mouth',
@@ -122,7 +131,8 @@ export async function GET() {
                         potStyle: 'default_pot',
                         potColor: '#FD9475',
                         groundStyle: 'default_ground',
-                        decorations: {}
+                        hat: null,
+                        background: null
                     },
                     ownedItems: []
                 },

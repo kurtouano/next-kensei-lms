@@ -555,7 +555,8 @@ const QuestionItem = memo(function QuestionItem({
               selectedMouth={user.bonsai?.customization?.mouth || 'default_mouth'}
               selectedPotStyle={user.bonsai?.customization?.potStyle || 'default_pot'}
               selectedGroundStyle={user.bonsai?.customization?.groundStyle || 'default_ground'}
-              decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
+              selectedHat={user.bonsai?.customization?.hat || null}
+              selectedBackground={user.bonsai?.customization?.background || null}
               zoomed={true}
               profileIcon={true}
             />
@@ -767,7 +768,8 @@ const CommentItem = memo(function CommentItem({
               selectedMouth={user.bonsai?.customization?.mouth || 'default_mouth'}
               selectedPotStyle={user.bonsai?.customization?.potStyle || 'default_pot'}
               selectedGroundStyle={user.bonsai?.customization?.groundStyle || 'default_ground'}
-              decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
+              selectedHat={user.bonsai?.customization?.hat || null}
+              selectedBackground={user.bonsai?.customization?.background || null}
               zoomed={true}
               profileIcon={true}
             />

@@ -9,7 +9,7 @@ import { Award, Palette, Flower, ShoppingBag, Eye, EyeClosed, Sparkles, Crown, L
 import { BonsaiPageSkeleton } from "@/components/BonsaiSkeleton"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "./BonsaiSVG"
-import { getDecorationSubcategories, getOwnedDecorationsBySubcategory, getItemById } from "@/components/bonsai/shopItems"
+import { getAvailableHats, getAvailableBackgrounds, getItemById } from "@/components/bonsai/shopItems"
 import { BonsaiConfigHelpers, BONSAI_CONFIG } from "@/components/bonsai/BonsaiConfig"
 
 // Lazy load heavy components
@@ -29,7 +29,8 @@ export default function BonsaiInterface() {
   const [useCustomPotColor, setUseCustomPotColor] = useState(false)
   const [selectedEyes, setSelectedEyes] = useState(BONSAI_CONFIG.defaults.eyes)
   const [selectedMouth, setSelectedMouth] = useState(BONSAI_CONFIG.defaults.mouth)
-  const [selectedDecorations, setSelectedDecorations] = useState(BONSAI_CONFIG.defaults.decorations)
+  const [selectedHat, setSelectedHat] = useState(BONSAI_CONFIG.defaults.hat)
+  const [selectedBackground, setSelectedBackground] = useState(BONSAI_CONFIG.defaults.background)
   const [selectedGroundStyle, setSelectedGroundStyle] = useState(BONSAI_CONFIG.defaults.groundStyle)
   const [selectedPotStyle, setSelectedPotStyle] = useState(BONSAI_CONFIG.defaults.potStyle)
   const [activeTab, setActiveTab] = useState("customize")
@@ -97,25 +98,9 @@ export default function BonsaiInterface() {
           setSelectedPotStyle(data.customization.potStyle || BONSAI_CONFIG.defaults.potStyle)
           setSelectedGroundStyle(data.customization.groundStyle || BONSAI_CONFIG.defaults.groundStyle)
           
-          // Handle decoration subcategories
-          if (data.customization.decorations) {
-            if (typeof data.customization.decorations === 'object' && !Array.isArray(data.customization.decorations)) {
-              setSelectedDecorations({
-                hats: data.customization.decorations.hats || null,
-                ambient: data.customization.decorations.ambient || null,
-                background: data.customization.decorations.background || null
-              })
-            } else if (Array.isArray(data.customization.decorations)) {
-              const legacyDecorations = data.customization.decorations || []
-              const migrated = { hats: null, ambient: null, background: null }
-              if (legacyDecorations.length > 0) {
-                migrated.hats = legacyDecorations[0]
-              }
-              setSelectedDecorations(migrated)
-            }
-          } else {
-            setSelectedDecorations(BONSAI_CONFIG.defaults.decorations)
-          }
+          // Handle hat and background
+          setSelectedHat(data.customization.hat || BONSAI_CONFIG.defaults.hat)
+          setSelectedBackground(data.customization.background || BONSAI_CONFIG.defaults.background)
           
           // Tree colors
           const presetTree = BonsaiConfigHelpers.getTreeKeyFromColor(data.customization.foliageColor)
@@ -162,7 +147,8 @@ export default function BonsaiInterface() {
           potColor: getPotColor(),
           potStyle: selectedPotStyle,
           groundStyle: selectedGroundStyle,
-          decorations: selectedDecorations
+          hat: selectedHat,
+          background: selectedBackground
         }
       }
 
@@ -193,29 +179,6 @@ export default function BonsaiInterface() {
   }
 
   // Helper functions
-  const getAvailableDecorationsBySubcategory = (subcategory) => {
-    return getOwnedDecorationsBySubcategory(bonsaiData?.ownedItems || [], subcategory);
-  }
-
-  const selectDecoration = (subcategory, decorationId) => {
-    setSelectedDecorations(prev => {
-      const prevDecorations = prev && typeof prev === 'object' ? prev : {};
-      return {
-        ...prevDecorations,
-        [subcategory]: decorationId
-      };
-    })
-  }
-
-  const clearDecoration = (subcategory) => {
-    setSelectedDecorations(prev => {
-      const prevDecorations = prev && typeof prev === 'object' ? prev : {};
-      return {
-        ...prevDecorations,
-        [subcategory]: null
-      };
-    })
-  }
 
   const getGroundStyle = () => {
     if (previewItem && previewItem.type === "ground") {
@@ -248,35 +211,19 @@ export default function BonsaiInterface() {
     return BonsaiConfigHelpers.getPotColorFromKey(selectedPot)
   }
   
-  const getDecorationSubcategoryById = (decorationId) => {
-    if (!decorationId || typeof decorationId !== 'string') {
-      return 'hats';
+  // Get active hat and background for preview
+  const getActiveHat = () => {
+    if (previewItem && previewItem.type === "hats" && previewItem.isHat) {
+      return previewItem.id;
     }
-    
-    const item = getItemById(decorationId);
-    return item?.subcategory || 'hats';
+    return selectedHat;
   }
 
-  const getActiveDecorations = () => {
-    const decorationsObj = selectedDecorations && typeof selectedDecorations === 'object' ? selectedDecorations : {};
-    let decorations = Object.values(decorationsObj).filter(Boolean)
-    
-    if (previewItem && previewItem.type === "decoration" && previewItem.isDecoration) {
-      const previewSubcategory = previewItem.subcategory;
-      
-      decorations = decorations.filter(decorationId => {
-        const existingDecorationSubcategory = getDecorationSubcategoryById(decorationId);
-        return existingDecorationSubcategory !== previewSubcategory;
-      });
-      
-      decorations.push(previewItem.id);
-    } else if (previewItem && previewItem.type === "decoration") {
-      if (!decorations.includes(previewItem.id)) {
-        decorations.push(previewItem.id)
-      }
+  const getActiveBackground = () => {
+    if (previewItem && previewItem.type === "backgrounds" && previewItem.isBackground) {
+      return previewItem.id;
     }
-    
-    return decorations
+    return selectedBackground;
   }
 
   const handleTreeSelection = (treeId) => {
@@ -454,7 +401,8 @@ export default function BonsaiInterface() {
                           level={bonsaiData.level}
                           treeColor={getTreeColor()} 
                           potColor={getPotColor()} 
-                          decorations={getActiveDecorations()}
+                          selectedHat={getActiveHat()}
+                          selectedBackground={getActiveBackground()}
                           selectedEyes={selectedEyes}
                           selectedMouth={selectedMouth}
                           selectedPotStyle={selectedPotStyle}       
@@ -620,171 +568,100 @@ export default function BonsaiInterface() {
                     </div>
                   </div>
 
-                  {/* Decorations Section with Subcategories */}
+                  {/* Hats Section */}
+                  <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
+                    <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
+                      <Crown className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
+                      Hats
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                      {/* Clear Selection Option */}
+                      <div
+                        className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                          selectedHat === null
+                            ? "border-[#4a7c59] bg-[#eef2eb]"
+                            : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
+                        }`}
+                        onClick={() => setSelectedHat(null)}
+                      >
+                        <div className="flex flex-col items-center">
+                          <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
+                            <span className="text-xs">None</span>
+                          </div>
+                          <p className="text-center text-sm font-medium text-[#2c3e2d]">No Hat</p>
+                        </div>
+                      </div>
+                      {getAvailableHats(bonsaiData?.ownedItems || []).map((hat) => (
+                        <div
+                          key={hat.id}
+                          className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                            selectedHat === hat.id
+                              ? "border-[#4a7c59] bg-[#eef2eb]"
+                              : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
+                          }`}
+                          onClick={() => setSelectedHat(hat.id)}
+                        >
+                          <div className="flex flex-col items-center">
+                            <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
+                              <Crown className="h-4 w-4 text-[#4a7c59]" />
+                            </div>
+                            <p className="text-center text-sm font-medium text-[#2c3e2d]">{hat.name}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Backgrounds Section */}
                   <div className="rounded-lg border border-[#dce4d7] bg-white p-6">
                     <h2 className="mb-4 text-xl font-semibold text-[#2c3e2d]">
                       <Sparkles className="mr-2 inline-block h-5 w-5 text-[#4a7c59]" />
-                      Decorations <span className="text-sm font-normal text-[#5c6d5e]">(One per category)</span>
+                      Backgrounds
                     </h2>
-                    
-                    {/* Hats Subcategory */}
-                    <div className="mb-6">
-                      <h3 className="mb-3 text-lg font-medium text-[#2c3e2d] flex items-center">
-                        <Crown className="mr-2 h-4 w-4 text-[#4a7c59]" />
-                        Hats
-                      </h3>
-                      {getAvailableDecorationsBySubcategory('hats').length === 0 ? (
-                        <div className="text-center py-4 bg-[#f8f7f4] rounded-lg">
-                          <Crown className="mx-auto h-8 w-8 text-[#dce4d7] mb-2" />
-                          <p className="text-sm text-[#5c6d5e]">No hat decorations owned yet</p>
+                    {getAvailableBackgrounds(bonsaiData?.ownedItems || []).length === 0 ? (
+                      <div className="text-center py-8 bg-[#f8f7f4] rounded-lg">
+                        <Sparkles className="mx-auto h-12 w-12 text-[#dce4d7] mb-4" />
+                        <p className="text-[#5c6d5e] mb-2">No background items available</p>
+                        <p className="text-sm text-[#5c6d5e]">Check the shop for new background items!</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                        {/* Clear Selection Option */}
+                        <div
+                          className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                            selectedBackground === null
+                              ? "border-[#4a7c59] bg-[#eef2eb]"
+                              : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
+                          }`}
+                          onClick={() => setSelectedBackground(null)}
+                        >
+                          <div className="flex flex-col items-center">
+                            <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
+                              <span className="text-xs">None</span>
+                            </div>
+                            <p className="text-center text-sm font-medium text-[#2c3e2d]">No Background</p>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                          {/* Clear Selection Option */}
+                        {getAvailableBackgrounds(bonsaiData?.ownedItems || []).map((background) => (
                           <div
+                            key={background.id}
                             className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                              selectedDecorations.hats === null
+                              selectedBackground === background.id
                                 ? "border-[#4a7c59] bg-[#eef2eb]"
                                 : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
                             }`}
-                            onClick={() => clearDecoration('hats')}
+                            onClick={() => setSelectedBackground(background.id)}
                           >
                             <div className="flex flex-col items-center">
                               <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
-                                <span className="text-xs">None</span>
+                                <Sparkles className="h-4 w-4 text-[#4a7c59]" />
                               </div>
-                              <p className="text-center text-sm font-medium text-[#2c3e2d]">No Hat</p>
+                              <p className="text-center text-sm font-medium text-[#2c3e2d]">{background.name}</p>
                             </div>
                           </div>
-                          {getAvailableDecorationsBySubcategory('hats').map((decoration) => (
-                            <div
-                              key={decoration.id}
-                              className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                                selectedDecorations.hats === decoration.id
-                                  ? "border-[#4a7c59] bg-[#eef2eb]"
-                                  : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
-                              }`}
-                              onClick={() => selectDecoration('hats', decoration.id)}
-                            >
-                              <div className="flex flex-col items-center">
-                                <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
-                                  <Crown className="h-4 w-4 text-[#4a7c59]" />
-                                </div>
-                                <p className="text-center text-sm font-medium text-[#2c3e2d]">{decoration.name}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Ambient Subcategory */}
-                    <div className="mb-6">
-                      <h3 className="mb-3 text-lg font-medium text-[#2c3e2d] flex items-center">
-                        <Sparkles className="mr-2 h-4 w-4 text-[#4a7c59]" />
-                        Ambient Effects
-                      </h3>
-                      {getAvailableDecorationsBySubcategory('ambient').length === 0 ? (
-                        <div className="text-center py-4 bg-[#f8f7f4] rounded-lg">
-                          <Sparkles className="mx-auto h-8 w-8 text-[#dce4d7] mb-2" />
-                          <p className="text-sm text-[#5c6d5e]">No ambient effects owned yet</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                          {/* Clear Selection Option */}
-                          <div
-                            className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                              selectedDecorations.ambient === null
-                                ? "border-[#4a7c59] bg-[#eef2eb]"
-                                : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
-                            }`}
-                            onClick={() => clearDecoration('ambient')}
-                          >
-                            <div className="flex flex-col items-center">
-                              <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
-                                <span className="text-xs">None</span>
-                              </div>
-                              <p className="text-center text-sm font-medium text-[#2c3e2d]">No Effects</p>
-                            </div>
-                          </div>
-                          {getAvailableDecorationsBySubcategory('ambient').map((decoration) => (
-                            <div
-                              key={decoration.id}
-                              className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                                selectedDecorations.ambient === decoration.id
-                                  ? "border-[#4a7c59] bg-[#eef2eb]"
-                                  : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
-                              }`}
-                              onClick={() => selectDecoration('ambient', decoration.id)}
-                            >
-                              <div className="flex flex-col items-center">
-                                <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
-                                  <Sparkles className="h-4 w-4 text-[#4a7c59]" />
-                                </div>
-                                <p className="text-center text-sm font-medium text-[#2c3e2d]">{decoration.name}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Background Subcategory */}
-                    <div>
-                      <h3 className="mb-3 text-lg font-medium text-[#2c3e2d] flex items-center">
-                        <svg className="mr-2 h-4 w-4 text-[#4a7c59]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Backgrounds
-                      </h3>
-                      {getAvailableDecorationsBySubcategory('background').length === 0 ? (
-                        <div className="text-center py-4 bg-[#f8f7f4] rounded-lg">
-                          <svg className="mx-auto h-8 w-8 text-[#dce4d7] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <p className="text-sm text-[#5c6d5e]">No background decorations owned yet</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                          {/* Clear Selection Option */}
-                          <div
-                            className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                              selectedDecorations.background === null
-                                ? "border-[#4a7c59] bg-[#eef2eb]"
-                                : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
-                            }`}
-                            onClick={() => clearDecoration('background')}
-                          >
-                            <div className="flex flex-col items-center">
-                              <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
-                                <span className="text-xs">None</span>
-                              </div>
-                              <p className="text-center text-sm font-medium text-[#2c3e2d]">No Background</p>
-                            </div>
-                          </div>
-                          {getAvailableDecorationsBySubcategory('background').map((decoration) => (
-                            <div
-                              key={decoration.id}
-                              className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                                selectedDecorations.background === decoration.id
-                                  ? "border-[#4a7c59] bg-[#eef2eb]"
-                                  : "border-[#dce4d7] hover:border-[#4a7c59] hover:bg-[#f8f7f4]"
-                              }`}
-                              onClick={() => selectDecoration('background', decoration.id)}
-                            >
-                              <div className="flex flex-col items-center">
-                                <div className="mb-2 h-8 w-8 rounded-full bg-[#f0f0f0] flex items-center justify-center">
-                                  <svg className="h-4 w-4 text-[#4a7c59]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                </div>
-                                <p className="text-center text-sm font-medium text-[#2c3e2d]">{decoration.name}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Ground Style */}
@@ -947,12 +824,12 @@ export default function BonsaiInterface() {
                   setPreviewItem={setPreviewItem}
                   getTreeColor={getTreeColor}
                   getPotColor={getPotColor}
-                  getActiveDecorations={getActiveDecorations}
+                  selectedHat={selectedHat}
+                  selectedBackground={selectedBackground}
                   selectedEyes={selectedEyes}
                   selectedMouth={selectedMouth}
                   getGroundStyle={getGroundStyle}
                   selectedPotStyle={selectedPotStyle}
-                  getDecorationSubcategoryById={getDecorationSubcategoryById}
                 />
               </Suspense>
             </TabsContent>
@@ -976,7 +853,8 @@ export default function BonsaiInterface() {
             <BonsaiSVG 
               level={bonsaiData.level}
               treeColor={getTreeColor()} 
-              decorations={getActiveDecorations()}
+              selectedHat={getActiveHat()}
+              selectedBackground={getActiveBackground()}
               selectedEyes={selectedEyes}
               selectedMouth={selectedMouth}
               potColor={getPotColor()} 

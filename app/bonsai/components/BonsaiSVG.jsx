@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { useBonsaiPositioning } from "./useBonsaiPositioning"
-import { getEyeSvg, getMouthSvg, getPotStyleSvg, getGroundStyleSvg, getDecorationSvg } from "./bonsaiSvgData"
+import { getEyeSvg, getMouthSvg, getPotStyleSvg, getGroundStyleSvg, getHatSvg, getBackgroundSvg } from "./bonsaiSvgData"
 
 // Custom Bonsai SVG Component
 export const BonsaiSVG = ({ 
@@ -13,7 +13,8 @@ export const BonsaiSVG = ({
   selectedMouth = "default_mouth",
   selectedPotStyle = "default_pot",
   selectedGroundStyle = "default_ground", 
-  decorations = [],
+  selectedHat = null,
+  selectedBackground = null,
   zoomed = false,
   profileIcon = false,
   }) => {
@@ -30,7 +31,7 @@ export const BonsaiSVG = ({
   const shadowColor = darkenColor(treeColor, 30);
 
   // Use custom hook for positioning logic
-  const { positions } = useBonsaiPositioning(selectedEyes, selectedMouth, selectedPotStyle, selectedGroundStyle, decorations);
+  const { positions } = useBonsaiPositioning(selectedEyes, selectedMouth, selectedPotStyle, selectedGroundStyle, selectedHat, selectedBackground);
   
   // Ensure positions object is valid
   const safePositions = positions && typeof positions === 'object' ? positions : {
@@ -38,7 +39,8 @@ export const BonsaiSVG = ({
     pot: { transform: 'translate(0,0)' },
     eyeCenterX: 0,
     mouthCenterX: 0,
-    decorations: []
+    hat: null,
+    background: null
   };
   
   // Get SVG content using utility functions with memoization for performance
@@ -46,17 +48,16 @@ export const BonsaiSVG = ({
   const mouthSvg = useMemo(() => getMouthSvg(selectedMouth), [selectedMouth]);
   const groundStyleSvg = useMemo(() => getGroundStyleSvg(selectedGroundStyle), [selectedGroundStyle]);
 
-  const decorationSvgs = useMemo(() => {
-    // Ensure decorations is always an array
-    const decorationsArray = Array.isArray(decorations) ? decorations : [];
-    
-    if (decorationsArray.length === 0) return [];
-    
-    return decorationsArray.map(decorationId => {
-      const svg = getDecorationSvg(decorationId);
-      return svg ? { id: decorationId, svg } : null;
-    }).filter(Boolean);
-  }, [decorations]);
+  // Get hat and background SVGs
+  const hatSvg = useMemo(() => {
+    if (!selectedHat) return null;
+    return getHatSvg(selectedHat);
+  }, [selectedHat]);
+
+  const backgroundSvg = useMemo(() => {
+    if (!selectedBackground) return null;
+    return getBackgroundSvg(selectedBackground);
+  }, [selectedBackground]);
 
   const potStyleSvgWithColor = useMemo(() => {
     let svg = getPotStyleSvg(selectedPotStyle);
@@ -75,12 +76,20 @@ export const BonsaiSVG = ({
     <>
   <div className="flex items-center justify-center w-full h-full">
     <svg 
-      className="w-full h-full max-w-[370px] max-h-[450px]" 
-      viewBox={zoomed ? "150 250 150 150" : "-25 0 500 500"}
+      className="w-full h-full max-w-[500px] max-h-[600px]" 
+      viewBox={zoomed ? "150 250 150 150" : "-75 -80 610 610"}
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
       preserveAspectRatio="xMidYMid meet"
     >
+      {/* Background Layer - RENDER FIRST (behind everything) - Skip for profile icons */}
+      {!profileIcon && backgroundSvg && safePositions.background && (
+        <g 
+          key={`background-${selectedBackground}`}
+          transform={safePositions.background.transform}
+          dangerouslySetInnerHTML={{ __html: backgroundSvg }} 
+        />
+      )}
 
       {/* Only render full tree if not a profile icon */}
       {!profileIcon && level === 1 && (  
@@ -135,14 +144,14 @@ export const BonsaiSVG = ({
       <path d="M166.701 287.443C159.624 282.135 146.687 290.234 141.931 295.11H148.418C150.187 291.571 160.213 287.443 166.701 287.443Z" stroke="#FBF3CC" strokeWidth="1.17952"/>
       <path d="M213.881 282.244C208.22 289.094 196.548 292.161 192.42 295.11H316.499C309.894 286.302 296.841 286.729 291.14 287.748C295.268 280.955 288.191 280.366 287.601 280.366C285.832 282.2 279.344 284.69 268.729 288.972C268.139 290.195 242.779 293.253 229.805 294.476C227.918 289.094 218.403 284.079 213.881 282.244Z" fill={shadowColor} stroke={shadowColor} strokeWidth="1.17952"/>
       
-      {/* ✅ Fixed: Decorations Layer - Render each decoration with its own positioning */}
-      {decorationSvgs.map((decoration) => (
+      {/* Hat Layer */}
+      {hatSvg && safePositions.hat && (
         <g 
-          key={`decoration-${decoration.id}`}
-          transform={safePositions.decorations.find(pos => pos.id === decoration.id)?.transform || 'translate(0,0)'}
-          dangerouslySetInnerHTML={{ __html: decoration.svg }} 
+          key={`hat-${selectedHat}`}
+          transform={safePositions.hat.transform}
+          dangerouslySetInnerHTML={{ __html: hatSvg }} 
         />
-      ))}
+      )}
     
     </svg>
   </div>

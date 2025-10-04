@@ -457,7 +457,8 @@ function UsersPage() {
                                   selectedMouth={friend.bonsai?.customization?.mouth}
                                   selectedPotStyle={friend.bonsai?.customization?.potStyle}
                                   selectedGroundStyle={friend.bonsai?.customization?.groundStyle}
-                                  decorations={friend.bonsai?.customization?.decorations ? Object.values(friend.bonsai.customization.decorations).filter(Boolean) : []}
+                                  selectedHat={friend.bonsai?.customization?.hat || null}
+                                  selectedBackground={friend.bonsai?.customization?.background || null}
                                   zoomed={true}
                                   profileIcon={true}
                                 />
@@ -573,7 +574,8 @@ function UsersPage() {
                               selectedMouth={user.bonsai?.customization?.mouth}
                               selectedPotStyle={user.bonsai?.customization?.potStyle}
                               selectedGroundStyle={user.bonsai?.customization?.groundStyle}
-                              decorations={user.bonsai?.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
+                              selectedHat={user.bonsai?.customization?.hat || null}
+                              selectedBackground={user.bonsai?.customization?.background || null}
                               zoomed={true}
                               profileIcon={true}
                             />

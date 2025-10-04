@@ -34,7 +34,8 @@ export default function LazyAvatar({ user, size = "w-8 h-8" }) {
             selectedMouth={user.bonsai.customization?.mouth || 'default_mouth'}
             selectedPotStyle={user.bonsai.customization?.potStyle || 'default_pot'}
             selectedGroundStyle={user.bonsai.customization?.groundStyle || 'default_ground'}
-            decorations={user.bonsai.customization?.decorations ? Object.values(user.bonsai.customization.decorations).filter(Boolean) : []}
+            selectedHat={user.bonsai.customization?.hat || null}
+            selectedBackground={user.bonsai.customization?.background || null}
             zoomed={true}
             profileIcon={true}
           />
@@ -63,7 +64,8 @@ export default function LazyAvatar({ user, size = "w-8 h-8" }) {
             selectedMouth={bonsaiData.customization?.mouth || 'default_mouth'}
             selectedPotStyle={bonsaiData.customization?.potStyle || 'default_pot'}
             selectedGroundStyle={bonsaiData.customization?.groundStyle || 'default_ground'}
-            decorations={bonsaiData.customization?.decorations ? Object.values(bonsaiData.customization.decorations).filter(Boolean) : []}
+            selectedHat={bonsaiData.customization?.hat || null}
+            selectedBackground={bonsaiData.customization?.background || null}
             zoomed={true}
             profileIcon={true}
           />

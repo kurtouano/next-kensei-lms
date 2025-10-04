@@ -320,7 +320,8 @@ function PublicProfilePage() {
                           selectedMouth={userData.bonsai?.customization?.mouth}
                           selectedPotStyle={userData.bonsai?.customization?.potStyle}
                           selectedGroundStyle={userData.bonsai?.customization?.groundStyle}
-                          decorations={userData.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
+                          selectedHat={userData.bonsai?.customization?.hat}
+                          selectedBackground={userData.bonsai?.customization?.background}
                           zoomed={true}
                           profileIcon={true}
                         />
@@ -463,7 +464,8 @@ function PublicProfilePage() {
                         selectedMouth={userData.bonsai?.customization?.mouth || 'default_mouth'}
                         selectedPotStyle={userData.bonsai?.customization?.potStyle || 'default_pot'}
                         selectedGroundStyle={userData.bonsai?.customization?.groundStyle || 'default_ground'}
-                        decorations={userData.bonsai?.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
+                        selectedHat={userData.bonsai?.customization?.hat || null}
+                        selectedBackground={userData.bonsai?.customization?.background || null}
                       />
                     </div>
                   </div>

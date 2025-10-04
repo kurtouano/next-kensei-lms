@@ -394,7 +394,8 @@ const ReviewItem = memo(function ReviewItem({ review }) {
               selectedMouth={review.user.bonsai?.customization?.mouth || 'default_mouth'}
               selectedPotStyle={review.user.bonsai?.customization?.potStyle || 'default_pot'}
               selectedGroundStyle={review.user.bonsai?.customization?.groundStyle || 'default_ground'}
-              decorations={review.user.bonsai?.customization?.decorations ? Object.values(review.user.bonsai.customization.decorations).filter(Boolean) : []}
+              selectedHat={review.user.bonsai?.customization?.hat || null}
+              selectedBackground={review.user.bonsai?.customization?.background || null}
               zoomed={true}
             />
           </div>

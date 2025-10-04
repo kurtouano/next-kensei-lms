@@ -1,12 +1,13 @@
 import { useMemo, useCallback } from 'react';
 
-export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotStyle, selectedGroundStyle, decorations = []) => {
+export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotStyle, selectedGroundStyle, selectedHat = null, selectedBackground = null) => {
   // Ensure input parameters are valid strings
   const safeSelectedEyes = typeof selectedEyes === 'string' ? selectedEyes : 'default_eyes';
   const safeSelectedMouth = typeof selectedMouth === 'string' ? selectedMouth : 'default_mouth';
   const safeSelectedPotStyle = typeof selectedPotStyle === 'string' ? selectedPotStyle : 'default_pot';
   const safeSelectedGroundStyle = typeof selectedGroundStyle === 'string' ? selectedGroundStyle : 'default_ground';
-  const safeDecorations = Array.isArray(decorations) ? decorations : [];
+  const safeSelectedHat = selectedHat || null;
+  const safeSelectedBackground = selectedBackground || null;
 
   // Eye width mappings for different eye types
   const eyeWidthMap = useMemo(() => ({
@@ -40,17 +41,45 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
   const groundAdjustmentMap = useMemo(() => ({
     default_ground: { x: -10, y: 0 },
     lilypad_ground: { x: -90, y: 5 },
-    skate_ground: { x: -100, y: 0 },
-    flowery_ground: { x: -110, y: -10 },
-    mushroom_ground: { x: -100, y: -40 },
+    skate_ground: { x: -20, y: 3 },
+    flowery_ground: { x: -90, y: -10 },
+    mushroom_ground: { x: -90, y: -40 },
   }), []);
 
-  // Decoration positioning mappings
-  const decorationPositionMap = useMemo(() => ({
-    crown_decoration: { x: 160, y: -52},
-    graduate_cap_decoration: { x: 50, y: -45},
-    christmas_cap_decoration: { x: 70, y: -80 },
+    // Ground positioning - individual ground scales
+    const groundOffset = { x: 0, y: 0 };
+    const groundScaleMap = {
+      default_ground: 1,
+      lilypad_ground: 0.95,
+      skate_ground: 1,
+      flowery_ground: 0.93,
+      mushroom_ground: 0.95,
+    };
+
+  // Hat positioning mappings
+  const hatPositionMap = useMemo(() => ({
+    crown_hat: { x: 160, y: -52},
+    graduate_hat: { x: 50, y: -45},
+    christmas_hat: { x: 60, y: -80 },
+    cowboy_hat: { x: 65, y: -50 },
+    wizard_hat: { x: 70, y: -100 },
+    beret_hat: { x: 80, y: -40 },
+    chef_hat: { x: 35, y: -83 },
   }), []);
+
+  // Background positioning - all backgrounds use the same offset and scale
+  const backgroundOffset = { x: -70, y: -55 };
+  const backgroundScale = 0.90; // Adjust this to make backgrounds bigger/smaller
+  
+  const backgroundPositionMap = useMemo(() => ({
+    day_beach_background: backgroundOffset,
+    night_beach_background: backgroundOffset,
+    blue_sky_background: backgroundOffset,
+    sunset_background: backgroundOffset,
+    rainy_gray_background: backgroundOffset,
+    desert_background: backgroundOffset,
+    sea_background: backgroundOffset,
+  }), [backgroundOffset]);
 
   // Get current dimensions and adjustments
   const currentEyeWidth = useMemo(() => {
@@ -89,37 +118,29 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
     }
   }, [safeSelectedGroundStyle, groundAdjustmentMap]);
 
-  // Fixed: Handle decorations array properly
-  const decorationPositions = useMemo(() => {
-    // Ensure decorations is always an array
-    const decorationsArray = Array.isArray(safeDecorations) ? safeDecorations : [];
+  // Handle hat positioning
+  const hatPosition = useMemo(() => {
+    if (!safeSelectedHat) return null;
     
-    if (decorationsArray.length === 0) {
-      return [];
-    }
+    const basePosition = hatPositionMap[safeSelectedHat] || { x: 0, y: 0 };
+    return {
+      id: safeSelectedHat,
+      x: basePosition.x,
+      y: basePosition.y
+    };
+  }, [safeSelectedHat, hatPositionMap]);
+
+  // Handle background positioning
+  const backgroundPosition = useMemo(() => {
+    if (!safeSelectedBackground) return null;
     
-    return decorationsArray.map((decorationId, index) => {
-      try {
-        const basePosition = decorationPositionMap[decorationId] || { x: 0, y: 0 };
-        // Add slight offset for multiple decorations to prevent overlap
-        const offsetX = index * 20;
-        const offsetY = index * 5;
-        
-        return {
-          id: decorationId,
-          x: basePosition.x + offsetX,
-          y: basePosition.y + offsetY
-        };
-      } catch (error) {
-        console.error('Error processing decoration:', decorationId, error);
-        return {
-          id: decorationId,
-          x: index * 20,
-          y: index * 5
-        };
-      }
-    });
-  }, [safeDecorations, decorationPositionMap]);
+    const basePosition = backgroundPositionMap[safeSelectedBackground] || { x: 0, y: 0 };
+    return {
+      id: safeSelectedBackground,
+      x: basePosition.x,
+      y: basePosition.y
+    };
+  }, [safeSelectedBackground, backgroundPositionMap]);
 
   // Calculate all positions
   const calculatePositions = useCallback(() => {
@@ -147,11 +168,17 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
       const groundX = basePotCenterX + (groundAdjustment.x || 0);
       const groundY = baseGroundY + (groundAdjustment.y || 0);
 
-      // Fixed: Handle decorations properly
-      const decorationTransforms = Array.isArray(decorationPositions) ? decorationPositions.map((decoration) => ({
-        id: decoration.id,
-        transform: `translate(${basePotCenterX + (decoration.x || 0)}, ${basePotY + (decoration.y || 0)})`
-      })) : [];
+      // Handle hat positioning
+      const hatTransform = hatPosition ? {
+        id: hatPosition.id,
+        transform: `translate(${basePotCenterX + (hatPosition.x || 0)}, ${basePotY + (hatPosition.y || 0)})`
+      } : null;
+
+      // Handle background positioning with scale to make it smaller
+      const backgroundTransform = backgroundPosition ? {
+        id: backgroundPosition.id,
+        transform: `translate(${backgroundPosition.x || 0}, ${backgroundPosition.y || 0}) scale(${backgroundScale})`
+      } : null;
 
       return {
         // Basic centers
@@ -178,9 +205,10 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
         ground: {
           x: groundX,
           y: groundY,
-          transform: `translate(${groundX}, ${groundY})`
+          transform: `translate(${groundX + (groundOffset.x || 0)}, ${groundY + (groundOffset.y || 0)}) scale(${groundScaleMap[safeSelectedGroundStyle] || 1.0})`
         },
-        decorations: decorationTransforms
+        hat: hatTransform,
+        background: backgroundTransform
       };
     } catch (error) {
       console.error('Error in calculatePositions:', error);
@@ -193,7 +221,8 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
         eyes: { x: 183, y: 352, transform: 'translate(183, 352)' },
         mouth: { x: 220, y: 365, transform: 'translate(220, 365)' },
         ground: { x: 90, y: 395, transform: 'translate(90, 395)' },
-        decorations: []
+        hat: null,
+        background: null
       };
     }
   }, [
@@ -201,7 +230,8 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
     currentMouthWidth, 
     currentPotAdjustment, 
     currentGroundAdjustment,
-    decorationPositions
+    hatPosition,
+    backgroundPosition
   ]);
 
   const positions = useMemo(() => {
@@ -218,7 +248,8 @@ export const useBonsaiPositioning = (selectedEyes, selectedMouth, selectedPotSty
         eyes: { x: 183, y: 352, transform: 'translate(183, 352)' },
         mouth: { x: 220, y: 365, transform: 'translate(220, 365)' },
         ground: { x: 90, y: 395, transform: 'translate(90, 395)' },
-        decorations: []
+        hat: null,
+        background: null
       };
     }
   }, [calculatePositions]);

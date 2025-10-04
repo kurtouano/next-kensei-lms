@@ -104,7 +104,8 @@ export async function GET(req, { params }) {
                     potStyle: bonsai.customization?.potStyle || 'default_pot',
                     potColor: bonsai.customization?.potColor || '#FD9475',
                     groundStyle: bonsai.customization?.groundStyle || 'default_ground',
-                    decorations: bonsai.customization?.decorations || []
+                    hat: bonsai.customization?.hat || null,
+                    background: bonsai.customization?.background || null
                 }
             } : {
                 level: 1,
@@ -116,7 +117,8 @@ export async function GET(req, { params }) {
                     potStyle: 'default_pot',
                     potColor: '#FD9475',
                     groundStyle: 'default_ground',
-                    decorations: []
+                    hat: null,
+                    background: null
                 }
             },
             socialLinks: user.socialLinks || [],

@@ -83,7 +83,8 @@ export function RecentActivitySection({ recentActivity, activityLoading, loading
                         selectedMouth={activity.user.bonsai.customization?.mouth || 'default_mouth'}
                         selectedPotStyle={activity.user.bonsai.customization?.potStyle || 'default_pot'}
                         selectedGroundStyle={activity.user.bonsai.customization?.groundStyle || 'default_ground'}
-                        decorations={activity.user.bonsai.customization?.decorations ? Object.values(activity.user.bonsai.customization.decorations).filter(Boolean) : []}
+                        selectedHat={activity.user.bonsai.customization?.hat || null}
+                        selectedBackground={activity.user.bonsai.customization?.background || null}
                         zoomed={true}
                       />
                     </div>

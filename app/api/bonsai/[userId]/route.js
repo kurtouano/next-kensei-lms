@@ -43,7 +43,8 @@ export async function GET(request, { params }) {
           potStyle: 'default_pot',
           potColor: '#FD9475',
           groundStyle: 'default_ground',
-          decorations: []
+          hat: null,
+          background: null
         },
         ownedItems: defaultOwnedItems
       });

@@ -195,7 +195,7 @@ export function MyProfile({ userData, certificates }) {
           <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-[#2c3e2d]">My Bonsai</h2>
           <div className="flex-1 flex flex-col justify-center">
             {userData.bonsai ? (
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center mb-8">
                 <div className="mb-3 sm:mb-4 flex justify-center h-60 sm:h-80 lg:h-[440px]">
                   <BonsaiSVG 
                     level={userData.bonsai.level || 1}
@@ -205,7 +205,8 @@ export function MyProfile({ userData, certificates }) {
                     selectedMouth={userData.bonsai.customization?.mouth || 'default_mouth'}
                     selectedPotStyle={userData.bonsai.customization?.potStyle || 'default_pot'}
                     selectedGroundStyle={userData.bonsai.customization?.groundStyle || 'default_ground'}
-                    decorations={userData.bonsai.customization?.decorations ? Object.values(userData.bonsai.customization.decorations).filter(Boolean) : []}
+                    selectedHat={userData.bonsai.customization?.hat || null}
+                    selectedBackground={userData.bonsai.customization?.background || null}
                   />
                 </div>
               </div>

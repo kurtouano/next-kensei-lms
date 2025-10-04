@@ -459,7 +459,8 @@ export default function BlogPostPage({ params }) {
                             selectedMouth={blogPost.author.bonsai?.customization?.mouth || 'default_mouth'}
                             selectedPotStyle={blogPost.author.bonsai?.customization?.potStyle || 'default_pot'}
                             selectedGroundStyle={blogPost.author.bonsai?.customization?.groundStyle || 'default_ground'}
-                            decorations={blogPost.author.bonsai?.customization?.decorations ? Object.values(blogPost.author.bonsai.customization.decorations).filter(Boolean) : []}
+                            selectedHat={blogPost.author.bonsai?.customization?.hat || null}
+                            selectedBackground={blogPost.author.bonsai?.customization?.background || null}
                             zoomed={true}
                           />
                         ) : blogPost.author.icon && blogPost.author.icon.startsWith('http') ? (

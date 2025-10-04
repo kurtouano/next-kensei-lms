@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ShoppingBag, Eye, Sparkles, Crown } from "lucide-react"
 import { BonsaiSVG } from "./BonsaiSVG"
-import { getPurchasableItems, getItemEmoji, getDecorationSubcategories } from "@/components/bonsai/shopItems"
+import { getPurchasableItems, getItemEmoji } from "@/components/bonsai/shopItems"
 
 export const BonsaiShop = ({ 
   bonsaiData, 
@@ -15,12 +15,12 @@ export const BonsaiShop = ({
   setPreviewItem,
   getTreeColor,
   getPotColor,
-  getActiveDecorations,
+  selectedHat,
+  selectedBackground,
   selectedEyes,
   selectedMouth,
   getGroundStyle,
   selectedPotStyle,
-  getDecorationSubcategoryById, // ✅ NEW: Receive helper function
 }) => {
   const [shopCategory, setShopCategory] = useState("all")
 
@@ -61,7 +61,7 @@ export const BonsaiShop = ({
     return selectedPotStyle || "default_pot"
   }
 
-  // ✅ UPDATED: Enhanced preview logic with decoration subcategory handling
+  // ✅ UPDATED: Enhanced preview logic for independent categories
   const previewShopItem = (item) => {
     if (item.type === "ground") {
       setPreviewItem({ ...item, originalGround: getGroundStyle() })
@@ -71,13 +71,10 @@ export const BonsaiShop = ({
       setPreviewItem({ ...item, isEyes: true })
     } else if (item.type === "mouths") {
       setPreviewItem({ ...item, isMouth: true })
-    } else if (item.type === "decoration") {
-      // ✅ NEW: Store the subcategory for proper replacement logic
-      setPreviewItem({ 
-        ...item, 
-        isDecoration: true,
-        subcategory: item.subcategory // Make sure subcategory is included
-      })
+    } else if (item.type === "hats") {
+      setPreviewItem({ ...item, isHat: true })
+    } else if (item.type === "backgrounds") {
+      setPreviewItem({ ...item, isBackground: true })
     } else {
       setPreviewItem(item)
     }
@@ -141,36 +138,19 @@ export const BonsaiShop = ({
     }
   }, [allShopItems, shopCategory]);
 
-  // ✅ UPDATED: Use passed helper function instead of local one
-  const getActiveDecorationsForPreview = () => {
-    if (!previewItem || !previewItem.isDecoration) {
-      return getActiveDecorations();
+  // Get active hat and background for preview
+  const getActiveHatForPreview = () => {
+    if (previewItem && previewItem.type === "hats" && previewItem.isHat) {
+      return previewItem.id;
     }
+    return selectedHat;
+  }
 
-    // Get current decorations as an object (subcategory structure)
-    const currentDecorations = getActiveDecorations();
-    
-    // If we're previewing a decoration, we need to replace the decoration in the same subcategory
-    // and keep decorations from other subcategories
-    const previewSubcategory = previewItem.subcategory;
-    
-    // Convert current decorations array back to subcategory object structure
-    // This assumes your getActiveDecorations returns an array, but we need to work with subcategories
-    
-    // For preview, we create a new decorations array that:
-    // 1. Removes any existing decoration from the same subcategory as the preview
-    // 2. Adds the preview decoration
-    const decorationsArray = Array.isArray(currentDecorations) ? currentDecorations : Object.values(currentDecorations).filter(Boolean);
-    
-    // Filter out any decoration from the same subcategory as the preview
-    const filteredDecorations = decorationsArray.filter(decorationId => {
-      // Use the passed helper function
-      const existingDecorationSubcategory = getDecorationSubcategoryById ? getDecorationSubcategoryById(decorationId) : 'hats';
-      return existingDecorationSubcategory !== previewSubcategory;
-    });
-
-    // Add the preview decoration
-    return [...filteredDecorations, previewItem.id];
+  const getActiveBackgroundForPreview = () => {
+    if (previewItem && previewItem.type === "backgrounds" && previewItem.isBackground) {
+      return previewItem.id;
+    }
+    return selectedBackground;
   }
 
   // ✅ REMOVED: Local helper function since we now receive it as a prop
@@ -188,7 +168,8 @@ export const BonsaiShop = ({
               <BonsaiSVG 
                 level={bonsaiData.level}
                 treeColor={getTreeColor()} 
-                decorations={getActiveDecorationsForPreview()} // ✅ Use enhanced decoration logic
+                selectedHat={getActiveHatForPreview()}
+                selectedBackground={getActiveBackgroundForPreview()}
                 selectedEyes={previewItem && previewItem.isEyes ? previewItem.id : selectedEyes}
                 selectedMouth={previewItem && previewItem.isMouth ? previewItem.id : selectedMouth}
                 potColor={getPotColor()} 
@@ -231,7 +212,7 @@ export const BonsaiShop = ({
             </div>
           </div>
 
-          {/* ✅ UPDATED: Category filters - merge decorations into one category */}
+          {/* ✅ UPDATED: Category filters for independent categories */}
           <div className="mb-6 flex flex-wrap gap-2">
             <button
               className={`rounded-full px-4 py-1 text-sm font-medium ${
@@ -283,18 +264,27 @@ export const BonsaiShop = ({
             >
               Pots ({allShopItems.filter(i => i.type === "pot").length})
             </button>
-            
-            {/* ✅ UPDATED: Single Decorations category */}
             <button
               className={`rounded-full px-4 py-1 text-sm font-medium ${
-                shopCategory === "decoration"
+                shopCategory === "hats"
                   ? "bg-[#4a7c59] text-white"
                   : "bg-[#eef2eb] text-[#2c3e2d] hover:bg-[#dce4d7]"
               }`}
-              onClick={() => setShopCategory("decoration")}
+              onClick={() => setShopCategory("hats")}
+            >
+              <Crown className="inline h-3 w-3 mr-1" />
+              Hats ({allShopItems.filter(i => i.type === "hats").length})
+            </button>
+            <button
+              className={`rounded-full px-4 py-1 text-sm font-medium ${
+                shopCategory === "backgrounds"
+                  ? "bg-[#4a7c59] text-white"
+                  : "bg-[#eef2eb] text-[#2c3e2d] hover:bg-[#dce4d7]"
+              }`}
+              onClick={() => setShopCategory("backgrounds")}
             >
               <Sparkles className="inline h-3 w-3 mr-1" />
-              Decorations ({allShopItems.filter(i => i.type === "decoration").length})
+              Backgrounds ({allShopItems.filter(i => i.type === "backgrounds").length})
             </button>
           </div>
 
@@ -307,19 +297,14 @@ export const BonsaiShop = ({
               >
                 <div className="mb-3 flex items-center justify-between">
                   <span className={`rounded-full px-3 py-1 text-xs font-medium text-white ${
-                    item.type === 'decoration' ? 
-                      item.subcategory === 'hats' ? 'bg-purple-500' :
-                      item.subcategory === 'ambient' ? 'bg-blue-500' :
-                      item.subcategory === 'background' ? 'bg-green-500' : 'bg-gray-500'
-                    : item.type === 'ground' ? 'bg-green-500' :
+                    item.type === 'hats' ? 'bg-purple-500' :
+                    item.type === 'backgrounds' ? 'bg-green-500' :
+                    item.type === 'ground' ? 'bg-green-500' :
                     item.type === 'pot' ? 'bg-orange-500' : 
                     item.type === 'eyes' ? 'bg-blue-500' :
                     item.type === 'mouths' ? 'bg-pink-500' : 'bg-gray-500'
                   }`}>
-                    {item.type === 'decoration' 
-                      ? item.subcategory?.charAt(0).toUpperCase() + item.subcategory?.slice(1) 
-                      : item.type.charAt(0).toUpperCase() + item.type.slice(1)
-                    }
+                    {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
                   </span>
                   <span className="flex items-center text-sm font-medium text-[#2c3e2d]">
                     💰 {item.credits}
@@ -337,11 +322,6 @@ export const BonsaiShop = ({
                     {item.credits > 200 && (
                       <span className="inline-block mt-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
                         Premium
-                      </span>
-                    )}
-                    {item.type === 'decoration' && (
-                      <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                        {item.subcategory}
                       </span>
                     )}
                   </div>
@@ -376,9 +356,7 @@ export const BonsaiShop = ({
               <div className="text-[#5c6d5e] mb-2">
                 {shopCategory === "all" 
                   ? "All items are already owned!"
-                  : shopCategory.startsWith("decoration-")
-                    ? `All ${shopCategory.split("-")[1]} items are already owned!`
-                    : `All ${shopCategory} items are already owned!`
+                  : `All ${shopCategory} items are already owned!`
                 }
               </div>
               <p className="text-sm text-[#5c6d5e]">Complete courses to earn more credits and unlock new items.</p>

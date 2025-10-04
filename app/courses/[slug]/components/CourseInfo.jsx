@@ -122,7 +122,8 @@ export const CourseInfo = memo(function CourseInfo({
                 selectedMouth={lesson.instructor?.bonsai?.customization?.mouth || 'default_mouth'}
                 selectedPotStyle={lesson.instructor?.bonsai?.customization?.potStyle || 'default_pot'}
                 selectedGroundStyle={lesson.instructor?.bonsai?.customization?.groundStyle || 'default_ground'}
-                decorations={lesson.instructor?.bonsai?.customization?.decorations ? Object.values(lesson.instructor.bonsai.customization.decorations).filter(Boolean) : []}
+                selectedHat={lesson.instructor?.bonsai?.customization?.hat || null}
+                selectedBackground={lesson.instructor?.bonsai?.customization?.background || null}
                 zoomed={true}
               />
             </div>

@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../auth/[...nextauth]/route';
 import { getLevelInfo } from '@/lib/levelCalculator';
-import { validateDecorationSubcategories, getDecorationSubcategories } from '@/components/bonsai/shopItems';
+// Removed decoration subcategory imports - now using independent hat/background structure
 
 export async function PUT(request, { params }) {
   try {
@@ -44,46 +44,36 @@ export async function PUT(request, { params }) {
           potStyle: 'default_pot',
           potColor: '#FD9475',
           groundStyle: 'default_ground',
-          decorations: validateDecorationSubcategories({})
+          hat: null,
+          background: null
         },
         ownedItems: defaultOwnedItems
       });
     }
 
-    // ✅ UPDATED: Handle customization with decoration subcategories
+    // ✅ UPDATED: Handle customization with independent hat/background structure
     if (updates.customization) {
-      // Handle legacy decoration array migration
+      // Handle legacy decoration migration
       if (updates.customization.decorations) {
-        if (Array.isArray(updates.customization.decorations)) {
-          // Migrate legacy array to subcategory structure
+        // Migrate from old decorations structure to new independent structure
+        if (typeof updates.customization.decorations === 'object' && !Array.isArray(updates.customization.decorations)) {
+          // Old subcategory structure
+          updates.customization.hat = updates.customization.decorations.hats || null;
+          updates.customization.background = updates.customization.decorations.background || null;
+        } else if (Array.isArray(updates.customization.decorations)) {
+          // Old array structure - migrate first item to hat if it looks like a hat
           const legacyDecorations = updates.customization.decorations;
-          const migratedDecorations = { hats: null, ambient: null, background: null };
-          
-          // Simple migration logic - assign first decoration to hats if it exists
           if (legacyDecorations.length > 0) {
-            // You can add more sophisticated logic here based on decoration IDs
             const firstDecoration = legacyDecorations[0];
             if (firstDecoration.includes('hat') || firstDecoration.includes('crown') || firstDecoration.includes('cap')) {
-              migratedDecorations.hats = firstDecoration;
-            } else if (firstDecoration.includes('ambient') || firstDecoration.includes('sparkle') || firstDecoration.includes('firefly')) {
-              migratedDecorations.ambient = firstDecoration;
+              updates.customization.hat = firstDecoration;
             } else if (firstDecoration.includes('background') || firstDecoration.includes('sunset') || firstDecoration.includes('forest')) {
-              migratedDecorations.background = firstDecoration;
-            } else {
-              // Default to hats for unknown decorations
-              migratedDecorations.hats = firstDecoration;
+              updates.customization.background = firstDecoration;
             }
           }
-          
-          updates.customization.decorations = migratedDecorations;
         }
-      }
-
-      // Ensure decorations structure is correct using validation helper
-      if (!updates.customization.decorations || Array.isArray(updates.customization.decorations)) {
-        updates.customization.decorations = validateDecorationSubcategories(updates.customization.decorations);
-      } else {
-        updates.customization.decorations = validateDecorationSubcategories(updates.customization.decorations);
+        // Remove old decorations field
+        delete updates.customization.decorations;
       }
 
       bonsai.customization = {
