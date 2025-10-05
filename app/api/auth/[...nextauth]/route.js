@@ -74,6 +74,7 @@ export const authOptions = {
               providerId: account.providerAccountId,
               role: "student", // Default role for new Google users
               country: "Bonsai Garden Resident",
+              icon: 'bonsai', // Set default bonsai icon
               credits: 150, // Give new users 150 initial credits
               lifetimeCredits: 150, // Track lifetime credits earned
               lastSeen: new Date(),

@@ -34,6 +34,7 @@ export async function POST(req) {
       providerId,
       emailVerificationToken,
       emailVerificationExpires,
+      icon: 'bonsai', // Set default bonsai icon
       credits: 150, // Give new users 150 initial credits
       lifetimeCredits: 150, // Track lifetime credits earned
     });

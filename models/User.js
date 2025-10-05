@@ -37,6 +37,7 @@ const UserSchema = new mongoose.Schema(
     },
     icon: {
       type: String,
+      default: 'bonsai',
     },
     banner: {
       type: String,
