@@ -30,12 +30,12 @@ export async function POST(request) {
     }
 
     const body = await request.json()
-    const { name, description, avatar, maxMembers } = body
+    const { name, avatar } = body
 
     // Validate required fields
-    if (!name || !description) {
+    if (!name) {
       return NextResponse.json(
-        { error: "Name and description are required" },
+        { error: "Name is required" },
         { status: 400 }
       )
     }
@@ -43,9 +43,7 @@ export async function POST(request) {
     // Create the public group
     const publicGroup = new Chat({
       name: name.trim(),
-      description: description.trim(),
       avatar: avatar || null,
-      maxMembers: maxMembers || 1000,
       isPublic: true,
       type: "public_group",
       createdBy: session.user.id,
@@ -74,10 +72,8 @@ export async function POST(request) {
     const formattedGroup = {
       id: populatedGroup._id.toString(),
       name: populatedGroup.name,
-      description: populatedGroup.description,
       avatar: populatedGroup.avatar,
       members: populatedGroup.participantCount,
-      maxMembers: populatedGroup.maxMembers,
       createdBy: {
         id: populatedGroup.createdBy._id.toString(),
         name: populatedGroup.createdBy.name,
@@ -91,6 +87,7 @@ export async function POST(request) {
     }
 
     return NextResponse.json({
+      success: true,
       message: "Public group created successfully",
       group: formattedGroup
     }, { status: 201 })
@@ -98,7 +95,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Error creating public group:", error)
     return NextResponse.json(
-      { error: "Failed to create public group" },
+      { success: false, error: "Failed to create public group" },
       { status: 500 }
     )
   }

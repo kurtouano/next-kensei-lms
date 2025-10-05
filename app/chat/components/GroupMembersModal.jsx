@@ -1,14 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, lazy, Suspense } from "react"
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { X, Users, UserMinus, LogOut, UserPlus, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 
+// Lazy load the LeaveGroupModal
+const LeaveGroupModal = lazy(() => import("./LeaveGroupModal"))
+
 export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft, onInviteFriends }) {
   const { data: session } = useSession()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [membersLoading, setMembersLoading] = useState(false)
@@ -96,15 +101,28 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
     try {
       setLeaving(true)
       
-      const response = await fetch(`/api/chats/${chat.id}/leave`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: session.user.id
+      // Use different API endpoints based on chat type
+      let response
+      if (chat.type === 'public_group') {
+        // For public groups, use the public groups API
+        response = await fetch(`/api/chats/public-groups/${chat.id}/join`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
         })
-      })
+      } else {
+        // For regular groups, use the regular chat leave API
+        response = await fetch(`/api/chats/${chat.id}/leave`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: session.user.id
+          })
+        })
+      }
 
       const data = await response.json()
 
@@ -127,6 +145,12 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
       setLeaving(false)
     }
   }
+
+  // Wrapper function for LeaveGroupModal
+  const handleConfirmLeaveGroup = async () => {
+    await handleLeaveGroup()
+  }
+
 
   const handleRemoveMember = async (memberId) => {
     if (!chat || !session?.user?.id) return
@@ -282,6 +306,16 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
     setShowAdminManagement(true)
   }
 
+  // Handle profile navigation
+  const handleProfileClick = (member) => {
+    const memberId = (member._id || member.id)?.toString()
+    if (memberId) {
+      router.push(`/users/${memberId}`)
+      onClose() // Close the modal when navigating
+    }
+  }
+
+
   const renderAvatar = (user) => {
     
     // If user has icon: 'bonsai', show a default bonsai
@@ -329,6 +363,7 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
   const currentUserId = session?.user?.id?.toString()
   const isAdmin = adminRoles[currentUserId] === 'admin'
   const isCreator = chat?.createdBy?.toString() === currentUserId
+  
   
   // Count total admins
   const totalAdmins = Object.values(adminRoles).filter(role => role === 'admin').length
@@ -384,15 +419,20 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
                         {renderAvatar(member)}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-[#2c3e2d] text-sm sm:text-base">
-                          {member.name}
-                          {isCurrentUserMember && (
-                            <span className="text-xs sm:text-sm text-gray-500 ml-1 sm:ml-2">(You)</span>
-                          )}
-                          {isMemberAdmin && (
-                            <span className="text-xs sm:text-sm text-[#4a7c59] font-semibold ml-1 sm:ml-2">• Admin</span>
-                          )}
-                        </p>
+                        <button
+                          onClick={() => handleProfileClick(member)}
+                          className="text-left hover:underline focus:outline-none focus:underline"
+                        >
+                          <p className="font-medium text-[#2c3e2d] text-sm sm:text-base hover:text-[#3a6147] transition-colors">
+                            {member.name}
+                            {isCurrentUserMember && (
+                              <span className="text-xs sm:text-sm text-gray-500 ml-1 sm:ml-2">(You)</span>
+                            )}
+                            {isMemberAdmin && (
+                              <span className="text-xs sm:text-sm text-[#4a7c59] font-semibold ml-1 sm:ml-2">• Admin</span>
+                            )}
+                          </p>
+                        </button>
                       </div>
                       <div className="flex items-center gap-1 sm:gap-2">
                         {canManageAdmins && !isCurrentUserMember && (
@@ -431,75 +471,37 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 justify-between">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button 
               onClick={onInviteFriends}
-              className="bg-[#4a7c59] hover:bg-[#3a6147] flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2"
+              className="bg-[#4a7c59] hover:bg-[#3a6147] flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2 w-full sm:w-auto"
             >
               <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
               Invite Friends
             </Button>
-            <div className="flex gap-2">
-              <Button 
-                onClick={openLeaveConfirm}
-                disabled={leaving}
-                variant="destructive"
-                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2"
-              >
-                <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-                {leaving ? "Leaving..." : "Leave Group"}
-              </Button>
-            </div>
+            <Button 
+              onClick={openLeaveConfirm}
+              disabled={leaving}
+              variant="destructive"
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2 w-full sm:w-auto"
+            >
+              <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+              {leaving ? "Leaving..." : "Leave Group"}
+            </Button>
           </div>
         </div>
       </Card>
 
       {/* Leave Group Confirmation Modal */}
-      {showLeaveConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Leave Group</h3>
-                <p className="text-sm text-gray-500">This action cannot be undone</p>
-              </div>
-            </div>
-            <p className="text-gray-700 mb-6">
-              Are you sure you want to leave "{chat?.name}"? You won't be able to rejoin unless someone invites you again.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setShowLeaveConfirm(false)}
-                disabled={leaving}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleLeaveGroup}
-                disabled={leaving}
-                className="flex items-center gap-2"
-              >
-                {leaving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Leaving...
-                  </>
-                ) : (
-                  <>
-                    <LogOut className="h-4 w-4" />
-                    Leave Group
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <LeaveGroupModal
+          isOpen={showLeaveConfirm}
+          onClose={() => setShowLeaveConfirm(false)}
+          onConfirm={handleConfirmLeaveGroup}
+          groupName={chat?.name || "Group"}
+          isLoading={leaving}
+        />
+      </Suspense>
 
       {/* Remove Member Confirmation Modal */}
       {showRemoveConfirm && memberToRemove && (
@@ -749,6 +751,7 @@ export default function GroupMembersModal({ isOpen, onClose, chat, onMemberLeft,
           </div>
         </div>
       )}
+
     </div>
   )
 }

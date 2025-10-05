@@ -69,6 +69,7 @@ export default function ChatInterface() {
     error: publicGroupsError, 
     pagination: publicGroupsPagination,
     loadMore: loadMorePublicGroups,
+    refetch: refetchPublicGroups,
     joinGroup, 
     leaveGroup, 
     createPublicGroup 
@@ -1038,7 +1039,7 @@ export default function ChatInterface() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {selectedChat.type === "group" && (
+                        {(selectedChat.type === "group" || selectedChat.type === "public_group") && (
                           <Button 
                             variant="ghost" 
                             size="sm"
@@ -1315,8 +1316,12 @@ export default function ChatInterface() {
             isOpen={showCreateGroupModal}
             onClose={() => setShowCreateGroupModal(false)}
             activeTab={activeTab}
-            onGroupCreated={(group) => {
-              refetchChats() // Refresh the chat list
+            onGroupCreated={async (group) => {
+              // Small delay to ensure database operations are complete
+              setTimeout(() => {
+                refetchChats() // Refresh the chat list
+                refetchPublicGroups() // Also refresh public groups list
+              }, 100)
               setSelectedChatId(group.id)
               setShowCreateGroupModal(false)
             }}
@@ -1330,11 +1335,14 @@ export default function ChatInterface() {
           onClose={() => setShowMembersModal(false)}
           chat={selectedChat}
           onMemberLeft={() => {
-            refetchChats() // Refresh chat list when someone leaves or role changes
-            // If current user left, clear selected chat
-            if (selectedChat && !isUserParticipant) {
-              setSelectedChatId(null)
-            }
+            // Clear selected chat first
+            setSelectedChatId(null)
+            
+            // Force refresh both lists with a small delay
+            setTimeout(() => {
+              refetchChats()
+              refetchPublicGroups()
+            }, 100)
           }}
           onInviteFriends={() => {
             setShowMembersModal(false)

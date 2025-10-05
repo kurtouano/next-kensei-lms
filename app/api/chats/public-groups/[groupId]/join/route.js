@@ -5,6 +5,8 @@ import { connectDb } from "@/lib/mongodb"
 import Chat from "@/models/Chat"
 import User from "@/models/User"
 import ChatParticipant from "@/models/ChatParticipant"
+import Message from "@/models/Message"
+import { createLeaveMessage } from "@/lib/systemMessageHelper"
 
 export async function POST(request, { params }) {
   try {
@@ -69,11 +71,15 @@ export async function POST(request, { params }) {
       existingParticipant.leftAt = null
       await existingParticipant.save()
     } else {
+      // Check if user is the creator to preserve admin role
+      const isCreator = publicGroup.createdBy.toString() === session.user.id
+      const userRole = isCreator ? "admin" : "member"
+      
       // Create new ChatParticipant record
       const chatParticipant = new ChatParticipant({
         chat: groupId,
         user: session.user.id,
-        role: "member",
+        role: userRole,
         isActive: true
       })
       await chatParticipant.save()
@@ -159,6 +165,43 @@ export async function DELETE(request, { params }) {
       )
     }
 
+    // Check if user is an admin and if they're the only admin
+    if (hasActiveParticipant?.role === 'admin') {
+      // Check total active participants in the group
+      const totalActiveParticipants = await ChatParticipant.countDocuments({
+        chat: groupId,
+        isActive: true
+      })
+
+      // If user is the only person left in the group, allow them to leave
+      if (totalActiveParticipants <= 1) {
+        // Allow leaving - this will delete the group since they're the only one left
+      } else {
+        // Check if they're the only admin among multiple people
+        const adminCount = await ChatParticipant.countDocuments({
+          chat: groupId,
+          role: 'admin',
+          isActive: true
+        })
+
+        if (adminCount <= 1) {
+          return NextResponse.json({ 
+            success: false, 
+            error: 'You are the only admin. Transfer admin rights to another member before leaving the group.' 
+          }, { status: 400 })
+        }
+      }
+    }
+
+    // Get user name for system message
+    const user = await User.findById(session.user.id)
+    const userName = user?.name || 'Unknown User'
+
+    // Create system message for user leaving
+    console.log(`Creating leave message for public group ${groupId}: ${userName} left`)
+    await createLeaveMessage(groupId, userName)
+    console.log(`Leave message created successfully`)
+
     // Remove user from the group (only if they're in participants array)
     if (isInParticipants) {
       publicGroup.participants = publicGroup.participants.filter(
@@ -175,14 +218,40 @@ export async function DELETE(request, { params }) {
       { isActive: false, leftAt: new Date() }
     )
 
+    // Check if group has any active members left
+    const activeMembersCount = await ChatParticipant.countDocuments({
+      chat: groupId,
+      isActive: true
+    })
+
+    // If no active members, delete the group automatically
+    if (activeMembersCount === 0) {
+      console.log(`Auto-deleting public group ${groupId} - no active members`)
+      
+      // Delete all messages in the group
+      await Message.deleteMany({ chat: groupId })
+      
+      // Delete all chat participants
+      await ChatParticipant.deleteMany({ chat: groupId })
+      
+      // Delete the group itself
+      await Chat.findByIdAndDelete(groupId)
+      
+      return NextResponse.json({
+        success: true,
+        message: "Successfully left the group. Group was automatically deleted as it had no members."
+      })
+    }
+
     return NextResponse.json({
+      success: true,
       message: "Successfully left the group"
     })
 
   } catch (error) {
     console.error("Error leaving public group:", error)
     return NextResponse.json(
-      { error: "Failed to leave group" },
+      { success: false, error: "Failed to leave group" },
       { status: 500 }
     )
   }

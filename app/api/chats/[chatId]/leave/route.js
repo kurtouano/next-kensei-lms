@@ -95,10 +95,29 @@ export async function POST(request, { params }) {
       { upsert: true, new: true }
     )
 
-    // If it's a group chat and no participants left, delete the chat
-    if (chat.type === 'group' && chat.participants.length === 0) {
+    // Check if group has any active members left (using ChatParticipant records)
+    const activeMembersCount = await ChatParticipant.countDocuments({
+      chat: chatId,
+      isActive: true
+    })
+
+    // If no active members, delete the group automatically
+    if (activeMembersCount === 0) {
+      console.log(`Auto-deleting group ${chatId} - no active members`)
+      
+      // Delete all messages in the group
+      await Message.deleteMany({ chat: chatId })
+      
+      // Delete all chat participants
+      await ChatParticipant.deleteMany({ chat: chatId })
+      
+      // Delete the group itself
       await Chat.findByIdAndDelete(chatId)
-      return NextResponse.json({ success: true, message: 'Chat deleted as no participants remain' })
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Group was automatically deleted as it had no members' 
+      })
     }
 
     // Note: Admin transfer should be handled explicitly before leaving

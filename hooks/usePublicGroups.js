@@ -157,6 +157,10 @@ export function usePublicGroups() {
     error,
     pagination,
     fetchPublicGroups,
+    refetch: () => {
+      setPublicGroups([]) // Clear existing groups first
+      fetchPublicGroups(1)
+    },
     joinGroup,
     leaveGroup,
     createPublicGroup,

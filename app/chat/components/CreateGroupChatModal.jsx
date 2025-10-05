@@ -13,8 +13,6 @@ import AlertModal from "./AlertModal"
 export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated, activeTab = "chats" }) {
   const { data: session } = useSession()
   const [groupName, setGroupName] = useState("")
-  const [groupDescription, setGroupDescription] = useState("")
-  const [maxMembers, setMaxMembers] = useState(1000)
   const [selectedFriends, setSelectedFriends] = useState([])
   const [friends, setFriends] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -98,16 +96,6 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated, 
       return
     }
 
-    // For public groups, require description
-    if (isPublicGroup && !groupDescription.trim()) {
-      setAlertModal({
-        isOpen: true,
-        title: "Missing Information",
-        message: "Please enter a group description",
-        type: "warning"
-      })
-      return
-    }
 
     try {
       setCreating(true)
@@ -122,9 +110,7 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated, 
           },
           body: JSON.stringify({
             name: groupName.trim(),
-            description: groupDescription.trim(),
-            avatar: groupAvatar,
-            maxMembers: maxMembers
+            avatar: groupAvatar
           })
         })
       } else {
@@ -252,8 +238,6 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated, 
 
   const handleClose = () => {
     setGroupName("")
-    setGroupDescription("")
-    setMaxMembers(1000)
     setSelectedFriends([])
     setSearchQuery("")
     setGroupAvatar(null)
@@ -403,38 +387,6 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated, 
               />
             </div>
 
-            {/* Public Group Specific Fields */}
-            {isPublicGroup && (
-              <>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
-                    Description *
-                  </label>
-                  <textarea
-                    placeholder="Describe what this group is about..."
-                    value={groupDescription}
-                    onChange={(e) => setGroupDescription(e.target.value)}
-                    maxLength={500}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-[#4a7c59] resize-none"
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
-                    Max Members
-                  </label>
-                  <Input
-                    type="number"
-                    placeholder="1000"
-                    value={maxMembers}
-                    onChange={(e) => setMaxMembers(parseInt(e.target.value) || 1000)}
-                    min={10}
-                    max={10000}
-                  />
-                </div>
-              </>
-            )}
           </div>
 
           {/* Selected Friends - Only for regular groups */}
