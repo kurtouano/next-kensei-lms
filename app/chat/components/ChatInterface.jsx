@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Send, ImageIcon, Paperclip, Smile, Loader2, User, Users, Plus, Menu, X } from "lucide-react"
+import { Send, ImageIcon, Paperclip, Smile, Loader2, User, Users, Plus, Menu, X, Search, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useChat, useChatMessages } from "@/hooks/useChat"
+import { usePublicGroups } from "@/hooks/usePublicGroups"
 import { uploadChatImage, uploadChatAttachment } from "@/lib/chatFileUpload"
 import MessageItem from "./MessageItem"
 import LazyAvatar from "./LazyAvatar"
@@ -26,6 +28,7 @@ import {
 // Lazy load the modals
 const CreateGroupChatModal = lazy(() => import("./CreateGroupChatModal"))
 const GroupInviteModal = lazy(() => import("./GroupInviteModal"))
+const LeaveGroupModal = lazy(() => import("./LeaveGroupModal"))
 const GroupMembersModal = lazy(() => import("./GroupMembersModal"))
 
 export default function ChatInterface() {
@@ -57,10 +60,26 @@ export default function ChatInterface() {
     deleteMessage,
     refetch: refetchMessages
   } = useChatMessages(selectedChatId, updateChatWithNewMessage)
+  
+  // Public groups hook
+  const { 
+    publicGroups, 
+    loading: publicGroupsLoading, 
+    loadingMore: publicGroupsLoadingMore,
+    error: publicGroupsError, 
+    pagination: publicGroupsPagination,
+    loadMore: loadMorePublicGroups,
+    joinGroup, 
+    leaveGroup, 
+    createPublicGroup 
+  } = usePublicGroups()
   const [uploading, setUploading] = useState(false)
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showMembersModal, setShowMembersModal] = useState(false)
+  const [showLeaveGroupModal, setShowLeaveGroupModal] = useState(false)
+  const [leavingGroupId, setLeavingGroupId] = useState(null)
+  const [leavingGroupName, setLeavingGroupName] = useState("")
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiButtonRef = useRef(null)
   const sidebarRef = useRef(null)
@@ -70,6 +89,8 @@ export default function ChatInterface() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // Mobile sidebar state
   const [isInitialChatLoad, setIsInitialChatLoad] = useState(false) // Track initial chat load
   const [isInitialLoad, setIsInitialLoad] = useState(true) // Track overall initial load
+  const [activeTab, setActiveTab] = useState("chats") // Sidebar tab state
+  const discoverScrollRef = useRef(null)
 
 
   // Handle URL parameters for auto-opening specific chat
@@ -180,6 +201,18 @@ export default function ChatInterface() {
     }
   }, [pagination?.hasMore, chatsLoading, loadMoreChats])
 
+  // Handle discover tab scroll for infinite loading
+  const handleDiscoverScroll = useCallback(() => {
+    if (discoverScrollRef.current && publicGroupsPagination?.hasMore && !publicGroupsLoading && !publicGroupsLoadingMore) {
+      const { scrollTop, scrollHeight, clientHeight } = discoverScrollRef.current
+      
+      // If user scrolled to bottom and there are more public groups
+      if (scrollTop + clientHeight >= scrollHeight - 10) {
+        loadMorePublicGroups()
+      }
+    }
+  }, [publicGroupsPagination?.hasMore, publicGroupsLoading, publicGroupsLoadingMore, loadMorePublicGroups])
+
   // Attach scroll listener
   useEffect(() => {
     const container = messagesContainerRef.current
@@ -197,6 +230,15 @@ export default function ChatInterface() {
       return () => sidebar.removeEventListener("scroll", handleSidebarScroll)
     }
   }, [handleSidebarScroll])
+
+  // Attach discover tab scroll listener
+  useEffect(() => {
+    const discoverContainer = discoverScrollRef.current
+    if (discoverContainer && activeTab === "discover") {
+      discoverContainer.addEventListener("scroll", handleDiscoverScroll)
+      return () => discoverContainer.removeEventListener("scroll", handleDiscoverScroll)
+    }
+  }, [handleDiscoverScroll, activeTab])
 
   // Reset loading flag when chats loading is complete
   useEffect(() => {
@@ -560,6 +602,54 @@ export default function ChatInterface() {
       (participant._id || participant.id)?.toString() === session?.user?.id?.toString()
     ) : false
 
+  // Handle joining/leaving public groups
+  const handleJoinGroup = async (groupId) => {
+    try {
+      const group = publicGroups.find((g) => g.id === groupId)
+      if (!group) return
+
+      if (group.isJoined) {
+        // Show leave confirmation modal
+        setLeavingGroupId(groupId)
+        setLeavingGroupName(group.name)
+        setShowLeaveGroupModal(true)
+      } else {
+        // Join group
+        await joinGroup(groupId)
+        // Refresh chats to add the group to user's chats
+        refetchChats()
+        // Optionally switch to the joined group chat
+        // setSelectedChatId(groupId)
+      }
+    } catch (error) {
+      console.error("Error joining/leaving group:", error)
+      // You could show a toast notification here
+    }
+  }
+
+  // Handle confirming leave group
+  const handleConfirmLeaveGroup = async () => {
+    try {
+      await leaveGroup(leavingGroupId)
+      // Refresh chats to remove the group from user's chats
+      refetchChats()
+      // Close modal
+      setShowLeaveGroupModal(false)
+      setLeavingGroupId(null)
+      setLeavingGroupName("")
+    } catch (error) {
+      console.error("Error leaving group:", error)
+      // You could show a toast notification here
+    }
+  }
+
+  // Handle canceling leave group
+  const handleCancelLeaveGroup = () => {
+    setShowLeaveGroupModal(false)
+    setLeavingGroupId(null)
+    setLeavingGroupName("")
+  }
+
   return (
     <div className="bg-gray-50 overflow-x-hidden flex flex-col">
       <div className="flex-1 flex items-center justify-center lg:py-4">
@@ -580,170 +670,311 @@ export default function ChatInterface() {
             transition-transform duration-300 ease-in-out
           `}>
             <Card className="h-full flex flex-col">
-              <div className="p-4 border-b">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-lg font-semibold text-[#2c3e2d]">Messages</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="lg:hidden text-gray-500 hover:text-gray-700"
-                    title="Close sidebar"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="relative flex items-center gap-2">
-                  <Input
-                    placeholder="Search conversations..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-3 flex-1"
-                  />
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+                <div className="p-4 border-b">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-[#2c3e2d]">Messages</h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsSidebarOpen(false)}
+                      className="lg:hidden text-gray-500 hover:text-gray-700"
+                      title="Close sidebar"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <TabsList className="grid w-full grid-cols-2 mb-3">
+                    <TabsTrigger value="chats">My Chats</TabsTrigger>
+                    <TabsTrigger value="discover">
+                      Discover
+                      <Users className="h-3 w-3 ml-1" />
+                    </TabsTrigger>
+                  </TabsList>
+                  <div className="relative flex items-center gap-2">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search conversations..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 flex-1"
+                    />
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowCreateGroupModal(true)}
                     className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
-                    title="Create Group Chat"
+                    title={activeTab === "discover" && (session?.user?.role === 'admin' || session?.user?.role === 'instructor') 
+                      ? "Create Public Group" 
+                      : "Create Group Chat"
+                    }
+                    disabled={activeTab === "discover" && !(session?.user?.role === 'admin' || session?.user?.role === 'instructor')}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
+                  </div>
                 </div>
-              </div>
 
-              <div ref={sidebarRef} className="flex-1 overflow-y-auto overflow-x-hidden">
-                {chatsLoading && chats.length === 0 ? (
-                  <ChatListSkeleton count={10} />
-                ) : chatsError ? (
-                  <div className="p-4 text-center">
-                    <p className="text-red-500 text-sm">Error loading chats</p>
-                    <p className="text-gray-500 text-xs mt-1">{chatsError}</p>
-                  </div>
-                ) : filteredChats.length === 0 ? (
-                  <div className="p-4 text-center">
-                    <p className="text-gray-500 text-sm">No chats yet</p>
-                    <p className="text-gray-400 text-xs mt-1">Start a conversation with a friend!</p>
-                  </div>
-                ) : (
-                  <>
-                    {filteredChats.map((chat) => (
-                    <div
-                      key={chat.id}
-                      onClick={() => {
-                        setSelectedChatId(chat.id)
-                        // Close sidebar on mobile when chat is selected
-                        if (window.innerWidth < 1024) {
-                          setIsSidebarOpen(false)
-                        }
-                      }}
-                      className={`p-3 sm:p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
-                        selectedChatId === chat.id ? "bg-[#eef2eb] border-l-4 border-l-[#4a7c59]" : ""
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="relative">
-                          {chat.type === "group" ? (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10">
-                              {(chat.avatar && chat.avatar !== null) ? (
-                                <img 
-                                  src={chat.avatar} 
-                                  alt={chat.name} 
-                                  className="h-full w-full object-cover rounded-full"
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextElementSibling.style.display = 'flex';
-                                  }}
+                <TabsContent value="chats" className="flex-1 overflow-y-auto m-0">
+                  <div ref={sidebarRef} className="h-full overflow-y-auto overflow-x-hidden">
+                    {chatsLoading && chats.length === 0 ? (
+                      <ChatListSkeleton count={10} />
+                    ) : chatsError ? (
+                      <div className="p-4 text-center">
+                        <p className="text-red-500 text-sm">Error loading chats</p>
+                        <p className="text-gray-500 text-xs mt-1">{chatsError}</p>
+                      </div>
+                    ) : filteredChats.length === 0 ? (
+                      <div className="p-4 text-center">
+                        <p className="text-gray-500 text-sm">No chats yet</p>
+                        <p className="text-gray-400 text-xs mt-1">Start a conversation with a friend!</p>
+                      </div>
+                    ) : (
+                      <>
+                        {filteredChats.map((chat) => (
+                        <div
+                          key={chat.id}
+                          onClick={() => {
+                            setSelectedChatId(chat.id)
+                            // Close sidebar on mobile when chat is selected
+                            if (window.innerWidth < 1024) {
+                              setIsSidebarOpen(false)
+                            }
+                          }}
+                          className={`p-3 sm:p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
+                            selectedChatId === chat.id ? "bg-[#eef2eb] border-l-4 border-l-[#4a7c59]" : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="relative">
+                              {chat.type === "group" || chat.type === "public_group" ? (
+                                <div className="w-8 h-8 sm:w-10 sm:h-10">
+                                  {(chat.avatar && chat.avatar !== null) ? (
+                                    <img 
+                                      src={chat.avatar} 
+                                      alt={chat.name} 
+                                      className="h-full w-full object-cover rounded-full"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextElementSibling.style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div 
+                                    className="h-full w-full rounded-full bg-[#4a7c59] text-white flex items-center justify-center text-sm font-medium"
+                                    style={{ display: (chat.avatar && chat.avatar !== null) ? 'none' : 'flex' }}
+                                  >
+                                    {chat.name?.charAt(0)?.toUpperCase() || "G"}
+                                  </div>
+                                </div>
+                              ) : (
+                                <LazyAvatar 
+                                  user={{ 
+                                    id: chat.otherParticipant?.id || chat.participants?.[0]?.id, 
+                                    icon: chat.otherParticipant?.icon || chat.participants?.[0]?.icon || chat.avatar, 
+                                    name: chat.name,
+                                    bonsai: chat.otherParticipant?.bonsai || chat.participants?.[0]?.bonsai
+                                  }} 
+                                  size="w-8 h-8 sm:w-10 sm:h-10" 
                                 />
-                              ) : null}
-                              <div 
-                                className="h-full w-full rounded-full bg-[#4a7c59] text-white flex items-center justify-center text-sm font-medium"
-                                style={{ display: (chat.avatar && chat.avatar !== null) ? 'none' : 'flex' }}
-                              >
-                                {chat.name?.charAt(0)?.toUpperCase() || "G"}
+                              )}
+                              {chat.isOnline && (
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 max-w-[250px] sm:max-w-none">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1 min-w-0 flex-1">
+                                  <h3 className="font-medium text-sm text-[#2c3e2d] truncate">
+                                    {chat.name}
+                                  </h3>
+                                  {chat.type === "group" && (
+                                    <Users className="h-3 w-3 text-[#4a7c59] flex-shrink-0 ml-1 mr-2" />
+                                  )}
+                                </div>
+                                <span className="text-xs text-gray-500">
+                                  {chat.lastMessage?.createdAt && new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 truncate">
+                                {chat.lastMessage ? (
+                                  <>
+                                    {chat.lastMessage.isCurrentUser && "You: "}
+                                    {(() => {
+                                      if (chat.lastMessage.type === "system") {
+                                        return chat.lastMessage.content
+                                      } else if (chat.lastMessage.type === "image") {
+                                        return "sent an image"
+                                      } else if (chat.lastMessage.type === "attachment" || chat.lastMessage.type === "file") {
+                                        // Check attachment type for more specific message
+                                        const attachment = chat.lastMessage.attachments?.[0]
+                                        if (attachment?.mimeType) {
+                                          if (attachment.mimeType.startsWith('audio/')) {
+                                            return "sent an audio file"
+                                          } else if (attachment.mimeType === 'application/pdf') {
+                                            return "sent a PDF"
+                                          } else if (attachment.mimeType.includes('document') || attachment.mimeType.includes('word')) {
+                                            return "sent a document"
+                                          } else if (attachment.mimeType.includes('excel') || attachment.mimeType.includes('spreadsheet') || attachment.mimeType.includes('csv')) {
+                                            return "sent a spreadsheet"
+                                          } else if (attachment.mimeType.startsWith('image/')) {
+                                            return "sent an image"
+                                          } else {
+                                            return "sent a file"
+                                          }
+                                        }
+                                        return "sent an attachment"
+                                      } else {
+                                        return chat.lastMessage.content || "sent a message"
+                                      }
+                                    })()}
+                                  </>
+                                ) : "No messages yet"}
+                              </p>
+                            </div>
+                            {chat.unreadCount > 0 && (
+                              <div className="bg-[#4a7c59] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                {chat.unreadCount}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        ))}
+                        
+                        {/* Skeleton Loading for More Chats */}
+                        {chats.length > 0 && pagination?.hasMore && (isLoadingMoreChats.current || chatsLoading) && (
+                          <LoadingMoreChatsSkeleton />
+                        )}
+                      </>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="discover" className="flex-1 overflow-y-auto m-0 p-4 space-y-4" ref={discoverScrollRef}>
+                  {publicGroupsLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="p-3 bg-white rounded-lg border animate-pulse">
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+                            <div className="flex-1 space-y-2">
+                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                              <div className="flex gap-2">
+                                <div className="h-3 bg-gray-200 rounded w-16"></div>
+                                <div className="h-3 bg-gray-200 rounded w-12"></div>
+                              </div>
+                            </div>
+                            <div className="w-16 h-8 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : publicGroupsError ? (
+                    <div className="p-4 text-center">
+                      <p className="text-red-500 text-sm">Error loading public groups</p>
+                      <p className="text-gray-500 text-xs mt-1">{publicGroupsError}</p>
+                    </div>
+                  ) : publicGroups.length === 0 ? (
+                    <div className="p-4 text-center">
+                      <p className="text-gray-500 text-sm">No public groups available</p>
+                      <p className="text-gray-400 text-xs mt-1">Check back later for new groups!</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-semibold text-[#2c3e2d] flex items-center gap-2">
+                          <Users className="h-4 w-4 text-[#4a7c59]" />
+                          Public Groups
+                        </h3>
+                        {publicGroups.map((group) => (
+                            <div key={group.id} className="p-3 bg-white rounded-lg border hover:shadow-md transition-all">
+                              <div className="flex items-start gap-3">
+                                <img
+                                  src={group.avatar || "/placeholder.svg"}
+                                  alt={group.name}
+                                  className="w-12 h-12 rounded-lg"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-sm text-[#2c3e2d] truncate">{group.name}</h4>
+                                  <p className="text-xs text-gray-600 line-clamp-2">{group.description}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs text-gray-500">{group.members} members</span>
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant={group.isJoined ? "outline" : "default"}
+                                  className={
+                                    group.isJoined
+                                      ? "h-8 text-xs"
+                                      : "h-8 text-xs bg-[#4a7c59] hover:bg-[#3a6147]"
+                                  }
+                                  onClick={() => handleJoinGroup(group.id)}
+                                >
+                                  {group.isJoined ? (
+                                    <>
+                                      <Check className="h-3 w-3 mr-1" />
+                                      Joined
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Join
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+
+
+                      {/* Load More Indicator */}
+                      {publicGroupsPagination?.hasMore && (
+                        <div className="text-center py-4">
+                          {publicGroupsLoadingMore ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-center">
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                <span className="text-sm text-gray-600">Loading more groups...</span>
+                              </div>
+                              {/* Skeleton loading for more groups */}
+                              <div className="space-y-2">
+                                {[...Array(2)].map((_, i) => (
+                                  <div key={i} className="p-3 bg-white rounded-lg border animate-pulse">
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+                                      <div className="flex-1 space-y-2">
+                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                        <div className="flex gap-2">
+                                          <div className="h-3 bg-gray-200 rounded w-16"></div>
+                                          <div className="h-3 bg-gray-200 rounded w-12"></div>
+                                        </div>
+                                      </div>
+                                      <div className="w-16 h-8 bg-gray-200 rounded"></div>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           ) : (
-                            <LazyAvatar 
-                              user={{ 
-                                id: chat.otherParticipant?.id || chat.participants?.[0]?.id, 
-                                icon: chat.otherParticipant?.icon || chat.participants?.[0]?.icon || chat.avatar, 
-                                name: chat.name,
-                                bonsai: chat.otherParticipant?.bonsai || chat.participants?.[0]?.bonsai
-                              }} 
-                              size="w-8 h-8 sm:w-10 sm:h-10" 
-                            />
-                          )}
-                          {chat.isOnline && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={loadMorePublicGroups}
+                              className="text-[#4a7c59] hover:text-[#3a6147]"
+                            >
+                              Load More Groups
+                            </Button>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0 max-w-[250px] sm:max-w-none">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 min-w-0 flex-1">
-                              <h3 className="font-medium text-sm text-[#2c3e2d] truncate">
-                                {chat.name}
-                              </h3>
-                              {chat.type === "group" && (
-                                <Users className="h-3 w-3 text-[#4a7c59] flex-shrink-0 ml-1 mr-2" />
-                              )}
-                            </div>
-                            <span className="text-xs text-gray-500">
-                              {chat.lastMessage?.createdAt && new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 truncate">
-                            {chat.lastMessage ? (
-                              <>
-                                {chat.lastMessage.isCurrentUser && "You: "}
-                                {(() => {
-                                  if (chat.lastMessage.type === "system") {
-                                    return chat.lastMessage.content
-                                  } else if (chat.lastMessage.type === "image") {
-                                    return "sent an image"
-                                  } else if (chat.lastMessage.type === "attachment" || chat.lastMessage.type === "file") {
-                                    // Check attachment type for more specific message
-                                    const attachment = chat.lastMessage.attachments?.[0]
-                                    if (attachment?.mimeType) {
-                                      if (attachment.mimeType.startsWith('audio/')) {
-                                        return "sent an audio file"
-                                      } else if (attachment.mimeType === 'application/pdf') {
-                                        return "sent a PDF"
-                                      } else if (attachment.mimeType.includes('document') || attachment.mimeType.includes('word')) {
-                                        return "sent a document"
-                                      } else if (attachment.mimeType.includes('excel') || attachment.mimeType.includes('spreadsheet') || attachment.mimeType.includes('csv')) {
-                                        return "sent a spreadsheet"
-                                      } else if (attachment.mimeType.startsWith('image/')) {
-                                        return "sent an image"
-                                      } else {
-                                        return "sent a file"
-                                      }
-                                    }
-                                    return "sent an attachment"
-                                  } else {
-                                    return chat.lastMessage.content || "sent a message"
-                                  }
-                                })()}
-                              </>
-                            ) : "No messages yet"}
-                          </p>
-                        </div>
-                        {chat.unreadCount > 0 && (
-                          <div className="bg-[#4a7c59] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                            {chat.unreadCount}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    ))}
-                    
-                    {/* Skeleton Loading for More Chats */}
-                    {chats.length > 0 && pagination?.hasMore && (isLoadingMoreChats.current || chatsLoading) && (
-                      <LoadingMoreChatsSkeleton />
-                    )}
-                  </>
-                )}
-              </div>
+                      )}
+                    </>
+                  )}
+                </TabsContent>
+              </Tabs>
             </Card>
           </div>
 
@@ -767,7 +998,7 @@ export default function ChatInterface() {
                           <Menu className="h-5 w-5" />
                         </Button>
                         <div className="w-8 h-8 sm:w-10 sm:h-10">
-                          {selectedChat.type === "group" ? (
+                          {selectedChat.type === "group" || selectedChat.type === "public_group" ? (
                             <div className="h-full w-full relative">
                               {(selectedChat.avatar && selectedChat.avatar !== null) ? (
                                 <img 
@@ -856,7 +1087,7 @@ export default function ChatInterface() {
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <div className="mb-4">
                           <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#eef2eb] flex items-center justify-center mb-4">
-                            {selectedChat.type === "group" ? (
+                            {selectedChat.type === "group" || selectedChat.type === "public_group" ? (
                               <div className="h-full w-full relative">
                                 {(selectedChat.avatar && selectedChat.avatar !== null) ? (
                                   <img 
@@ -1083,6 +1314,7 @@ export default function ChatInterface() {
           <CreateGroupChatModal
             isOpen={showCreateGroupModal}
             onClose={() => setShowCreateGroupModal(false)}
+            activeTab={activeTab}
             onGroupCreated={(group) => {
               refetchChats() // Refresh the chat list
               setSelectedChatId(group.id)
@@ -1120,6 +1352,16 @@ export default function ChatInterface() {
             refetchChats()
           }}
           chat={selectedChat}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <LeaveGroupModal
+          isOpen={showLeaveGroupModal}
+          onClose={handleCancelLeaveGroup}
+          onConfirm={handleConfirmLeaveGroup}
+          groupName={leavingGroupName}
+          isLoading={false} // You can add loading state if needed
         />
       </Suspense>
         </div>

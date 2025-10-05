@@ -14,7 +14,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { chatId } = params
+    const { chatId } = await params
     const { userId } = await request.json()
 
     if (!userId || userId !== session.user.id) {

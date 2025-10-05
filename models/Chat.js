@@ -9,7 +9,7 @@ const ChatSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["direct", "group"],
+      enum: ["direct", "group", "public_group"],
       required: true,
       default: "direct",
     },
@@ -46,6 +46,21 @@ const ChatSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // For public groups
+    isPublic: {
+      type: Boolean,
+      default: false,
+    },
+    maxMembers: {
+      type: Number,
+      default: 1000, // Default max members for public groups
+    },
+    // Role requirements for creating public groups
+    requiredRole: {
+      type: String,
+      enum: ["admin", "instructor"],
+      default: "admin",
+    },
   },
   {
     timestamps: true,
@@ -57,6 +72,7 @@ ChatSchema.index({ participants: 1 })
 ChatSchema.index({ lastActivity: -1 })
 ChatSchema.index({ type: 1, isActive: 1 })
 ChatSchema.index({ createdBy: 1 })
+ChatSchema.index({ isPublic: 1, isActive: 1 })
 
 // For direct chats, ensure we don't create duplicates between the same two users
 ChatSchema.index(

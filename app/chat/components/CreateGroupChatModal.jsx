@@ -10,9 +10,11 @@ import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { compressImage, validateImageFile } from "@/lib/imageCompression"
 import AlertModal from "./AlertModal"
 
-export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }) {
+export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated, activeTab = "chats" }) {
   const { data: session } = useSession()
   const [groupName, setGroupName] = useState("")
+  const [groupDescription, setGroupDescription] = useState("")
+  const [maxMembers, setMaxMembers] = useState(1000)
   const [selectedFriends, setSelectedFriends] = useState([])
   const [friends, setFriends] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -24,12 +26,16 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
   const [alertModal, setAlertModal] = useState({ isOpen: false, title: "", message: "", type: "info" })
   const fileInputRef = useRef(null)
 
+  // Check if user can create public groups
+  const canCreatePublicGroup = session?.user?.role === 'admin' || session?.user?.role === 'instructor'
+  const isPublicGroup = activeTab === "discover" && canCreatePublicGroup
+
   // Fetch user's friends
   useEffect(() => {
-    if (isOpen && session?.user?.email) {
+    if (isOpen && session?.user?.email && !isPublicGroup) {
       fetchFriends()
     }
-  }, [isOpen, session])
+  }, [isOpen, session, isPublicGroup])
 
   const fetchFriends = async () => {
     try {
@@ -71,11 +77,33 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
   }
 
   const handleCreateGroup = async () => {
-    if (!groupName.trim() || selectedFriends.length === 0) {
+    if (!groupName.trim()) {
       setAlertModal({
         isOpen: true,
         title: "Missing Information",
-        message: "Please enter a group name and select at least one friend",
+        message: "Please enter a group name",
+        type: "warning"
+      })
+      return
+    }
+
+    // For regular groups, require at least one friend
+    if (!isPublicGroup && selectedFriends.length === 0) {
+      setAlertModal({
+        isOpen: true,
+        title: "Missing Information",
+        message: "Please select at least one friend",
+        type: "warning"
+      })
+      return
+    }
+
+    // For public groups, require description
+    if (isPublicGroup && !groupDescription.trim()) {
+      setAlertModal({
+        isOpen: true,
+        title: "Missing Information",
+        message: "Please enter a group description",
         type: "warning"
       })
       return
@@ -83,38 +111,57 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
 
     try {
       setCreating(true)
-      const response = await fetch('/api/chats', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'group',
-          name: groupName.trim(),
-          avatar: groupAvatar, // Include the uploaded avatar URL
-          participantIds: selectedFriends.map(friend => (friend._id || friend.id).toString())
+      
+      let response
+      if (isPublicGroup) {
+        // Create public group
+        response = await fetch('/api/chats/public-groups/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: groupName.trim(),
+            description: groupDescription.trim(),
+            avatar: groupAvatar,
+            maxMembers: maxMembers
+          })
         })
-      })
+      } else {
+        // Create regular group
+        response = await fetch('/api/chats', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'group',
+            name: groupName.trim(),
+            avatar: groupAvatar,
+            participantIds: selectedFriends.map(friend => (friend._id || friend.id).toString())
+          })
+        })
+      }
 
       const data = await response.json()
 
-      if (data.success) {
-        onGroupCreated(data.chat)
+      if (data.success || data.group) {
+        onGroupCreated(data.chat || data.group)
         handleClose()
       } else {
         setAlertModal({
           isOpen: true,
           title: "Error",
-          message: data.error || 'Failed to create group chat',
+          message: data.error || 'Failed to create group',
           type: "error"
         })
       }
     } catch (error) {
-      console.error('Error creating group chat:', error)
+      console.error('Error creating group:', error)
       setAlertModal({
         isOpen: true,
         title: "Error",
-        message: 'Failed to create group chat',
+        message: 'Failed to create group',
         type: "error"
       })
     } finally {
@@ -205,6 +252,8 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
 
   const handleClose = () => {
     setGroupName("")
+    setGroupDescription("")
+    setMaxMembers(1000)
     setSelectedFriends([])
     setSearchQuery("")
     setGroupAvatar(null)
@@ -262,8 +311,15 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
                 <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">Create Group Chat</h2>
-                <p className="text-xs sm:text-sm text-gray-600">Start a conversation with multiple friends</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-[#2c3e2d]">
+                  {isPublicGroup ? "Create Public Group" : "Create Group Chat"}
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  {isPublicGroup 
+                    ? "Create a public group that others can discover and join" 
+                    : "Start a conversation with multiple friends"
+                  }
+                </p>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={handleClose}>
@@ -346,10 +402,43 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
                 maxLength={50}
               />
             </div>
+
+            {/* Public Group Specific Fields */}
+            {isPublicGroup && (
+              <>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
+                    Description *
+                  </label>
+                  <textarea
+                    placeholder="Describe what this group is about..."
+                    value={groupDescription}
+                    onChange={(e) => setGroupDescription(e.target.value)}
+                    maxLength={500}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:border-[#4a7c59] resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
+                    Max Members
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="1000"
+                    value={maxMembers}
+                    onChange={(e) => setMaxMembers(parseInt(e.target.value) || 1000)}
+                    min={10}
+                    max={10000}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Selected Friends */}
-          {selectedFriends.length > 0 && (
+          {/* Selected Friends - Only for regular groups */}
+          {!isPublicGroup && selectedFriends.length > 0 && (
             <div className="mb-4 sm:mb-6">
               <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
                 Selected Members ({selectedFriends.length})
@@ -376,55 +465,59 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
             </div>
           )}
 
-          {/* Friend Search */}
-          <div className="mb-4 sm:mb-6">
-            <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
-              Add Friends
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-              <Input
-                placeholder="Search friends..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 sm:pl-10"
-              />
+          {/* Friend Search - Only for regular groups */}
+          {!isPublicGroup && (
+            <div className="mb-4 sm:mb-6">
+              <label className="block text-xs sm:text-sm font-medium text-[#2c3e2d] mb-2">
+                Add Friends
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                <Input
+                  placeholder="Search friends..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 sm:pl-10"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Friends List */}
-          <div className="max-h-48 sm:max-h-60 overflow-y-auto mb-4 sm:mb-6">
-            {loading ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 text-xs sm:text-sm">Loading friends...</p>
-              </div>
-            ) : filteredFriends.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 text-xs sm:text-sm">
-                  {searchQuery ? "No friends found matching your search" : "No friends available"}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-1 sm:space-y-2">
-                {filteredFriends.map((friend) => (
-                  <div
-                    key={friend._id || friend.id || Math.random()}
-                    onClick={() => handleFriendSelect(friend)}
-                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                  >
-                    <div className="w-8 h-8 sm:w-10 sm:h-10">
-                      {renderAvatar(friend)}
+          {/* Friends List - Only for regular groups */}
+          {!isPublicGroup && (
+            <div className="max-h-48 sm:max-h-60 overflow-y-auto mb-4 sm:mb-6">
+              {loading ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 text-xs sm:text-sm">Loading friends...</p>
+                </div>
+              ) : filteredFriends.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 text-xs sm:text-sm">
+                    {searchQuery ? "No friends found matching your search" : "No friends available"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1 sm:space-y-2">
+                  {filteredFriends.map((friend) => (
+                    <div
+                      key={friend._id || friend.id || Math.random()}
+                      onClick={() => handleFriendSelect(friend)}
+                      className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <div className="w-8 h-8 sm:w-10 sm:h-10">
+                        {renderAvatar(friend)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-[#2c3e2d] text-sm sm:text-base">{friend.name}</p>
+                        <p className="text-xs sm:text-sm text-gray-500">{friend.email}</p>
+                      </div>
+                      <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-[#2c3e2d] text-sm sm:text-base">{friend.name}</p>
-                      <p className="text-xs sm:text-sm text-gray-500">{friend.email}</p>
-                    </div>
-                    <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2 sm:gap-3 justify-end">
@@ -437,10 +530,20 @@ export default function CreateGroupChatModal({ isOpen, onClose, onGroupCreated }
             </Button>
             <Button 
               onClick={handleCreateGroup}
-              disabled={creating || !groupName.trim() || selectedFriends.length === 0}
+              disabled={creating || uploadingAvatar}
               className="bg-[#4a7c59] hover:bg-[#3a6147] text-xs sm:text-sm px-3 py-2"
             >
-              {creating ? "Creating..." : `Create Group (${selectedFriends.length + 1})`}
+              {creating ? (
+                <>
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  {isPublicGroup ? "Create Public Group" : "Create Group"}
+                </>
+              )}
             </Button>
           </div>
         </div>

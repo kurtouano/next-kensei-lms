@@ -15,7 +15,7 @@ export async function POST(req, { params }) {
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     
     if (!id) {
       return NextResponse.json(

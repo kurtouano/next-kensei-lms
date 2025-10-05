@@ -106,6 +106,11 @@ export async function GET(request) {
           ? "bonsai" 
           : otherParticipant?.icon || null
       }
+      // For group chats (including public groups), use the group's avatar
+      else if (chat.type === "group" || chat.type === "public_group") {
+        chatName = chat.name || "Group Chat"
+        chatAvatar = chat.avatar // Use the group's own avatar
+      }
 
       // Calculate unread count
       const unreadCount = 0 // Will implement this later with message counting
