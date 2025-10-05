@@ -506,6 +506,9 @@ export function useProgress(slug) {
   const [initializationState, setInitializationState] = useState('pending')
   const initRef = useRef(false)
 
+  const [retryCount, setRetryCount] = useState(0)
+  const retryTimeoutRef = useRef(null)
+
   const fetchProgress = useCallback(async () => {
     if (!session?.user || !slug) {
       setLoading(false)
@@ -542,6 +545,7 @@ export function useProgress(slug) {
           lessonProgress: data.progress.lessonProgress || [],
           rewardData: data.progress.rewardData || null
         })
+        setRetryCount(0) // Reset retry count on success
       } else {
         setError(data.error)
         setProgress({
@@ -556,9 +560,29 @@ export function useProgress(slug) {
       }
       setInitializationState('completed')
     } catch (err) {
+      console.error('Error fetching progress:', err)
+      
+      // Auto-retry for database connection failures
+      if (err.message.includes("Database connection failed") && retryCount < 3) {
+        console.log(`Retrying progress fetch (attempt ${retryCount + 1}/3)...`)
+        setRetryCount(prev => prev + 1)
+        
+        // Wait before retrying (exponential backoff)
+        const delay = Math.pow(2, retryCount) * 1000 // 1s, 2s, 4s
+        
+        // Clear any existing timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current)
+        }
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchProgress()
+        }, delay)
+        return
+      }
+      
       setError('Failed to fetch progress')
       setInitializationState('completed')
-      console.error('Error fetching progress:', err)
       setProgress({
         completedLessons: [],
         completedModules: [],
@@ -572,7 +596,7 @@ export function useProgress(slug) {
       setLoading(false)
       setIsInitialized(true)
     }
-  }, [session, slug])
+  }, [session, slug, retryCount])
 
   const isFullyInitialized = useMemo(() => {
     return initializationState === 'completed' || initializationState === 'no-auth'
@@ -780,6 +804,15 @@ export function useProgress(slug) {
     fetchProgress()
   }, [fetchProgress])
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+      }
+    }
+  }, [])
+
   return {
     progress: stableProgress,
     loading,
@@ -800,24 +833,70 @@ export function useLessonData(lessonSlug) {
   const [lessonData, setLessonData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [retryCount, setRetryCount] = useState(0)
+  const retryTimeoutRef = useRef(null)
+
+  const fetchLessonData = useCallback(async () => {
+    if (!lessonSlug) return
+
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await fetch(`/api/courses/${lessonSlug}`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setLessonData(data.lessons)
+        setRetryCount(0) // Reset retry count on success
+      } else {
+        throw new Error(data.error || 'Failed to fetch lesson data')
+      }
+    } catch (err) {
+      console.error('Error fetching lesson data:', err)
+      
+      // Auto-retry for database connection failures
+      if (err.message.includes("Database connection failed") && retryCount < 3) {
+        console.log(`Retrying lesson data fetch (attempt ${retryCount + 1}/3)...`)
+        setRetryCount(prev => prev + 1)
+        
+        // Wait before retrying (exponential backoff)
+        const delay = Math.pow(2, retryCount) * 1000 // 1s, 2s, 4s
+        
+        // Clear any existing timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current)
+        }
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchLessonData()
+        }, delay)
+        return
+      }
+      
+      setError(err.message || 'Failed to fetch lesson data')
+    } finally {
+      setLoading(false)
+    }
+  }, [lessonSlug, retryCount])
 
   useEffect(() => {
-    const fetchLessonData = async () => {
-      try {
-        const response = await fetch(`/api/courses/${lessonSlug}`)
-        if (!response.ok) throw new Error('Failed to fetch lesson data')
-        
-        const data = await response.json()
-        setLessonData(data.lessons)
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
+    fetchLessonData()
+  }, [fetchLessonData])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
       }
     }
-
-    fetchLessonData()
-  }, [lessonSlug])
+  }, [])
 
   return { lessonData, loading, error }
 }
@@ -1285,6 +1364,8 @@ export function useEnrollmentCheck(courseId) {
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [retryCount, setRetryCount] = useState(0)
+  const retryTimeoutRef = useRef(null)
 
   const checkEnrollment = useCallback(async () => {
     // FIXED: Return early if no courseId or no session
@@ -1296,23 +1377,46 @@ export function useEnrollmentCheck(courseId) {
     
     try {
       setLoading(true)
+      setError(null)
+      
       const response = await fetch(`/api/courses/enrollment?courseId=${courseId}`)
       const data = await response.json()
       
       if (data.success) {
         setIsEnrolled(data.isEnrolled)
+        setRetryCount(0) // Reset retry count on success
       } else {
         setError(data.error)
         setIsEnrolled(false)
       }
     } catch (err) {
+      console.error('Error checking enrollment:', err)
+      
+      // Auto-retry for database connection failures
+      if (err.message.includes("Database connection failed") && retryCount < 3) {
+        console.log(`Retrying enrollment check (attempt ${retryCount + 1}/3)...`)
+        setRetryCount(prev => prev + 1)
+        
+        // Wait before retrying (exponential backoff)
+        const delay = Math.pow(2, retryCount) * 1000 // 1s, 2s, 4s
+        
+        // Clear any existing timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current)
+        }
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          checkEnrollment()
+        }, delay)
+        return
+      }
+      
       setError('Failed to check enrollment')
       setIsEnrolled(false)
-      console.error('Error checking enrollment:', err)
     } finally {
       setLoading(false)
     }
-  }, [courseId, session?.user])
+  }, [courseId, session?.user, retryCount])
 
   useEffect(() => {
     // FIXED: Only run if both courseId and session exist
@@ -1323,6 +1427,15 @@ export function useEnrollmentCheck(courseId) {
       setLoading(false)
     }
   }, [checkEnrollment, courseId, session?.user])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+      }
+    }
+  }, [])
 
   return {
     isEnrolled,
