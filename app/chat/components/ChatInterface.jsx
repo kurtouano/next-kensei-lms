@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Send, ImageIcon, Paperclip, Smile, Loader2, User, Users, Plus, Menu, X, Search, Check } from "lucide-react"
+import { Send, ImageIcon, Paperclip, Smile, Loader2, User, Users, Plus, Menu, X, Search, Check, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -689,7 +689,7 @@ export default function ChatInterface() {
                     <TabsTrigger value="chats">My Chats</TabsTrigger>
                     <TabsTrigger value="discover">
                       Discover
-                      <Users className="h-3 w-3 ml-1" />
+                      <Globe className="h-3 w-3 ml-1" />
                     </TabsTrigger>
                   </TabsList>
                   <div className="relative flex items-center gap-2">
@@ -791,6 +791,9 @@ export default function ChatInterface() {
                                   </h3>
                                   {chat.type === "group" && (
                                     <Users className="h-3 w-3 text-[#4a7c59] flex-shrink-0 ml-1 mr-2" />
+                                  )}
+                                  {chat.type === "public_group" && (
+                                    <Globe className="h-3 w-3 text-[#4a7c59] flex-shrink-0 ml-1 mr-2" />
                                   )}
                                 </div>
                                 <span className="text-xs text-gray-500">
