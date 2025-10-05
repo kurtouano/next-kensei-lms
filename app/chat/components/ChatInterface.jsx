@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Send, ImageIcon, Paperclip, Smile, Loader2, User, Users, Plus, Menu, X, Search, Check, Globe } from "lucide-react"
+import { Send, ImageIcon, Paperclip, Smile, Loader2, User, Users, Plus, Menu, X, Search, Check, Globe, MoreVertical, Edit, Image } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
 import { useChat, useChatMessages } from "@/hooks/useChat"
 import { usePublicGroups } from "@/hooks/usePublicGroups"
@@ -29,6 +30,7 @@ import {
 const CreateGroupChatModal = lazy(() => import("./CreateGroupChatModal"))
 const GroupInviteModal = lazy(() => import("./GroupInviteModal"))
 const LeaveGroupModal = lazy(() => import("./LeaveGroupModal"))
+const EditGroupModal = lazy(() => import("./EditGroupModal"))
 const GroupMembersModal = lazy(() => import("./GroupMembersModal"))
 
 export default function ChatInterface() {
@@ -81,6 +83,7 @@ export default function ChatInterface() {
   const [showLeaveGroupModal, setShowLeaveGroupModal] = useState(false)
   const [leavingGroupId, setLeavingGroupId] = useState(null)
   const [leavingGroupName, setLeavingGroupName] = useState("")
+  const [showEditGroupModal, setShowEditGroupModal] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const emojiButtonRef = useRef(null)
   const sidebarRef = useRef(null)
@@ -603,6 +606,19 @@ export default function ChatInterface() {
       (participant._id || participant.id)?.toString() === session?.user?.id?.toString()
     ) : false
 
+  // Check if current user is an admin of the selected chat
+  const isUserAdmin = selectedChat ? 
+    selectedChat.participants?.some(participant => 
+      (participant._id || participant.id)?.toString() === session?.user?.id?.toString() && 
+      participant.role === 'admin'
+    ) : false
+
+  // Debug: Log admin check
+  console.log('Debug - selectedChat:', selectedChat)
+  console.log('Debug - participants:', selectedChat?.participants)
+  console.log('Debug - session user id:', session?.user?.id)
+  console.log('Debug - isUserAdmin:', isUserAdmin)
+
   // Handle joining/leaving public groups
   const handleJoinGroup = async (groupId) => {
     try {
@@ -733,19 +749,19 @@ export default function ChatInterface() {
                     ) : (
                       <>
                         {filteredChats.map((chat) => (
-                        <div
-                          key={chat.id}
-                          onClick={() => {
-                            setSelectedChatId(chat.id)
-                            // Close sidebar on mobile when chat is selected
-                            if (window.innerWidth < 1024) {
-                              setIsSidebarOpen(false)
-                            }
-                          }}
-                          className={`p-3 sm:p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
-                            selectedChatId === chat.id ? "bg-[#eef2eb] border-l-4 border-l-[#4a7c59]" : ""
-                          }`}
-                        >
+                          <div
+                            key={chat.id}
+                            onClick={() => {
+                              setSelectedChatId(chat.id)
+                              // Close sidebar on mobile when chat is selected
+                              if (window.innerWidth < 1024) {
+                                setIsSidebarOpen(false)
+                              }
+                            }}
+                            className={`p-3 sm:p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${
+                              selectedChatId === chat.id ? "bg-[#eef2eb] border-l-4 border-l-[#4a7c59]" : ""
+                            }`}
+                          >
                           <div className="flex items-center gap-2 sm:gap-3">
                             <div className="relative">
                               {chat.type === "group" || chat.type === "public_group" ? (
@@ -843,7 +859,7 @@ export default function ChatInterface() {
                             )}
                           </div>
                         </div>
-                        ))}
+                      ))}
                         
                         {/* Skeleton Loading for More Chats */}
                         {chats.length > 0 && pagination?.hasMore && (isLoadingMoreChats.current || chatsLoading) && (
@@ -1043,15 +1059,38 @@ export default function ChatInterface() {
                       </div>
                       <div className="flex items-center gap-2">
                         {(selectedChat.type === "group" || selectedChat.type === "public_group") && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setShowMembersModal(true)}
-                            title="View Group Members"
-                            className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
-                          >
-                            <Users className="h-4 w-4" />
-                          </Button>
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setShowMembersModal(true)}
+                              title="View Group Members"
+                              className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
+                            >
+                              <Users className="h-4 w-4" />
+                            </Button>
+                            {/* Debug: Always show for group chats */}
+                            {(selectedChat.type === "group" || selectedChat.type === "public_group") && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    title="Group Options"
+                                    className="text-[#4a7c59] hover:text-[#3a6147] hover:bg-[#eef2eb]"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => setShowEditGroupModal(true)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Group
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </>
                         )}
                         {selectedChat.type === "direct" && (
                           <Button 
@@ -1373,6 +1412,23 @@ export default function ChatInterface() {
           onConfirm={handleConfirmLeaveGroup}
           groupName={leavingGroupName}
           isLoading={false} // You can add loading state if needed
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <EditGroupModal
+          isOpen={showEditGroupModal}
+          onClose={() => setShowEditGroupModal(false)}
+          chat={selectedChat}
+          onGroupUpdated={(updatedChat) => {
+            // Refresh both chat lists
+            refetchChats()
+            refetchPublicGroups()
+            
+            // If we have updated chat data, we could update the selectedChat directly
+            // But since selectedChat is derived from chats array, refetchChats should handle it
+            console.log('Group updated:', updatedChat)
+          }}
         />
       </Suspense>
         </div>
