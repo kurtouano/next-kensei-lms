@@ -1,13 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Eye, EyeOff, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import JotatsuLogo from "@/components/jotatsu-logo"
 import { useRouter, useSearchParams } from "next/navigation"
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
@@ -259,5 +259,22 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
+        <div className="container mx-auto flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md rounded-lg border border-[#dce4d7] bg-white p-8 shadow-sm text-center">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#4a7c59] border-t-transparent"></div>
+            <p className="text-[#5c6d5e]">Loading...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   )
 }
