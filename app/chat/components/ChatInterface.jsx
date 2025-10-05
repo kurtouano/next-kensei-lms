@@ -115,16 +115,16 @@ export default function ChatInterface() {
     }
   }, [messagesLoading, messages.length, selectedChatId])
 
-  // Manage overall initial load state - only hide loading when we have data OR confirmed error
+  // Manage overall initial load state - hide loading when chats are loaded (even if empty)
   useEffect(() => {
-    if (!chatsLoading && (chats.length > 0 || chatsError)) {
-      // Only hide loading when we have actual data or a confirmed error
+    if (!chatsLoading) {
+      // Hide loading when chats are loaded, regardless of whether there are chats or not
       const timer = setTimeout(() => {
         setIsInitialLoad(false)
       }, 100)
       return () => clearTimeout(timer)
     }
-  }, [chatsLoading, chats.length, chatsError])
+  }, [chatsLoading])
 
 
   // Listen for chat refresh events (e.g., after role changes)
@@ -1067,7 +1067,7 @@ export default function ChatInterface() {
                   <ChatMessagesSkeleton count={8} />
                   <MessageInputSkeleton />
                 </div>
-              ) : !chatsLoading && !isInitialLoad && !selectedChat ? (
+              ) : !selectedChat ? (
                 <div className="flex-1 flex items-center justify-center">
                   <p className="text-gray-500">Select a chat to start messaging</p>
                 </div>
