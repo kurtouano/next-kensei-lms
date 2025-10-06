@@ -26,7 +26,13 @@ function NotificationsPage() {
   const limit = 5;
 
   // Real-time notifications hook
-  const { notificationCount } = useRealTimeNotifications();
+  const { notificationCount, refreshNotificationCount } = useRealTimeNotifications();
+  const [localNotificationCount, setLocalNotificationCount] = useState(notificationCount);
+
+  // Sync local count with hook count
+  useEffect(() => {
+    setLocalNotificationCount(notificationCount);
+  }, [notificationCount]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -57,11 +63,11 @@ function NotificationsPage() {
 
   // Refresh notifications when notification count changes (real-time updates)
   useEffect(() => {
-    if (status === "authenticated" && notificationCount !== undefined) {
+    if (status === "authenticated" && localNotificationCount !== undefined) {
       // Refresh notifications when count changes (new notification received)
       fetchNotifications(1, false);
     }
-  }, [notificationCount, status]);
+  }, [localNotificationCount, status]);
 
   const fetchNotifications = async (pageNum = 1, append = false) => {
     try {
@@ -129,6 +135,28 @@ function NotificationsPage() {
   };
 
   const handleFriendResponse = async (friendRequestId, action, notificationId) => {
+    // Optimistic update - immediately update the UI
+    setNotifications(prevNotifications => 
+      prevNotifications.map(notification => 
+        notification._id === notificationId 
+          ? {
+              ...notification,
+              type: action === 'accept' ? 'friend_accepted' : 'friend_rejected',
+              title: action === 'accept' ? 'Friend Request Accepted' : 'Friend Request Declined',
+              message: action === 'accept' 
+                ? `You accepted ${notification.sender?.name || 'their'} friend request`
+                : `You declined ${notification.sender?.name || 'their'} friend request`,
+              read: true
+            }
+          : notification
+      )
+    );
+
+    // Update notification count optimistically
+    const currentCount = localNotificationCount;
+    setLocalNotificationCount(prev => Math.max(0, prev - 1));
+    window.dispatchEvent(new Event('notification-updated'));
+
     try {
       const response = await fetch('/api/friends/response', {
         method: 'POST',
@@ -144,17 +172,49 @@ function NotificationsPage() {
       const data = await response.json();
       
       if (data.success) {
-        // Mark the notification as read immediately
+        // Mark the notification as read on the server
         await markNotificationAsRead(notificationId);
-        // Refresh notifications to get updated list
+        // Refresh notifications to get the latest state from server
         fetchNotifications(1, false);
-        // Update notification count in header
-        window.dispatchEvent(new Event('notification-updated'));
       } else {
+        // Revert optimistic update on error
         console.error('Failed to process friend request:', data.message);
+        setLocalNotificationCount(currentCount);
+        // Revert the notification back to its original state
+        setNotifications(prevNotifications => 
+          prevNotifications.map(notification => 
+            notification._id === notificationId 
+              ? {
+                  ...notification,
+                  type: 'friend_request',
+                  title: 'Friend Request',
+                  message: `${notification.sender?.name || 'Someone'} sent you a friend request`,
+                  read: false
+                }
+              : notification
+          )
+        );
+        window.dispatchEvent(new Event('notification-updated'));
       }
     } catch (error) {
+      // Revert optimistic update on error
       console.error('Error processing friend request:', error);
+      setLocalNotificationCount(currentCount);
+      // Revert the notification back to its original state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => 
+          notification._id === notificationId 
+            ? {
+                ...notification,
+                type: 'friend_request',
+                title: 'Friend Request',
+                message: `${notification.sender?.name || 'Someone'} sent you a friend request`,
+                read: false
+              }
+            : notification
+        )
+      );
+      window.dispatchEvent(new Event('notification-updated'));
     }
   };
 
