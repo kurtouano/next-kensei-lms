@@ -32,13 +32,21 @@ const LoadingLayout = memo(function LoadingLayout() {
   return <CoursePageSkeleton />
 })
 
-const ErrorLayout = memo(function ErrorLayout({ error }) {
+const ErrorLayout = memo(function ErrorLayout({ error, onRetry }) {
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
       <main className="flex-1 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto px-4">
           <div className="text-red-500 text-lg mb-4">⚠️ Error</div>
-          <p className="text-[#5c6d5e]">{error}</p>
+          <p className="text-[#5c6d5e] mb-6">{error}</p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="bg-[#5c6d5e] text-white px-6 py-2 rounded-lg hover:bg-[#4a5a4b] transition-colors"
+            >
+              Try Again
+            </button>
+          )}
         </div>
       </main>
     </div>
@@ -92,7 +100,7 @@ export default function LessonPage() {
   const isSessionLoading = status === "loading"
   
   // Core hooks
-  const { lessonData, loading: lessonLoading, error: lessonError } = useLessonData(lessonSlug)
+  const { lessonData, loading: lessonLoading, error: lessonError, retry: retryLessonData } = useLessonData(lessonSlug)
   
   // Helper function to check if user is instructor of this course
   const isInstructorOwned = useMemo(() => {
@@ -817,7 +825,7 @@ export default function LessonPage() {
   }
 
   if (lessonError || !lessonData) {
-    return <ErrorLayout error={lessonError || "Failed to load lesson data"} />
+    return <ErrorLayout error={lessonError || "Failed to load lesson data"} onRetry={retryLessonData} />
   }
 
 

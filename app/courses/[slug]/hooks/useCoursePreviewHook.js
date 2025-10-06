@@ -839,6 +839,10 @@ export function useLessonData(lessonSlug) {
   const fetchLessonData = useCallback(async () => {
     if (!lessonSlug) return
 
+    const startTime = Date.now()
+    const isRetry = retryCount > 0
+    const minLoadingTime = isRetry ? 1500 : 0 // Only apply minimum time on retries
+
     try {
       setLoading(true)
       setError(null)
@@ -853,25 +857,35 @@ export function useLessonData(lessonSlug) {
       
       if (data.success) {
         setLessonData(data.lessons)
-        setRetryCount(0) // Reset retry count on success
+        setRetryCount(0)
+        setError(null)
+        
+        // Only apply minimum loading time on retries (cold start scenarios)
+        if (isRetry) {
+          const elapsed = Date.now() - startTime
+          if (elapsed < minLoadingTime) {
+            await new Promise(resolve => setTimeout(resolve, minLoadingTime - elapsed))
+          }
+        }
       } else {
         throw new Error(data.error || 'Failed to fetch lesson data')
       }
     } catch (err) {
       console.error('Error fetching lesson data:', err)
       
-      // Auto-retry for database connection failures
-      if (err.message.includes("Database connection failed") && retryCount < 3) {
-        console.log(`Retrying lesson data fetch (attempt ${retryCount + 1}/3)...`)
+      // Simple retry logic - only retry on network errors, max 3 times
+      if (retryCount < 3 && (
+        err.message.includes("Failed to fetch") ||
+        err.message.includes("NetworkError") ||
+        err.message.includes("HTTP 500") ||
+        err.message.includes("HTTP 502") ||
+        err.message.includes("HTTP 503") ||
+        err.message.includes("HTTP 504")
+      )) {
         setRetryCount(prev => prev + 1)
         
-        // Wait before retrying (exponential backoff)
+        // Simple delay before retry
         const delay = Math.pow(2, retryCount) * 1000 // 1s, 2s, 4s
-        
-        // Clear any existing timeout
-        if (retryTimeoutRef.current) {
-          clearTimeout(retryTimeoutRef.current)
-        }
         
         retryTimeoutRef.current = setTimeout(() => {
           fetchLessonData()
@@ -884,6 +898,13 @@ export function useLessonData(lessonSlug) {
       setLoading(false)
     }
   }, [lessonSlug, retryCount])
+
+  // Manual retry function
+  const retry = useCallback(() => {
+    setRetryCount(0)
+    setError(null)
+    fetchLessonData()
+  }, [fetchLessonData])
 
   useEffect(() => {
     fetchLessonData()
@@ -898,7 +919,7 @@ export function useLessonData(lessonSlug) {
     }
   }, [])
 
-  return { lessonData, loading, error }
+  return { lessonData, loading, error, retry }
 }
 
 // ============ ENHANCED QUIZ HOOK ============

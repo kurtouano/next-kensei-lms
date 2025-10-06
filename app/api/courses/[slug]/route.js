@@ -9,15 +9,29 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(request, { params }) {
-  await connectDb();
+  console.log('🚀 API Route: Starting course fetch request');
+  
+  try {
+    await connectDb();
+    console.log('✅ Database connected successfully');
+  } catch (dbError) {
+    console.error("❌ Database connection failed:", dbError);
+    return NextResponse.json({ 
+      success: false,
+      error: "Database connection failed. Please try again." 
+    }, { status: 503 });
+  }
 
   try {
     const { slug } = await params;
+    console.log(`🔍 Looking for course with slug: ${slug}`);
+    
     const url = new URL(request.url);
     const instructorPreview = url.searchParams.get('instructor-preview') === 'true';
     
     // 🔒 SECURITY: Get session for instructor verification
     const session = await getServerSession(authOptions);
+    console.log(`👤 Session status: ${session ? 'authenticated' : 'not authenticated'}`);
 
     const course = await Course.findOne({ slug })
       .populate({
@@ -37,9 +51,17 @@ export async function GET(request, { params }) {
       })
       .lean();
 
+    console.log(`📚 Course query result: ${course ? 'found' : 'not found'}`);
+    
     if (!course) {
-      return NextResponse.json({ error: "Course not found" }, { status: 404 });
+      console.log(`❌ Course not found for slug: ${slug}`);
+      return NextResponse.json({ 
+        success: false,
+        error: "Course not found" 
+      }, { status: 404 });
     }
+    
+    console.log(`✅ Course found: ${course.title} with ${course.modules?.length || 0} modules`);
 
     // 🔒 SECURITY: Verify instructor access if instructor-preview is requested
     let canAccessInstructorView = false;
@@ -251,7 +273,10 @@ export async function GET(request, { params }) {
       })),
     };
 
+    console.log(`🎉 Successfully formatted course data, returning response`);
+    
     return NextResponse.json({ 
+      success: true,
       lessons: formattedCourse,
       // 🔒 SECURITY: Include authorization status in response
       meta: {
@@ -261,7 +286,10 @@ export async function GET(request, { params }) {
       }
     });
   } catch (error) {
-    console.error("Error fetching course:", error);
-    return NextResponse.json({ error: "Failed to fetch course data" }, { status: 500 });
+    console.error("❌ Error fetching course:", error);
+    return NextResponse.json({ 
+      success: false,
+      error: "Failed to fetch course data" 
+    }, { status: 500 });
   }
 }
