@@ -951,8 +951,8 @@ export function useChatMessages(chatId, onNewMessage = null) {
       setLastMessageTimestamp(latestMessage.createdAt)
     }
     
-    // Start polling every 2 seconds
-    pollingIntervalRef.current = setInterval(pollForNewMessages, 2000)
+    // Start polling every 5 seconds
+    pollingIntervalRef.current = setInterval(pollForNewMessages, 5000)
     
     // Initial poll
     setTimeout(pollForNewMessages, 500)
