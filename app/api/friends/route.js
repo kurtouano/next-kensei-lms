@@ -15,15 +15,29 @@ export async function GET(req) {
       );
     }
 
+    // Get pagination parameters from query string
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page')) || 1;
+    const limit = parseInt(searchParams.get('limit')) || 10;
+    const search = searchParams.get('search') || '';
+    const skip = (page - 1) * limit;
+
     await connectDb();
 
-    // Get all accepted friend relationships for the current user
-    const friendRelationships = await Friend.find({
+    // Build search query for friends
+    const friendQuery = {
       $or: [
         { requester: session.user.id, status: 'accepted' },
         { recipient: session.user.id, status: 'accepted' }
       ]
-    }).populate([
+    };
+
+    // Get total count for pagination
+    const totalFriends = await Friend.countDocuments(friendQuery);
+
+    // Get paginated friend relationships
+    const friendRelationships = await Friend.find(friendQuery)
+      .populate([
       {
         path: 'requester',
         select: 'name icon bonsai lastSeen lastLogin',
@@ -40,10 +54,13 @@ export async function GET(req) {
           select: 'level customization'
         }
       }
-    ]);
+    ])
+    .sort({ createdAt: -1 }) // Newest friendships first
+    .limit(limit)
+    .skip(skip);
 
     // Extract friend data and determine online status
-    const friends = friendRelationships.map(relationship => {
+    let friends = friendRelationships.map(relationship => {
       const friend = relationship.requester._id.toString() === session.user.id 
         ? relationship.recipient 
         : relationship.requester;
@@ -70,6 +87,13 @@ export async function GET(req) {
       };
     });
 
+    // Apply search filter if provided
+    if (search.trim()) {
+      friends = friends.filter(friend => 
+        friend.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
     // Sort friends: online first, then by name
     const sortedFriends = friends.sort((a, b) => {
       if (a.isOnline && !b.isOnline) return -1;
@@ -79,7 +103,14 @@ export async function GET(req) {
 
     return NextResponse.json({
       success: true,
-      friends: sortedFriends
+      friends: sortedFriends,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalFriends / limit),
+        totalFriends: totalFriends,
+        hasMore: page < Math.ceil(totalFriends / limit),
+        limit: limit
+      }
     });
 
   } catch (error) {

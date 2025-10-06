@@ -32,13 +32,7 @@ function UsersPage() {
   
   // Friends pagination state
   const [friendsPage, setFriendsPage] = useState(1);
-  const [friendsPerPage] = useState(10); // Show 10 friends per batch
   const [loadingMoreFriends, setLoadingMoreFriends] = useState(false);
-  const [friendsPagination, setFriendsPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    hasMore: false
-  });
   
   // Use enhanced API hook with retry logic
   const { loading, error, retryCount, get, clearError, isRetrying } = useApiWithRetry({
@@ -47,37 +41,19 @@ function UsersPage() {
     showLoadingMinTime: 500
   });
   
-  // Use real-time friends hook
-  const { friends, loading: friendsLoading, lastUpdate } = useRealTimeFriends();
+  // Use real-time friends hook with pagination
+  const { friends, loading: friendsLoading, lastUpdate, pagination: friendsPagination } = useRealTimeFriends(friendsPage, friendsSearchTerm);
   
   // Note: Chat functionality now uses direct API calls instead of chat hook
-
-  // Filter friends based on search term
-  const filteredFriends = friends.filter(friend =>
-    friend.name.toLowerCase().includes(friendsSearchTerm.toLowerCase())
-  );
 
   // Reset pagination when search term changes
   useEffect(() => {
     setFriendsPage(1);
   }, [friendsSearchTerm]);
 
-  // Calculate friends pagination with incremental loading
-  const totalFriends = filteredFriends.length;
-  const totalPages = Math.ceil(totalFriends / friendsPerPage);
-  const startIndex = (friendsPage - 1) * friendsPerPage;
-  
-  // Show incremental loading: 1-2 more users immediately, then load full batch
-  const immediateLoadCount = Math.min(2, totalFriends - startIndex); // Show 1-2 users immediately
-  const currentBatchEnd = startIndex + immediateLoadCount;
-  const fullBatchEnd = startIndex + friendsPerPage;
-  
-  // Show immediate users first, then full batch when loaded
-  const paginatedFriends = loadingMoreFriends 
-    ? filteredFriends.slice(0, currentBatchEnd) // Show immediate users while loading
-    : filteredFriends.slice(0, fullBatchEnd); // Show full batch when loaded
-  
-  const hasMoreFriends = fullBatchEnd < totalFriends;
+  // Use friends directly (server-side search and pagination)
+  const filteredFriends = friends;
+  const hasMoreFriends = friendsPagination.hasMore;
 
   // Handle starting a chat with a friend
   const handleStartChat = async (friendId, friendName) => {
@@ -198,17 +174,12 @@ function UsersPage() {
     
     setLoadingMoreFriends(true);
     
-    // First, show 1-2 more users immediately for natural feel
-    const immediateUsers = Math.min(2, totalFriends - (friendsPage - 1) * friendsPerPage);
-    if (immediateUsers > 0) {
-      // Show immediate users right away
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    // Then load the full batch with a slight delay
-    await new Promise(resolve => setTimeout(resolve, 600));
-    
+    // Load next page of friends
     setFriendsPage(prev => prev + 1);
+    
+    // Simulate loading delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     setLoadingMoreFriends(false);
   };
 
@@ -371,7 +342,7 @@ function UsersPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4">
                   <div className="flex flex-row items-center gap-2">
                     <h2 className="text-lg font-semibold text-[#2c3e2d]">
-                      Your Friends ({friends.length})
+                      Your Friends ({friendsPagination.totalFriends || friends.length})
                     </h2>
                     {friends.length > 0 && (
                       <span className="text-sm sm:text-base text-[#5c6d5e] transition-all duration-300">
@@ -430,13 +401,13 @@ function UsersPage() {
                   )}
                 </button>
                 
-                {paginatedFriends.length > 0 ? (
+                {filteredFriends.length > 0 ? (
                   <div 
                     ref={friendsScrollRef}
                     className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-2 px-11 sm:px-16"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
-                    {paginatedFriends.map((friend, index) => (
+                    {filteredFriends.map((friend, index) => (
                       <div
                         key={friend.id || `friend-${index}`}
                         className="flex-shrink-0 flex flex-col items-center gap-2 min-w-[120px] sm:min-w-[155px]"

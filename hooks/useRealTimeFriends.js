@@ -2,21 +2,38 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/contexts/ToastContext';
 
-export const useRealTimeFriends = () => {
+export const useRealTimeFriends = (page = 1, search = '', append = false) => {
   const { data: session } = useSession();
   const { showSuccess, showInfo } = useToast();
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    hasMore: false,
+    totalFriends: 0
+  });
   const eventSourceRef = useRef(null);
 
-  const fetchFriends = useCallback(async () => {
+  const fetchFriends = useCallback(async (pageNum = 1, searchTerm = '', appendData = false) => {
     try {
-      const response = await fetch("/api/friends");
+      const params = new URLSearchParams({
+        page: pageNum.toString(),
+        limit: '10',
+        ...(searchTerm && { search: searchTerm })
+      });
+      
+      const response = await fetch(`/api/friends?${params}`);
       const data = await response.json();
       
       if (data.success) {
-        setFriends(data.friends);
+        if (appendData) {
+          setFriends(prev => [...prev, ...data.friends]);
+        } else {
+          setFriends(data.friends);
+        }
+        setPagination(data.pagination);
         setLastUpdate(new Date());
       }
     } catch (error) {
@@ -30,7 +47,7 @@ export const useRealTimeFriends = () => {
     if (!session?.user?.id) return;
 
     // Initial fetch
-    fetchFriends();
+    fetchFriends(page, search, append);
 
     // Set up SSE connection for real-time updates
     const setupSSE = () => {
@@ -110,12 +127,13 @@ export const useRealTimeFriends = () => {
         clearInterval(fallbackInterval);
       }
     };
-  }, [session?.user?.id, fetchFriends]);
+  }, [session?.user?.id, fetchFriends, page, search, append]);
 
   return {
     friends,
     loading,
     lastUpdate,
+    pagination,
     refreshFriends: fetchFriends
   };
 };
