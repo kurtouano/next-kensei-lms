@@ -7,7 +7,7 @@ import User from "@/models/User";
 import Certificate from "@/models/Certificate";
 import Friend from "@/models/Friend";
 
-export async function GET() {
+export async function GET(request) {
     try {
         const session = await getServerSession(authOptions);
         if (!session) {
@@ -17,11 +17,28 @@ export async function GET() {
             );
         }
 
+        // Get pagination parameters from query string
+        const { searchParams } = new URL(request.url);
+        const page = parseInt(searchParams.get('page')) || 1;
+        const limit = parseInt(searchParams.get('limit')) || 12;
+        const search = searchParams.get('search') || '';
+        const skip = (page - 1) * limit;
+
         // Use robust database operation wrapper
         const result = await withDbOperation(async () => {
-            // Get all users except the current user, with basic info only
+            // Build search query
+            const searchQuery = { email: { $ne: session.user.email } }; // Exclude current user
+            
+            if (search.trim()) {
+                searchQuery.name = { $regex: search.trim(), $options: 'i' }; // Case-insensitive search
+            }
+
+            // Get total count for pagination
+            const totalUsers = await User.countDocuments(searchQuery);
+
+            // Get users with pagination
             const users = await User.find(
-                { email: { $ne: session.user.email } }, // Exclude current user
+                searchQuery,
                 {
                     name: 1,
                     email: 1,
@@ -33,8 +50,8 @@ export async function GET() {
             )
             .populate('bonsai', 'level totalCredits customization')
             .sort({ createdAt: -1 }) // Newest users first
-            .limit(50) // Limit to 50 users for performance
-            .skip(0) // Add pagination support later
+            .limit(limit)
+            .skip(skip)
             .lean(); // Use lean() for better performance
 
             const userIds = users.map(user => user._id);
@@ -125,7 +142,14 @@ export async function GET() {
 
             return {
                 success: true,
-                users: usersWithStats
+                users: usersWithStats,
+                pagination: {
+                    currentPage: page,
+                    totalPages: Math.ceil(totalUsers / limit),
+                    totalUsers: totalUsers,
+                    hasMore: page < Math.ceil(totalUsers / limit),
+                    limit: limit
+                }
             };
         }, {
             maxRetries: 5,

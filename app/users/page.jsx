@@ -18,11 +18,16 @@ function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
   const [friendsSearchTerm, setFriendsSearchTerm] = useState(""); // Search term for friends
   const [sendingRequest, setSendingRequest] = useState(new Set()); // Track which buttons are loading
   const [dataReady, setDataReady] = useState(false); // Track when data is fully processed
-  const [visibleUsersCount, setVisibleUsersCount] = useState(8); // Number of users to show initially
+  const [loadingMoreUsers, setLoadingMoreUsers] = useState(false); // Track loading more users
+  const [usersPagination, setUsersPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    hasMore: false,
+    totalUsers: 0
+  });
   const friendsScrollRef = useRef(null);
   
   // Friends pagination state
@@ -111,22 +116,54 @@ function UsersPage() {
     }
 
     if (status === "authenticated") {
-      fetchUsers();
+      fetchUsers(1, searchTerm);
       updateLastSeen();
     }
   }, [status, router]);
 
-  const fetchUsers = async () => {
+  // Handle search with debouncing
+  useEffect(() => {
+    if (status === "authenticated") {
+      const timeoutId = setTimeout(() => {
+        fetchUsers(1, searchTerm);
+      }, 300); // 300ms debounce
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [searchTerm, status]);
+
+  const fetchUsers = async (page = 1, search = '', append = false) => {
     try {
-      setDataReady(false); // Mark data as not ready
-      const data = await get("/api/users", {
+      if (page === 1) {
+        setDataReady(false); // Mark data as not ready
+      } else {
+        setLoadingMoreUsers(true);
+      }
+      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '12',
+        ...(search && { search })
+      });
+      
+      const data = await get(`/api/users?${params}`, {
         operationName: "Fetch Users List"
       });
       
       if (data.success) {
-        setUsers(data.users);
-        // Don't set dataReady here - let the filtering useEffect handle it
+        if (append) {
+          setUsers(prev => [...prev, ...data.users]);
+        } else {
+          setUsers(data.users);
+        }
+        
+        setUsersPagination(data.pagination);
         clearError(); // Clear any previous errors
+        
+        // Mark data as ready after filtering is complete
+        setTimeout(() => {
+          setDataReady(true);
+        }, 50);
       } else {
         throw new Error(data.message || 'Failed to fetch users');
       }
@@ -134,6 +171,8 @@ function UsersPage() {
       console.error("Error fetching users:", error);
       setDataReady(false);
       // Error state is handled by the useApiWithRetry hook
+    } finally {
+      setLoadingMoreUsers(false);
     }
   };
 
@@ -189,45 +228,14 @@ function UsersPage() {
     }
   };
 
-  // Filter users based on search term and friend status
-  useEffect(() => {
-    if (users.length === 0) {
-      setDataReady(false);
-      return;
-    }
-
-    let filtered = users;
-    
-    // Filter out users who are already friends, but keep pending requests
-    filtered = filtered.filter(user => user.friendStatus !== 'accepted');
-    
-    // Apply search filter
-    if (searchTerm.trim() !== "") {
-      filtered = filtered.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setFilteredUsers(filtered);
-    
-    // Mark data as ready after filtering is complete
-    setTimeout(() => {
-      setDataReady(true);
-    }, 50); // Small delay to ensure smooth transition
-  }, [searchTerm, users]);
-
-  // Reset visible count only when search term changes (not when friend status changes)
-  useEffect(() => {
-    setVisibleUsersCount(8);
-  }, [searchTerm]);
-
-  // Get paginated users
-  const paginatedUsers = filteredUsers.slice(0, visibleUsersCount);
-  const hasMoreUsers = filteredUsers.length > visibleUsersCount;
-
+  // Filter users to exclude friends (server-side search handles name filtering)
+  const filteredUsers = users.filter(user => user.friendStatus !== 'accepted');
+  
   // Load more users function
   const loadMoreUsers = () => {
-    setVisibleUsersCount(prev => Math.min(prev + 8, filteredUsers.length));
+    if (usersPagination.hasMore && !loadingMoreUsers) {
+      fetchUsers(usersPagination.currentPage + 1, searchTerm, true);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -537,6 +545,11 @@ function UsersPage() {
                   <div className="flex items-center gap-3">
                     <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 text-[#4a7c59]" />
                     <h2 className="text-lg font-semibold text-[#2c3e2d]">Find Friends</h2>
+                    {usersPagination.totalUsers > 0 && (
+                      <span className="text-sm text-[#5c6d5e]">
+                        ({usersPagination.totalUsers} users)
+                      </span>
+                    )}
                   </div>
                   <div className="relative w-full sm:max-w-xs">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
@@ -553,7 +566,7 @@ function UsersPage() {
 
               {filteredUsers.length > 0 ? (
             <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {paginatedUsers.map((user, index) => (
+              {filteredUsers.map((user, index) => (
                 <div key={user.id || `user-${index}`} className="bg-white rounded-lg border border-[#dce4d7] p-4 sm:p-6 hover:shadow-md transition-shadow">
                   {/* User Header */}
                   <div className="flex items-center mb-4">
@@ -666,15 +679,26 @@ function UsersPage() {
               )}
               
               {/* Load More Button */}
-              {filteredUsers.length > 0 && hasMoreUsers && (
+              {filteredUsers.length > 0 && usersPagination.hasMore && (
                 <div className="flex justify-center mt-6">
                   <button
                     onClick={loadMoreUsers}
-                    className="flex items-center gap-2 bg-white text-[#4a7c59] border border-[#4a7c59] py-2 px-4 rounded-lg hover:bg-[#f0f8f0] transition-colors shadow-sm text-xs sm:text-sm"
+                    disabled={loadingMoreUsers}
+                    className="flex items-center gap-2 bg-white text-[#4a7c59] border border-[#4a7c59] py-2 px-4 rounded-lg hover:bg-[#f0f8f0] transition-colors shadow-sm text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">Load More Users</span>
-                    <span className="sm:hidden">More</span>
+                    {loadingMoreUsers ? (
+                      <>
+                        <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                        <span className="hidden sm:inline">Loading...</span>
+                        <span className="sm:hidden">Loading</span>
+                      </>
+                    ) : (
+                      <>
+                        <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">Load More Users</span>
+                        <span className="sm:hidden">More</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
