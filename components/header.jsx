@@ -16,6 +16,68 @@ import { useOnlineFriendsCount } from "@/hooks/useOnlineFriendsCount"
 let cachedUserIcon = null;
 let cachedUserData = null;
 
+// Header Skeleton Component
+function HeaderSkeleton() {
+  return (
+    <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/90 backdrop-blur-sm">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        {/* Logo - Static, no skeleton needed */}
+        <div className="flex items-center gap-2">
+          <JotatsuLogoFull className="h-8 w-28 text-[#4a7c59]" alt="Jotatsu Logo"/>
+        </div>
+ 
+        {/* Desktop Navigation Skeleton - Match exact spacing */}
+        <nav className="hidden items-center gap-6 lg:flex">
+          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" style={{ animationDelay: '0ms' }}></div>
+          <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" style={{ animationDelay: '100ms' }}></div>
+          <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" style={{ animationDelay: '200ms' }}></div>
+          <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" style={{ animationDelay: '300ms' }}></div>
+        </nav>
+
+        {/* Auth Buttons - All static icons */}
+        <div className="hidden items-center gap-2 lg:flex">
+          <div className="flex items-center gap-3">
+            {/* Static social buttons - match exact spacing */}
+            <div className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors">
+              <Users size={19} className="text-[#4a7c59]" />
+            </div>
+            <div className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors">
+              <MessageCircleMore size={19} className="text-[#4a7c59]" />
+            </div>
+            <div className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors">
+              <Bell size={19} className="text-[#4a7c59]" />
+            </div>
+            {/* Profile button - static icon */}
+            <div className="h-8 w-8 rounded-full flex items-center justify-center overflow-hidden hover:bg-[#eef2eb] transition-colors">
+              <User size={19} className="text-[#4a7c59]" />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Right Side - All static icons */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <div className="flex items-center gap-1">
+            {/* Static social buttons - match exact spacing */}
+            <div className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors">
+              <Users size={18} className="text-[#4a7c59]" />
+            </div>
+            <div className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors">
+              <MessageCircleMore size={18} className="text-[#4a7c59]" />
+            </div>
+            <div className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors">
+              <Bell size={18} className="text-[#4a7c59]" />
+            </div>
+          </div>
+          {/* Static burger menu - match exact styling */}
+          <button className="inline-flex items-center justify-center rounded-md p-2 text-[#2c3e2d]">
+            <Menu className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userIcon, setUserIcon] = useState(cachedUserIcon);
@@ -27,7 +89,8 @@ export function Header() {
     isAuthenticated,
     canAccessInstructor,
     canAccessAdmin,
-    getDashboardRoute
+    getDashboardRoute,
+    isLoading: sessionLoading
   } = useRoleAccess();
   
   // Use real-time notifications hook
@@ -99,6 +162,11 @@ export function Header() {
       window.removeEventListener('bonsai-updated', handleBonsaiUpdate);
     };
   }, [status]);
+
+  // Show skeleton while session is loading
+  if (sessionLoading) {
+    return <HeaderSkeleton />;
+  }
 
   const isActive = (path) => pathname === path || pathname.startsWith(path + '/')
 
