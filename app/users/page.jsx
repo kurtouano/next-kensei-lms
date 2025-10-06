@@ -229,13 +229,6 @@ function UsersPage() {
             : user
         )
       );
-      setFilteredUsers(prevUsers => 
-        prevUsers.map(user => 
-          user.id === userId 
-            ? { ...user, friendStatus: status }
-            : user
-        )
-      );
     };
 
     // Track that we're sending a request for this user
