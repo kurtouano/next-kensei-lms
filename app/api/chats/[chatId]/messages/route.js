@@ -7,6 +7,7 @@ import ChatParticipant from "@/models/ChatParticipant"
 import Message from "@/models/Message"
 import User from "@/models/User"
 import { notifyNewMessage } from "@/lib/chatUtils"
+import sseManager from "@/lib/sseManager"
 
 export async function GET(request, { params }) {
   try {
@@ -226,8 +227,34 @@ export async function POST(request, { params }) {
       updatedAt: populatedMessage.updatedAt,
     }
 
-    // NO SSE BROADCASTING - Let polling handle message delivery
-    // The message is saved and will be picked up by other clients via polling
+    // Send real-time updates to all chat participants
+    try {
+      // Get all participants in this chat
+      const participants = await ChatParticipant.find({
+        chat: chatId,
+        isActive: true
+      }).populate('user', 'name email')
+
+      // Send new message notification to all participants except sender
+      participants.forEach(participant => {
+        if (participant.user._id.toString() !== user._id.toString()) {
+          // Send new message notification
+          sseManager.sendNewMessageNotification(participant.user._id, {
+            chatId: chatId,
+            messageId: message._id,
+            senderName: user.name,
+            content: content,
+            type: type
+          })
+
+          // Send chat count update
+          sseManager.sendChatCountUpdate(participant.user._id, 1) // Increment by 1
+        }
+      })
+    } catch (sseError) {
+      console.error('Error sending SSE notifications:', sseError)
+      // Don't fail the message creation if SSE fails
+    }
 
     return NextResponse.json({
       success: true,

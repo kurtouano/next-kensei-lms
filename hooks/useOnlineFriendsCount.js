@@ -50,6 +50,9 @@ export const useOnlineFriendsCount = () => {
         } else if (data.type === 'online_status_update') {
           // Update count when a friend's online status changes
           fetchOnlineFriendsCount()
+        } else if (data.type === 'online_friends_count_update') {
+          // Direct count update
+          setOnlineCount(data.count)
         }
       } catch (error) {
         console.error('Error parsing SSE data for online friends count:', error)

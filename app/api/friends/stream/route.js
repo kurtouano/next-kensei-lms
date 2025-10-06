@@ -91,6 +91,50 @@ export async function GET(req) {
               timestamp: new Date().toISOString()
             });
 
+            // Also send notification count update
+            try {
+              const notificationResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/count`, {
+                headers: {
+                  'Cookie': req.headers.get('cookie') || ''
+                }
+              });
+              
+              if (notificationResponse.ok) {
+                const notificationData = await notificationResponse.json();
+                if (notificationData.success) {
+                  sendData({
+                    type: 'notification_count_update',
+                    count: notificationData.count,
+                    timestamp: new Date().toISOString()
+                  });
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching notification count in SSE:', error);
+            }
+
+            // Also send chat count update
+            try {
+              const chatResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/chats/unread-count`, {
+                headers: {
+                  'Cookie': req.headers.get('cookie') || ''
+                }
+              });
+              
+              if (chatResponse.ok) {
+                const chatData = await chatResponse.json();
+                if (chatData.success) {
+                  sendData({
+                    type: 'chat_count_update',
+                    count: chatData.count,
+                    timestamp: new Date().toISOString()
+                  });
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching chat count in SSE:', error);
+            }
+
           } catch (error) {
             console.error('Error fetching friends for SSE:', error);
             sendData({

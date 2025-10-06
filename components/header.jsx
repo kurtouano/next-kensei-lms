@@ -11,6 +11,7 @@ import { useSession } from "next-auth/react"
 import { useRoleAccess, RoleGuard } from "@/hooks/useRoleAccess"
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications"
 import { useOnlineFriendsCount } from "@/hooks/useOnlineFriendsCount"
+import { useChatCount } from "@/hooks/useChatCount"
 
 // Cache for user icon and bonsai data to persist across navigation
 let cachedUserIcon = null;
@@ -98,6 +99,9 @@ export function Header() {
   
   // Use online friends count hook
   const { onlineCount, loading: onlineCountLoading } = useOnlineFriendsCount();
+  
+  // Use chat count hook
+  const { unreadCount, loading: chatCountLoading } = useChatCount();
 
   // Close mobile menu when pathname changes
   useEffect(() => {
@@ -398,10 +402,16 @@ export function Header() {
               {/* Chat Button */}
               <Link 
                 href="/chat" 
-                className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+                className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                 title="Chat"
               >
                 <MessageCircleMore size={19} className="text-[#4a7c59]" />
+                {/* Unread Messages Badge */}
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Link>
               
               {/* Notifications Button */}
@@ -458,10 +468,16 @@ export function Header() {
                 {/* Chat Button */}
                 <Link 
                   href="/chat" 
-                  className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors"
+                  className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                   title="Chat"
                 >
                   <MessageCircleMore size={18} className="text-[#4a7c59]" />
+                  {/* Unread Messages Badge */}
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
                 
                 {/* Notifications Button */}

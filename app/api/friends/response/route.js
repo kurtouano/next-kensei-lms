@@ -201,6 +201,22 @@ export async function POST(req) {
         sseManager.sendFriendsUpdate(friendRequest.requester._id, requesterFriends);
         sseManager.sendFriendsUpdate(session.user.id, responderFriends);
 
+        // Send online friends count update to both users
+        const requesterOnlineCount = requesterFriends.filter(friend => friend.isOnline).length;
+        const responderOnlineCount = responderFriends.filter(friend => friend.isOnline).length;
+        
+        sseManager.sendToUser(friendRequest.requester._id, {
+          type: 'online_friends_count_update',
+          count: requesterOnlineCount,
+          timestamp: new Date().toISOString()
+        });
+        
+        sseManager.sendToUser(session.user.id, {
+          type: 'online_friends_count_update',
+          count: responderOnlineCount,
+          timestamp: new Date().toISOString()
+        });
+
       } catch (error) {
         console.error("Failed to create friend chat:", error);
         // Don't fail the entire request if chat creation fails
