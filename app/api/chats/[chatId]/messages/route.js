@@ -236,10 +236,10 @@ export async function POST(request, { params }) {
       }).populate('user', 'name email')
 
       // Send new message notification to all participants except sender
-      participants.forEach(participant => {
+      for (const participant of participants) {
         if (participant.user._id.toString() !== user._id.toString()) {
           // Send new message notification
-          sseManager.sendNewMessageNotification(participant.user._id, {
+          sseManager.sendNewMessageNotification(participant.user._id.toString(), {
             chatId: chatId,
             messageId: message._id,
             senderName: user.name,
@@ -247,10 +247,29 @@ export async function POST(request, { params }) {
             type: type
           })
 
-          // Send chat count update
-          sseManager.sendChatCountUpdate(participant.user._id, 1) // Increment by 1
+          // Calculate actual unread count for this user
+          try {
+            const userChats = await ChatParticipant.find({
+              user: participant.user._id,
+              isActive: true
+            })
+
+            const chatIds = userChats.map(p => p.chat)
+            const lastRead = userChats.find(p => p.chat.toString() === chatId)?.lastRead || new Date(0)
+
+            const unreadCount = await Message.countDocuments({
+              chat: { $in: chatIds },
+              sender: { $ne: participant.user._id },
+              createdAt: { $gt: lastRead }
+            })
+
+            // Send updated unread count
+            sseManager.sendChatCountUpdate(participant.user._id.toString(), unreadCount)
+          } catch (countError) {
+            console.error('Error calculating unread count for SSE:', countError)
+          }
         }
-      })
+      }
     } catch (sseError) {
       console.error('Error sending SSE notifications:', sseError)
       // Don't fail the message creation if SSE fails

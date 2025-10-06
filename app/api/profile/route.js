@@ -268,13 +268,16 @@ export async function PATCH(req) {
                         { requester: user._id, status: 'accepted' },
                         { recipient: user._id, status: 'accepted' }
                     ]
-                });
+                }).populate([
+                    { path: 'requester', select: 'lastSeen lastLogin' },
+                    { path: 'recipient', select: 'lastSeen lastLogin' }
+                ]);
 
                 // Extract friend IDs
                 const friendIds = friendRelationships.map(relationship => 
-                    relationship.requester.toString() === user._id.toString() 
-                        ? relationship.recipient.toString()
-                        : relationship.requester.toString()
+                    relationship.requester._id.toString() === user._id.toString() 
+                        ? relationship.recipient._id.toString()
+                        : relationship.requester._id.toString()
                 );
 
                 // Send online status update to all friends
@@ -285,6 +288,39 @@ export async function PATCH(req) {
                         isOnline: true,
                         timestamp: new Date().toISOString()
                     });
+
+                    // For each friend, calculate and send their updated online friends count
+                    for (const friendId of friendIds) {
+                        try {
+                            // Get all friends for this specific friend
+                            const theirFriends = await Friend.find({
+                                $or: [
+                                    { requester: friendId, status: 'accepted' },
+                                    { recipient: friendId, status: 'accepted' }
+                                ]
+                            }).populate([
+                                { path: 'requester', select: 'lastSeen lastLogin' },
+                                { path: 'recipient', select: 'lastSeen lastLogin' }
+                            ]);
+
+                            // Count how many are online
+                            const onlineCount = theirFriends.filter(relationship => {
+                                const friendUser = relationship.requester._id.toString() === friendId 
+                                    ? relationship.recipient 
+                                    : relationship.requester;
+
+                                const lastSeen = friendUser.lastSeen ? new Date(friendUser.lastSeen) :
+                                                friendUser.lastLogin ? new Date(friendUser.lastLogin) : null;
+                                const now = new Date();
+                                return lastSeen && (now - lastSeen) < 1 * 60 * 1000; // 1 minute
+                            }).length;
+
+                            // Send updated count
+                            sseManager.sendOnlineFriendsCountUpdate(friendId, onlineCount);
+                        } catch (countError) {
+                            console.error(`Error calculating online friends count for ${friendId}:`, countError);
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error notifying friends of online status:', error);
