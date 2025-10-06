@@ -120,7 +120,7 @@ export async function GET(request) {
 
             // Build the response with pre-fetched data
             const usersWithStats = users.map(user => ({
-                id: user._id,
+                id: user._id.toString(), // Convert ObjectId to string
                 name: user.name,
                 country: user.country,
                 icon: user.icon,

@@ -141,7 +141,7 @@ export async function GET(req) {
             success: true,
             data: {
                 user: {
-                    id: getUser._id,
+                    id: getUser._id.toString(), // Convert ObjectId to string
                     name: getUser.name,
                     email: getUser.email,
                     role: getUser.role

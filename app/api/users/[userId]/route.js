@@ -82,7 +82,7 @@ export async function GET(req, { params }) {
 
         // Prepare public profile response (no sensitive data)
         const publicUserData = {
-            id: user._id,
+            id: user._id.toString(), // Convert ObjectId to string
             name: user.name,
             country: user.country,
             role: user.role,

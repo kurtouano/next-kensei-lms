@@ -88,7 +88,7 @@ export async function GET() {
         return NextResponse.json({
             success: true,
             user: {
-                id: user._id,
+                id: user._id.toString(), // Convert ObjectId to string
                 name: user.name,
                 email: user.email,
                 country: user.country,
