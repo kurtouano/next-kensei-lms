@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { connectDb } from "@/lib/mongodb"
+import Chat from "@/models/Chat"
 import ChatParticipant from "@/models/ChatParticipant"
 import Message from "@/models/Message"
 

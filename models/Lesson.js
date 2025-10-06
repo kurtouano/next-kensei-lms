@@ -49,6 +49,7 @@ const LessonSchema = new mongoose.Schema(
 // Add indexes for performance
 LessonSchema.index({ courseRef: 1 });           // For course-based lesson queries
 LessonSchema.index({ courseRef: 1, title: 1 }); // Compound index for course + title queries
+LessonSchema.index({ courseRef: { $in: [] } }); // For my-learning queries (course array lookup)
 
 const Lesson = mongoose.models.Lesson || mongoose.model("Lesson", LessonSchema)
 export default Lesson

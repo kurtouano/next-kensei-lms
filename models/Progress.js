@@ -67,6 +67,7 @@ ProgressSchema.index({ user: 1, isCompleted: 1 });        // For completed cours
 ProgressSchema.index({ course: 1, isCompleted: 1 });      // For course completion stats
 ProgressSchema.index({ user: 1, courseProgress: -1 });    // For progress sorting
 ProgressSchema.index({ completedAt: -1 });                // For recent completions
+ProgressSchema.index({ user: 1, course: { $in: [] } });   // For my-learning queries (course array lookup)
 
 const Progress = mongoose.models.Progress || mongoose.model("Progress", ProgressSchema)
 
