@@ -106,6 +106,7 @@ export default function ChatInterface() {
       // Find the chat with the specified ID
       const targetChat = chats.find(chat => chat.id === chatIdFromUrl)
       if (targetChat) {
+        console.log('🎯 Auto-opening chat:', chatIdFromUrl, 'autoOpen:', autoOpen)
         setSelectedChatId(chatIdFromUrl)
         // If autoOpen is true, focus the message input
         if (autoOpen === 'true' && messageInputRef.current) {
@@ -113,13 +114,26 @@ export default function ChatInterface() {
             messageInputRef.current?.focus()
           }, 500) // Small delay to ensure the chat is loaded
         }
+      } else {
+        console.log('❌ Chat not found:', chatIdFromUrl, 'Available chats:', chats.map(c => c.id))
       }
     }
   }, [chats, searchParams])
 
-  // Auto-select first chat if no specific chat is selected
+  // Fallback: Handle chatId from URL even if chats are still loading
   useEffect(() => {
-    if (chats.length > 0 && !selectedChatId && !searchParams.get('chatId')) {
+    const chatIdFromUrl = searchParams.get('chatId')
+    if (chatIdFromUrl && !selectedChatId && !chatsLoading) {
+      console.log('🔄 Fallback: Setting chatId from URL:', chatIdFromUrl)
+      setSelectedChatId(chatIdFromUrl)
+    }
+  }, [searchParams, selectedChatId, chatsLoading])
+
+  // Auto-select first chat if no specific chat is selected (only if no chatId in URL)
+  useEffect(() => {
+    const chatIdFromUrl = searchParams.get('chatId')
+    if (chats.length > 0 && !selectedChatId && !chatIdFromUrl) {
+      console.log('🔄 Auto-selecting first chat (no chatId in URL)')
       setSelectedChatId(chats[0].id)
     }
   }, [chats, selectedChatId, searchParams])

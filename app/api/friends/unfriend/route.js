@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { connectDb } from "@/lib/mongodb"
 import Friend from "@/models/Friend"
+import Chat from "@/models/Chat"
+import ChatParticipant from "@/models/ChatParticipant"
 
 export async function POST(request) {
   try {
@@ -37,6 +39,37 @@ export async function POST(request) {
       return NextResponse.json({ 
         error: "Friendship not found or already removed" 
       }, { status: 404 })
+    }
+
+    // Deactivate any direct chat between these users
+    try {
+      const directChat = await Chat.findOne({
+        type: "direct",
+        participants: { $all: [session.user.id, friendId], $size: 2 },
+        isActive: true
+      })
+
+      if (directChat) {
+        console.log(`Deactivating direct chat between ${session.user.id} and ${friendId}`)
+        
+        // Deactivate the chat
+        directChat.isActive = false
+        await directChat.save()
+
+        // Deactivate chat participants
+        await ChatParticipant.updateMany(
+          { 
+            chat: directChat._id,
+            user: { $in: [session.user.id, friendId] }
+          },
+          { isActive: false }
+        )
+
+        console.log(`Successfully deactivated chat and participants`)
+      }
+    } catch (chatError) {
+      console.error("Error handling chat cleanup during unfriend:", chatError)
+      // Don't fail the unfriend operation if chat cleanup fails
     }
 
     return NextResponse.json({
