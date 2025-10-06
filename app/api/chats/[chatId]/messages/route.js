@@ -7,7 +7,7 @@ import ChatParticipant from "@/models/ChatParticipant"
 import Message from "@/models/Message"
 import User from "@/models/User"
 import { notifyNewMessage } from "@/lib/chatUtils"
-import sseManager from "@/lib/sseManager"
+import pusher from "@/lib/pusher"
 
 export async function GET(request, { params }) {
   try {
@@ -263,10 +263,13 @@ export async function POST(request, { params }) {
               createdAt: { $gt: lastRead }
             })
 
-            // Send updated unread count
-            sseManager.sendChatCountUpdate(participant.user._id.toString(), unreadCount)
+            // Send updated unread count via Pusher
+            await pusher.trigger(`user-${participant.user._id.toString()}`, 'chat-count', {
+              count: unreadCount
+            })
+            console.log(`[Pusher] Sent chat count to user-${participant.user._id.toString()}:`, unreadCount)
           } catch (countError) {
-            console.error('Error calculating unread count for SSE:', countError)
+            console.error('Error calculating unread count for Pusher:', countError)
           }
         }
       }

@@ -5,7 +5,7 @@ import { connectDb } from "@/lib/mongodb";
 import Friend from "@/models/Friend";
 import Notification from "@/models/Notification";
 import User from "@/models/User";
-import sseManager from "@/lib/sseManager";
+import pusher from "@/lib/pusher";
 
 export async function POST(req) {
   try {
@@ -90,18 +90,20 @@ export async function POST(req) {
 
         await notification.save();
 
-        // Send real-time notification via SSE
-        sseManager.sendFriendRequestNotification(targetUserId, session.user.name || 'Someone');
-
-        // Update notification count for recipient
+        // Send real-time notification via Pusher
         try {
           const notificationCount = await Notification.countDocuments({
             recipient: targetUserId,
             read: false
           });
-          sseManager.sendNotificationCountUpdate(targetUserId, notificationCount);
+          
+          await pusher.trigger(`user-${targetUserId}`, 'notification-count', {
+            count: notificationCount
+          });
+          
+          console.log(`[Pusher] Sent notification count to user-${targetUserId}:`, notificationCount);
         } catch (error) {
-          console.error('Error updating notification count:', error);
+          console.error('Error sending Pusher notification:', error);
         }
 
         return NextResponse.json({
@@ -148,18 +150,20 @@ export async function POST(req) {
 
     await notification.save();
 
-    // Send real-time notification via SSE
-    sseManager.sendFriendRequestNotification(targetUserId, session.user.name || 'Someone');
-
-    // Update notification count for recipient
+    // Send real-time notification via Pusher
     try {
       const notificationCount = await Notification.countDocuments({
         recipient: targetUserId,
         read: false
       });
-      sseManager.sendNotificationCountUpdate(targetUserId, notificationCount);
+      
+      await pusher.trigger(`user-${targetUserId}`, 'notification-count', {
+        count: notificationCount
+      });
+      
+      console.log(`[Pusher] Sent notification count to user-${targetUserId}:`, notificationCount);
     } catch (error) {
-      console.error('Error updating notification count:', error);
+      console.error('Error sending Pusher notification:', error);
     }
 
     return NextResponse.json({

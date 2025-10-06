@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
+import Pusher from 'pusher-js'
 
 export const useChatCount = () => {
   const { data: session } = useSession()
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const eventSourceRef = useRef(null)
+  const pusherRef = useRef(null)
+  const channelRef = useRef(null)
 
   const fetchUnreadCount = async () => {
     try {
@@ -35,51 +37,22 @@ export const useChatCount = () => {
     // Initial fetch
     fetchUnreadCount()
 
-    // Set up SSE connection for real-time updates
-    const setupSSE = () => {
-      try {
-        eventSourceRef.current = new EventSource('/api/friends/stream')
-        
-        eventSourceRef.current.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data)
-            
-            if (data.type === 'chat_count_update') {
-              setUnreadCount(data.count)
-            } else if (data.type === 'new_message') {
-              // Increment count when new message is received
-              setUnreadCount(prev => prev + 1)
-            } else if (data.type === 'message_read') {
-              // Decrement count when message is read
-              setUnreadCount(prev => Math.max(0, prev - 1))
-            }
-          } catch (error) {
-            console.error('Error parsing SSE data for chat count:', error)
-          }
-        }
-
-        eventSourceRef.current.onerror = (error) => {
-          console.error('SSE connection error for chat count:', error)
-          // Fallback to polling every 30 seconds
-          const interval = setInterval(fetchUnreadCount, 30000)
-          
-          return () => {
-            clearInterval(interval)
-            if (eventSourceRef.current) {
-              eventSourceRef.current.close()
-            }
-          }
-        }
-
-      } catch (error) {
-        console.error('Error setting up SSE for chat count:', error)
-        // Fallback to polling
-        const interval = setInterval(fetchUnreadCount, 30000)
-        return () => clearInterval(interval)
-      }
+    // Set up Pusher for real-time updates
+    if (!pusherRef.current) {
+      pusherRef.current = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+      })
     }
 
-    setupSSE()
+    // Subscribe to user-specific channel
+    const channelName = `user-${session.user.id}`
+    channelRef.current = pusherRef.current.subscribe(channelName)
+
+    // Listen for chat count updates
+    channelRef.current.bind('chat-count', (data) => {
+      console.log('[Pusher] Chat count update:', data.count)
+      setUnreadCount(data.count)
+    })
 
     // Listen for custom events from pages (like when visiting chat page)
     const handleChatUpdate = () => {
@@ -90,9 +63,9 @@ export const useChatCount = () => {
 
     // Cleanup
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
-        eventSourceRef.current = null
+      if (channelRef.current) {
+        channelRef.current.unbind_all()
+        channelRef.current.unsubscribe()
       }
       window.removeEventListener('chat-updated', handleChatUpdate)
     }

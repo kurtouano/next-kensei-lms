@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import Pusher from 'pusher-js';
 
 export const useRealTimeNotifications = () => {
   const { data: session } = useSession();
   const [notificationCount, setNotificationCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const eventSourceRef = useRef(null);
+  const pusherRef = useRef(null);
+  const channelRef = useRef(null);
 
   const fetchNotificationCount = useCallback(async () => {
     try {
@@ -28,46 +30,22 @@ export const useRealTimeNotifications = () => {
     // Initial fetch
     fetchNotificationCount();
 
-    // Set up SSE connection for real-time updates
-    const setupSSE = () => {
-      try {
-        eventSourceRef.current = new EventSource('/api/friends/stream');
-        
-        eventSourceRef.current.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            
-            if (data.type === 'notification_count_update') {
-              setNotificationCount(data.count);
-            } else if (data.type === 'heartbeat') {
-              // Keep connection alive
-              console.log('SSE heartbeat received');
-            }
-          } catch (error) {
-            console.error('Error parsing SSE data:', error);
-          }
-        };
+    // Set up Pusher for real-time updates
+    if (!pusherRef.current) {
+      pusherRef.current = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+      });
+    }
 
-        eventSourceRef.current.onerror = (error) => {
-          console.error('SSE connection error:', error);
-          // Fallback to polling if SSE fails
-          setTimeout(() => {
-            if (eventSourceRef.current) {
-              eventSourceRef.current.close();
-              setupSSE();
-            }
-          }, 5000);
-        };
+    // Subscribe to user-specific channel
+    const channelName = `user-${session.user.id}`;
+    channelRef.current = pusherRef.current.subscribe(channelName);
 
-      } catch (error) {
-        console.error('Error setting up SSE:', error);
-        // Fallback to polling
-        const intervalId = setInterval(fetchNotificationCount, 30000); // Poll every 30 seconds
-        return () => clearInterval(intervalId);
-      }
-    };
-
-    setupSSE();
+    // Listen for notification count updates
+    channelRef.current.bind('notification-count', (data) => {
+      console.log('[Pusher] Notification count update:', data.count);
+      setNotificationCount(data.count);
+    });
 
     // Listen for custom events from pages (like when visiting notifications page)
     const handleNotificationUpdate = () => {
@@ -76,25 +54,11 @@ export const useRealTimeNotifications = () => {
 
     window.addEventListener('notification-updated', handleNotificationUpdate);
 
-    // Fallback polling for when SSE is not available
-    let fallbackInterval;
-    const setupFallback = () => {
-      fallbackInterval = setInterval(fetchNotificationCount, 30000); // Poll every 30 seconds
-    };
-
-    // Only use fallback if SSE is not supported
-    if (!window.EventSource) {
-      setupFallback();
-    }
-
     // Cleanup
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-      if (fallbackInterval) {
-        clearInterval(fallbackInterval);
+      if (channelRef.current) {
+        channelRef.current.unbind_all();
+        channelRef.current.unsubscribe();
       }
       window.removeEventListener('notification-updated', handleNotificationUpdate);
     };

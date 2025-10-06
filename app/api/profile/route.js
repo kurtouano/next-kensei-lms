@@ -10,7 +10,7 @@ import Module from "@/models/Module.js";
 import Lesson from "@/models/Lesson.js";
 import Course from "@/models/Course.js";
 import Rating from "@/models/Rating.js";
-import sseManager from "@/lib/sseManager";
+import pusher from "@/lib/pusher";
 import Friend from "@/models/Friend.js";
 import { calculateBonsaiLevel, getLevelInfo } from "@/lib/levelCalculator";
 
@@ -280,15 +280,8 @@ export async function PATCH(req) {
                         : relationship.requester._id.toString()
                 );
 
-                // Send online status update to all friends
+                // Send online status update to all friends via Pusher
                 if (friendIds.length > 0) {
-                    sseManager.sendToUsers(friendIds, {
-                        type: 'online_status_update',
-                        userId: user._id.toString(),
-                        isOnline: true,
-                        timestamp: new Date().toISOString()
-                    });
-
                     // For each friend, calculate and send their updated online friends count
                     for (const friendId of friendIds) {
                         try {
@@ -315,8 +308,11 @@ export async function PATCH(req) {
                                 return lastSeen && (now - lastSeen) < 1 * 60 * 1000; // 1 minute
                             }).length;
 
-                            // Send updated count
-                            sseManager.sendOnlineFriendsCountUpdate(friendId, onlineCount);
+                            // Send updated count via Pusher
+                            await pusher.trigger(`user-${friendId}`, 'online-friends-count', {
+                                count: onlineCount
+                            });
+                            console.log(`[Pusher] Sent online friends count to user-${friendId}:`, onlineCount);
                         } catch (countError) {
                             console.error(`Error calculating online friends count for ${friendId}:`, countError);
                         }

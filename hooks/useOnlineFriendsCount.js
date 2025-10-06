@@ -1,12 +1,15 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
+import Pusher from 'pusher-js'
 
 export const useOnlineFriendsCount = () => {
   const { data: session } = useSession()
   const [onlineCount, setOnlineCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const pusherRef = useRef(null)
+  const channelRef = useRef(null)
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -36,42 +39,28 @@ export const useOnlineFriendsCount = () => {
     // Initial fetch
     fetchOnlineFriendsCount()
 
-    // Set up real-time updates via SSE
-    const eventSource = new EventSource('/api/friends/stream')
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        
-        if (data.type === 'friends_update') {
-          // Count online friends from the update
-          const onlineFriends = data.friends.filter(friend => friend.isOnline)
-          setOnlineCount(onlineFriends.length)
-        } else if (data.type === 'online_status_update') {
-          // Update count when a friend's online status changes
-          fetchOnlineFriendsCount()
-        } else if (data.type === 'online_friends_count_update') {
-          // Direct count update
-          setOnlineCount(data.count)
-        }
-      } catch (error) {
-        console.error('Error parsing SSE data for online friends count:', error)
-      }
+    // Set up Pusher for real-time updates
+    if (!pusherRef.current) {
+      pusherRef.current = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+      })
     }
 
-    eventSource.onerror = (error) => {
-      console.error('SSE connection error for online friends count:', error)
-      // Fallback to polling every 30 seconds
-      const interval = setInterval(fetchOnlineFriendsCount, 30000)
-      
-      return () => {
-        clearInterval(interval)
-        eventSource.close()
-      }
-    }
+    // Subscribe to user-specific channel
+    const channelName = `user-${session.user.id}`
+    channelRef.current = pusherRef.current.subscribe(channelName)
+
+    // Listen for online friends count updates
+    channelRef.current.bind('online-friends-count', (data) => {
+      console.log('[Pusher] Online friends count update:', data.count)
+      setOnlineCount(data.count)
+    })
 
     return () => {
-      eventSource.close()
+      if (channelRef.current) {
+        channelRef.current.unbind_all()
+        channelRef.current.unsubscribe()
+      }
     }
   }, [session?.user?.id])
 
