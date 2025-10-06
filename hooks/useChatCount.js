@@ -81,12 +81,20 @@ export const useChatCount = () => {
 
     setupSSE()
 
+    // Listen for custom events from pages (like when visiting chat page)
+    const handleChatUpdate = () => {
+      fetchUnreadCount()
+    }
+
+    window.addEventListener('chat-updated', handleChatUpdate)
+
     // Cleanup
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close()
         eventSourceRef.current = null
       }
+      window.removeEventListener('chat-updated', handleChatUpdate)
     }
   }, [session?.user?.id])
 

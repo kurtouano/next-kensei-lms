@@ -69,6 +69,13 @@ export const useRealTimeNotifications = () => {
 
     setupSSE();
 
+    // Listen for custom events from pages (like when visiting notifications page)
+    const handleNotificationUpdate = () => {
+      fetchNotificationCount();
+    };
+
+    window.addEventListener('notification-updated', handleNotificationUpdate);
+
     // Fallback polling for when SSE is not available
     let fallbackInterval;
     const setupFallback = () => {
@@ -89,6 +96,7 @@ export const useRealTimeNotifications = () => {
       if (fallbackInterval) {
         clearInterval(fallbackInterval);
       }
+      window.removeEventListener('notification-updated', handleNotificationUpdate);
     };
   }, [session?.user?.id, fetchNotificationCount]);
 

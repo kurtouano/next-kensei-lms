@@ -142,6 +142,8 @@ export default function ChatInterface() {
   useEffect(() => {
     if (selectedChatId) {
       setIsInitialChatLoad(true)
+      // Trigger chat count update when visiting chat page
+      window.dispatchEvent(new Event('chat-updated'))
     } else {
       setIsInitialChatLoad(false)
     }
