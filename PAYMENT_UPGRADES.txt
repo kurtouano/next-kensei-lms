@@ -1,0 +1,13 @@
+Pusher 
+- Real time notification
+- used in 3 icons in header (chat, notif, and users) for counters
+- 100 concurrent users limit
+- 200,000 message limit per day
+- FREE FOR NOW (Forever if maintained within limits)
+- $49 upgrade per month
+
+Vercel
+- Hosted Server for whole website
+- FREE FOR NOW (Forever if maintained within limits)
+- $20 upgrade per month
+

@@ -2,13 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import Pusher from 'pusher-js'
+import { getPusherClient } from '@/lib/pusherClient'
 
 export const useChatCount = () => {
   const { data: session } = useSession()
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const pusherRef = useRef(null)
   const channelRef = useRef(null)
 
   const fetchUnreadCount = async () => {
@@ -37,16 +36,12 @@ export const useChatCount = () => {
     // Initial fetch
     fetchUnreadCount()
 
-    // Set up Pusher for real-time updates
-    if (!pusherRef.current) {
-      pusherRef.current = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
-        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
-      })
-    }
+    // Get singleton Pusher client
+    const pusher = getPusherClient()
 
     // Subscribe to user-specific channel
     const channelName = `user-${session.user.id}`
-    channelRef.current = pusherRef.current.subscribe(channelName)
+    channelRef.current = pusher.subscribe(channelName)
 
     // Listen for chat count updates
     channelRef.current.bind('chat-count', (data) => {
