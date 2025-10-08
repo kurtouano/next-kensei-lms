@@ -31,6 +31,11 @@ export const useRealTimeNotifications = () => {
 
     // Get singleton Pusher client
     const pusher = getPusherClient();
+    
+    if (!pusher) {
+      console.error('[Pusher] Failed to initialize Pusher client for notifications');
+      return;
+    }
 
     // Subscribe to user-specific channel
     const channelName = `user-${session.user.id}`;

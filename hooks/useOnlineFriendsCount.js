@@ -40,6 +40,11 @@ export const useOnlineFriendsCount = () => {
 
     // Get singleton Pusher client
     const pusher = getPusherClient()
+    
+    if (!pusher) {
+      console.error('[Pusher] Failed to initialize Pusher client for online friends')
+      return
+    }
 
     // Subscribe to user-specific channel
     const channelName = `user-${session.user.id}`
