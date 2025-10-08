@@ -1,18 +1,48 @@
 // components/profile/Settings.jsx
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { BonsaiIcon } from "@/components/bonsai-icon"
 import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
-import { Mail, LogOut, Loader2, Upload, Image, TreePine } from "lucide-react"
+import { Mail, LogOut, Loader2, Upload, Image, TreePine, Search, ChevronDown } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { compressImage } from '@/lib/imageCompression'
 
+// Country list
+const COUNTRIES = [
+  "Bonsai Garden Resident",
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
+  "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+  "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+  "East Timor", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia",
+  "Fiji", "Finland", "France",
+  "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
+  "Haiti", "Honduras", "Hong Kong", "Hungary",
+  "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
+  "Jamaica", "Japan", "Jordan",
+  "Kazakhstan", "Kenya", "Kiribati", "Kosovo", "Kuwait", "Kyrgyzstan",
+  "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
+  "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
+  "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+  "Oman",
+  "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+  "Qatar",
+  "Romania", "Russia", "Rwanda",
+  "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+  "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
+  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
+  "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+  "Yemen",
+  "Zambia", "Zimbabwe"
+]
+
 export function Settings({ userData, onUserDataUpdate, onError }) {
   const router = useRouter()
   const fileInputRef = useRef(null)
+  const dropdownRef = useRef(null)
   const [editMode, setEditMode] = useState(false)
   const [editData, setEditData] = useState({
     name: userData.name,
@@ -24,10 +54,34 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
   const [updating, setUpdating] = useState(false)
   const [uploadingIcon, setUploadingIcon] = useState(false)
   const [compressionStatus, setCompressionStatus] = useState('')
+  const [countrySearch, setCountrySearch] = useState('')
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false)
 
   const capitalizeFirst = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1)
   }
+
+  // Filter countries based on search
+  const filteredCountries = COUNTRIES.filter(country =>
+    country.toLowerCase().includes(countrySearch.toLowerCase())
+  )
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowCountryDropdown(false)
+      }
+    }
+
+    if (showCountryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCountryDropdown])
 
   const handleUpdateProfile = async () => {
     try {
@@ -377,21 +431,72 @@ export function Settings({ userData, onUserDataUpdate, onError }) {
             </div>
           </div>
 
-          <div>
+          <div className="relative" ref={dropdownRef}>
             <label className="mb-1 block text-sm font-medium text-[#2c3e2d]">Country</label>
-            <select 
-              className="w-full rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none"
-              value={editMode ? editData.country : userData.country}
-              onChange={(e) => setEditData(prev => ({ ...prev, country: e.target.value }))}
-              disabled={!editMode}
-            >
-              <option value="United States">United States</option>
-              <option value="Japan">Japan</option>
-              <option value="Canada">Canada</option>
-              <option value="United Kingdom">United Kingdom</option>
-              <option value="Australia">Australia</option>
-              <option value="Bonsai Garden Resident">Bonsai Garden Resident</option>
-            </select>
+            
+            {editMode ? (
+              <div>
+                {/* Custom Dropdown Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                  className="w-full rounded-md border border-[#dce4d7] bg-white px-3 py-2 text-left text-[#2c3e2d] focus:border-[#4a7c59] focus:outline-none flex items-center justify-between"
+                >
+                  <span>{editData.country}</span>
+                  <ChevronDown className="h-4 w-4 text-[#5c6d5e]" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showCountryDropdown && (
+                  <div className="absolute z-50 mt-1 w-full rounded-md border border-[#dce4d7] bg-white shadow-lg">
+                    {/* Search Input */}
+                    <div className="p-2 border-b border-[#dce4d7]">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5c6d5e]" />
+                        <input
+                          type="text"
+                          placeholder="Search countries..."
+                          value={countrySearch}
+                          onChange={(e) => setCountrySearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 text-sm border border-[#dce4d7] rounded focus:border-[#4a7c59] focus:outline-none"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Country List */}
+                    <div className="max-h-60 overflow-y-auto">
+                      {filteredCountries.length > 0 ? (
+                        filteredCountries.map((country, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => {
+                              setEditData(prev => ({ ...prev, country }))
+                              setShowCountryDropdown(false)
+                              setCountrySearch('')
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-[#eef2eb] transition-colors ${
+                              editData.country === country ? 'bg-[#eef2eb] text-[#4a7c59] font-medium' : 'text-[#2c3e2d]'
+                            } ${index === 0 ? 'border-b border-[#dce4d7]' : ''}`}
+                          >
+                            {country}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-4 text-sm text-center text-[#5c6d5e]">
+                          No countries found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-md border border-[#dce4d7] bg-[#f8f7f4] px-3 py-2 text-[#2c3e2d]">
+                {userData.country}
+              </div>
+            )}
           </div>
 
           {/* Role Information */}
