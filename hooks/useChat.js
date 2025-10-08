@@ -339,7 +339,13 @@ export function useChatMessages(chatId, onNewMessage = null) {
           
           // Handle new messages
           if (data.newMessages?.length > 0) {
-            const existingIds = new Set(prev.map(msg => msg.id))
+            // Get existing IDs (excluding optimistic messages)
+            const existingIds = new Set(
+              prev
+                .filter(msg => !msg.isOptimistic) // Don't count optimistic messages
+                .map(msg => msg.id)
+            )
+            
             const filteredNewMessages = data.newMessages.filter(msg => !existingIds.has(msg.id))
             
             if (filteredNewMessages.length > 0) {
@@ -351,6 +357,27 @@ export function useChatMessages(chatId, onNewMessage = null) {
               if (onNewMessage && latestMessage.sender?.email !== session.user.email) {
                 onNewMessage(chatId, latestMessage)
               }
+              
+              // Remove any optimistic messages that match the real messages
+              // (by content, sender, and timestamp within 10 seconds)
+              newMessages = newMessages.filter(msg => {
+                if (!msg.isOptimistic) return true // Keep all non-optimistic messages
+                
+                // Check if this optimistic message matches any incoming real message
+                const matchingRealMessage = filteredNewMessages.find(realMsg => 
+                  realMsg.sender?.email === msg.sender?.email &&
+                  realMsg.content === msg.content &&
+                  Math.abs(new Date(realMsg.createdAt) - new Date(msg.createdAt)) < 10000 // 10 second window
+                )
+                
+                if (matchingRealMessage) {
+                  // Remove optimistic message from tracking
+                  pendingOptimisticMessages.current.delete(msg.id)
+                  return false // Remove this optimistic message
+                }
+                
+                return true // Keep optimistic message if no match
+              })
               
               // Add new messages and sort
               newMessages = [...newMessages, ...filteredNewMessages]
@@ -620,18 +647,23 @@ export function useChatMessages(chatId, onNewMessage = null) {
       if (data.success) {
         // Replace optimistic message with real message
         setMessages(prev => {
+          // First, check if the real message already exists (from polling)
+          const realMessageExists = prev.find(msg => msg.id === data.message.id)
+          if (realMessageExists) {
+            // Real message already exists, just remove the optimistic one
+            return prev.filter(msg => msg.id !== tempId)
+          }
+          
+          // Find and replace the optimistic message
           const messageIndex = prev.findIndex(msg => msg.id === tempId)
           if (messageIndex !== -1) {
             const newMessages = [...prev]
             newMessages[messageIndex] = { ...data.message, isOptimistic: false }
             return newMessages
           }
-          // If optimistic message not found, check if real message already exists
-          const existingMessage = prev.find(msg => msg.id === data.message.id)
-          if (!existingMessage) {
-            return [...prev, { ...data.message, isOptimistic: false }]
-          }
-          return prev
+          
+          // Optimistic message not found, add real message if it doesn't exist
+          return [...prev, { ...data.message, isOptimistic: false }]
         })
         
         pendingOptimisticMessages.current.delete(tempId)

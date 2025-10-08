@@ -109,6 +109,43 @@ export async function GET(request, { params }) {
       ...(formattedMessages.length > 0 && { lastSeenMessage: formattedMessages[formattedMessages.length - 1].id }),
     })
 
+    // Calculate and send updated unread count via Pusher
+    try {
+      const userChats = await ChatParticipant.find({
+        user: user._id,
+        isActive: true
+      })
+
+      const chatIds = userChats.map(p => p.chat)
+      
+      // Get the user's last read time for each chat
+      const lastReadMap = new Map()
+      userChats.forEach(p => {
+        lastReadMap.set(p.chat.toString(), p.lastRead || new Date(0))
+      })
+
+      // Count unread messages across all chats
+      let unreadCount = 0
+      for (const chatIdItem of chatIds) {
+        const lastRead = lastReadMap.get(chatIdItem.toString()) || new Date(0)
+        const count = await Message.countDocuments({
+          chat: chatIdItem,
+          sender: { $ne: user._id },
+          createdAt: { $gt: lastRead },
+          isDeleted: false
+        })
+        unreadCount += count
+      }
+
+      // Send updated unread count via Pusher
+      await pusher.trigger(`user-${user._id.toString()}`, 'chat-count', {
+        count: unreadCount
+      })
+      console.log(`[Pusher] Sent updated chat count after reading messages to user-${user._id.toString()}:`, unreadCount)
+    } catch (pusherError) {
+      console.error('Error sending Pusher chat count update:', pusherError)
+    }
+
     return NextResponse.json({
       success: true,
       messages: formattedMessages,

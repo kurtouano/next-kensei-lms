@@ -86,6 +86,19 @@ export async function GET(request) {
     const participations = validParticipations.slice(startIndex, endIndex)
 
 
+    // Calculate unread counts for all chats in one query
+    const unreadCountsMap = new Map()
+    for (const participation of participations) {
+      const lastRead = participation.lastRead || new Date(0)
+      const count = await Message.countDocuments({
+        chat: participation.chat._id,
+        sender: { $ne: user._id },
+        createdAt: { $gt: lastRead },
+        isDeleted: false
+      })
+      unreadCountsMap.set(participation.chat._id.toString(), count)
+    }
+
     // Format chats for frontend
     const chats = participations.map((participation) => {
         const chat = participation.chat
@@ -112,8 +125,8 @@ export async function GET(request) {
         chatAvatar = chat.avatar // Use the group's own avatar
       }
 
-      // Calculate unread count
-      const unreadCount = 0 // Will implement this later with message counting
+      // Get unread count from map
+      const unreadCount = unreadCountsMap.get(chat._id.toString()) || 0
 
       return {
         id: chat._id,
