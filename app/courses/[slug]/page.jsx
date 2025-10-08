@@ -25,6 +25,7 @@ import { InstructorPreviewToggle } from "./components/InstructorPreviewToggle"
 import { MobileCourseSidebar } from "./components/MobileCourseSidebar"
 import { RewardModal } from "@/components/RewardModal"
 import { Confetti } from "@/components/Confetti"
+import { CertificateModal } from "@/components/certificate-modal"
 
 // ============ LOADING & ERROR LAYOUTS ============
 
@@ -231,6 +232,9 @@ export default function LessonPage() {
   // Reward modal state
   const [showRewardModal, setShowRewardModal] = useState(false)
   const [rewardData, setRewardData] = useState(null)
+  
+  // Certificate modal state
+  const [showCertificateModal, setShowCertificateModal] = useState(false)
   
   // Confetti state
   const [showConfetti, setShowConfetti] = useState(false)
@@ -807,6 +811,11 @@ export default function LessonPage() {
     hideQuiz()
   }, [hideQuiz])
 
+  // Certificate handler
+  const handleViewCertificate = useCallback(() => {
+    setShowCertificateModal(true)
+  }, [])
+
   // Tab and scroll handlers
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab)
@@ -889,6 +898,7 @@ export default function LessonPage() {
                     isModuleAccessible={isModuleAccessible}
                     rewardData={rewardData}
                     pendingItems={pendingItems}
+                    onViewCertificate={handleViewCertificate}
                   />
                   
                   {/* NEW: Enhanced VideoPlayer with auto-completion and auto-next */}
@@ -999,6 +1009,7 @@ export default function LessonPage() {
                 isModuleAccessible={isModuleAccessible}
                 rewardData={rewardData}
                 pendingItems={pendingItems}
+                onViewCertificate={handleViewCertificate}
               />
             </div>
           </div>
@@ -1013,6 +1024,13 @@ export default function LessonPage() {
           setShowConfetti(false) // Stop confetti when modal closes
         }}
         rewardData={rewardData}
+        courseId={lessonData?.id}
+      />
+
+      {/* Certificate Modal */}
+      <CertificateModal
+        isOpen={showCertificateModal}
+        onClose={() => setShowCertificateModal(false)}
         courseId={lessonData?.id}
       />
 

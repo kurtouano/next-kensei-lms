@@ -1,7 +1,6 @@
 // Updated CourseSidebar.jsx - FIXED certificate logic to require all module quizzes
 import { memo, useCallback, useMemo, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { CertificateModal } from "@/components/certificate-modal"
 import { RewardModal } from "@/components/RewardModal"
 import { 
   CheckCircle2, 
@@ -37,10 +36,10 @@ export const CourseSidebar = memo(function CourseSidebar({
   progress,
   rewardData,
   pendingItems = new Set(),
-  isMobile = false
+  isMobile = false,
+  onViewCertificate
 }) {
   const [claimingCertificate, setClaimingCertificate] = useState(false)
-  const [showCertificateModal, setShowCertificateModal] = useState(false)
   const [hasCertificate, setHasCertificate] = useState(false)
   const [showRewardModal, setShowRewardModal] = useState(false)
 
@@ -175,7 +174,9 @@ const isModuleAccessible = useCallback((moduleIndex) => {
   }
 
   const handleViewCertificate = () => {
-    setShowCertificateModal(true)
+    if (onViewCertificate) {
+      onViewCertificate()
+    }
   }
 
   return (
@@ -314,13 +315,6 @@ const isModuleAccessible = useCallback((moduleIndex) => {
           </div>
         </div>
       )}
-
-      {/* Certificate Modal */}
-      <CertificateModal
-        isOpen={showCertificateModal}
-        onClose={() => setShowCertificateModal(false)}
-        courseId={courseData?.id}
-      />
 
       {/* Reward Modal */}
       <RewardModal

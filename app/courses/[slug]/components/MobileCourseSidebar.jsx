@@ -20,7 +20,8 @@ export const MobileCourseSidebar = memo(function MobileCourseSidebar({
   courseData,
   progress,
   isModuleAccessible,
-  rewardData
+  rewardData,
+  onViewCertificate
 }) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -109,6 +110,7 @@ export const MobileCourseSidebar = memo(function MobileCourseSidebar({
             isModuleAccessible={isModuleAccessible}
             rewardData={rewardData}
             isMobile={true}
+            onViewCertificate={onViewCertificate}
           />
         </div>
       </div>
