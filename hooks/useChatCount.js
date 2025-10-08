@@ -33,15 +33,20 @@ export const useChatCount = () => {
       return
     }
 
-    // Initial fetch
-    fetchUnreadCount()
-
     // Get singleton Pusher client
     const pusher = getPusherClient()
     
     if (!pusher) {
       console.error('[Pusher] Failed to initialize Pusher client for chat')
       return
+    }
+
+    // Check if Pusher is already connected
+    const isConnected = pusher.connection.state === 'connected'
+    
+    // Initial fetch - do it immediately if already connected, or wait for connection
+    if (isConnected) {
+      fetchUnreadCount()
     }
 
     // Subscribe to user-specific channel
@@ -54,12 +59,12 @@ export const useChatCount = () => {
       setUnreadCount(data.count)
     })
 
-    // Re-fetch on reconnection
-    const handleReconnect = () => {
-      console.log('[Pusher] Reconnected - refreshing chat count')
+    // Re-fetch on connection (both initial and reconnections)
+    const handleConnect = () => {
+      console.log('[Pusher] Connected - refreshing chat count')
       fetchUnreadCount()
     }
-    pusher.connection.bind('connected', handleReconnect)
+    pusher.connection.bind('connected', handleConnect)
 
     // Listen for custom events from pages (like when visiting chat page)
     const handleChatUpdate = () => {
@@ -74,7 +79,7 @@ export const useChatCount = () => {
         channelRef.current.unbind_all()
         channelRef.current.unsubscribe()
       }
-      pusher.connection.unbind('connected', handleReconnect)
+      pusher.connection.unbind('connected', handleConnect)
       window.removeEventListener('chat-updated', handleChatUpdate)
     }
   }, [session?.user?.id])

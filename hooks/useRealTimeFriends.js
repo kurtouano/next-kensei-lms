@@ -47,15 +47,20 @@ export const useRealTimeFriends = (page = 1, search = '', append = false) => {
   useEffect(() => {
     if (!session?.user?.id) return;
 
-    // Initial fetch
-    fetchFriends(page, search, append);
-
     // Set up Pusher connection for real-time updates
     const pusher = getPusherClient();
     
     if (!pusher) {
       console.error('[Pusher] Failed to initialize Pusher client for friends');
       return;
+    }
+
+    // Check if Pusher is already connected
+    const isConnected = pusher.connection.state === 'connected';
+    
+    // Initial fetch - do it immediately if already connected, or wait for connection
+    if (isConnected) {
+      fetchFriends(page, search, append);
     }
 
     // Subscribe to user-specific channel
@@ -80,12 +85,12 @@ export const useRealTimeFriends = (page = 1, search = '', append = false) => {
       );
     });
 
-    // Re-fetch on reconnection
-    const handleReconnect = () => {
-      console.log('[Pusher] Reconnected - refreshing friends list');
+    // Re-fetch on connection (both initial and reconnections)
+    const handleConnect = () => {
+      console.log('[Pusher] Connected - refreshing friends list');
       fetchFriends(page, search, false);
     };
-    pusher.connection.bind('connected', handleReconnect);
+    pusher.connection.bind('connected', handleConnect);
 
     // Cleanup
     return () => {
@@ -93,7 +98,7 @@ export const useRealTimeFriends = (page = 1, search = '', append = false) => {
         channelRef.current.unbind_all();
         channelRef.current.unsubscribe();
       }
-      pusher.connection.unbind('connected', handleReconnect);
+      pusher.connection.unbind('connected', handleConnect);
     };
   }, [session?.user?.id, fetchFriends, page, search, append]);
 

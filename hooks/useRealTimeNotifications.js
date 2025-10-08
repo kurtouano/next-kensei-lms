@@ -26,15 +26,20 @@ export const useRealTimeNotifications = () => {
   useEffect(() => {
     if (!session?.user?.id) return;
 
-    // Initial fetch
-    fetchNotificationCount();
-
     // Get singleton Pusher client
     const pusher = getPusherClient();
     
     if (!pusher) {
       console.error('[Pusher] Failed to initialize Pusher client for notifications');
       return;
+    }
+
+    // Check if Pusher is already connected
+    const isConnected = pusher.connection.state === 'connected';
+    
+    // Initial fetch - do it immediately if already connected, or wait for connection
+    if (isConnected) {
+      fetchNotificationCount();
     }
 
     // Subscribe to user-specific channel
@@ -47,12 +52,12 @@ export const useRealTimeNotifications = () => {
       setNotificationCount(data.count);
     });
 
-    // Re-fetch on reconnection
-    const handleReconnect = () => {
-      console.log('[Pusher] Reconnected - refreshing notification count');
+    // Re-fetch on connection (both initial and reconnections)
+    const handleConnect = () => {
+      console.log('[Pusher] Connected - refreshing notification count');
       fetchNotificationCount();
     };
-    pusher.connection.bind('connected', handleReconnect);
+    pusher.connection.bind('connected', handleConnect);
 
     // Listen for custom events from pages (like when visiting notifications page)
     const handleNotificationUpdate = () => {
@@ -67,7 +72,7 @@ export const useRealTimeNotifications = () => {
         channelRef.current.unbind_all();
         channelRef.current.unsubscribe();
       }
-      pusher.connection.unbind('connected', handleReconnect);
+      pusher.connection.unbind('connected', handleConnect);
       window.removeEventListener('notification-updated', handleNotificationUpdate);
     };
   }, [session?.user?.id, fetchNotificationCount]);

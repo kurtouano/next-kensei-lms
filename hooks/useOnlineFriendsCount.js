@@ -35,15 +35,20 @@ export const useOnlineFriendsCount = () => {
       }
     }
 
-    // Initial fetch
-    fetchOnlineFriendsCount()
-
     // Get singleton Pusher client
     const pusher = getPusherClient()
     
     if (!pusher) {
       console.error('[Pusher] Failed to initialize Pusher client for online friends')
       return
+    }
+
+    // Check if Pusher is already connected
+    const isConnected = pusher.connection.state === 'connected'
+    
+    // Initial fetch - do it immediately if already connected, or wait for connection
+    if (isConnected) {
+      fetchOnlineFriendsCount()
     }
 
     // Subscribe to user-specific channel
@@ -56,19 +61,19 @@ export const useOnlineFriendsCount = () => {
       setOnlineCount(data.count)
     })
 
-    // Re-fetch on reconnection
-    const handleReconnect = () => {
-      console.log('[Pusher] Reconnected - refreshing online friends count')
+    // Re-fetch on connection (both initial and reconnections)
+    const handleConnect = () => {
+      console.log('[Pusher] Connected - refreshing online friends count')
       fetchOnlineFriendsCount()
     }
-    pusher.connection.bind('connected', handleReconnect)
+    pusher.connection.bind('connected', handleConnect)
 
     return () => {
       if (channelRef.current) {
         channelRef.current.unbind_all()
         channelRef.current.unsubscribe()
       }
-      pusher.connection.unbind('connected', handleReconnect)
+      pusher.connection.unbind('connected', handleConnect)
     }
   }, [session?.user?.id])
 
