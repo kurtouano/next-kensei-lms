@@ -154,7 +154,7 @@ export async function GET(request) {
         participantCount: chat.participants.length,
         isOnline: chat.type === "direct" ? 
           (otherParticipant?.lastSeen && 
-           new Date() - new Date(otherParticipant.lastSeen) < 5 * 60 * 1000) : 
+           new Date() - new Date(otherParticipant.lastSeen) < 2 * 60 * 1000) : 
           false,
         participantData: participation,
         // Include otherParticipant data for direct chats

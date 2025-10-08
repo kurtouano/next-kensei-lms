@@ -305,7 +305,7 @@ export async function PATCH(req) {
                                 const lastSeen = friendUser.lastSeen ? new Date(friendUser.lastSeen) :
                                                 friendUser.lastLogin ? new Date(friendUser.lastLogin) : null;
                                 const now = new Date();
-                                return lastSeen && (now - lastSeen) < 1 * 60 * 1000; // 1 minute
+                                return lastSeen && (now - lastSeen) < 2 * 60 * 1000; // 2 minutes
                             }).length;
 
                             // Send updated count via Pusher
@@ -313,6 +313,17 @@ export async function PATCH(req) {
                                 count: onlineCount
                             });
                             console.log(`[Pusher] Sent online friends count to user-${friendId}:`, onlineCount);
+                            
+                            // Also send individual friend status update
+                            const currentUserLastSeen = user.lastSeen ? new Date(user.lastSeen) : new Date();
+                            const now = new Date();
+                            const isOnline = (now - currentUserLastSeen) < 2 * 60 * 1000; // 2 minutes
+                            
+                            await pusher.trigger(`user-${friendId}`, 'friend-online-status', {
+                                userId: user._id.toString(),
+                                isOnline: isOnline
+                            });
+                            console.log(`[Pusher] Sent friend status to user-${friendId}: ${user._id} is ${isOnline ? 'online' : 'offline'}`);
                         } catch (countError) {
                             console.error(`Error calculating online friends count for ${friendId}:`, countError);
                         }

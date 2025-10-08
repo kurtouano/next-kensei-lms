@@ -56,11 +56,11 @@ export async function GET(req) {
                 ? friend.recipient 
                 : friend.requester;
 
-              // Determine online status (online if last seen within 1 minute)
+              // Determine online status (online if last seen within 2 minutes)
               const lastSeen = friendUser.lastSeen ? new Date(friendUser.lastSeen) :
                               friendUser.lastLogin ? new Date(friendUser.lastLogin) : null;
               const now = new Date();
-              const isOnline = lastSeen && (now - lastSeen) < 1 * 60 * 1000; // 1 minute
+              const isOnline = lastSeen && (now - lastSeen) < 2 * 60 * 1000; // 2 minutes
 
               return {
                 id: friendUser._id,
