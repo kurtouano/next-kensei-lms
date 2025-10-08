@@ -1353,13 +1353,84 @@ export default function ChatInterface() {
                 </>
               ) : (chatsLoading || isInitialLoad) ? (
                 <div className="flex-1 flex flex-col">
-                  <ChatHeaderSkeleton />
+                  {/* Chat Header Skeleton with Mobile Menu Button */}
+                  <div className="p-3 sm:p-4 border-b bg-white">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      {/* Mobile Menu Button - Always visible in skeleton */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="lg:hidden text-gray-500 hover:text-gray-700"
+                        title="Open chat list"
+                      >
+                        <Menu className="h-5 w-5" />
+                      </Button>
+                      {/* Skeleton content */}
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse" />
+                        <div className="flex-1">
+                          <div className="h-4 bg-gray-200 rounded w-32 animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <ChatMessagesSkeleton count={8} />
                   <MessageInputSkeleton />
                 </div>
               ) : !selectedChat ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <p className="text-gray-500">Select a chat to start messaging</p>
+                <div className="flex-1 flex flex-col">
+                  {/* Header with Mobile Menu Button for empty state */}
+                  <div className="p-3 sm:p-4 border-b bg-white">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      {/* Mobile Menu Button - Always visible */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="lg:hidden text-gray-500 hover:text-gray-700"
+                        title="Open chat list"
+                      >
+                        <Menu className="h-5 w-5" />
+                      </Button>
+                      <h3 className="text-base sm:text-lg font-semibold text-[#2c3e2d]">Messages</h3>
+                    </div>
+                  </div>
+                  {/* Empty state content */}
+                  <div className="flex-1 flex flex-col items-center justify-center p-4">
+                    <div className="text-center max-w-sm">
+                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">No conversations yet</h3>
+                      <p className="text-gray-500 mb-6">
+                        {chats.length === 0 
+                          ? "Connect with others to start chatting! Find friends in the community or discover public groups."
+                          : "Select a chat from the sidebar to start messaging"
+                        }
+                      </p>
+                      {chats.length === 0 && (
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <Button
+                            onClick={() => router.push('/users')}
+                            className="bg-[#4a7c59] hover:bg-[#3a6147] text-white"
+                          >
+                            <User className="h-4 w-4 mr-2" />
+                            Find Friends
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setIsSidebarOpen(true)
+                              setActiveTab("discover")
+                            }}
+                            variant="outline"
+                            className="border-[#4a7c59] text-[#4a7c59] hover:bg-[#eef2eb]"
+                          >
+                            <Globe className="h-4 w-4 mr-2" />
+                            Discover Groups
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ) : null}
             </Card>
