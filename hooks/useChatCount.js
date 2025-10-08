@@ -33,20 +33,15 @@ export const useChatCount = () => {
       return
     }
 
+    // Initial fetch - always do this immediately
+    fetchUnreadCount()
+
     // Get singleton Pusher client
     const pusher = getPusherClient()
     
     if (!pusher) {
       console.error('[Pusher] Failed to initialize Pusher client for chat')
       return
-    }
-
-    // Check if Pusher is already connected
-    const isConnected = pusher.connection.state === 'connected'
-    
-    // Initial fetch - do it immediately if already connected, or wait for connection
-    if (isConnected) {
-      fetchUnreadCount()
     }
 
     // Subscribe to user-specific channel

@@ -26,20 +26,15 @@ export const useRealTimeNotifications = () => {
   useEffect(() => {
     if (!session?.user?.id) return;
 
+    // Initial fetch - always do this immediately
+    fetchNotificationCount();
+
     // Get singleton Pusher client
     const pusher = getPusherClient();
     
     if (!pusher) {
       console.error('[Pusher] Failed to initialize Pusher client for notifications');
       return;
-    }
-
-    // Check if Pusher is already connected
-    const isConnected = pusher.connection.state === 'connected';
-    
-    // Initial fetch - do it immediately if already connected, or wait for connection
-    if (isConnected) {
-      fetchNotificationCount();
     }
 
     // Subscribe to user-specific channel

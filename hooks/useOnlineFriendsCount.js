@@ -35,20 +35,15 @@ export const useOnlineFriendsCount = () => {
       }
     }
 
+    // Initial fetch - always do this immediately
+    fetchOnlineFriendsCount()
+
     // Get singleton Pusher client
     const pusher = getPusherClient()
     
     if (!pusher) {
       console.error('[Pusher] Failed to initialize Pusher client for online friends')
       return
-    }
-
-    // Check if Pusher is already connected
-    const isConnected = pusher.connection.state === 'connected'
-    
-    // Initial fetch - do it immediately if already connected, or wait for connection
-    if (isConnected) {
-      fetchOnlineFriendsCount()
     }
 
     // Subscribe to user-specific channel
