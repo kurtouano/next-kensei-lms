@@ -47,6 +47,13 @@ export const useRealTimeNotifications = () => {
       setNotificationCount(data.count);
     });
 
+    // Re-fetch on reconnection
+    const handleReconnect = () => {
+      console.log('[Pusher] Reconnected - refreshing notification count');
+      fetchNotificationCount();
+    };
+    pusher.connection.bind('connected', handleReconnect);
+
     // Listen for custom events from pages (like when visiting notifications page)
     const handleNotificationUpdate = () => {
       fetchNotificationCount();
@@ -60,6 +67,7 @@ export const useRealTimeNotifications = () => {
         channelRef.current.unbind_all();
         channelRef.current.unsubscribe();
       }
+      pusher.connection.unbind('connected', handleReconnect);
       window.removeEventListener('notification-updated', handleNotificationUpdate);
     };
   }, [session?.user?.id, fetchNotificationCount]);

@@ -7,6 +7,7 @@ import Notification from "@/models/Notification";
 import { handleFriendAcceptance } from "@/lib/friendChatIntegration";
 import sseManager from "@/lib/sseManager";
 import User from "@/models/User";
+import pusher from "@/lib/pusher";
 
 // Helper function to get friends list
 async function getFriendsList(userId) {
@@ -179,6 +180,12 @@ export async function POST(req) {
         read: false
       });
       sseManager.sendNotificationCountUpdate(friendRequest.requester._id, notificationCount);
+      
+      // ALSO send via Pusher for real-time header updates
+      await pusher.trigger(`user-${friendRequest.requester._id.toString()}`, 'notification-count', {
+        count: notificationCount
+      });
+      console.log(`[Pusher] Sent notification count to user-${friendRequest.requester._id.toString()}:`, notificationCount);
     } catch (error) {
       console.error('Error updating notification count:', error);
     }
@@ -216,6 +223,30 @@ export async function POST(req) {
           count: responderOnlineCount,
           timestamp: new Date().toISOString()
         });
+        
+        // ALSO send via Pusher for real-time header updates
+        try {
+          await pusher.trigger(`user-${friendRequest.requester._id.toString()}`, 'online-friends-count', {
+            count: requesterOnlineCount
+          });
+          console.log(`[Pusher] Sent online friends count to user-${friendRequest.requester._id.toString()}:`, requesterOnlineCount);
+          
+          await pusher.trigger(`user-${session.user.id}`, 'online-friends-count', {
+            count: responderOnlineCount
+          });
+          console.log(`[Pusher] Sent online friends count to user-${session.user.id}:`, responderOnlineCount);
+          
+          // Trigger friends list update for both users
+          await pusher.trigger(`user-${friendRequest.requester._id.toString()}`, 'friends-update', {
+            timestamp: new Date().toISOString()
+          });
+          await pusher.trigger(`user-${session.user.id}`, 'friends-update', {
+            timestamp: new Date().toISOString()
+          });
+          console.log(`[Pusher] Sent friends-update to both users`);
+        } catch (pusherError) {
+          console.error('Error sending Pusher online friends count:', pusherError);
+        }
 
       } catch (error) {
         console.error("Failed to create friend chat:", error);

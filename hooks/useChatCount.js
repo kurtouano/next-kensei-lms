@@ -54,6 +54,13 @@ export const useChatCount = () => {
       setUnreadCount(data.count)
     })
 
+    // Re-fetch on reconnection
+    const handleReconnect = () => {
+      console.log('[Pusher] Reconnected - refreshing chat count')
+      fetchUnreadCount()
+    }
+    pusher.connection.bind('connected', handleReconnect)
+
     // Listen for custom events from pages (like when visiting chat page)
     const handleChatUpdate = () => {
       fetchUnreadCount()
@@ -67,6 +74,7 @@ export const useChatCount = () => {
         channelRef.current.unbind_all()
         channelRef.current.unsubscribe()
       }
+      pusher.connection.unbind('connected', handleReconnect)
       window.removeEventListener('chat-updated', handleChatUpdate)
     }
   }, [session?.user?.id])

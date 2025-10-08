@@ -6,7 +6,6 @@ import Chat from "@/models/Chat"
 import ChatParticipant from "@/models/ChatParticipant"
 import Message from "@/models/Message"
 import User from "@/models/User"
-import { notifyNewMessage } from "@/lib/chatUtils"
 import pusher from "@/lib/pusher"
 
 export async function GET(request, { params }) {
@@ -227,7 +226,7 @@ export async function POST(request, { params }) {
       updatedAt: populatedMessage.updatedAt,
     }
 
-    // Send real-time updates to all chat participants
+    // Send real-time updates to all chat participants via Pusher
     try {
       // Get all participants in this chat
       const participants = await ChatParticipant.find({
@@ -235,18 +234,9 @@ export async function POST(request, { params }) {
         isActive: true
       }).populate('user', 'name email')
 
-      // Send new message notification to all participants except sender
+      // Send unread count update to all participants except sender
       for (const participant of participants) {
         if (participant.user._id.toString() !== user._id.toString()) {
-          // Send new message notification
-          sseManager.sendNewMessageNotification(participant.user._id.toString(), {
-            chatId: chatId,
-            messageId: message._id,
-            senderName: user.name,
-            content: content,
-            type: type
-          })
-
           // Calculate actual unread count for this user
           try {
             const userChats = await ChatParticipant.find({
@@ -255,13 +245,25 @@ export async function POST(request, { params }) {
             })
 
             const chatIds = userChats.map(p => p.chat)
-            const lastRead = userChats.find(p => p.chat.toString() === chatId)?.lastRead || new Date(0)
-
-            const unreadCount = await Message.countDocuments({
-              chat: { $in: chatIds },
-              sender: { $ne: participant.user._id },
-              createdAt: { $gt: lastRead }
+            
+            // Get the participant's last read time for each chat
+            const lastReadMap = new Map()
+            userChats.forEach(p => {
+              lastReadMap.set(p.chat.toString(), p.lastRead || new Date(0))
             })
+
+            // Count unread messages across all chats
+            let unreadCount = 0
+            for (const chatIdItem of chatIds) {
+              const lastRead = lastReadMap.get(chatIdItem.toString()) || new Date(0)
+              const count = await Message.countDocuments({
+                chat: chatIdItem,
+                sender: { $ne: participant.user._id },
+                createdAt: { $gt: lastRead },
+                isDeleted: false
+              })
+              unreadCount += count
+            }
 
             // Send updated unread count via Pusher
             await pusher.trigger(`user-${participant.user._id.toString()}`, 'chat-count', {
@@ -273,9 +275,9 @@ export async function POST(request, { params }) {
           }
         }
       }
-    } catch (sseError) {
-      console.error('Error sending SSE notifications:', sseError)
-      // Don't fail the message creation if SSE fails
+    } catch (pusherError) {
+      console.error('Error sending Pusher notifications:', pusherError)
+      // Don't fail the message creation if Pusher fails
     }
 
     return NextResponse.json({

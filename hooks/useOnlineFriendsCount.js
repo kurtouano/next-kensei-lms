@@ -56,11 +56,19 @@ export const useOnlineFriendsCount = () => {
       setOnlineCount(data.count)
     })
 
+    // Re-fetch on reconnection
+    const handleReconnect = () => {
+      console.log('[Pusher] Reconnected - refreshing online friends count')
+      fetchOnlineFriendsCount()
+    }
+    pusher.connection.bind('connected', handleReconnect)
+
     return () => {
       if (channelRef.current) {
         channelRef.current.unbind_all()
         channelRef.current.unsubscribe()
       }
+      pusher.connection.unbind('connected', handleReconnect)
     }
   }, [session?.user?.id])
 

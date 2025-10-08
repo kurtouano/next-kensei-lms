@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/contexts/ToastContext';
+import { getPusherClient } from '@/lib/pusherClient';
 
 export const useRealTimeFriends = (page = 1, search = '', append = false) => {
   const { data: session } = useSession();
@@ -14,7 +15,7 @@ export const useRealTimeFriends = (page = 1, search = '', append = false) => {
     hasMore: false,
     totalFriends: 0
   });
-  const eventSourceRef = useRef(null);
+  const channelRef = useRef(null);
 
   const fetchFriends = useCallback(async (pageNum = 1, searchTerm = '', appendData = false) => {
     try {
@@ -49,83 +50,50 @@ export const useRealTimeFriends = (page = 1, search = '', append = false) => {
     // Initial fetch
     fetchFriends(page, search, append);
 
-    // Set up SSE connection for real-time updates
-    const setupSSE = () => {
-      try {
-        eventSourceRef.current = new EventSource('/api/friends/stream');
-        
-        eventSourceRef.current.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            
-            if (data.type === 'friends_update') {
-              setFriends(data.friends);
-              setLastUpdate(new Date(data.timestamp));
-            } else if (data.type === 'friend_request_received') {
-              // Show notification for new friend request
-              showInfo(data.message, 7000);
-            } else if (data.type === 'friend_request_accepted') {
-              // Show notification for accepted friend request
-              showSuccess(data.message, 5000);
-            } else if (data.type === 'online_status_update') {
-              // Update online status for a specific friend
-              setFriends(prevFriends => 
-                prevFriends.map(friend => 
-                  friend.id === data.userId 
-                    ? { ...friend, isOnline: data.isOnline }
-                    : friend
-                )
-              );
-            } else if (data.type === 'heartbeat') {
-              // Keep connection alive
-              console.log('SSE heartbeat received');
-            }
-          } catch (error) {
-            console.error('Error parsing SSE data:', error);
-          }
-        };
-
-        eventSourceRef.current.onerror = (error) => {
-          console.error('SSE connection error:', error);
-          // Fallback to polling if SSE fails
-          setTimeout(() => {
-            if (eventSourceRef.current) {
-              eventSourceRef.current.close();
-              setupSSE();
-            }
-          }, 5000);
-        };
-
-      } catch (error) {
-        console.error('Error setting up SSE:', error);
-        // Fallback to polling
-        const intervalId = setInterval(fetchFriends, 120000);
-        return () => clearInterval(intervalId);
-      }
-    };
-
-    setupSSE();
-
-    // Fallback polling for when SSE is not available
-    let fallbackInterval;
-    const setupFallback = () => {
-      fallbackInterval = setInterval(fetchFriends, 120000);
-    };
-
-    // Only use fallback if SSE is not supported
-    if (!window.EventSource) {
-      setupFallback();
+    // Set up Pusher connection for real-time updates
+    const pusher = getPusherClient();
+    
+    if (!pusher) {
+      console.error('[Pusher] Failed to initialize Pusher client for friends');
+      return;
     }
+
+    // Subscribe to user-specific channel
+    const channelName = `user-${session.user.id}`;
+    channelRef.current = pusher.subscribe(channelName);
+
+    // Listen for friends list updates (when friend accepts/rejects)
+    channelRef.current.bind('friends-update', (data) => {
+      console.log('[Pusher] Friends list update');
+      fetchFriends(page, search, false); // Refresh friends list
+    });
+
+    // Listen for online status updates
+    channelRef.current.bind('friend-online-status', (data) => {
+      console.log('[Pusher] Friend online status update:', data);
+      setFriends(prevFriends => 
+        prevFriends.map(friend => 
+          friend.id === data.userId 
+            ? { ...friend, isOnline: data.isOnline }
+            : friend
+        )
+      );
+    });
+
+    // Re-fetch on reconnection
+    const handleReconnect = () => {
+      console.log('[Pusher] Reconnected - refreshing friends list');
+      fetchFriends(page, search, false);
+    };
+    pusher.connection.bind('connected', handleReconnect);
 
     // Cleanup
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
+      if (channelRef.current) {
+        channelRef.current.unbind_all();
+        channelRef.current.unsubscribe();
       }
-      if (fallbackInterval) {
-        clearInterval(fallbackInterval);
-      }
+      pusher.connection.unbind('connected', handleReconnect);
     };
   }, [session?.user?.id, fetchFriends, page, search, append]);
 
