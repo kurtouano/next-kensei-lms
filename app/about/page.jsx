@@ -39,19 +39,16 @@ export default function AboutPage() {
       name: "Kensei Sensei",
       role: "Founder & Lead Instructor",
       bio: "Former university professor with 8+ years of Japanese language teaching experience.",
-      image: "/placeholder.svg?height=300&width=300",
     },
     {
       name: "Spencer Chun",
       role: "Curriculum Director",
       bio: "Linguistics PhD with expertise in language acquisition and educational technology.",
-      image: "/placeholder.svg?height=300&width=300",
     },
     {
       name: "Kurt Ouano",
       role: "Software Developer",
       bio: "Full-stack developer passionate about creating innovative learning platforms and seamless user experiences.",
-      image: "/placeholder.svg?height=300&width=300",
     },
   ]
 
@@ -62,9 +59,12 @@ export default function AboutPage() {
         {/* Hero Section */}
         <section className="bg-[#eef2eb] py-16">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="mb-4 text-4xl font-bold text-[#2c3e2d] md:text-5xl">About Jotatsu Academy</h1>
+            <h1 className="mb-4 text-4xl font-bold text-[#2c3e2d] md:text-5xl">JOTATSU</h1>
+            <p className="mx-auto mb-4 text-base text-[#4a7c59] font-medium">
+              (上達) means "improvement" or "progress" in Japanese
+            </p>
             <p className="mx-auto mb-8 max-w-2xl text-lg text-[#5c6d5e]">
-              Jotatsu Academy is dedicated to making Japanese language learning accessible, engaging, and effective. 
+              Jotatsu is dedicated to making Japanese language learning accessible, engaging, and effective. 
               Our innovative approach combines traditional language instruction with modern technology and gamification 
               to create a unique learning experience.
             </p>
@@ -96,19 +96,15 @@ export default function AboutPage() {
             <h2 className="mb-12 text-center text-3xl font-bold text-[#2c3e2d]">Leadership Team</h2>
             <div className="grid gap-8 md:grid-cols-3">
               {team.map((member, index) => (
-                <div key={index} className="overflow-hidden rounded-lg bg-white shadow-sm">
-                  <div className="aspect-square w-full overflow-hidden">
-                    <img
-                      src={member.image || "/placeholder.svg"}
-                      alt={member.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="mb-1 text-xl font-semibold text-[#2c3e2d]">{member.name}</h3>
-                    <p className="mb-3 text-sm font-medium text-[#4a7c59]">{member.role}</p>
-                    <p className="text-sm text-[#5c6d5e]">{member.bio}</p>
-                  </div>
+                <div 
+                  key={index} 
+                  className="group rounded-lg bg-white shadow-sm p-6 border-l-4 border-[#4a7c59] hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                >
+                  <h3 className="mb-1 text-xl font-semibold text-[#2c3e2d] group-hover:text-[#4a7c59] transition-colors duration-300">
+                    {member.name}
+                  </h3>
+                  <p className="mb-3 text-sm font-medium text-[#4a7c59]">{member.role}</p>
+                  <p className="text-sm text-[#5c6d5e] leading-relaxed">{member.bio}</p>
                 </div>
               ))}
             </div>
