@@ -27,7 +27,9 @@ export const VideoPlayer = memo(function VideoPlayer({
   currentModuleCompleted = false,
   currentModuleQuizCompleted = false,
   // NEW: Manual completion toggle
-  onToggleCompletion = null
+  onToggleCompletion = null,
+  // NEW: Check if item is accessible as preview
+  isPreviewAccessible = false
 }) {
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -229,7 +231,7 @@ export const VideoPlayer = memo(function VideoPlayer({
             )}
           </>
         ) : (
-          <MaterialView item={activeItem} isEnrolled={isEnrolled} />
+          <MaterialView item={activeItem} isEnrolled={isEnrolled} isPreviewAccessible={isPreviewAccessible} />
         )}
       </div>
       
@@ -240,16 +242,49 @@ export const VideoPlayer = memo(function VideoPlayer({
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
             <div className="flex items-center">
               <span className="font-medium text-[#2c3e2d] text-sm">{activeItem.title}</span>
-              {/* Only show preview badge for non-enrolled users */}
+              {/* Only show preview badge for course preview */}
               {activeItem.isPreview && !isEnrolled && (
                 <span className="ml-2 bg-[#4a7c59] text-white px-2 py-0.5 rounded-full text-xs">
                   Preview
                 </span>
               )}
-              {!isEnrolled && !activeItem.isPreview && (
+              {/* Show preview badge for accessible free videos */}
+              {!isEnrolled && !activeItem.isPreview && isPreviewAccessible && (
+                <span className="ml-2 bg-[#4a7c59] text-white px-2 py-0.5 rounded-full text-xs">
+                  Free Preview
+                </span>
+              )}
+              {/* Show lock icon only if not enrolled AND not preview accessible */}
+              {!isEnrolled && !activeItem.isPreview && !isPreviewAccessible && (
                 <Lock className="ml-2 h-4 w-4 text-[#e67e22]" />
               )}
             </div>
+            
+            {/* Navigation buttons for non-enrolled users viewing preview content */}
+            {!isEnrolled && isPreviewAccessible && (
+              <div className="flex gap-2 w-full lg:w-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 lg:flex-none border-[#4a7c59] text-[#4a7c59] hover:bg-[#f0f4f1] hover:border-[#3a6147] transition-all duration-200 px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={onPreviousLesson}
+                  disabled={!hasPreviousLesson}
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 lg:flex-none border-[#4a7c59] text-[#4a7c59] hover:bg-[#f0f4f1] hover:border-[#3a6147] transition-all duration-200 px-3 py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={onNextLesson}
+                  disabled={!hasNextLesson}
+                >
+                  Next
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            )}
             
             {/* Mark as Complete / Completed Button - only for enrolled users on actual lessons */}
             {isEnrolled && !activeItem.isPreview && (() => {
@@ -397,12 +432,15 @@ const formatTime = (seconds) => {
   return `${minutes}:${secs.toString().padStart(2, '0')}`
 }
 
-const MaterialView = memo(function MaterialView({ item, isEnrolled }) {
+const MaterialView = memo(function MaterialView({ item, isEnrolled, isPreviewAccessible = false }) {
   if (item?.type === "resource") {
+    // Allow access if enrolled OR if it's part of the preview content
+    const canAccess = isEnrolled || isPreviewAccessible
+    
     return (
       <div className="flex min-h-full items-center justify-center bg-[#eef2eb] p-3 sm:p-4 text-center text-[#4a7c59]">
         <div className="w-full max-w-xs sm:max-w-sm md:max-w-md">
-          {!isEnrolled ? (
+          {!canAccess ? (
             <>
               <Lock className="mx-auto mb-2 h-12 w-12 text-[#e67e22]" />
               <h3 className="text-lg font-semibold mb-3 text-[#2c3e2d]">Resource Locked</h3>

@@ -5,6 +5,7 @@ import Course from "@/models/Course";
 import User from "@/models/User";
 import Module from "@/models/Module";
 import Lesson from "@/models/Lesson";
+import Bonsai from "@/models/Bonsai"; // Import Bonsai model for populate
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 

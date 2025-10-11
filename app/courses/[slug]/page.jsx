@@ -524,16 +524,21 @@ export default function LessonPage() {
   // Set initial active video
   useEffect(() => {
     if (lessonData && !activeVideoId) {
-      if (!effectiveIsLoggedIn && lessonData.previewVideoUrl) {
-        setActiveVideoId("preview")
-      } else if (!effectiveIsLoggedIn && !lessonData.previewVideoUrl) {
-        if (lessonData.modules?.length > 0) {
-          const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
-          if (firstVideo) setActiveVideoId(firstVideo.id)
+      // For non-enrolled users (logged in or not)
+      if (!effectiveIsEnrolled) {
+        // Prefer course preview if available
+        if (lessonData.previewVideoUrl) {
+          setActiveVideoId("preview")
+        } else {
+          // If no preview, show first video of Module 1
+          if (lessonData.modules?.length > 0) {
+            const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
+            if (firstVideo) setActiveVideoId(firstVideo.id)
+          }
         }
-      } else if (effectiveIsLoggedIn && !effectiveIsEnrolled && lessonData.previewVideoUrl) {
-        setActiveVideoId("preview")
-      } else if (effectiveIsLoggedIn && effectiveIsEnrolled && lessonData.modules?.length > 0) {
+      } 
+      // For enrolled users
+      else if (effectiveIsLoggedIn && effectiveIsEnrolled && lessonData.modules?.length > 0) {
         const firstVideo = lessonData.modules[0].items.find(item => item.type === "video")
         if (firstVideo) setActiveVideoId(firstVideo.id)
       }
@@ -609,6 +614,30 @@ export default function LessonPage() {
     return moduleQuizCompleted.some(cm => cm.moduleIndex === activeModule)
   }, [effectiveIsLoggedIn, effectiveIsEnrolled, moduleQuizCompleted, activeModule])
 
+  // Check if current active item is accessible as preview (for non-enrolled users)
+  const isCurrentItemPreviewAccessible = useMemo(() => {
+    if (effectiveIsEnrolled) return false // Enrolled users don't need preview access
+    if (!activeItem || activeItem.isPreview) return true // Course preview is always accessible
+    if (activeModule !== 0) return false // Only Module 1 has preview content
+    
+    const module = lessonData?.modules?.[0]
+    if (!module) return false
+    
+    const itemIndex = module.items.findIndex(i => i.id === activeItem.id)
+    if (itemIndex === -1) return false
+    
+    // Check if this is a video in the first 2 videos
+    if (activeItem.type === "video") {
+      const videoItems = module.items.filter(i => i.type === "video")
+      const videoIndex = videoItems.findIndex(v => v.id === activeItem.id)
+      return videoIndex < 2
+    } else {
+      // For resources, check if they appear before the 3rd video
+      const videosBeforeThisItem = module.items.slice(0, itemIndex).filter(i => i.type === "video").length
+      return videosBeforeThisItem < 2
+    }
+  }, [effectiveIsEnrolled, activeItem, activeModule, lessonData])
+
   // ============ ENHANCED LOADING STATE ============
   const rawIsDataLoading = useMemo(() => {
     if (isSessionLoading || lessonLoading) return true
@@ -627,16 +656,42 @@ export default function LessonPage() {
   const handleSelectItem = useCallback((itemId, moduleIndex) => {
     // Allow preview selection for non-logged users and guest mode
     if (!effectiveIsLoggedIn && itemId !== "preview") {
+      // Allow first 2 videos in Module 1 for non-enrolled users
+      if (moduleIndex === 0) {
+        const module = lessonData?.modules?.[0]
+        if (module) {
+          const videoItems = module.items.filter(item => item.type === "video")
+          const itemIndex = videoItems.findIndex(video => video.id === itemId)
+          if (itemIndex < 2) {
+            setActiveVideoId(itemId)
+            setActiveModule(moduleIndex)
+            return
+          }
+        }
+      }
       return
     }
     
     if (effectiveIsLoggedIn && !effectiveIsEnrolled && itemId !== "preview") {
+      // Allow first 2 videos in Module 1 for non-enrolled users
+      if (moduleIndex === 0) {
+        const module = lessonData?.modules?.[0]
+        if (module) {
+          const videoItems = module.items.filter(item => item.type === "video")
+          const itemIndex = videoItems.findIndex(video => video.id === itemId)
+          if (itemIndex < 2) {
+            setActiveVideoId(itemId)
+            setActiveModule(moduleIndex)
+            return
+          }
+        }
+      }
       return
     }
     
     setActiveVideoId(itemId)
     setActiveModule(moduleIndex)
-  }, [effectiveIsLoggedIn, effectiveIsEnrolled])
+  }, [effectiveIsLoggedIn, effectiveIsEnrolled, lessonData])
 
   const handleToggleCompletion = useCallback(async (itemId, e) => {
     e.stopPropagation()
@@ -749,8 +804,28 @@ export default function LessonPage() {
     const currentItemIndex = currentModule.items.findIndex(item => item.id === activeVideoId)
     
     if (currentItemIndex < currentModule.items.length - 1) {
-      // Go to next item in same module
       const nextItem = currentModule.items[currentItemIndex + 1]
+      
+      // For non-enrolled users, verify next item is accessible
+      if (!effectiveIsEnrolled && activeModule === 0) {
+        const videoItems = currentModule.items.filter(i => i.type === "video")
+        const nextItemVideoIndex = videoItems.findIndex(v => v.id === nextItem.id)
+        
+        let isNextItemAccessible = false
+        if (nextItem.type === "video") {
+          isNextItemAccessible = nextItemVideoIndex < 2
+        } else {
+          const nextItemIndex = currentModule.items.findIndex(i => i.id === nextItem.id)
+          const videosBeforeNextItem = currentModule.items.slice(0, nextItemIndex).filter(i => i.type === "video").length
+          isNextItemAccessible = videosBeforeNextItem < 2
+        }
+        
+        if (!isNextItemAccessible) {
+          return // Don't navigate to locked content
+        }
+      }
+      
+      // Go to next item in same module
       setActiveVideoId(nextItem.id)
     } else if (activeModule < lessonData.modules.length - 1) {
       // Check if next module is accessible before navigating
@@ -762,7 +837,7 @@ export default function LessonPage() {
         setActiveVideoId(firstItem.id)
       }
     }
-  }, [lessonData, activeModule, activeVideoId, isModuleAccessible])
+  }, [lessonData, activeModule, activeVideoId, isModuleAccessible, effectiveIsEnrolled])
 
   // Check if previous/next lessons exist
   const hasPreviousLesson = useMemo(() => {
@@ -794,8 +869,27 @@ export default function LessonPage() {
     
     const currentItemIndex = currentModule.items.findIndex(item => item.id === activeVideoId)
     
-    // Has next item in same module
+    // Check if there's a next item in same module
     if (currentItemIndex < currentModule.items.length - 1) {
+      const nextItem = currentModule.items[currentItemIndex + 1]
+      
+      // For non-enrolled users, check if next item is accessible
+      if (!effectiveIsEnrolled && activeModule === 0) {
+        // Count videos to check if next item is within first 2 videos
+        const videoItems = currentModule.items.filter(i => i.type === "video")
+        const nextItemVideoIndex = videoItems.findIndex(v => v.id === nextItem.id)
+        
+        if (nextItem.type === "video") {
+          // Next item is a video - check if it's in first 2 videos
+          return nextItemVideoIndex < 2
+        } else {
+          // Next item is a resource - check if it appears before 3rd video
+          const nextItemIndex = currentModule.items.findIndex(i => i.id === nextItem.id)
+          const videosBeforeNextItem = currentModule.items.slice(0, nextItemIndex).filter(i => i.type === "video").length
+          return videosBeforeNextItem < 2
+        }
+      }
+      
       return true
     }
     
@@ -805,7 +899,7 @@ export default function LessonPage() {
     }
     
     return false
-  }, [lessonData, activeModule, activeVideoId, isModuleAccessible])
+  }, [lessonData, activeModule, activeVideoId, isModuleAccessible, effectiveIsEnrolled])
 
   const handleBackToModule = useCallback(() => {
     hideQuiz()
@@ -923,6 +1017,7 @@ export default function LessonPage() {
                     currentModuleCompleted={currentModuleCompleted}
                     currentModuleQuizCompleted={currentModuleQuizCompleted}
                     onToggleCompletion={handleToggleCompletion}
+                    isPreviewAccessible={isCurrentItemPreviewAccessible}
                   />
                   
                   {/* Show enrollment prompt for non-enrolled users */}

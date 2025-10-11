@@ -8,14 +8,13 @@ import {
   FileText, 
   BookOpen, 
   Lock, 
+  LockOpen,
   Check, 
   Circle,
   ChevronLeft,
-  Play,
   Award,
   Loader2,
   Gift,
-  Coins
 } from "lucide-react"
 
 export const CourseSidebar = memo(function CourseSidebar({
@@ -375,7 +374,8 @@ const ModuleSection = memo(function ModuleSection({
     [moduleQuizCompleted, moduleIndex]
   )
 
-  const moduleAccessible = isEnrolled ? isAccessible : false
+  // Module 1 is always accessible for preview (even for non-enrolled users)
+  const moduleAccessible = isEnrolled ? isAccessible : (moduleIndex === 0)
 
   return (
     <div className={`border-b border-[#dce4d7] last:border-b-0 ${!moduleAccessible ? "opacity-60" : ""}`}>
@@ -407,52 +407,94 @@ const ModuleSection = memo(function ModuleSection({
         </div>
       )}
 
-      {!isEnrolled && (
-        <div className="mx-4 mt-2 rounded-md bg-[#eef2eb] border border-[#4a7c59] p-3">
+      {!isEnrolled && moduleIndex === 0 && (
+        <div className="mx-2 mt-2 rounded-md bg-[#eef2eb] border border-[#4a7c59] px-2 py-3">
+          <div className="flex items-center">
+          <LockOpen className="mr-2 h-4 w-4 text-[#4a7c59]" />
+            <span className="text-sm text-[#5c6d5e]">
+              Free preview available
+            </span>
+          </div>
+        </div>
+      )}
+      
+      {!isEnrolled && moduleIndex > 0 && (
+        <div className="mx-2 mt-2 rounded-md bg-[#eef2eb] border border-[#4a7c59] px-2 py-3">
           <div className="flex items-center">
             <Lock className="mr-2 h-4 w-4 text-[#4a7c59]" />
             <span className="text-sm text-[#5c6d5e]">
-              Enroll to access all {module.items.length} lessons in this module
+              Enroll to access all lessons in this module
             </span>
           </div>
         </div>
       )}
 
-      <div className={`space-y-1 p-2 ${!moduleAccessible ? "pointer-events-none" : ""}`}>
-        {module.items.map((item) => (
-          <div key={item.id} className="space-y-2">
-            
-            {item.resources && item.resources.length > 0 && (
-              <div className="space-y-1">
-                {item.resources.map((resource, resourceIndex) => (
-                  <ResourceItem
-                    key={resourceIndex}
-                    resource={resource}
-                    item={item}
-                    resourceIndex={resourceIndex}
-                    moduleIndex={moduleIndex}
-                    isActive={activeVideoId === `resource-${item.id}-${resourceIndex}`}
-                    isAccessible={moduleAccessible}
-                    onSelectItem={onSelectItem}
-                    isEnrolled={isEnrolled}
-                  />
-                ))}
-              </div>
-            )}
+      <div className={`space-y-1 p-2`}>
+        {module.items.map((item, itemIndex) => {
+          // Count only video items before this one to determine if it's in first 2 videos
+          const videoItems = module.items.filter(i => i.type === "video")
+          const videoIndex = videoItems.findIndex(v => v.id === item.id)
+          
+          // For non-enrolled users in Module 1:
+          // - Unlock first 2 videos
+          // - Unlock resources/documents that appear within the first 2 video positions
+          let isItemAccessible = false
+          
+          if (isEnrolled) {
+            // Enrolled users: use normal module accessibility
+            isItemAccessible = moduleAccessible
+          } else if (moduleIndex === 0) {
+            // Non-enrolled users in Module 1
+            if (item.type === "video") {
+              // Unlock first 2 videos
+              isItemAccessible = videoIndex < 2
+            } else {
+              // For non-video items (resources, documents), check if they're within first 2 video sections
+              // Find how many videos appear before this item
+              const videosBeforeThisItem = module.items.slice(0, itemIndex).filter(i => i.type === "video").length
+              // Unlock resources that appear before or between the first 2 videos
+              isItemAccessible = videosBeforeThisItem < 2
+            }
+          } else {
+            // Other modules: locked for non-enrolled
+            isItemAccessible = false
+          }
+          
+          return (
+            <div key={item.id} className="space-y-2">
+              
+              {item.resources && item.resources.length > 0 && (
+                <div className="space-y-1">
+                  {item.resources.map((resource, resourceIndex) => (
+                    <ResourceItem
+                      key={resourceIndex}
+                      resource={resource}
+                      item={item}
+                      resourceIndex={resourceIndex}
+                      moduleIndex={moduleIndex}
+                      isActive={activeVideoId === `resource-${item.id}-${resourceIndex}`}
+                      isAccessible={isItemAccessible}
+                      onSelectItem={onSelectItem}
+                      isEnrolled={isEnrolled}
+                    />
+                  ))}
+                </div>
+              )}
 
-            <LessonItem
-              item={item}
-              moduleIndex={moduleIndex}
-              isActive={activeVideoId === item.id}
-              isCompleted={completedItems.includes(item.id)}
-              isAccessible={moduleAccessible}
-              onSelectItem={onSelectItem}
-              onToggleCompletion={onToggleCompletion}
-              isEnrolled={isEnrolled}
-              isPending={pendingItems.has(item.id)}
-            />
-          </div>
-        ))}
+              <LessonItem
+                item={item}
+                moduleIndex={moduleIndex}
+                isActive={activeVideoId === item.id}
+                isCompleted={completedItems.includes(item.id)}
+                isAccessible={isItemAccessible}
+                onSelectItem={onSelectItem}
+                onToggleCompletion={onToggleCompletion}
+                isEnrolled={isEnrolled}
+                isPending={pendingItems.has(item.id)}
+              />
+            </div>
+          )
+        })}
 
         {/* Quiz section without completion status */}
         {isEnrolled && isActive && currentModuleCompleted && !showModuleQuiz && (
@@ -546,7 +588,7 @@ const LessonItem = memo(function LessonItem({
         <div className="flex items-center justify-between">
           <span className="truncate">{item.title}</span>
           <div className="ml-2 flex items-center">
-            {!isEnrolled && (
+            {!isEnrolled && !isAccessible && (
               <Lock className="h-3 w-3 text-[#4a7c59] mr-1" />
             )}
             {item.type === "video" && (
@@ -636,7 +678,7 @@ const ResourceItem = memo(function ResourceItem({
         </div>
         <div className="flex items-center flex-1 min-w-0">
           <span className="truncate">{resource.title}</span>
-          {!isEnrolled && (
+          {!isEnrolled && !isAccessible && (
             <Lock className="h-3 w-3 text-[#4a7c59] ml-2" />
           )}
         </div>
