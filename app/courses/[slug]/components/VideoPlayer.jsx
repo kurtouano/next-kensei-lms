@@ -240,23 +240,23 @@ export const VideoPlayer = memo(function VideoPlayer({
         <div className="border-t border-[#dce4d7] p-4 bg-[#f8f7f4]">
           {/* Mobile: 2 rows, Desktop: 1 row */}
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
-            <div className="flex items-center">
+            <div className="flex items-center flex-wrap gap-2">
               <span className="font-medium text-[#2c3e2d] text-sm">{activeItem.title}</span>
               {/* Only show preview badge for course preview */}
               {activeItem.isPreview && !isEnrolled && (
-                <span className="ml-2 bg-[#4a7c59] text-white px-2 py-0.5 rounded-full text-xs">
+                <span className="bg-[#4a7c59] text-white px-2 py-0.5 rounded-full text-xs">
                   Preview
                 </span>
               )}
-              {/* Show preview badge for accessible free videos */}
+              {/* Show free badge for accessible free videos */}
               {!isEnrolled && !activeItem.isPreview && isPreviewAccessible && (
-                <span className="ml-2 bg-[#4a7c59] text-white px-2 py-0.5 rounded-full text-xs">
-                  Free Preview
+                <span className="bg-[#4a7c59] text-white px-2 py-0.5 rounded-full text-xs">
+                  Free
                 </span>
               )}
               {/* Show lock icon only if not enrolled AND not preview accessible */}
               {!isEnrolled && !activeItem.isPreview && !isPreviewAccessible && (
-                <Lock className="ml-2 h-4 w-4 text-[#e67e22]" />
+                <Lock className="h-4 w-4 text-[#e67e22]" />
               )}
             </div>
             
