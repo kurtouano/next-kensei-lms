@@ -49,7 +49,7 @@ export async function GET(request) {
                 }
             )
             .populate('bonsai', 'level totalCredits customization')
-            .sort({ createdAt: -1 }) // Newest users first
+            .sort({ 'bonsai.level': -1, 'bonsai.totalCredits': -1, createdAt: -1 }) // Sort by bonsai level first, then credits, then newest
             .limit(limit)
             .skip(skip)
             .lean(); // Use lean() for better performance

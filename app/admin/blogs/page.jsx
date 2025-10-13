@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AdminBlogsSkeleton } from "@/components/AdminSkeleton"
+import { DeleteConfirmationModal } from "@/components/ui/DeleteConfirmationModal"
 
 export default function AdminBlogPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -25,6 +26,14 @@ export default function AdminBlogPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState(null)
   const [sendingNotification, setSendingNotification] = useState(null)
+  
+  // Delete modal state
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    blogId: null,
+    blogTitle: '',
+    isDeleting: false
+  })
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -122,32 +131,105 @@ export default function AdminBlogPage() {
     fetchBlogs(1, false)
   }, [])
 
-  // Handle blog deletion
-  const handleDelete = async (blogId, blogTitle) => {
-    if (!confirm(`Are you sure you want to delete "${blogTitle}"? This action cannot be undone.`)) {
-      return
-    }
+  // Handle blog deletion - open modal
+  const handleDelete = (blogId, blogTitle) => {
+    setDeleteModal({
+      isOpen: true,
+      blogId,
+      blogTitle,
+      isDeleting: false
+    })
+  }
+
+  // Confirm blog deletion
+  const confirmDelete = async () => {
+    if (!deleteModal.blogId) return
+
+    setDeleteModal(prev => ({ ...prev, isDeleting: true }))
 
     try {
-      const response = await fetch(`/api/admin/blogs/${blogId}`, {
+      const response = await fetch(`/api/admin/blogs/${deleteModal.blogId}`, {
         method: 'DELETE'
       })
 
       const result = await response.json()
 
       if (result.success) {
-        alert('Blog deleted successfully!')
         // Remove deleted blog from current list
-        setBlogs(prevBlogs => prevBlogs.filter(blog => blog._id !== blogId))
+        setBlogs(prevBlogs => {
+          const filteredBlogs = prevBlogs.filter(blog => blog._id !== deleteModal.blogId)
+          
+          // If we have more pages and the current page is now less than full,
+          // try to load the next blog to maintain the same count
+          if (hasMorePages && filteredBlogs.length < BLOGS_PER_PAGE) {
+            // Load the next blog to fill the gap
+            loadNextBlogToFillGap()
+          }
+          
+          return filteredBlogs
+        })
+        
         setTotalBlogs(prev => prev - 1)
         setStats(prev => ({ ...prev, totalPosts: prev.totalPosts - 1, published: prev.published - 1 }))
+        
+        // Close modal
+        setDeleteModal({
+          isOpen: false,
+          blogId: null,
+          blogTitle: '',
+          isDeleting: false
+        })
       } else {
-        alert(result.error || 'Failed to delete blog')
+        setError(result.error || 'Failed to delete blog')
+        setDeleteModal(prev => ({ ...prev, isDeleting: false }))
       }
     } catch (error) {
       console.error('Error deleting blog:', error)
-      alert('Failed to delete blog')
+      setError('Failed to delete blog')
+      setDeleteModal(prev => ({ ...prev, isDeleting: false }))
     }
+  }
+
+  // Load next blog to fill the gap after deletion
+  const loadNextBlogToFillGap = async () => {
+    try {
+      const nextPage = currentPage + 1
+      const params = new URLSearchParams({
+        category: categoryFilter !== 'all' ? categoryFilter : '',
+        sortBy: sortBy,
+        page: nextPage.toString(),
+        limit: '1' // Just load one blog to fill the gap
+      })
+
+      const response = await fetch(`/api/admin/blogs?${params}`)
+      const data = await response.json()
+
+      if (data.success && data.blogs.length > 0) {
+        // Add the next blog to the current list
+        setBlogs(prevBlogs => [...prevBlogs, ...data.blogs])
+        
+        // Update pagination info
+        setHasMorePages(data.pagination.hasNextPage)
+        
+        // If we loaded the last blog from the next page, update current page
+        if (!data.pagination.hasNextPage) {
+          setCurrentPage(nextPage)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading next blog:', error)
+      // Don't show error to user as this is a background operation
+    }
+  }
+
+  // Close delete modal
+  const closeDeleteModal = () => {
+    setDeleteModal({
+      isOpen: false,
+      blogId: null,
+      blogTitle: '',
+      isDeleting: false
+    })
   }
 
   const handleSendNotification = async (blogId, blogTitle) => {
@@ -546,6 +628,15 @@ export default function AdminBlogPage() {
         </CardContent>
       </Card>
     </div>
+
+    {/* Delete Confirmation Modal */}
+    <DeleteConfirmationModal
+      isOpen={deleteModal.isOpen}
+      onClose={closeDeleteModal}
+      onConfirm={confirmDelete}
+      title={deleteModal.blogTitle}
+      isLoading={deleteModal.isDeleting}
+    />
     </>
   )
 }
