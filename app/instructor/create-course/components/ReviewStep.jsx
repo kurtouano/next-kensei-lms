@@ -169,48 +169,18 @@ const ReviewStep = memo(({
           </div>
           
           <div className="flex gap-4">
-            {isEditMode ? (
-              <>
-                <Button 
-                  onClick={() => handleSubmit(true)} 
-                  variant="outline"
-                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Saving..." : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save as Draft
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  onClick={() => handleSubmit(false)} 
-                  className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147] text-white"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Updating..." : (
-                    <>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Update & Publish
-                    </>
-                  )}
-                </Button>
-              </>
-            ) : (
-              <Button 
-                onClick={() => handleSubmit(false)} 
-                className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147] text-white text-lg py-3"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Publishing..." : (
-                  <>
-                    <Eye className="mr-2 h-5 w-5" />
-                    Publish Course
-                  </>
-                )}
-              </Button>
-            )}
+            <Button 
+              onClick={() => handleSubmit()} 
+              className="flex-1 bg-[#4a7c59] hover:bg-[#3a6147] text-white text-lg py-3"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (isEditMode ? "Updating..." : "Publishing...") : (
+                <>
+                  <Eye className="mr-2 h-5 w-5" />
+                  {isEditMode ? "Update & Publish" : "Publish Course"}
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </CardContent>

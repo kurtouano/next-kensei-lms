@@ -7,7 +7,7 @@ export const useSubmission = (courseData, modules, validateForm, setCurrentStep,
   const router = useRouter()
 
   // Handle form submission
-  const handleSubmit = useCallback(async (isDraft = false) => {
+  const handleSubmit = useCallback(async () => {
     const validationResult = validateForm()
     
     if (!validationResult.isValid) {
@@ -31,7 +31,7 @@ export const useSubmission = (courseData, modules, validateForm, setCurrentStep,
             resources: lesson.resources.filter(r => r.fileUrl && r.title)
           }))
         })),
-        isPublished: !isDraft,
+        isPublished: true, // Always publish
         tags: courseData.tags.filter(tag => tag.trim() !== ''),
         highlights: courseData.highlights.filter(h => h.description.trim() !== ''),
         randomReward: courseData.randomReward || false,
@@ -54,8 +54,8 @@ export const useSubmission = (courseData, modules, validateForm, setCurrentStep,
 
       if (result.success) {
         const message = isEditMode 
-          ? (isDraft ? 'Course updated and saved as draft!' : 'Course updated successfully!')
-          : (isDraft ? 'Course saved as draft!' : 'Course published successfully!')
+          ? 'Course updated successfully!'
+          : 'Course published successfully!'
         
         alert(message)
         router.push('/instructor/dashboard')
