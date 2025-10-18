@@ -141,13 +141,12 @@
 | **Current Total** | **FREE** | **Per month** |
 
 ### Future Upgrade Costs (When Needed)
-| Service | Upgrade Cost | When to Upgrade |
-|---------|-------------|-----------------|
-| Vercel Pro | $20/month | When free limits exceeded |
-| Pusher Standard | $49/month | When 100 concurrent users exceeded |
-| MongoDB Atlas M10 | $57/month | When free tier limits exceeded |
-| MongoDB Atlas Flex | $8/month | Alternative to M10 for development |
-| Amazon S3 | $0.025/GB | When 5GB free tier exceeded |
-| Amazon CloudFront | $0.085/GB | When 50GB free tier exceeded |
-| Resend Pro | $20/month | When 3K emails exceeded |
-| **Future Total** | **$126/month** | **When scaling needed** |
+| Likelihood | Service | Upgrade Cost | When to Upgrade |
+|-----------|---------|-------------|-----------------|
+| **HIGH** | Vercel Pro | $20/month | When free limits exceeded |
+| **HIGH** | MongoDB Atlas Flex | $8/month | When free tier limits exceeded |
+| **HIGH** | Amazon S3 | ~$1/month ($0.025/GB) | When 5GB free tier exceeded (50GB usage) |
+| **MEDIUM** | Pusher Standard | $49/month | When 100 concurrent users exceeded |
+| **MEDIUM** | Amazon CloudFront | ~$1/month ($0.085/GB) | When 50GB free tier exceeded (10GB usage) |
+| **LOW** | Resend Pro | $20/month | When 3K emails exceeded |
+| **Future Total** | **$30-99/month** | **When scaling needed** |
