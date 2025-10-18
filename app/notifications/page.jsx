@@ -472,16 +472,16 @@ function NotificationsPage() {
 
                      {/* Action Buttons */}
                      {notification.type === 'friend_request' && (
-                       <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 ml-2 sm:ml-4">
+                       <div className="flex flex-col sm:flex-row gap-2 ml-2 sm:ml-4">
                          <button
                            onClick={() => handleFriendResponse(notification.relatedData.friendRequestId, 'accept', notification._id)}
-                           className="px-2 sm:px-3 py-1 bg-[#4a7c59] text-white text-xs rounded-lg hover:bg-[#3a6147] transition-colors"
+                           className="rounded-md bg-[#4a7c59] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#3a6147]"
                          >
                            Accept
                          </button>
                          <button
                            onClick={() => handleFriendResponse(notification.relatedData.friendRequestId, 'reject', notification._id)}
-                           className="px-2 sm:px-3 py-1 border border-[#dc2626] text-[#dc2626] text-xs rounded-lg hover:bg-[#fef2f2] transition-colors"
+                           className="rounded-md border border-[#dc2626] bg-white px-4 py-2 text-xs font-medium text-[#dc2626] transition-colors hover:bg-[#fef2f2]"
                          >
                            Decline
                          </button>
