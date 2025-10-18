@@ -135,13 +135,17 @@ export async function POST(req) {
       throw saveError; // Re-throw other errors
     }
 
+    // Get requester's name for the notification message
+    const requester = await User.findById(currentUserId, 'name');
+    const requesterName = requester?.name || 'Someone';
+    
     // Create notification for recipient
     const notification = new Notification({
       recipient: targetUserId,
       sender: currentUserId,
       type: 'friend_request',
       title: 'New Friend Request',
-      message: `${session.user.name || 'Someone'} sent you a friend request`,
+      message: `${requesterName} sent you a friend request`,
       relatedData: {
         friendRequestId: friendRequest._id,
         requesterId: currentUserId

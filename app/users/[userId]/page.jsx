@@ -168,6 +168,80 @@ function PublicProfilePage() {
     }
   };
 
+  const handleAcceptFriendRequest = async () => {
+    if (sendingRequest) return;
+
+    setSendingRequest(true);
+    setUserData(prev => ({ ...prev, friendStatus: 'accepted' }));
+
+    try {
+      const response = await fetch('/api/friends/response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          friendRequestId: userData.pendingFriendRequestId,
+          action: 'accept'
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Keep the accepted state (already set optimistically)
+        window.dispatchEvent(new Event('notification-updated'));
+      } else {
+        console.error('Failed to accept friend request:', data.message);
+        setUserData(prev => ({ ...prev, friendStatus: 'received_request' }));
+        alert('Failed to accept friend request. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      setUserData(prev => ({ ...prev, friendStatus: 'received_request' }));
+      alert('Network error. Please check your connection and try again.');
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
+  const handleDeclineFriendRequest = async () => {
+    if (sendingRequest) return;
+
+    setSendingRequest(true);
+    setUserData(prev => ({ ...prev, friendStatus: null }));
+
+    try {
+      const response = await fetch('/api/friends/response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          friendRequestId: userData.pendingFriendRequestId,
+          action: 'reject'
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Keep the null state (already set optimistically)
+        window.dispatchEvent(new Event('notification-updated'));
+      } else {
+        console.error('Failed to decline friend request:', data.message);
+        setUserData(prev => ({ ...prev, friendStatus: 'received_request' }));
+        alert('Failed to decline friend request. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error declining friend request:', error);
+      setUserData(prev => ({ ...prev, friendStatus: 'received_request' }));
+      alert('Network error. Please check your connection and try again.');
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
   const handleUnfriend = () => {
     setShowUnfriendModal(true);
     setShowFriendDropdown(false); // Close dropdown
@@ -379,6 +453,27 @@ function PublicProfilePage() {
                        <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                        <span className="whitespace-nowrap">Request Sent</span>
                      </button>
+                   ) : userData.friendStatus === 'received_request' ? (
+                     <div className="flex items-center gap-2">
+                       <button
+                         onClick={handleAcceptFriendRequest}
+                         disabled={sendingRequest}
+                         className="flex items-center justify-center gap-2 bg-[#4a7c59] text-white px-3 sm:px-4 py-2 rounded-full hover:bg-[#3a6147] transition-colors text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                         title="Accept friend request"
+                       >
+                         <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                         <span className="whitespace-nowrap">Accept</span>
+                       </button>
+                       <button
+                         onClick={handleDeclineFriendRequest}
+                         disabled={sendingRequest}
+                         className="flex items-center justify-center gap-2 bg-white text-[#dc2626] border border-[#dc2626] px-3 sm:px-4 py-2 rounded-full hover:bg-[#fef2f2] transition-colors text-xs sm:text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                         title="Decline friend request"
+                       >
+                         <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                         <span className="whitespace-nowrap">Decline</span>
+                       </button>
+                     </div>
                    ) : userData.friendStatus === 'accepted' ? (
                      <div className="flex items-center gap-2">
                        {/* Chat Button - Direct access */}

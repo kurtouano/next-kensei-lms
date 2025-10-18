@@ -3,6 +3,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Bell, UserPlus, Check, X, Users, MoreVertical, Trash2, Trash } from "lucide-react";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 import { NotificationsSkeleton } from "@/components/NotificationsSkeleton";
@@ -18,6 +19,174 @@ function NotificationsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+
+  // Helper function to make names clickable in notification messages
+  const renderMessageWithClickableNames = (message, sender) => {
+    // If we have sender data, use it
+    if (sender && sender._id && sender.name) {
+      // Always use the correct sender's name for display, regardless of what's in the message
+      const correctSenderName = sender.name;
+      
+      // Find any name pattern in the message to replace it with the correct name
+      const nameMatch = message.match(/([A-Za-z\s]+)\s+(sent you|accepted your|declined your)/);
+      
+      if (nameMatch && nameMatch[1]) {
+        const wrongName = nameMatch[1].trim();
+        // Replace the wrong name in the message with the correct sender's name
+        const correctedMessage = message.replace(new RegExp(`\\b${wrongName}\\b`), correctSenderName);
+        
+        // Now make the correct name clickable
+        const nameRegex = new RegExp(`\\b${correctSenderName}\\b`, 'g');
+        const parts = correctedMessage.split(nameRegex);
+        
+        if (parts.length > 1) {
+          const result = [];
+          let lastIndex = 0;
+          let match;
+          
+          while ((match = nameRegex.exec(correctedMessage)) !== null) {
+            // Add text before the name
+            if (match.index > lastIndex) {
+              result.push(correctedMessage.slice(lastIndex, match.index));
+            }
+            
+            // Add clickable name with correct sender's name
+            result.push(
+              <Link 
+                key={match.index}
+                href={`/users/${sender._id}`}
+                className="text-[#4a7c59] hover:text-[#3a6147] hover:underline font-medium cursor-pointer"
+              >
+                {correctSenderName} {/* Always display the correct sender's name */}
+              </Link>
+            );
+            
+            lastIndex = match.index + match[0].length;
+          }
+          
+          // Add remaining text after the last name
+          if (lastIndex < correctedMessage.length) {
+            result.push(correctedMessage.slice(lastIndex));
+          }
+          
+          return result;
+        }
+      }
+      
+      // Fallback: try to find the sender's name in the original message
+      const nameRegex = new RegExp(`\\b${correctSenderName}\\b`, 'g');
+      const parts = message.split(nameRegex);
+      
+      if (parts.length > 1) {
+        const result = [];
+        let lastIndex = 0;
+        let match;
+        
+        while ((match = nameRegex.exec(message)) !== null) {
+          // Add text before the name
+          if (match.index > lastIndex) {
+            result.push(message.slice(lastIndex, match.index));
+          }
+          
+          // Add clickable name
+          result.push(
+            <Link 
+              key={match.index}
+              href={`/users/${sender._id}`}
+              className="text-[#4a7c59] hover:text-[#3a6147] hover:underline font-medium cursor-pointer"
+            >
+              {correctSenderName}
+            </Link>
+          );
+          
+          lastIndex = match.index + match[0].length;
+        }
+        
+        // Add remaining text after the last name
+        if (lastIndex < message.length) {
+          result.push(message.slice(lastIndex));
+        }
+        
+        return result;
+      }
+    }
+    
+    // Fallback: Try to extract name from message for older notifications
+    // Look for patterns like "Kurt Ouano sent you a friend request"
+    const nameMatch = message.match(/(\w+\s+\w+)\s+(sent you|accepted your|declined your)/);
+    if (nameMatch && nameMatch[1]) {
+      const extractedName = nameMatch[1];
+      const nameRegex = new RegExp(`\\b${extractedName}\\b`, 'g');
+      const parts = message.split(nameRegex);
+      
+      if (parts.length > 1) {
+        const result = [];
+        let lastIndex = 0;
+        let match;
+        
+        while ((match = nameRegex.exec(message)) !== null) {
+          // Add text before the name
+          if (match.index > lastIndex) {
+            result.push(message.slice(lastIndex, match.index));
+          }
+          
+          // Add clickable name - try to find user by name
+          result.push(
+            <span 
+              key={match.index}
+              className="text-[#4a7c59] font-medium cursor-pointer hover:text-[#3a6147] hover:underline"
+              onClick={() => handleNameClick(extractedName)}
+              title="Click to search for user"
+            >
+              {extractedName}
+            </span>
+          );
+          
+          lastIndex = match.index + match[0].length;
+        }
+        
+        // Add remaining text after the last name
+        if (lastIndex < message.length) {
+          result.push(message.slice(lastIndex));
+        }
+        
+        return result;
+      }
+    }
+    
+    return message;
+  };
+
+  // Handle clicking on names from old notifications
+  const handleNameClick = async (name) => {
+    try {
+      // Search for user by name using the existing API
+      const response = await fetch(`/api/users?search=${encodeURIComponent(name)}&limit=1`);
+      const data = await response.json();
+      
+      if (data.success && data.users && data.users.length > 0) {
+        const user = data.users[0];
+        
+        // Try different possible ID field names
+        const userId = user._id || user.id || user.userId;
+        
+        if (userId) {
+          // Navigate to the first matching user's profile
+          router.push(`/users/${userId}`);
+        } else {
+          router.push(`/users?search=${encodeURIComponent(name)}`);
+        }
+      } else {
+        // If no user found, navigate to users page with search
+        router.push(`/users?search=${encodeURIComponent(name)}`);
+      }
+    } catch (error) {
+      console.error('Error searching for user:', error);
+      // Fallback to users page
+      router.push('/users');
+    }
+  };
+
   const [cleanupLoading, setCleanupLoading] = useState(false);
   const [cleanupMessage, setCleanupMessage] = useState('');
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -135,6 +304,10 @@ function NotificationsPage() {
   };
 
   const handleFriendResponse = async (friendRequestId, action, notificationId) => {
+    // Store the original sender data before optimistic update
+    const originalNotification = notifications.find(n => n._id === notificationId);
+    const originalSender = originalNotification?.sender;
+    
     // Optimistic update - immediately update the UI
     setNotifications(prevNotifications => 
       prevNotifications.map(notification => 
@@ -144,9 +317,11 @@ function NotificationsPage() {
               type: action === 'accept' ? 'friend_accepted' : 'friend_rejected',
               title: action === 'accept' ? 'Friend Request Accepted' : 'Friend Request Declined',
               message: action === 'accept' 
-                ? `You accepted ${notification.sender?.name || 'their'} friend request`
-                : `You declined ${notification.sender?.name || 'their'} friend request`,
-              read: true
+                ? `You accepted ${originalSender?.name || 'their'} friend request`
+                : `You declined ${originalSender?.name || 'their'} friend request`,
+              read: true,
+              // Preserve the original sender data
+              sender: originalSender
             }
           : notification
       )
@@ -458,7 +633,7 @@ function NotificationsPage() {
                            {notification.title}
                          </h3>
                          <p className="text-[#5c6d5e] text-xs sm:text-sm mb-2">
-                           {notification.message}
+                           {renderMessageWithClickableNames(notification.message, notification.sender)}
                          </p>
                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
                            <span className="text-[#5c6d5e]">{formatTimeAgo(notification.createdAt)}</span>

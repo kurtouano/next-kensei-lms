@@ -80,6 +80,25 @@ export async function GET(req, { params }) {
             ]
         });
 
+        // Determine the relationship status from current user's perspective
+        let relationshipStatus = null;
+        let pendingFriendRequestId = null;
+        
+        if (friendStatus) {
+            if (friendStatus.status === 'accepted') {
+                relationshipStatus = 'accepted';
+            } else if (friendStatus.status === 'pending') {
+                if (friendStatus.requester.toString() === session.user.id) {
+                    // Current user sent the request
+                    relationshipStatus = 'pending';
+                } else {
+                    // Other user sent the request to current user
+                    relationshipStatus = 'received_request';
+                    pendingFriendRequestId = friendStatus._id.toString();
+                }
+            }
+        }
+
         // Prepare public profile response (no sensitive data)
         const publicUserData = {
             id: user._id.toString(), // Convert ObjectId to string
@@ -122,7 +141,8 @@ export async function GET(req, { params }) {
                 }
             },
             socialLinks: user.socialLinks || [],
-            friendStatus: friendStatus ? friendStatus.status : null
+            friendStatus: relationshipStatus,
+            pendingFriendRequestId: pendingFriendRequestId
         };
 
         return NextResponse.json({
