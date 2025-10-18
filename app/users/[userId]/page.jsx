@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BonsaiIcon } from "@/components/bonsai-icon";
@@ -32,6 +32,8 @@ function PublicProfilePage() {
   const [sendingRequest, setSendingRequest] = useState(false);
   const [showFriendDropdown, setShowFriendDropdown] = useState(false);
   const [showUnfriendModal, setShowUnfriendModal] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -61,21 +63,72 @@ function PublicProfilePage() {
     };
   }, [showFriendDropdown]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const fetchUserProfile = async (userId) => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // Reset retry count for new fetch attempts
+      setRetryCount(0);
+      
       const response = await fetch(`/api/users/${userId}`);
+      
+      // Handle HTTP errors (like 500 from database connection issues)
+      if (!response.ok) {
+        if (response.status === 500) {
+          throw new Error("Database connection failed. Please wait while we reconnect...")
+        } else if (response.status === 401) {
+          throw new Error("Authentication failed. Please log in again.")
+        } else if (response.status === 404) {
+          throw new Error("User not found.")
+        } else {
+          throw new Error(`Server error (${response.status}). Please try again.`)
+        }
+      }
+      
       const data = await response.json();
 
       if (data.success) {
+        // Reset retry count on successful fetch
+        setRetryCount(0);
+        
         setUserData(data.user);
         setCertificates(data.certificates || []);
       } else {
         setError(data.message || "Failed to fetch user profile");
       }
     } catch (err) {
-      setError("Failed to fetch user profile");
-      console.error("Profile fetch error:", err);
+      console.error('Error fetching user profile:', err);
+      
+      // Auto-retry for database connection failures
+      if (err.message.includes("Database connection failed") && retryCount < 3) {
+        console.log(`Retrying profile fetch (attempt ${retryCount + 1}/3)...`)
+        setRetryCount(prev => prev + 1)
+        
+        // Wait before retrying (exponential backoff)
+        const delay = Math.pow(2, retryCount) * 1000 // 1s, 2s, 4s
+        
+        // Clear any existing timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current)
+        }
+        
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchUserProfile(userId)
+        }, delay)
+        return
+      }
+      
+      setError(err.message || "Failed to fetch user profile");
     } finally {
       setLoading(false);
     }
