@@ -4,7 +4,7 @@ A comprehensive Learning Management System focused on Japanese language learning
 
 ## 🌟 Overview
 
-Jotatsu is a modern LMS platform that combines Japanese language education with gamification through a Bonsai tree progression system. The platform offers interactive courses, real-time chat, certificate systems, and instructor tools.
+Jotatsu is a comprehensive Learning Management System (LMS) designed specifically for Japanese language learning. The platform combines structured educational content with modern gamification elements, creating an engaging and interactive learning experience. It features interactive courses with video lessons, downloadable resources, and quizzes, all enhanced by a unique customizable Bonsai tree progression system that grows with your learning journey. The platform also includes social features like real-time chat, friend systems, and instructor tools for course creation and student management.
 
 **Live Website**: [jotatsu.com](https://jotatsu.com)
 
@@ -41,13 +41,11 @@ Jotatsu is a modern LMS platform that combines Japanese language education with 
 
 For comprehensive documentation, please navigate to the `/docs` folder where you'll find:
 
-- **[Project Overview](./docs/project-overview.md)** - Project details and features
-- **[Stack & Dependencies](./docs/stack-and-dependencies.md)** - Technical stack information
-- **[Environment Setup](./docs/environment-setup.md)** - Local development setup
-- **[Deployment Guide](./docs/deployment-guide.md)** - Production deployment
-- **[Features & Modules](./docs/features-and-modules.md)** - Feature descriptions
-- **[Maintenance Guide](./docs/maintenance-guide.md)** - Maintenance procedures
-- **[Security & Backup](./docs/security-and-backup.md)** - Security measures
+- **[Features & Modules](./docs/features-and-modules.md)** - Detailed feature descriptions and technical implementation
+- **[Stack & Dependencies](./docs/stack-and-dependencies.md)** - Complete technical stack and package information
+- **[Paid Services & Licenses](./docs/paid-services-and-licenses.md)** - Service costs, renewals, and credential management
+- **[Instructor Guide](./docs/instructor-guide.md)** - Course creation and content management guide
+- **[Compression Guidelines](./docs/compression-guidelines.md)** - File size limits and optimization requirements
 
 > **💡 Tip**: For best viewing experience, open these files in GitHub, VS Code, or any Markdown viewer to see proper formatting instead of raw Markdown text.
 
@@ -57,21 +55,25 @@ For comprehensive documentation, please navigate to the `/docs` folder where you
 - **Backend**: Node.js, Next.js API Routes
 - **Database**: MongoDB
 - **Deployment**: Vercel
+- **Domain**: Squarespace
 - **CDN**: Amazon CloudFront
 - **Storage**: Amazon S3
-- **Real-time**: Pusher
-- **Domain**: Squarespace
+- **Authentication**: NextAuth.js
+- **Payment Processing**: Stripe
+- **Email Service**: Resend
+- **Real-time**: Pusher, SSE, Polling
 
 ## 📋 Key Features
 
-- 🎌 Japanese language courses
-- 🌳 Bonsai tree progression system
-- 💬 Real-time chat with friends
-- 🏆 Certificate system
-- 📝 Blog with featured articles
-- 👨‍🏫 Instructor dashboard
-- 🔔 Real-time notifications
-- 👥 Social features and friend system
+- 🎌 **Interactive Japanese Courses** - Video lessons, resources, exercises, and structured content
+- 🌳 **Bonsai Tree Progression** - Visual growth system that reflects learning progress
+- 💬 **Real-time Chat** - Instant messaging with friends and study groups
+- 🏆 **Certificate System** - Automated PDF generation upon course completion
+- 📝 **Blog System** - Featured articles and educational content
+- 👨‍🏫 **Instructor Dashboard** - Course creation and student management tools
+- 🔔 **Real-time Notifications** - Instant updates via Pusher
+- 👥 **Social Features** - Friend system and collaborative learning spaces
+
 
 ## 🔧 Development
 
@@ -95,7 +97,7 @@ npm run lint
 ## 📞 Support
 
 For support and questions:
-- **Email**: [support@jotatsu.com](mailto:support@jotatsu.com)
+- **Email**: [kurt.ouano@gmail.com](mailto:kurt.ouano@gmail.com)
 - **Documentation**: See `/docs` folder for detailed guides
 - **Issues**: Report bugs or feature requests through GitHub issues
 
@@ -105,5 +107,3 @@ This project is proprietary software. All rights reserved.
 
 ---
 
-**Last Updated**: December 2024  
-**Version**: 1.0.0

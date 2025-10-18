@@ -30,7 +30,6 @@
 ### Database
 - **MongoDB Atlas**: Cloud-hosted MongoDB
 - **Mongoose ODM**: Object Document Mapper
-- **Database Models**: User, Course, Chat, Message, Progress, etc.
 
 ### File Storage
 - **Amazon S3**: File storage and management
@@ -52,23 +51,13 @@
 
 ### Email Services
 - **Email Integration**: User notifications and updates
-- **SMTP Configuration**: Email delivery
+- **SMTP Configuration**: Email delivery through Resend
 
 ### Analytics & Monitoring
 - **Performance Monitoring**: Application performance tracking
 - **Error Tracking**: Error logging and monitoring
 
 ## Development Tools
-
-### Build Tools
-- **Webpack**: Module bundler (via Next.js)
-- **Babel**: JavaScript transpiler
-- **PostCSS**: CSS processing
-
-### Code Quality
-- **ESLint**: Code linting and formatting
-- **Prettier**: Code formatting
-- **TypeScript**: Type checking
 
 ### Version Control
 - **Git**: Version control system
@@ -145,38 +134,3 @@
   "uuid": "^9.0.0"
 }
 ```
-
-## Version History
-
-### Current Version: 1.0.0
-- Initial release with core features
-- Japanese language learning platform
-- Bonsai progression system
-- Real-time chat functionality
-- Certificate system
-- Instructor dashboard
-
-### Planned Updates
-- Performance optimizations
-- Additional language support
-- Mobile app development
-- Advanced analytics
-- AI integration
-
-## Performance Considerations
-
-### Optimization Strategies
-- **Code Splitting**: Lazy loading of components
-- **Image Optimization**: Next.js Image component
-- **Caching**: Static and dynamic content caching
-- **CDN**: CloudFront for global content delivery
-
-### Monitoring
-- **Performance Metrics**: Core Web Vitals tracking
-- **Error Tracking**: Real-time error monitoring
-- **User Analytics**: Usage pattern analysis
-
----
-
-**Last Updated**: December 2024  
-**Version**: 1.0.0

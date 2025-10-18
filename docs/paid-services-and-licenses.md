@@ -6,30 +6,37 @@
 - **Provider**: Squarespace
 - **Domain**: jotatsu.com
 - **Renewal**: Annual
-- **Cost**: $20-30/year (estimated)
+- **Cost**: $20/year (estimated)
 - **Status**: Active
+- **Renewal**: July 27, 2026
 
 ### Web Hosting
 - **Provider**: Vercel
-- **Plan**: Pro Plan (recommended for production)
-- **Cost**: $20/month
-- **Features**: 
-  - Unlimited bandwidth
-  - Custom domains
-  - Serverless functions
-  - Automatic deployments
+- **Plan**: Free Plan (currently)
+- **Current Cost**: FREE (Forever if maintained within limits)
+- **Upgrade Cost**: $20/month (Pro Plan)
+- **Limits**: 
+  - 100GB bandwidth/month (exceeding triggers upgrade requirement)
+  - 100GB-hours serverless function execution (shared across all functions)
+  - 6,000 build minutes/month (includes all deployments and previews)
+  - Cold starts (1-3 sec delay on first request)
+  - Limited analytics data retention
 
 ## Database Services
 
 ### MongoDB Atlas
 - **Provider**: MongoDB Atlas
-- **Plan**: M10 or higher (recommended for production)
-- **Cost**: $57/month (M10 cluster)
-- **Features**:
-  - 10GB storage
-  - 2GB RAM
-  - Automated backups
-  - Monitoring and alerts
+- **Plan**: Free Tier (currently) / Flex / Dedicated (M10+ for production)
+- **Current Cost**: FREE (Forever if maintained within limits)
+- **Upgrade Options**:
+  - **Flex Plan**: $0.011/hour (~$8/month) - 5GB storage, shared resources
+  - **Dedicated M10**: $0.08/hour (~$57/month) - 10GB storage, dedicated resources
+- **Current Limits** (Free Tier):
+  - 512MB storage limit (exceeding requires upgrade)
+  - Shared RAM and vCPU (not dedicated)
+  - Up to 100 operations per second
+  - Limited monitoring (basic metrics only)
+  - No advanced security features
 
 ## Cloud Services
 
@@ -37,16 +44,16 @@
 
 #### Amazon S3 (File Storage)
 - **Service**: Amazon S3
-- **Cost**: ~$5-10/month (based on usage)
+- **Plan**: Free Tier (Plan Expiration: May 2026)
+- **Current Cost**: FREE (5GB storage, 20K GET requests, 2K PUT requests)
+- **Upgrade Cost**: $0.025/GB/month + requests (when free tier exceeded)
 - **Usage**: File uploads, images, documents
-- **Features**: 
-  - 99.999999999% durability
-  - Global availability
-  - Versioning support
 
 #### Amazon CloudFront (CDN)
 - **Service**: Amazon CloudFront
-- **Cost**: ~$5-15/month (based on data transfer)
+- **Plan**: Free Tier (forever)
+- **Current Cost**: FREE (50GB data transfer, 2M requests/month)
+- **Upgrade Cost**: $0.085/GB + $0.0075 per 10K requests (when free tier exceeded)
 - **Usage**: Global content delivery
 - **Features**:
   - Global edge locations
@@ -57,13 +64,19 @@
 
 ### Pusher
 - **Provider**: Pusher
-- **Plan**: Standard Plan
-- **Cost**: $49/month
+- **Plan**: Free Plan (currently)
+- **Current Cost**: FREE (Forever if maintained within limits)
+- **Upgrade Cost**: $49/month (Standard Plan)
+- **Current Limits**:
+  - 100 concurrent users limit (exceeding requires upgrade)
+  - 200,000 message limit per day (resets at midnight UTC)
+  - 1 channel limit (single channel for all communications)
+  - No private channels (all channels are public)
+- **Usage**: Real-time notifications for chat, notifications, and users counters in header
 - **Features**:
-  - 200,000 messages/day
-  - 100 concurrent connections
   - Real-time notifications
   - WebSocket support
+  - Used in 3 icons in header (chat, notif, and users) for counters
 
 ## Payment Processing
 
@@ -79,24 +92,15 @@
 ## Email Services
 
 ### Email Provider
-- **Provider**: [To be specified]
-- **Cost**: $10-20/month
+- **Provider**: Resend
+- **Plan**: Free Tier (currently)
+- **Current Cost**: FREE (3,000 transactional emails/month, 1,000 marketing contacts)
+- **Upgrade Cost**: $20/month (Pro Plan - 50,000 emails) / $40/month (Pro Marketing - 5,000 contacts)
 - **Features**:
   - Transactional emails
   - Newsletter sending
   - Email templates
   - Analytics
-
-## Development Tools
-
-### GitHub (Optional)
-- **Provider**: GitHub
-- **Plan**: Team Plan (if needed)
-- **Cost**: $4/user/month
-- **Features**:
-  - Private repositories
-  - Team collaboration
-  - CI/CD integration
 
 ## SSL & Security
 
@@ -108,87 +112,42 @@
 ## Monitoring & Analytics
 
 ### Performance Monitoring
-- **Provider**: Vercel Analytics (included)
-- **Cost**: Free
-- **Features**: Core Web Vitals, performance metrics
+- **Provider**: Vercel Analytics + Google Search Console
+- **Cost**: Free (both services)
+- **Features**: 
+  - Core Web Vitals, performance metrics (Vercel)
+  - Search performance, indexing status (Google Search Console)
+  - SEO insights and recommendations
 
 ### Error Tracking
-- **Provider**: [To be specified]
-- **Cost**: $10-20/month
-- **Features**: Error logging, performance monitoring
+- **Provider**: Vercel Analytics + Google Search Console
+- **Cost**: Free (both services)
+- **Features**: 
+  - Error logging and monitoring (Vercel)
+  - Search console errors (Google)
+  - Real-time error notifications
 
-## Monthly Cost Summary
+## Current vs Future Costs
 
-| Service | Monthly Cost | Annual Cost |
-|---------|-------------|-------------|
-| Vercel Pro | $20 | $240 |
-| MongoDB Atlas M10 | $57 | $684 |
-| Amazon S3 | $8 | $96 |
-| Amazon CloudFront | $10 | $120 |
-| Pusher Standard | $49 | $588 |
-| Email Service | $15 | $180 |
-| **Total** | **$159** | **$1,908** |
+### Current Monthly Costs (Free Tier)
+| Service | Current Cost | Status |
+|---------|-------------|---------|
+| Vercel | FREE | Free forever if within limits |
+| Pusher | FREE | Free forever if within limits |
+| MongoDB Atlas | FREE | Free tier (512MB, shared resources) |
+| Amazon S3 | FREE | Free tier (5GB, 20K GET, 2K PUT) |
+| Amazon CloudFront | FREE | Free tier (50GB, 2M requests) |
+| Resend | FREE | Free tier (3K emails, 1K contacts) |
+| **Current Total** | **FREE** | **Per month** |
 
-## Annual Renewals
-
-### Domain Renewal
-- **Service**: Squarespace Domain
-- **Cost**: $20-30/year
-- **Renewal Date**: [To be specified]
-
-### SSL Certificates
-- **Service**: Vercel (automatic)
-- **Cost**: Free
-- **Renewal**: Automatic
-
-## Login Credentials
-
-**⚠️ IMPORTANT**: Login credentials are delivered separately for security reasons.
-
-### Services Requiring Credentials
-- MongoDB Atlas
-- AWS (S3, CloudFront)
-- Pusher
-- Stripe
-- Domain (Squarespace)
-- Email Service
-- GitHub (if applicable)
-
-### Credential Delivery
-- Credentials will be provided via secure method
-- Each service has separate login credentials
-- Two-factor authentication enabled where possible
-
-## Service Status Monitoring
-
-### Uptime Monitoring
-- **Service**: [To be specified]
-- **Cost**: $10-20/month
-- **Features**: 24/7 uptime monitoring, alerts
-
-### Backup Services
-- **MongoDB**: Automated backups included
-- **S3**: Cross-region replication available
-- **Code**: GitHub repository backup
-
-## Cost Optimization Tips
-
-1. **Monitor Usage**: Regularly check service usage
-2. **Optimize Images**: Compress images before upload
-3. **CDN Optimization**: Use CloudFront efficiently
-4. **Database Optimization**: Monitor MongoDB usage
-5. **Caching**: Implement proper caching strategies
-
-## Emergency Contacts
-
-### Service Support
-- **Vercel**: support@vercel.com
-- **MongoDB**: support@mongodb.com
-- **AWS**: AWS Support Center
-- **Pusher**: support@pusher.com
-- **Stripe**: support@stripe.com
-
----
-
-**Last Updated**: December 2024  
-**Version**: 1.0.0
+### Future Upgrade Costs (When Needed)
+| Service | Upgrade Cost | When to Upgrade |
+|---------|-------------|-----------------|
+| Vercel Pro | $20/month | When free limits exceeded |
+| Pusher Standard | $49/month | When 100 concurrent users exceeded |
+| MongoDB Atlas M10 | $57/month | When free tier limits exceeded |
+| MongoDB Atlas Flex | $8/month | Alternative to M10 for development |
+| Amazon S3 | $0.025/GB | When 5GB free tier exceeded |
+| Amazon CloudFront | $0.085/GB | When 50GB free tier exceeded |
+| Resend Pro | $20/month | When 3K emails exceeded |
+| **Future Total** | **$126/month** | **When scaling needed** |
