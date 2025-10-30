@@ -38,17 +38,17 @@ export default function AboutPage() {
     {
       name: "Kensei Sensei",
       role: "Founder & Lead Instructor",
-      bio: "Former university professor with 8+ years of Japanese language teaching experience.",
+      bio: "A seasoned Japanese language educator with over 8 years of teaching experience; dedicated to making language learning practical, engaging, and culturally immersive.",
     },
     {
       name: "Spencer Chun",
-      role: "Curriculum Director",
-      bio: "Linguistics PhD with expertise in language acquisition and educational technology.",
+      role: "Co-Founder & Content Strategist",
+      bio: "Co-founder passionate about creating impactful learning experiences. Oversees content development and ensures each lesson aligns with effective language learning principles.",
     },
     {
       name: "Kurt Ouano",
       role: "Software Developer",
-      bio: "Full-stack developer passionate about creating innovative learning platforms and seamless user experiences.",
+      bio: "Full-stack developer who designed and built the platform’s architecture. Focused on delivering a seamless, intuitive, and high-performance learning experience for users.",
     },
   ]
 
