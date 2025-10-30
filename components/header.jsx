@@ -361,12 +361,12 @@ export function Header() {
                 Blogs
               </Link>
               <Link 
-                href="/learn-japanese" 
+                href="/about" 
                 className={`text-sm font-medium ${
-                  isActive("/learn-japanese") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                  isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
                 }`}
               >
-                Learn Japanese
+                About
               </Link>
               <Link 
                 href="/about" 
@@ -624,11 +624,11 @@ export function Header() {
                   Blogs
                 </Link>
                 <Link 
-                  href="/learn-japanese" 
-                  className={`block text-sm font-medium ${isActive("/learn-japanese") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                  href="/about" 
+                  className={`block text-sm font-medium ${isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
                   onClick={closeMobileMenu}
                 >
-                  Learn Japanese
+                  About
                 </Link>
                 <Link 
                   href="/about" 
