@@ -13,6 +13,11 @@ Disallow: /profile/
 Disallow: /api/
 Disallow: /auth/
 
+# Explicitly disallow NextAuth internal endpoints
+Disallow: /api/auth/_log
+Disallow: /api/auth/session
+Disallow: /api/auth/*
+
 # Allow important public pages
 Allow: /courses/
 Allow: /blogs/

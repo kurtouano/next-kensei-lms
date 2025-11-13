@@ -110,7 +110,19 @@ export const metadata = {
   other: {
     'google-site-verification': 'your-verification-code-here',
     'msvalidate.01': 'your-bing-verification-code-here',
-  }
+  },
+  icons: {
+    icon: [
+      { url: '/favicon.ico?v=20250115', sizes: 'any' },
+      { url: '/favicon-16x16.png?v=20250115', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png?v=20250115', sizes: '32x32', type: 'image/png' },
+      { url: '/android-chrome-192x192.png?v=20250115', sizes: '192x192', type: 'image/png' },
+      { url: '/android-chrome-512x512.png?v=20250115', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png?v=20250115', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 }
 
 export default async function RootLayout({ children }) {
@@ -122,14 +134,8 @@ export default async function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         
-        {/* Favicon Links - Essential sizes only with cache busting */}
-        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2025" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=2025" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2025" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2025" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png?v=2025" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png?v=2025" />
-        <link rel="manifest" href="/site.webmanifest" />
+        {/* Manifest link - not included in metadata icons, so keep it here */}
+        <link rel="manifest" href="/site.webmanifest?v=20250115" />
         
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="theme-color" content="#4a7c59" />
