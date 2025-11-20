@@ -54,16 +54,6 @@ export const metadata = {
     "Japanese culture",
     "Japanese business",
     "Japanese travel phrases",
-    "Japanese numbers",
-    "Japanese colors",
-    "Japanese family words",
-    "Japanese food vocabulary",
-    "Japanese time expressions",
-    "Japanese particles",
-    "Japanese verb conjugation",
-    "Japanese adjectives",
-    "Japanese honorifics",
-    "Japanese keigo"
   ].join(", "),
   authors: [{ name: "Jotatsu Academy", url: "https://jotatsu.com" }],
   creator: "Jotatsu Academy",
@@ -111,18 +101,7 @@ export const metadata = {
     'google-site-verification': 'your-verification-code-here',
     'msvalidate.01': 'your-bing-verification-code-here',
   },
-  icons: {
-    icon: [
-      { url: '/favicon.ico?v=20250115', sizes: 'any' },
-      { url: '/favicon-16x16.png?v=20250115', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon-32x32.png?v=20250115', sizes: '32x32', type: 'image/png' },
-      { url: '/android-chrome-192x192.png?v=20250115', sizes: '192x192', type: 'image/png' },
-      { url: '/android-chrome-512x512.png?v=20250115', sizes: '512x512', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/apple-touch-icon.png?v=20250115', sizes: '180x180', type: 'image/png' },
-    ],
-  },
+  // Icons are automatically handled by Next.js from app/favicon.ico
 }
 
 export default async function RootLayout({ children }) {
@@ -135,7 +114,7 @@ export default async function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         
         {/* Manifest link - not included in metadata icons, so keep it here */}
-        <link rel="manifest" href="/site.webmanifest?v=20250115" />
+        <link rel="manifest" href="/site.webmanifest" />
         
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="theme-color" content="#4a7c59" />
