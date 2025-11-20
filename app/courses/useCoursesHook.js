@@ -12,6 +12,7 @@ export function useCourses() {
   const [searchQuery, setSearchQuery] = useState("")
   const [priceFilter, setPriceFilter] = useState("all") // "all", "free", "paid"
   const [sortBy, setSortBy] = useState("rating") // "rating", "newest", "popular"
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false) // Track if we've loaded courses at least once
   
   // Use enhanced API hook with retry logic
   const { loading, error, get, clearError, retryCount, isRetrying } = useApiWithRetry({
@@ -59,6 +60,7 @@ export function useCourses() {
       }
       
       setCourses(coursesArray)
+      setHasLoadedOnce(true) // Mark that we've successfully loaded courses
       clearError() // Clear any previous errors
       
     } catch (error) {
@@ -190,7 +192,9 @@ export function useCourses() {
   const handleClearSearch = useCallback(() => {
     setSearchQuery("")
     setCurrentPage(1)
-  }, [])
+    // Cancel any pending debounced search
+    debouncedSearch.cancel()
+  }, [debouncedSearch])
 
   const handlePriceFilterChange = useCallback((filter) => {
     setPriceFilter(filter)
@@ -235,6 +239,7 @@ export function useCourses() {
     error,
     retryCount,
     isRetrying,
+    hasLoadedOnce, // Track if courses have been loaded at least once
     
     // Category stuff
     selectedCategory,

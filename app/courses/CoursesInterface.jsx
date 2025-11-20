@@ -19,6 +19,7 @@ export default function CoursesInterface() {
     error,
     retryCount,
     isRetrying,
+    hasLoadedOnce,
     selectedCategory,
     categories,
     courseStats,
@@ -41,6 +42,11 @@ export default function CoursesInterface() {
   const [searchInput, setSearchInput] = useState("")
   const [showFilters, setShowFilters] = useState(false)
   const [activeFiltersCount, setActiveFiltersCount] = useState(0)
+
+  // Sync searchInput with searchQuery from hook (for when search is cleared externally)
+  useEffect(() => {
+    setSearchInput(searchQuery)
+  }, [searchQuery])
 
   // Keep user profile logic as-is
   useEffect(() => {
@@ -105,8 +111,9 @@ export default function CoursesInterface() {
            course.instructorId === session.user.id
   }
 
-  // Show loading skeleton if loading OR if courses is empty and no error (initial load)
-  if (loading || (courses.length === 0 && !error)) {
+  // Show loading skeleton only on initial load (when we're actually loading and haven't loaded before)
+  // Don't show loading when search/filter returns empty results - show empty state instead
+  if (loading && !hasLoadedOnce) {
     return (
       <PageLayout session={session}>
         <LoadingSkeleton isRetrying={isRetrying} retryCount={retryCount} />
@@ -276,8 +283,15 @@ export default function CoursesInterface() {
 
         {/* Results Count */}
         <div className="text-sm text-gray-600 mb-6">
-          Showing {courses.length} of {courseStats.total} courses
-          {searchInput && ` for "${searchInput}"`}
+          {courseStats.filtered === 0 && searchQuery ? (
+            <span>No courses found for "{searchQuery}"</span>
+          ) : (
+            <>
+              Showing {courseStats.showing} of {courseStats.filtered} courses
+              {courseStats.total !== courseStats.filtered && ` (${courseStats.total} total)`}
+              {searchQuery && ` matching "${searchQuery}"`}
+            </>
+          )}
         </div>
       </div>
 
