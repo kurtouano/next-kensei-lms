@@ -64,6 +64,42 @@ export async function GET(request, { params }) {
     
     console.log(`✅ Course found: ${course.title} with ${course.modules?.length || 0} modules`);
 
+    // 🔒 SECURITY: Check if user is enrolled (for unpublished courses)
+    let isEnrolled = false;
+    if (session?.user?.email && !course.isPublished) {
+      try {
+        const user = await User.findOne({ email: session.user.email }).select('enrolledCourses').lean();
+        if (user && user.enrolledCourses) {
+          const courseIdString = course._id.toString();
+          isEnrolled = user.enrolledCourses.some(id => id.toString() === courseIdString);
+        }
+      } catch (error) {
+        console.error('Error checking enrollment:', error);
+      }
+    }
+
+    // 🔒 SECURITY: Block access to unpublished courses unless:
+    // 1. User is the instructor (instructor preview)
+    // 2. User is enrolled in the course
+    // 3. User is admin
+    if (!course.isPublished && !instructorPreview) {
+      const isInstructor = session?.user && (
+        session.user.role === 'admin' ||
+        (session.user.role === 'instructor' && (
+          session.user.id?.toString() === course.instructor?._id?.toString() ||
+          session.user.email === course.instructor?.email
+        ))
+      );
+
+      if (!isInstructor && !isEnrolled) {
+        console.log('❌ Access denied: Course is unpublished and user is not enrolled or instructor');
+        return NextResponse.json({ 
+          success: false,
+          error: "This course is not available" 
+        }, { status: 403 });
+      }
+    }
+
     // 🔒 SECURITY: Verify instructor access if instructor-preview is requested
     let canAccessInstructorView = false;
     

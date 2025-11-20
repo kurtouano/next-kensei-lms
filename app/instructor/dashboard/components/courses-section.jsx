@@ -77,13 +77,13 @@ export function CoursesSection({ courses, formatDate, formatCurrency }) {
                       <div>
                         <span className="text-muted-foreground">Status:</span>
                         <div>
-                          <span className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${
-                            course.status === 'Published' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {course.status}
-                          </span>
+                        <span className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${
+                          course.status === 'Published' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {course.status}
+                        </span>
                         </div>
                       </div>
                     </div>
@@ -162,7 +162,7 @@ export function CoursesSection({ courses, formatDate, formatCurrency }) {
                         <span className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${
                           course.status === 'Published' 
                             ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
                         }`}>
                           {course.status}
                         </span>

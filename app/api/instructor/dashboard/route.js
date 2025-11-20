@@ -85,6 +85,10 @@ export async function GET(req) {
                 total + (module.lessons?.reduce((lessonTotal, lesson) => 
                     lessonTotal + (lesson.videoDuration || 0), 0) || 0), 0) || 0;
 
+            // Determine status: Published or Unpublished
+            // All unpublished courses show as "Unpublished" regardless of whether they were published before
+            let status = course.isPublished ? "Published" : "Unpublished";
+
             return {
                 id: course._id,
                 slug: course.slug,
@@ -96,7 +100,7 @@ export async function GET(req) {
                 revenue: revenue,
                 rating: Number(avgRating.toFixed(1)), 
                 ratingCount: ratingCount,             
-                status: course.isPublished ? "Published" : "Draft",
+                status: status,
                 published: course.createdAt,
                 lastUpdated: course.updatedAt,
                 level: course.level,
@@ -126,7 +130,7 @@ export async function GET(req) {
         const stats = {
             totalCourses: coursesWithStats.length,
             publishedCourses: coursesWithStats.filter(course => course.isPublished).length,
-            draftCourses: coursesWithStats.filter(course => !course.isPublished).length,
+            unpublishedCourses: coursesWithStats.filter(course => !course.isPublished).length,
             totalStudents: coursesWithStats.reduce((sum, course) => sum + course.students, 0),
             totalRevenue: coursesWithStats.reduce((sum, course) => sum + course.revenue, 0),
             averageRating: overallAverageRating,

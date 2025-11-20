@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2, Archive } from "lucide-react"
 import { useParams, useRouter } from "next/navigation"
+import AlertModal from "@/app/chat/components/AlertModal"
 
 export default function CourseEditInterface() {
   const params = useParams()
@@ -14,6 +15,11 @@ export default function CourseEditInterface() {
   const [loadError, setLoadError] = useState(null)
   const [courseData, setCourseData] = useState(null)
   const [modules, setModules] = useState([])
+  const [isUnpublishing, setIsUnpublishing] = useState(false)
+  const [showUnpublishModal, setShowUnpublishModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showErrorModal, setShowErrorModal] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   // Load course data for editing
   useEffect(() => {
@@ -62,6 +68,42 @@ export default function CourseEditInterface() {
     
     // Navigate to the create-course page which will handle editing
     router.push('/instructor/create-course')
+  }
+
+  const handleUnpublishClick = () => {
+    setShowUnpublishModal(true)
+  }
+
+  const handleUnpublishConfirm = async () => {
+    setShowUnpublishModal(false)
+    
+    try {
+      setIsUnpublishing(true)
+      const response = await fetch(`/api/instructor/courses/${courseId}/unpublish`, {
+        method: 'POST'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Update local state
+        setCourseData(prev => ({ ...prev, isPublished: false }))
+        setShowSuccessModal(true)
+        // Redirect to dashboard after a short delay
+        setTimeout(() => {
+          router.push('/instructor/dashboard')
+        }, 2000)
+      } else {
+        setErrorMessage(data.error || 'Failed to unpublish course')
+        setShowErrorModal(true)
+      }
+    } catch (error) {
+      console.error('Error unpublishing course:', error)
+      setErrorMessage('An error occurred while unpublishing the course')
+      setShowErrorModal(true)
+    } finally {
+      setIsUnpublishing(false)
+    }
   }
 
   // Loading state
@@ -180,18 +222,79 @@ export default function CourseEditInterface() {
             )}
           </div>
 
-          {/* Action Button */}
-          <div className="text-center">
-            <Button
-              onClick={handleEditCourse}
-              className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-8 py-3 rounded-lg font-medium"
-              size="lg"
-            >
-              Open Course Editor
-            </Button>
+          {/* Action Buttons */}
+          <div className="text-center space-y-3">
+            <div className="flex gap-3 justify-center">
+              <Button
+                onClick={handleEditCourse}
+                className="bg-[#4a7c59] hover:bg-[#3a6147] text-white px-8 py-3 rounded-lg font-medium"
+                size="lg"
+              >
+                Open Course Editor
+              </Button>
+              <Button
+                onClick={handleUnpublishClick}
+                disabled={isUnpublishing || !courseData?.isPublished}
+                variant="outline"
+                className="border-orange-500 text-orange-600 hover:bg-orange-50 px-8 py-3 rounded-lg font-medium"
+                size="lg"
+              >
+                <Archive className="mr-2 h-4 w-4" />
+                {isUnpublishing ? 'Unpublishing...' : 'Unpublish Course'}
+              </Button>
+            </div>
+            {!courseData?.isPublished && (
+              <p className="text-sm text-gray-500">
+                This course is currently unpublished and hidden from new students.
+              </p>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Unpublish Confirmation Modal */}
+      <AlertModal
+        isOpen={showUnpublishModal}
+        onClose={() => setShowUnpublishModal(false)}
+        title="Unpublish Course"
+        message="Are you sure you want to unpublish this course? It will be hidden from new students, but enrolled students will still have access."
+        type="warning"
+        confirmText="Unpublish"
+        showCancel={true}
+        cancelText="Cancel"
+        onConfirm={handleUnpublishConfirm}
+        onCancel={() => setShowUnpublishModal(false)}
+      />
+
+      {/* Success Modal */}
+      <AlertModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false)
+          router.push('/instructor/dashboard')
+        }}
+        title="Course Unpublished"
+        message="Course has been unpublished successfully! You will be redirected to your dashboard."
+        type="success"
+        confirmText="OK"
+        showCancel={false}
+        onConfirm={() => {
+          setShowSuccessModal(false)
+          router.push('/instructor/dashboard')
+        }}
+      />
+
+      {/* Error Modal */}
+      <AlertModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title="Error"
+        message={errorMessage}
+        type="error"
+        confirmText="OK"
+        showCancel={false}
+        onConfirm={() => setShowErrorModal(false)}
+      />
     </div>
   )
 }
