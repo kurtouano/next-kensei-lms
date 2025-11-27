@@ -64,9 +64,9 @@ export default function Home() {
     },
     {
       id: 2,
-      title: "Explore Our Free Courses",
-      description: "Start learning Japanese with free courses that include certificates",
-      buttonText: "View Free Courses",
+      title: "Explore Our Featured Courses",
+      description: "Discover our most popular courses, handpicked for learners at every level",
+      buttonText: "View Featured Courses",
       buttonLink: "#featured-courses",
       scrollTo: true,
       image: "/banner2.png",
@@ -147,7 +147,7 @@ export default function Home() {
         </section>
 
         {/* Featured Courses */}
-        <section id="featured-courses" className="py-16">
+        <section id="featured-courses" className="py-16 bg-green-900/5">
           <div className="container mx-auto px-4">
             <div className="mb-10 text-center">
               <h2 className="mb-3 text-3xl font-bold text-[#2c3e2d]">Featured Courses</h2>
@@ -438,12 +438,11 @@ function FeaturedCoursesError({ error }) {
 // Empty state component
 function EmptyFeaturedCourses() {
   return (
-    <div className="text-center py-12">
-      <BookOpen className="mx-auto mb-4 h-12 w-12 text-[#5c6d5e]" />
-      <h3 className="text-lg font-medium text-[#2c3e2d] mb-2">No featured courses available</h3>
-      <p className="text-[#5c6d5e] mb-4">
-        Featured courses will appear here once they are published and have student enrollments.
-      </p>
+    <div className="flex flex-col items-center justify-center py-16">
+      <div className="rounded-full p-4 bg-white border border-[#4a7c59] mb-4">
+        <BookOpen className="h-12 w-12 text-[#5c6d5e]" strokeWidth={1.5} />
+      </div>
+      <h3 className="text-base font-normal text-[#5c6d5e]">No featured courses available</h3>
     </div>
   )
 }
