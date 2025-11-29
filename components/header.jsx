@@ -1,17 +1,17 @@
 // components/header.jsx - Updated with Friends Button
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState, useEffect } from "react"
-import { Menu, X, User, Users, Bell, MessageCircleMore } from "lucide-react"
-import { JotatsuLogoFull } from "@/components/jotatsu-logo-full"
-import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG"
-import { useSession } from "next-auth/react"
-import { useRoleAccess, RoleGuard } from "@/hooks/useRoleAccess"
-import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications"
-import { useOnlineFriendsCount } from "@/hooks/useOnlineFriendsCount"
-import { useChatCount } from "@/hooks/useChatCount"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Menu, X, User, Users, Bell, MessageCircleMore } from "lucide-react";
+import { JotatsuLogoFull } from "@/components/jotatsu-logo-full";
+import { BonsaiSVG } from "@/app/bonsai/components/BonsaiSVG";
+import { useSession } from "next-auth/react";
+import { useRoleAccess, RoleGuard } from "@/hooks/useRoleAccess";
+import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
+import { useOnlineFriendsCount } from "@/hooks/useOnlineFriendsCount";
+import { useChatCount } from "@/hooks/useChatCount";
 
 // Cache for user icon and bonsai data to persist across navigation
 let cachedUserIcon = null;
@@ -24,15 +24,30 @@ function HeaderSkeleton() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo - Static, no skeleton needed */}
         <div className="flex items-center gap-2">
-          <JotatsuLogoFull className="h-8 w-28 text-[#4a7c59]" alt="Jotatsu Logo"/>
+          <JotatsuLogoFull
+            className="h-8 w-28 text-[#4a7c59]"
+            alt="Jotatsu Logo"
+          />
         </div>
- 
+
         {/* Desktop Navigation Skeleton - Match exact spacing */}
         <nav className="hidden items-center gap-6 lg:flex">
-          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" style={{ animationDelay: '0ms' }}></div>
-          <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" style={{ animationDelay: '100ms' }}></div>
-          <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" style={{ animationDelay: '200ms' }}></div>
-          <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" style={{ animationDelay: '300ms' }}></div>
+          <div
+            className="h-4 w-24 bg-gray-200 rounded animate-pulse"
+            style={{ animationDelay: "0ms" }}
+          ></div>
+          <div
+            className="h-4 w-16 bg-gray-200 rounded animate-pulse"
+            style={{ animationDelay: "100ms" }}
+          ></div>
+          <div
+            className="h-4 w-12 bg-gray-200 rounded animate-pulse"
+            style={{ animationDelay: "200ms" }}
+          ></div>
+          <div
+            className="h-4 w-20 bg-gray-200 rounded animate-pulse"
+            style={{ animationDelay: "300ms" }}
+          ></div>
         </nav>
 
         {/* Auth Buttons - All static icons */}
@@ -91,15 +106,16 @@ export function Header() {
     canAccessInstructor,
     canAccessAdmin,
     getDashboardRoute,
-    isLoading: sessionLoading
+    isLoading: sessionLoading,
   } = useRoleAccess();
-  
+
   // Use real-time notifications hook
-  const { notificationCount, loading: notificationLoading } = useRealTimeNotifications();
-  
+  const { notificationCount, loading: notificationLoading } =
+    useRealTimeNotifications();
+
   // Use online friends count hook
   const { onlineCount, loading: onlineCountLoading } = useOnlineFriendsCount();
-  
+
   // Use chat count hook
   const { unreadCount, loading: chatCountLoading } = useChatCount();
 
@@ -115,7 +131,7 @@ export function Header() {
         if (!cachedUserIcon) {
           setIconLoading(true);
         }
-        
+
         try {
           const response = await fetch("/api/profile");
           const data = await response.json();
@@ -158,12 +174,12 @@ export function Header() {
       fetchUserData();
     };
 
-    window.addEventListener('profile-updated', handleProfileUpdate);
-    window.addEventListener('bonsai-updated', handleBonsaiUpdate);
+    window.addEventListener("profile-updated", handleProfileUpdate);
+    window.addEventListener("bonsai-updated", handleBonsaiUpdate);
 
     return () => {
-      window.removeEventListener('profile-updated', handleProfileUpdate);
-      window.removeEventListener('bonsai-updated', handleBonsaiUpdate);
+      window.removeEventListener("profile-updated", handleProfileUpdate);
+      window.removeEventListener("bonsai-updated", handleBonsaiUpdate);
     };
   }, [status]);
 
@@ -172,7 +188,8 @@ export function Header() {
     return <HeaderSkeleton />;
   }
 
-  const isActive = (path) => pathname === path || pathname.startsWith(path + '/')
+  const isActive = (path) =>
+    pathname === path || pathname.startsWith(path + "/");
 
   // Helper function to close mobile menu when clicking links
   const closeMobileMenu = () => {
@@ -183,34 +200,49 @@ export function Header() {
     if (iconLoading && !userIcon) {
       return <User size={19} className="text-[#4a7c59]" />;
     }
-    
+
     // Debug logging
-    console.log('Header renderUserIcon:', { userIcon, userData: userData?.bonsai });
-    
+    console.log("Header renderUserIcon:", {
+      userIcon,
+      userData: userData?.bonsai,
+    });
+
     if (userIcon) {
-      if (userIcon === 'bonsai') {
+      if (userIcon === "bonsai") {
         return (
           <div className="h-full w-full flex items-center justify-center">
-            <BonsaiSVG 
+            <BonsaiSVG
               level={userData?.bonsai?.level || 1}
-              treeColor={userData?.bonsai?.customization?.foliageColor || '#77DD82'} 
-              potColor={userData?.bonsai?.customization?.potColor || '#FD9475'} 
-              selectedEyes={userData?.bonsai?.customization?.eyes || 'default_eyes'}
-              selectedMouth={userData?.bonsai?.customization?.mouth || 'default_mouth'}
-              selectedPotStyle={userData?.bonsai?.customization?.potStyle || 'default_pot'}
-              selectedGroundStyle={userData?.bonsai?.customization?.groundStyle || 'default_ground'}
+              treeColor={
+                userData?.bonsai?.customization?.foliageColor || "#77DD82"
+              }
+              potColor={userData?.bonsai?.customization?.potColor || "#FD9475"}
+              selectedEyes={
+                userData?.bonsai?.customization?.eyes || "default_eyes"
+              }
+              selectedMouth={
+                userData?.bonsai?.customization?.mouth || "default_mouth"
+              }
+              selectedPotStyle={
+                userData?.bonsai?.customization?.potStyle || "default_pot"
+              }
+              selectedGroundStyle={
+                userData?.bonsai?.customization?.groundStyle || "default_ground"
+              }
               selectedHat={userData?.bonsai?.customization?.hat || null}
-              selectedBackground={userData?.bonsai?.customization?.background || null}
+              selectedBackground={
+                userData?.bonsai?.customization?.background || null
+              }
               zoomed={true}
               profileIcon={true}
             />
           </div>
         );
-      } else if (userIcon.startsWith('http')) {
+      } else if (userIcon.startsWith("http")) {
         return (
-          <img 
-            src={userIcon} 
-            alt="Profile" 
+          <img
+            src={userIcon}
+            alt="Profile"
             className="h-full w-full object-cover"
           />
         );
@@ -218,7 +250,7 @@ export function Header() {
         return <span className="text-lg">{userIcon}</span>;
       }
     }
-    
+
     return <User size={18} className="text-[#4a7c59]" />;
   };
 
@@ -226,31 +258,43 @@ export function Header() {
     if (iconLoading && !userIcon) {
       return <User size={16} className="text-[#4a7c59]" />;
     }
-    
+
     if (userIcon) {
-      if (userIcon === 'bonsai') {
+      if (userIcon === "bonsai") {
         return (
           <div className="h-full w-full flex items-center justify-center">
-            <BonsaiSVG 
+            <BonsaiSVG
               level={userData?.bonsai?.level || 1}
-              treeColor={userData?.bonsai?.customization?.foliageColor || '#77DD82'} 
-              potColor={userData?.bonsai?.customization?.potColor || '#FD9475'} 
-              selectedEyes={userData?.bonsai?.customization?.eyes || 'default_eyes'}
-              selectedMouth={userData?.bonsai?.customization?.mouth || 'default_mouth'}
-              selectedPotStyle={userData?.bonsai?.customization?.potStyle || 'default_pot'}
-              selectedGroundStyle={userData?.bonsai?.customization?.groundStyle || 'default_ground'}
+              treeColor={
+                userData?.bonsai?.customization?.foliageColor || "#77DD82"
+              }
+              potColor={userData?.bonsai?.customization?.potColor || "#FD9475"}
+              selectedEyes={
+                userData?.bonsai?.customization?.eyes || "default_eyes"
+              }
+              selectedMouth={
+                userData?.bonsai?.customization?.mouth || "default_mouth"
+              }
+              selectedPotStyle={
+                userData?.bonsai?.customization?.potStyle || "default_pot"
+              }
+              selectedGroundStyle={
+                userData?.bonsai?.customization?.groundStyle || "default_ground"
+              }
               selectedHat={userData?.bonsai?.customization?.hat || null}
-              selectedBackground={userData?.bonsai?.customization?.background || null}
+              selectedBackground={
+                userData?.bonsai?.customization?.background || null
+              }
               zoomed={true}
               profileIcon={true}
             />
           </div>
         );
-      } else if (userIcon.startsWith('http')) {
+      } else if (userIcon.startsWith("http")) {
         return (
-          <img 
-            src={userIcon} 
-            alt="Profile" 
+          <img
+            src={userIcon}
+            alt="Profile"
             className="h-full w-full object-cover"
           />
         );
@@ -258,7 +302,7 @@ export function Header() {
         return <span className="text-sm">{userIcon}</span>;
       }
     }
-    
+
     return <User size={16} className="text-[#4a7c59]" />;
   };
 
@@ -266,56 +310,69 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-[#dce4d7] bg-white/90 backdrop-blur-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <JotatsuLogoFull className="h-8 w-28 text-[#4a7c59]" alt="Jotatsu Logo"/>
+          <JotatsuLogoFull
+            className="h-8 w-28 text-[#4a7c59]"
+            alt="Jotatsu Logo"
+          />
         </Link>
- 
+
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-6 lg:flex">
           {isAuthenticated ? (
             <>
               {/* Student/Common routes */}
-              <Link 
-                href="/my-learning" 
+              <Link
+                href="/my-learning"
                 className={`text-sm font-medium ${
-                  isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                  isActive("/my-learning")
+                    ? "text-[#4a7c59]"
+                    : "text-[#2c3e2d] hover:text-[#4a7c59]"
                 }`}
               >
                 My Learning
               </Link>
-              
-              <Link 
-                href="/courses" 
+
+              <Link
+                href="/courses"
                 className={`text-sm font-medium ${
-                  isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                  isActive("/courses")
+                    ? "text-[#4a7c59]"
+                    : "text-[#2c3e2d] hover:text-[#4a7c59]"
                 }`}
               >
                 Courses
               </Link>
-              
-              <Link 
-                href="/blogs" 
+
+              <Link
+                href="/blogs"
                 className={`text-sm font-medium ${
-                  isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                  isActive("/blogs")
+                    ? "text-[#4a7c59]"
+                    : "text-[#2c3e2d] hover:text-[#4a7c59]"
                 }`}
               >
                 Blogs
               </Link>
-              
-              <Link 
-                href="/bonsai" 
+
+              <Link
+                href="/bonsai"
                 className={`text-sm font-medium ${
-                  isActive("/bonsai") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                  isActive("/bonsai")
+                    ? "text-[#4a7c59]"
+                    : "text-[#2c3e2d] hover:text-[#4a7c59]"
                 }`}
               >
                 My Bonsai
               </Link>
 
               {/* Instructor routes */}
-              <RoleGuard allowedRoles={['instructor', 'admin']}>
-                <Link 
-                  href="/instructor/dashboard" 
+              <RoleGuard allowedRoles={["instructor", "admin"]}>
+                <Link
+                  href="/instructor/dashboard"
                   className={`text-sm font-medium ${
-                    isActive("/instructor") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                    isActive("/instructor")
+                      ? "text-[#4a7c59]"
+                      : "text-[#2c3e2d] hover:text-[#4a7c59]"
                   }`}
                 >
                   Instructor
@@ -323,11 +380,13 @@ export function Header() {
               </RoleGuard>
 
               {/* Admin routes */}
-              <RoleGuard allowedRoles={['admin']}>
-                <Link 
-                  href="/admin/blogs" 
+              <RoleGuard allowedRoles={["admin"]}>
+                <Link
+                  href="/admin/blogs"
                   className={`text-sm font-medium ${
-                    isActive("/admin") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                    isActive("/admin")
+                      ? "text-[#4a7c59]"
+                      : "text-[#2c3e2d] hover:text-[#4a7c59]"
                   }`}
                 >
                   Admin
@@ -336,42 +395,42 @@ export function Header() {
             </>
           ) : (
             <>
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className={`text-sm font-medium ${
-                  isActive("/") && pathname === "/" ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                  isActive("/") && pathname === "/"
+                    ? "text-[#4a7c59]"
+                    : "text-[#2c3e2d] hover:text-[#4a7c59]"
                 }`}
               >
                 Home
               </Link>
-              <Link 
-                href="/courses" 
+              <Link
+                href="/courses"
                 className={`text-sm font-medium ${
-                  isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                  isActive("/courses")
+                    ? "text-[#4a7c59]"
+                    : "text-[#2c3e2d] hover:text-[#4a7c59]"
                 }`}
               >
                 Courses
               </Link>
-              <Link 
-                href="/blogs" 
+              <Link
+                href="/blogs"
                 className={`text-sm font-medium ${
-                  isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                  isActive("/blogs")
+                    ? "text-[#4a7c59]"
+                    : "text-[#2c3e2d] hover:text-[#4a7c59]"
                 }`}
               >
                 Blogs
               </Link>
-              <Link 
-                href="/about" 
+              <Link
+                href="/about"
                 className={`text-sm font-medium ${
-                  isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
-                }`}
-              >
-                About
-              </Link>
-              <Link 
-                href="/about" 
-                className={`text-sm font-medium ${
-                  isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d] hover:text-[#4a7c59]"
+                  isActive("/about")
+                    ? "text-[#4a7c59]"
+                    : "text-[#2c3e2d] hover:text-[#4a7c59]"
                 }`}
               >
                 About
@@ -385,8 +444,8 @@ export function Header() {
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               {/* Friends/Users Button */}
-              <Link 
-                href="/users" 
+              <Link
+                href="/users"
                 className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                 title="Find Friends"
               >
@@ -394,14 +453,14 @@ export function Header() {
                 {/* Online Friends Badge */}
                 {onlineCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {onlineCount > 9 ? '9+' : onlineCount}
+                    {onlineCount > 9 ? "9+" : onlineCount}
                   </span>
                 )}
               </Link>
-              
+
               {/* Chat Button */}
-              <Link 
-                href="/chat" 
+              <Link
+                href="/chat"
                 className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                 title="Chat"
               >
@@ -409,14 +468,14 @@ export function Header() {
                 {/* Unread Messages Badge */}
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
               </Link>
-              
+
               {/* Notifications Button */}
-              <Link 
-                href="/notifications" 
+              <Link
+                href="/notifications"
                 className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                 title="Notifications"
               >
@@ -424,22 +483,35 @@ export function Header() {
                 {/* Notification Badge */}
                 {notificationCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {notificationCount > 9 ? '9+' : notificationCount}
+                    {notificationCount > 9 ? "9+" : notificationCount}
                   </span>
                 )}
               </Link>
-              
+
               {/* Profile Button */}
-              <Link href="/profile" className="flex flex-row items-center gap-2">
+              <Link
+                href="/profile"
+                className="flex flex-row items-center gap-2"
+              >
                 <div className="h-8 w-8 rounded-full flex items-center justify-center overflow-hidden hover:bg-[#eef2eb] transition-colors">
                   {renderUserIcon()}
-                </div>  
+                </div>
               </Link>
             </div>
           ) : (
             <>
-              <Link href="/auth/login" className="rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb]">Log In</Link>
-              <Link href="/auth/signup" className="rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]">Get Started</Link>
+              <Link
+                href="/auth/login"
+                className="rounded-md border border-[#4a7c59] bg-white px-4 py-2 text-sm font-medium text-[#4a7c59] transition-colors hover:bg-[#eef2eb]"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="rounded-md bg-[#4a7c59] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]"
+              >
+                Get Started
+              </Link>
             </>
           )}
         </div>
@@ -451,8 +523,8 @@ export function Header() {
               {/* Mobile Social Buttons - Only show when authenticated */}
               <div className="flex items-center gap-1">
                 {/* Friends/Users Button */}
-                <Link 
-                  href="/users" 
+                <Link
+                  href="/users"
                   className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                   title="Find Friends"
                 >
@@ -460,14 +532,14 @@ export function Header() {
                   {/* Online Friends Badge */}
                   {onlineCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {onlineCount > 9 ? '9+' : onlineCount}
+                      {onlineCount > 9 ? "9+" : onlineCount}
                     </span>
                   )}
                 </Link>
-                
+
                 {/* Chat Button */}
-                <Link 
-                  href="/chat" 
+                <Link
+                  href="/chat"
                   className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                   title="Chat"
                 >
@@ -475,14 +547,14 @@ export function Header() {
                   {/* Unread Messages Badge */}
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                      {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
                 </Link>
-                
+
                 {/* Notifications Button */}
-                <Link 
-                  href="/notifications" 
+                <Link
+                  href="/notifications"
                   className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[#eef2eb] transition-colors relative"
                   title="Notifications"
                 >
@@ -490,7 +562,7 @@ export function Header() {
                   {/* Notification Badge */}
                   {notificationCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {notificationCount > 9 ? '9+' : notificationCount}
+                      {notificationCount > 9 ? "9+" : notificationCount}
                     </span>
                   )}
                 </Link>
@@ -502,18 +574,22 @@ export function Header() {
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
                 <span className="sr-only">Open main menu</span>
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {isMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
               </button>
             </>
           ) : (
             <>
               {/* Get Started Button for non-authenticated users */}
-                <Link 
-                  href="/auth/signup" 
-                  className="rounded-md bg-[#4a7c59] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]"
-                >
-                  Get Started
-                </Link>
+              <Link
+                href="/auth/signup"
+                className="rounded-md bg-[#4a7c59] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3a6147]"
+              >
+                Get Started
+              </Link>
 
               {/* Mobile Menu Button */}
               <button
@@ -521,7 +597,11 @@ export function Header() {
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
                 <span className="sr-only">Open main menu</span>
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {isMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
               </button>
             </>
           )}
@@ -537,8 +617,8 @@ export function Header() {
               <>
                 {/* Mobile Profile Link - Back in dropdown */}
                 <div>
-                  <Link 
-                    href="/profile" 
+                  <Link
+                    href="/profile"
                     className="flex items-center justify-end"
                     onClick={closeMobileMenu}
                   >
@@ -547,41 +627,55 @@ export function Header() {
                     </div>
                   </Link>
                 </div>
-                
-                <Link 
-                  href="/my-learning" 
-                  className={`block text-sm font-medium ${isActive("/my-learning") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+
+                <Link
+                  href="/my-learning"
+                  className={`block text-sm font-medium ${
+                    isActive("/my-learning")
+                      ? "text-[#4a7c59]"
+                      : "text-[#2c3e2d]"
+                  }`}
                   onClick={closeMobileMenu}
                 >
                   My Learning
                 </Link>
-                <Link 
-                  href="/courses" 
-                  className={`block text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                <Link
+                  href="/courses"
+                  className={`block text-sm font-medium ${
+                    isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"
+                  }`}
                   onClick={closeMobileMenu}
                 >
                   Courses
                 </Link>
-                <Link 
-                  href="/blogs" 
-                  className={`block text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                <Link
+                  href="/blogs"
+                  className={`block text-sm font-medium ${
+                    isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"
+                  }`}
                   onClick={closeMobileMenu}
                 >
                   Blogs
                 </Link>
-                <Link 
-                  href="/bonsai" 
-                  className={`block text-sm font-medium ${isActive("/bonsai") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                <Link
+                  href="/bonsai"
+                  className={`block text-sm font-medium ${
+                    isActive("/bonsai") ? "text-[#4a7c59]" : "text-[#2c3e2d]"
+                  }`}
                   onClick={closeMobileMenu}
                 >
                   My Bonsai
                 </Link>
-                
+
                 {/* Mobile Instructor routes */}
-                <RoleGuard allowedRoles={['instructor', 'admin']}>
-                  <Link 
-                    href="/instructor/dashboard" 
-                    className={`block text-sm font-medium ${isActive("/instructor") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                <RoleGuard allowedRoles={["instructor", "admin"]}>
+                  <Link
+                    href="/instructor/dashboard"
+                    className={`block text-sm font-medium ${
+                      isActive("/instructor")
+                        ? "text-[#4a7c59]"
+                        : "text-[#2c3e2d]"
+                    }`}
                     onClick={closeMobileMenu}
                   >
                     Instructor
@@ -589,50 +683,54 @@ export function Header() {
                 </RoleGuard>
 
                 {/* Mobile Admin routes */}
-                <RoleGuard allowedRoles={['admin']}>
-                  <Link 
-                    href="/admin/blogs" 
-                    className={`block text-sm font-medium ${isActive("/admin") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                <RoleGuard allowedRoles={["admin"]}>
+                  <Link
+                    href="/admin/blogs"
+                    className={`block text-sm font-medium ${
+                      isActive("/admin") ? "text-[#4a7c59]" : "text-[#2c3e2d]"
+                    }`}
                     onClick={closeMobileMenu}
                   >
                     Admin
                   </Link>
                 </RoleGuard>
-                
               </>
             ) : (
               <>
-                <Link 
-                  href="/" 
-                  className={`block text-sm font-medium ${isActive("/") && pathname === "/" ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                <Link
+                  href="/"
+                  className={`block text-sm font-medium ${
+                    isActive("/") && pathname === "/"
+                      ? "text-[#4a7c59]"
+                      : "text-[#2c3e2d]"
+                  }`}
                   onClick={closeMobileMenu}
                 >
                   Home
                 </Link>
-                <Link 
-                  href="/courses" 
-                  className={`block text-sm font-medium ${isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                <Link
+                  href="/courses"
+                  className={`block text-sm font-medium ${
+                    isActive("/courses") ? "text-[#4a7c59]" : "text-[#2c3e2d]"
+                  }`}
                   onClick={closeMobileMenu}
                 >
                   Courses
                 </Link>
-                <Link 
-                  href="/blogs" 
-                  className={`block text-sm font-medium ${isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                <Link
+                  href="/blogs"
+                  className={`block text-sm font-medium ${
+                    isActive("/blogs") ? "text-[#4a7c59]" : "text-[#2c3e2d]"
+                  }`}
                   onClick={closeMobileMenu}
                 >
                   Blogs
                 </Link>
-                <Link 
-                  href="/about" 
-                  className={`block text-sm font-medium ${isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
-                  onClick={closeMobileMenu}
-                >
-                  About
-                </Link>
-                <Link 
-                  href="/about" 
-                  className={`block text-sm font-medium ${isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d]"}`}
+                <Link
+                  href="/about"
+                  className={`block text-sm font-medium ${
+                    isActive("/about") ? "text-[#4a7c59]" : "text-[#2c3e2d]"
+                  }`}
                   onClick={closeMobileMenu}
                 >
                   About
@@ -643,5 +741,5 @@ export function Header() {
         </div>
       )}
     </header>
-  )
+  );
 }

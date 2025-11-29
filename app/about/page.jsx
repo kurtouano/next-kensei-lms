@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Users, BookOpen, MessageSquare, Heart } from "lucide-react"
-import { Footer } from "@/components/footer"
+import Link from "next/link";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Users, BookOpen, MessageSquare, Heart } from "lucide-react";
+import { Footer } from "@/components/footer";
 
 export default function AboutPage() {
-
   const values = [
     {
       icon: BookOpen,
@@ -32,7 +32,7 @@ export default function AboutPage() {
       description:
         "Learning Japanese is a journey of personal growth. We celebrate each milestone and encourage continuous improvement through our bonsai-inspired approach.",
     },
-  ]
+  ];
 
   const team = [
     {
@@ -50,23 +50,36 @@ export default function AboutPage() {
       role: "Software Developer",
       bio: "Full-stack developer who designed and built the platform’s architecture. Focused on delivering a seamless, intuitive, and high-performance learning experience for users.",
     },
-  ]
+  ];
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f8f7f4]">
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="bg-[#eef2eb] py-16">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="mb-4 text-4xl font-bold text-[#2c3e2d] md:text-5xl">JOTATSU</h1>
+            <div className="mb-8 flex justify-center">
+              <div className="inline-flex items-center justify-center md:w-20 md:h-20 w-16 h-16 bg-white rounded-full border-[#4a7c59]">
+                <Image
+                  src="/jotatsu_logo.png"
+                  alt="Jotatsu Icon"
+                  width={48}
+                  height={48}
+                  className="object-contain md:w-12 md:h-12 w-10 h-10"
+                />
+              </div>
+            </div>
+            <h1 className="mb-4 text-4xl font-bold text-[#2c3e2d] md:text-5xl">
+              JOTATSU
+            </h1>
             <p className="mx-auto mb-4 text-base text-[#4a7c59] font-medium">
               (上達) means "improvement" or "progress" in Japanese
             </p>
             <p className="mx-auto mb-8 max-w-2xl text-lg text-[#5c6d5e]">
-              Jotatsu is dedicated to making Japanese language learning accessible, engaging, and effective. 
-              Our innovative approach combines traditional language instruction with modern technology and gamification 
-              to create a unique learning experience.
+              Jotatsu is dedicated to making Japanese language learning
+              accessible, engaging, and effective. Our innovative approach
+              combines traditional language instruction with modern technology
+              and gamification to create a unique learning experience.
             </p>
             <div className="mx-auto mb-8 h-1 w-16 bg-[#4a7c59]"></div>
           </div>
@@ -75,14 +88,21 @@ export default function AboutPage() {
         {/* Our Philosophy */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <h2 className="mb-12 text-center text-3xl font-bold text-[#2c3e2d]">Our Philosophy</h2>
+            <h2 className="mb-12 text-center text-3xl font-bold text-[#2c3e2d]">
+              Our Philosophy
+            </h2>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
               {values.map((value, index) => (
-                <div key={index} className="rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm">
+                <div
+                  key={index}
+                  className="rounded-lg border border-[#dce4d7] bg-white p-6 shadow-sm"
+                >
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#eef2eb]">
                     <value.icon className="h-6 w-6 text-[#4a7c59]" />
                   </div>
-                  <h3 className="mb-2 text-xl font-semibold text-[#2c3e2d]">{value.title}</h3>
+                  <h3 className="mb-2 text-xl font-semibold text-[#2c3e2d]">
+                    {value.title}
+                  </h3>
                   <p className="text-sm text-[#5c6d5e]">{value.description}</p>
                 </div>
               ))}
@@ -93,18 +113,24 @@ export default function AboutPage() {
         {/* Our Team */}
         <section className="bg-[#eef2eb] py-16">
           <div className="container mx-auto px-4">
-            <h2 className="mb-12 text-center text-3xl font-bold text-[#2c3e2d]">Leadership Team</h2>
+            <h2 className="mb-12 text-center text-3xl font-bold text-[#2c3e2d]">
+              Leadership Team
+            </h2>
             <div className="grid gap-8 md:grid-cols-3">
               {team.map((member, index) => (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="group rounded-lg bg-white shadow-sm p-6 border-l-4 border-[#4a7c59] hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 >
                   <h3 className="mb-1 text-xl font-semibold text-[#2c3e2d] group-hover:text-[#4a7c59] transition-colors duration-300">
                     {member.name}
                   </h3>
-                  <p className="mb-3 text-sm font-medium text-[#4a7c59]">{member.role}</p>
-                  <p className="text-sm text-[#5c6d5e] leading-relaxed">{member.bio}</p>
+                  <p className="mb-3 text-sm font-medium text-[#4a7c59]">
+                    {member.role}
+                  </p>
+                  <p className="text-sm text-[#5c6d5e] leading-relaxed">
+                    {member.bio}
+                  </p>
                 </div>
               ))}
             </div>
@@ -115,9 +141,12 @@ export default function AboutPage() {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="rounded-lg bg-[#4a7c59] p-8 text-center text-white md:p-12">
-              <h2 className="mb-4 text-3xl font-bold">Ready to Start Your Japanese Journey?</h2>
+              <h2 className="mb-4 text-3xl font-bold">
+                Ready to Start Your Japanese Journey?
+              </h2>
               <p className="mx-auto mb-8 max-w-2xl text-lg opacity-90">
-                Join our community of learners and grow your Japanese skills with our bonsai-inspired approach.
+                Join our community of learners and grow your Japanese skills
+                with our bonsai-inspired approach.
               </p>
               <div className="flex flex-col justify-center gap-4 sm:flex-row">
                 <Button
@@ -127,7 +156,11 @@ export default function AboutPage() {
                 >
                   <Link href="/courses">Explore Courses</Link>
                 </Button>
-                <Button className="bg-white text-[#4a7c59] hover:bg-[#eef2eb]" size="lg" asChild>
+                <Button
+                  className="bg-white text-[#4a7c59] hover:bg-[#eef2eb]"
+                  size="lg"
+                  asChild
+                >
                   <Link href="/auth/signup">Sign Up Now</Link>
                 </Button>
               </div>
@@ -136,5 +169,5 @@ export default function AboutPage() {
         </section>
       </main>
     </div>
-  )
+  );
 }
