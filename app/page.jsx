@@ -119,9 +119,9 @@ export default function Home() {
         </section>
 
         {/* Why Jotatsu Section */}
-        <section className="py-8 md:py-16 bg-white">
+        <section className="py-16 md:py-24 bg-white">
           <div className="container mx-auto px-4">
-            <div className="mb-12 text-center">
+            <div className="mb-20 text-center">
               <h2 className="mb-4 text-3xl font-bold text-[#2c3e2d]">Why Choose Us?</h2>
               <p className="mx-auto max-w-2xl text-[#5c6d5e]">
                 Discover what makes Jotatsu the perfect choice for your Japanese learning journey
@@ -147,7 +147,7 @@ export default function Home() {
         </section>
 
         {/* Featured Courses */}
-        <section id="featured-courses" className="py-16 bg-green-900/5">
+        <section id="featured-courses" className="py-16 md:py-24 bg-green-900/5">
           <div className="container mx-auto px-4">
             <div className="mb-10 text-center">
               <h2 className="mb-3 text-3xl font-bold text-[#2c3e2d]">Featured Courses</h2>
@@ -183,7 +183,7 @@ export default function Home() {
         </section>
 
         {/* Bonsai Credit System */}
-        <section className="bg-white py-8 md:py-24">
+        <section className="bg-white py-16 md:py-24">
           <div className="container mx-auto px-4">
             <div className="grid items-center md:gap-16 md:grid-cols-2">
               <div>
