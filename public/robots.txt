@@ -1,4 +1,5 @@
 User-agent: *
+# Allow homepage and all public pages
 Allow: /
 
 # Sitemap
@@ -18,13 +19,15 @@ Disallow: /api/auth/_log
 Disallow: /api/auth/session
 Disallow: /api/auth/*
 
-# Allow important public pages
+# Allow important public pages (explicitly allow these)
+Allow: /courses
 Allow: /courses/
+Allow: /blogs
 Allow: /blogs/
-Allow: /about/
-Allow: /subscription/
+Allow: /about
+Allow: /subscription
+Allow: /users
 Allow: /users/
-Allow: /bonsai/
 
 # Crawl delay (optional - be respectful to your server)
 Crawl-delay: 1
