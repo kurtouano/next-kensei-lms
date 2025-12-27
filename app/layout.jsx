@@ -108,7 +108,6 @@ export const metadata = {
   // Icons are explicitly defined in <head> section for Google Search compliance
 };
 
-// eslint-disable-next-line react/prop-types
 export default async function RootLayout({ children }) {
   return (
     <html lang="en">
