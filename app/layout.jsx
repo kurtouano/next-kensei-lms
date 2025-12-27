@@ -1,36 +1,38 @@
-import "@/app/globals.css"
-import { Noto_Sans_JP, Poppins } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
-import { AuthProvider } from "./providers"
-import { ToastProvider } from "@/contexts/ToastContext"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
-import { Toaster } from "@/components/ui/toaster"
-import { Analytics } from "@vercel/analytics/next"
+import "@/app/globals.css";
+import { Noto_Sans_JP, Poppins } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "./providers";
+import { ToastProvider } from "@/contexts/ToastContext";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
+import { Toaster } from "@/components/ui/toaster";
+import { Analytics } from "@vercel/analytics/next";
 
-import OnlineStatusTracker from "@/components/OnlineStatusTracker"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import OnlineStatusTracker from "@/components/OnlineStatusTracker";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
   variable: "--font-noto-sans-jp",
-})
+});
 
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-poppins",
-})
+});
 
 export const metadata = {
-  title: "Learn Japanese Online - Complete Language Courses & JLPT Prep | Jotatsu Academy",
-  description: "Master Japanese online with Jotatsu Academy! Complete language courses covering grammar, vocabulary, conversation skills, and JLPT N5-N1 preparation. Start your Japanese learning journey today with expert instructors.",
+  title:
+    "Learn Japanese Online - Complete Language Courses & JLPT Prep | Jotatsu Academy",
+  description:
+    "Master Japanese online with Jotatsu Academy! Complete language courses covering grammar, vocabulary, conversation skills, and JLPT N5-N1 preparation. Start your Japanese learning journey today with expert instructors.",
   keywords: [
     "Japanese language learning",
     "learn Japanese online",
     "Japanese course",
     "Japanese grammar",
-    "Japanese vocabulary", 
+    "Japanese vocabulary",
     "Japanese conversation",
     "Japanese pronunciation",
     "Japanese writing",
@@ -39,7 +41,7 @@ export const metadata = {
     "Japanese listening",
     "JLPT test prep",
     "JLPT N5",
-    "JLPT N4", 
+    "JLPT N4",
     "JLPT N3",
     "JLPT N2",
     "JLPT N1",
@@ -64,59 +66,93 @@ export const metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   alternates: {
-    canonical: "https://jotatsu.com"
+    canonical: "https://jotatsu.com",
   },
   openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://jotatsu.com',
-    siteName: 'Jotatsu Academy',
-    title: 'Learn Japanese Online - Complete Language Courses & JLPT Prep',
-    description: 'Master Japanese online with Jotatsu Academy! Complete language courses covering grammar, vocabulary, conversation skills, and JLPT preparation. Interactive lessons and expert instruction.',
+    type: "website",
+    locale: "en_US",
+    url: "https://jotatsu.com",
+    siteName: "Jotatsu Academy",
+    title: "Learn Japanese Online - Complete Language Courses & JLPT Prep",
+    description:
+      "Master Japanese online with Jotatsu Academy! Complete language courses covering grammar, vocabulary, conversation skills, and JLPT preparation. Interactive lessons and expert instruction.",
     images: [
       {
-        url: 'https://jotatsu.com/jotatsu_logo_full.png',
+        url: "https://jotatsu.com/jotatsu_logo_full.png",
         width: 1200,
         height: 630,
-        alt: 'Jotatsu Academy - Learn Japanese Online',
+        alt: "Jotatsu Academy - Learn Japanese Online",
       },
     ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Learn Japanese Online - Complete Language Courses & JLPT Prep',
-    description: 'Master Japanese online with Jotatsu Academy! Complete language courses covering grammar, vocabulary, conversation skills, and JLPT preparation. Interactive lessons and expert instruction.',
-    images: ['https://jotatsu.com/jotatsu_logo_full.png'],
-    creator: '@jotatsu_academy',
+    card: "summary_large_image",
+    title: "Learn Japanese Online - Complete Language Courses & JLPT Prep",
+    description:
+      "Master Japanese online with Jotatsu Academy! Complete language courses covering grammar, vocabulary, conversation skills, and JLPT preparation. Interactive lessons and expert instruction.",
+    images: ["https://jotatsu.com/jotatsu_logo_full.png"],
+    creator: "@jotatsu_academy",
   },
-  category: 'Education',
-  classification: 'Japanese Language Learning',
+  category: "Education",
+  classification: "Japanese Language Learning",
   other: {
-    'google-site-verification': 'your-verification-code-here',
-    'msvalidate.01': 'your-bing-verification-code-here',
+    "google-site-verification": "your-verification-code-here",
+    "msvalidate.01": "your-bing-verification-code-here",
   },
-  // Icons are automatically handled by Next.js from app/favicon.ico
-}
+  // Icons are explicitly defined in <head> section for Google Search compliance
+};
 
+// eslint-disable-next-line react/prop-types
 export default async function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        {/* Favicon links for Google Search - explicit links required by Google */}
+        {/* Primary favicon - Google recommends >48x48px, using 192x192 for better quality */}
+        <link
+          rel="icon"
+          href="/android-chrome-192x192.png"
+          type="image/png"
+          sizes="192x192"
+        />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link
+          rel="icon"
+          href="/favicon-32x32.png"
+          type="image/png"
+          sizes="32x32"
+        />
+        <link
+          rel="icon"
+          href="/favicon-16x16.png"
+          type="image/png"
+          sizes="16x16"
+        />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        
+
         {/* Manifest link - not included in metadata icons, so keep it here */}
         <link rel="manifest" href="/site.webmanifest" />
-        
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        />
         <meta name="theme-color" content="#4a7c59" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -124,7 +160,6 @@ export default async function RootLayout({ children }) {
         <meta name="application-name" content="Jotatsu Academy" />
         <meta name="msapplication-TileColor" content="#4a7c59" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
-
       </head>
       <body className={`${notoSansJP.variable} ${poppins.variable} font-sans`}>
         <AuthProvider>
@@ -132,19 +167,18 @@ export default async function RootLayout({ children }) {
             <ThemeProvider attribute="class" defaultTheme="light">
               <div className="min-h-screen flex flex-col">
                 <Header />
-                <main className="flex-1">
-                  {children}
-                </main>
+                <main className="flex-1">{children}</main>
                 <Footer />
               </div>
-              <OnlineStatusTracker /> {/* Online Status Tracker for User Activity */}
+              <OnlineStatusTracker />{" "}
+              {/* Online Status Tracker for User Activity */}
               <Toaster /> {/* Toast notifications */}
             </ThemeProvider>
           </ToastProvider>
         </AuthProvider>
-        <Analytics/> {/* Vercel Analytics */}
-        <SpeedInsights/> {/* Vercel Speed Insights */}
+        <Analytics /> {/* Vercel Analytics */}
+        <SpeedInsights /> {/* Vercel Speed Insights */}
       </body>
     </html>
-  )
+  );
 }

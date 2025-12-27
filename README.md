@@ -11,23 +11,62 @@ Jotatsu is a comprehensive Learning Management System (LMS) designed specificall
 ## 🚀 Quick Start
 
 1. **Clone the repository**
+
    ```bash
    git clone [repository-url]
    cd next-kensei-lms
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+   Create a `.env` file in the root directory with the following variables:
+
    ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your configuration
+   # Environment
+   NODE_ENV=test
+   # For localhost/local development: use "test"
+   # For production: use "production"
+
+   # Database
+   MONGODB_URI=your_mongodb_connection_string
+
+   # NextAuth
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your_nextauth_secret
+
+   # Google OAuth
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+   # Pusher (Real-time)
+   PUSHER_APP_ID=your_pusher_app_id
+   PUSHER_KEY=your_pusher_key
+   PUSHER_SECRET=your_pusher_secret
+   PUSHER_CLUSTER=your_pusher_cluster
+   NEXT_PUBLIC_PUSHER_KEY=your_pusher_key
+   NEXT_PUBLIC_PUSHER_CLUSTER=your_pusher_cluster
+
+   # AWS S3 & CloudFront
+   AWS_REGION=your_aws_region
+   AWS_ACCESS_KEY_ID=your_aws_access_key
+   AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+   AWS_S3_BUCKET_NAME=your_s3_bucket_name
+   AWS_CLOUDFRONT_DOMAIN_NAME=your_cloudfront_domain
+
+   # Stripe
+   STRIPE_SECRET_KEY=your_stripe_secret_key
+
+   # Resend (Email)
+   RESEND_API_KEY=your_resend_api_key
    ```
 
 4. **Run the development server**
+
    ```bash
    npm run dev
    ```
@@ -74,7 +113,6 @@ For comprehensive documentation, please navigate to the `/docs` folder where you
 - 🔔 **Real-time Notifications** - Instant updates via Pusher
 - 👥 **Social Features** - Friend system and collaborative learning spaces
 
-
 ## 🔧 Development
 
 ```bash
@@ -97,6 +135,7 @@ npm run lint
 ## 📞 Support
 
 For support and questions:
+
 - **Email**: [kurt.ouano@gmail.com](mailto:kurt.ouano@gmail.com)
 - **Documentation**: See `/docs` folder for detailed guides
 - **Issues**: Report bugs or feature requests through GitHub issues
@@ -106,4 +145,3 @@ For support and questions:
 This project is proprietary software. All rights reserved.
 
 ---
-
