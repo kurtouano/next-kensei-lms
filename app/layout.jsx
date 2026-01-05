@@ -113,14 +113,11 @@ export default async function RootLayout({ children }) {
     <html lang="en">
       <head>
         {/* Favicon links for Google Search - explicit links required by Google */}
-        {/* Primary favicon - Google recommends >48x48px, using 192x192 for better quality */}
-        <link
-          rel="icon"
-          href="/android-chrome-192x192.png"
-          type="image/png"
-          sizes="192x192"
-        />
+        {/* Primary favicon - .ico format first for Google compatibility */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+
+        {/* Additional sizes for browser compatibility */}
         <link
           rel="icon"
           href="/favicon-32x32.png"
@@ -133,8 +130,13 @@ export default async function RootLayout({ children }) {
           type="image/png"
           sizes="16x16"
         />
+        <link
+          rel="icon"
+          href="/android-chrome-192x192.png"
+          type="image/png"
+          sizes="192x192"
+        />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="shortcut icon" href="/favicon.ico" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
